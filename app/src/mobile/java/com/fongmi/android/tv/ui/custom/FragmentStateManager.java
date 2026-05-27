@@ -26,10 +26,19 @@ public class FragmentStateManager {
 
     public boolean change(int position) {
         String tag = getTag(position);
+        Fragment expected = factory.apply(position);
+        if (expected == null) return false;
         Fragment fragment = fm.findFragmentByTag(tag);
-        fragment = (fragment == null) ? factory.apply(position) : fragment;
         FragmentTransaction ft = fm.beginTransaction().setTransition(TRANSIT_FRAGMENT_OPEN);
-        if (fm.findFragmentByTag(tag) == null) ft.add(container.getId(), fragment, tag);
+        if (fragment != null && fragment.getClass() != expected.getClass()) {
+            ft.remove(fragment).commitNowAllowingStateLoss();
+            fragment = null;
+            ft = fm.beginTransaction().setTransition(TRANSIT_FRAGMENT_OPEN);
+        }
+        if (fragment == null) {
+            fragment = expected;
+            ft.add(container.getId(), fragment, tag);
+        }
         Fragment current = fm.getPrimaryNavigationFragment();
         if (current != null && current != fragment) ft.hide(current);
         ft.show(fragment).setPrimaryNavigationFragment(fragment).setReorderingAllowed(true).commitNowAllowingStateLoss();
