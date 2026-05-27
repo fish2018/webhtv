@@ -113,8 +113,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
                 if (position == 0) return VodFragment.newInstance();
                 if (position == 1) return SettingFragment.newInstance();
                 if (position == 2) return SettingPlayerFragment.newInstance();
-                if (position == 3) return SettingEnhanceFragment.newInstance();
-                if (position == 4) return SettingDanmakuFragment.newInstance();
+                if (position == 3) return SettingDanmakuFragment.newInstance();
+                if (position == 4) return SettingEnhanceFragment.newInstance();
                 return null;
             }
         };
