@@ -47,7 +47,15 @@ jobs:
           packages: tools platform-tools
 
       - name: Install Android platform
-        run: sdkmanager --channel=3 "platforms;android-37"
+        run: |
+          curl -fsSL -o /tmp/platform-37.zip https://dl.google.com/android/repository/platform-37.0_r01.zip
+          rm -rf /tmp/platform-37
+          mkdir -p /tmp/platform-37 "$ANDROID_HOME/platforms"
+          unzip -q /tmp/platform-37.zip -d /tmp/platform-37
+          platform_dir="$(dirname "$(find /tmp/platform-37 -name android.jar -print -quit)")"
+          test -n "$platform_dir"
+          rm -rf "$ANDROID_HOME/platforms/android-37"
+          mv "$platform_dir" "$ANDROID_HOME/platforms/android-37"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
