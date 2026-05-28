@@ -85,6 +85,10 @@ public class Device implements Diffable<Device>, Comparable<Device> {
         AppDatabase.get().getDeviceDao().delete();
     }
 
+    public static void delete(Device device) {
+        if (device != null) AppDatabase.get().getDeviceDao().delete(device.getUuid());
+    }
+
     public Integer getId() {
         return id;
     }
@@ -191,7 +195,7 @@ public class Device implements Diffable<Device>, Comparable<Device> {
 
     @Override
     public boolean isSameContent(Device other) {
-        return getName().equals(other.getName()) && getType() == other.getType();
+        return getName().equals(other.getName()) && getIp().equals(other.getIp()) && getType() == other.getType();
     }
 
     @Override

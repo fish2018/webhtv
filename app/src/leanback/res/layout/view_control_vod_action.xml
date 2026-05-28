@@ -38,6 +38,12 @@
             android:text="@string/play_change" />
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/fullscreen"
+            style="@style/Control"
+            android:layout_marginEnd="12dp"
+            android:text="@string/play_fullscreen" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
             style="@style/Control"
             android:layout_marginEnd="12dp"

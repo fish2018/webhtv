@@ -44,6 +44,8 @@
     <string name="play_scale">Default</string>
     <string name="play_config">Config</string>
     <string name="play_change">Change</string>
+    <string name="play_fullscreen">Fullscreen</string>
+    <string name="play_exit_fullscreen">Exit full</string>
     <string name="play_invert">Invert</string>
     <string name="play_across">Across</string>
     <string name="play_reverse">Reverse</string>
@@ -123,6 +125,12 @@
     <string name="setting_danmaku">Danmaku setting</string>
     <string name="setting_enhance">Enhancements</string>
     <string name="setting_debug_log">Debug log</string>
+    <string name="setting_shell_proxy">Proxy</string>
+    <string name="setting_shell_proxy_config">Proxy</string>
+    <string name="setting_proxy_url">socks5://127.0.0.1:9978</string>
+    <string name="setting_proxy_hosts">Matched hosts</string>
+    <string name="setting_proxy_invalid">Invalid proxy URL</string>
+    <string name="setting_one_key_sync">One-key sync</string>
     <string name="setting_incognito">Incognito mode</string>
     <string name="setting_drive_check">Drive link check</string>
     <string name="setting_theme_color">Theme color</string>
@@ -145,6 +153,38 @@
     <string name="restore_fail">Restore failed</string>
     <string name="backup_success">Backup successful</string>
     <string name="backup_fail">Backup failed</string>
+
+    <!-- Device Sync -->
+    <string name="device_select">Select devices</string>
+    <string name="device_offline">Device is offline</string>
+    <string name="sync_success">Sync completed</string>
+    <string name="sync_progress">Syncing...</string>
+    <string name="sync_failed">Sync failed</string>
+    <string name="sync_mode_to_remote">This device -> selected device</string>
+    <string name="sync_mode_from_remote">Selected device -> this device</string>
+    <string name="sync_local_device">This device</string>
+    <string name="sync_remote_device">Selected device</string>
+    <string name="sync_direction_change">Switch sync direction</string>
+    <string name="sync_change_device">Change</string>
+    <string name="sync_switch_short">Switch</string>
+    <string name="sync_select_all">Select all</string>
+    <string name="sync_select_none">Clear</string>
+    <string name="sync_item_config">Interfaces and source lists</string>
+    <string name="sync_item_spider">Jar/script saved data</string>
+    <string name="sync_item_webhome">WebHome saved data</string>
+    <string name="sync_item_search">Search records</string>
+    <string name="sync_item_history">Watch history</string>
+    <string name="sync_item_keep">Favorites</string>
+    <string name="sync_item_settings">App settings</string>
+    <string name="sync_device_mobile">Phone</string>
+    <string name="sync_device_tv">TV</string>
+    <string name="sync_discovering">Discovering devices...</string>
+    <string name="sync_no_device">No device found. Keep both devices on the same LAN with WebHTV open, then refresh.</string>
+    <string name="sync_selected">Selected: %1$s · %2$s</string>
+    <string name="sync_start">Start sync</string>
+    <string name="sync_select_device_first">Select a device first</string>
+    <string name="sync_failed_with_reason">Sync failed: %1$s</string>
+    <string name="sync_receive_success">Sync data received</string>
 
     <!-- Player -->
     <string name="player">Player</string>

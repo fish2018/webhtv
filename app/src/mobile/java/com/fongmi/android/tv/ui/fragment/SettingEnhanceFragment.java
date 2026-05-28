@@ -16,6 +16,8 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.databinding.FragmentSettingEnhanceBinding;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.ui.base.BaseFragment;
+import com.fongmi.android.tv.ui.dialog.OneKeySyncDialog;
+import com.fongmi.android.tv.ui.dialog.ShellProxyDialog;
 import com.fongmi.android.tv.utils.Notify;
 import com.github.catvod.crawler.SpiderDebug;
 
@@ -38,6 +40,7 @@ public class SettingEnhanceFragment extends BaseFragment {
 
     @Override
     protected void initView() {
+        mBinding.shellProxyConfig.setVisibility(View.GONE);
         setText();
     }
 
@@ -45,11 +48,16 @@ public class SettingEnhanceFragment extends BaseFragment {
     protected void initEvent() {
         mBinding.driveCheck.setOnClickListener(this::setDriveCheck);
         mBinding.debugLog.setOnClickListener(this::setDebugLog);
+        mBinding.shellProxy.setOnClickListener(this::setShellProxy);
+        mBinding.shellProxyConfig.setOnClickListener(v -> ShellProxyDialog.show(this, this::setText));
+        mBinding.oneKeySync.setOnClickListener(v -> OneKeySyncDialog.create().show(requireActivity()));
     }
 
     private void setText() {
         mBinding.driveCheckText.setText(getSwitch(Setting.isDriveCheck()));
         mBinding.debugLogText.setText(getSwitch(Setting.isDebugLog()));
+        mBinding.shellProxyText.setText(Setting.getShellProxyUrl().isEmpty() ? getString(R.string.none) : Uri.parse(Setting.getShellProxyUrl()).getScheme());
+        mBinding.shellProxyConfigText.setText(Setting.getShellProxyUrl());
     }
 
     private void setDriveCheck(View view) {
@@ -71,8 +79,18 @@ public class SettingEnhanceFragment extends BaseFragment {
         }
     }
 
+    private void setShellProxy(View view) {
+        ShellProxyDialog.show(this, this::setText);
+    }
+
     @Override
     public void onHiddenChanged(boolean hidden) {
         if (!hidden) setText();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        setText();
     }
 }

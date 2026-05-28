@@ -12,6 +12,7 @@ public class Constant {
     public static final long TIMEOUT_XML = TimeUnit.SECONDS.toMillis(15);
     public static final long TIMEOUT_PLAY = TimeUnit.SECONDS.toMillis(15);
     public static final long TIMEOUT_SYNC = TimeUnit.SECONDS.toMillis(2);
+    public static final long TIMEOUT_SYNC_TRANSFER = TimeUnit.SECONDS.toMillis(10);
     public static final long TIMEOUT_SEARCH = TimeUnit.SECONDS.toMillis(30);
     public static final long TIMEOUT_PARSE_DEF = TimeUnit.SECONDS.toMillis(15);
     public static final long TIMEOUT_PARSE_WEB = TimeUnit.SECONDS.toMillis(15);

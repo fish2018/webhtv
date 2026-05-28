@@ -44,6 +44,8 @@
     <string name="play_scale">原始</string>
     <string name="play_config">配置</string>
     <string name="play_change">换源</string>
+    <string name="play_fullscreen">全屏</string>
+    <string name="play_exit_fullscreen">退出全屏</string>
     <string name="play_invert">反转</string>
     <string name="play_across">跨类</string>
     <string name="play_reverse">倒序</string>
@@ -122,6 +124,12 @@
     <string name="setting_danmaku">弹幕设置</string>
     <string name="setting_enhance">增强功能</string>
     <string name="setting_debug_log">调试日志</string>
+    <string name="setting_shell_proxy">Proxy</string>
+    <string name="setting_shell_proxy_config">Proxy</string>
+    <string name="setting_proxy_url">socks5://127.0.0.1:9978</string>
+    <string name="setting_proxy_hosts">匹配域名</string>
+    <string name="setting_proxy_invalid">代理地址无效</string>
+    <string name="setting_one_key_sync">一键同步</string>
     <string name="setting_incognito">无痕模式</string>
     <string name="setting_drive_check">网盘检测</string>
     <string name="setting_theme_color">主题色彩</string>
@@ -144,6 +152,38 @@
     <string name="restore_fail">恢复失败</string>
     <string name="backup_success">备份成功</string>
     <string name="backup_fail">备份失败</string>
+
+    <!-- Device Sync -->
+    <string name="device_select">选择设备</string>
+    <string name="device_offline">设备已离线</string>
+    <string name="sync_success">同步完成</string>
+    <string name="sync_progress">正在同步...</string>
+    <string name="sync_failed">同步失败</string>
+    <string name="sync_mode_to_remote">本机 -> 选中设备</string>
+    <string name="sync_mode_from_remote">选中设备 -> 本机</string>
+    <string name="sync_local_device">本机</string>
+    <string name="sync_remote_device">选中设备</string>
+    <string name="sync_direction_change">切换同步方向</string>
+    <string name="sync_change_device">更换设备</string>
+    <string name="sync_switch_short">切换</string>
+    <string name="sync_select_all">全选</string>
+    <string name="sync_select_none">取消</string>
+    <string name="sync_item_config">接口与站源列表</string>
+    <string name="sync_item_spider">Jar/脚本保存数据</string>
+    <string name="sync_item_webhome">WebHome 主页数据</string>
+    <string name="sync_item_search">搜索记录</string>
+    <string name="sync_item_history">观看记录</string>
+    <string name="sync_item_keep">收藏数据</string>
+    <string name="sync_item_settings">应用设置</string>
+    <string name="sync_device_mobile">手机</string>
+    <string name="sync_device_tv">电视</string>
+    <string name="sync_discovering">正在发现设备...</string>
+    <string name="sync_no_device">未发现设备，请确认两台设备在同一局域网并已打开 WebHTV，然后刷新。</string>
+    <string name="sync_selected">已选择：%1$s · %2$s</string>
+    <string name="sync_start">开始同步</string>
+    <string name="sync_select_device_first">请先选择设备</string>
+    <string name="sync_failed_with_reason">同步失败：%1$s</string>
+    <string name="sync_receive_success">已接收同步数据</string>
 
     <!-- Player -->
     <string name="player">播放核心</string>

@@ -29,4 +29,11 @@
         app:iconTint="@color/white"
         app:showAsAction="always" />
 
+    <item
+        android:id="@+id/sync"
+        android:icon="@drawable/ic_action_sync"
+        android:title="@string/setting_one_key_sync"
+        app:iconTint="@color/white"
+        app:showAsAction="always" />
+
 </menu>

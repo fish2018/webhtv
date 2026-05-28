@@ -309,6 +309,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
         mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
         mBinding.control.action.change2.setOnClickListener(view -> onChange());
+        mBinding.control.action.fullscreen.setOnClickListener(view -> onFullscreen());
         mBinding.control.action.danmaku.setOnClickListener(view -> onDanmaku());
         mBinding.control.action.opening.setOnClickListener(view -> onOpening());
         mBinding.control.action.speed.setOnLongClickListener(view -> onSpeedLong());
@@ -656,6 +657,12 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private void onChange() {
         checkSearch(true);
+    }
+
+    private void onFullscreen() {
+        if (isFullscreen()) exitFullscreen();
+        else enterFullscreen();
+        showControl(mBinding.control.action.fullscreen);
     }
 
     private void onRepeat() {
@@ -1297,6 +1304,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private void setFullscreen(boolean fullscreen) {
         this.fullscreen = fullscreen;
+        mBinding.control.action.fullscreen.setText(fullscreen ? R.string.play_exit_fullscreen : R.string.play_fullscreen);
     }
 
     private boolean isInitAuto() {

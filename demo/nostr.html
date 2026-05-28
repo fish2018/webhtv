@@ -628,6 +628,110 @@
       pointer-events: none;
     }
 
+    .person-info {
+      display: block;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(10px) saturate(1.05);
+    }
+
+    .person-info-body {
+      min-width: 0;
+    }
+
+    .person-info-body p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .live-entry-card {
+      width: 100%;
+      min-height: 96px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(var(--panel-rgb), .72), rgba(34, 43, 51, .36));
+      border: 1px solid var(--line);
+      color: var(--text);
+      text-align: left;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .14);
+      backdrop-filter: blur(12px) saturate(1.05);
+    }
+
+    .live-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .18);
+    }
+
+    .live-icon .icon {
+      width: 21px;
+      height: 21px;
+    }
+
+    .live-copy {
+      min-width: 0;
+    }
+
+    .live-copy h5 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .live-copy p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .live-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .live-tag {
+      min-height: 21px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .14);
+      color: rgba(238, 244, 250, .86);
+      font-size: 11px;
+      font-weight: 720;
+      line-height: 1;
+    }
+
+    .live-action {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .2);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
     .empty {
       min-height: 92px;
       display: grid;
@@ -762,10 +866,43 @@
       padding: 0 2px 12px;
     }
 
+    .detail-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 8px;
+    }
+
     .detail-info h2 {
       margin: 0 0 8px;
       font-size: clamp(22px, 6vw, 32px);
       line-height: 1.12;
+    }
+
+    .detail-title-row h2 {
+      margin: 0;
+    }
+
+    .detail-title-meta {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      color: rgba(244, 247, 251, .9);
+      font-size: 13px;
+      font-weight: 720;
+      line-height: 1.2;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .38);
+    }
+
+    .detail-title-meta .score {
+      color: rgba(255, 218, 128, .95);
+      font-weight: 820;
+    }
+
+    .detail-title-meta .sep {
+      color: rgba(244, 247, 251, .42);
+      font-weight: 600;
     }
 
     .detail-info p {
@@ -789,6 +926,14 @@
       background: var(--panel);
       border: 1px solid var(--line);
       font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .meta-pill.strong {
+      color: var(--text);
+      border-color: var(--line-strong);
+      background: var(--control-active);
+      font-weight: 760;
     }
 
     .detail-block {
@@ -1549,7 +1694,10 @@
       <img id="detailImage" alt="">
     </div>
     <div class="detail-info">
-      <h2 id="detailTitle"></h2>
+      <div class="detail-title-row">
+        <h2 id="detailTitle"></h2>
+        <span class="detail-title-meta" id="detailTitleMeta"></span>
+      </div>
       <div class="detail-meta" id="detailMeta"></div>
       <p id="detailText"></p>
     </div>
@@ -1575,8 +1723,14 @@
       <div class="rail" id="castRail"></div>
     </div>
     <div class="detail-block" id="personWorkBlock" style="display:none">
-      <h3 id="personWorkTitle">关联作品</h3>
+      <h3 id="personWorkTitle">简介</h3>
+      <div id="personInfo"></div>
+      <h3 style="margin-top:16px">关联作品</h3>
       <div class="rail" id="personWorkRail"></div>
+    </div>
+    <div class="detail-block" id="recommendBlock" style="display:none">
+      <h3>相关推荐</h3>
+      <div class="rail" id="recommendWorkRail"></div>
     </div>
   </section>
 
@@ -1664,6 +1818,7 @@
             id: "western-animation",
             title: "美漫",
             hint: "英文动画剧集",
+            mobileHidden: true,
             mediaType: "tv",
             endpoint: "discover/tv",
             params: {
@@ -1701,7 +1856,7 @@
         cacheKey: "fish2018_home_v1_pan_config",
         diskTypes: ["quark", "aliyun", "baidu", "uc", "tianyi", "xunlei", "123", "115", "mobile", "pikpak", "guangya", "magnet", "ed2k"],
         checkableDiskTypes: ["quark", "aliyun", "baidu", "uc", "tianyi", "xunlei", "123", "115", "mobile"],
-        pollIntervals: [4500, 9000, 16000, 26000]
+        pollIntervals: [4500, 9000]
       }
     };
 
@@ -1829,6 +1984,7 @@
         res: (url) => url,
         play: async (url, title) => window.open(url, "_blank", "noopener,noreferrer"),
         search: async (kw) => toast("原生搜索：" + kw),
+        openLive: async () => toast("请在 App 中打开直播"),
         openKeep: async () => toast("请在 App 中打开收藏"),
         history: async () => [],
         vod: async (siteKey, vodId, title) => toast("原生播放：" + (title || vodId || siteKey || "")),
@@ -2906,6 +3062,14 @@
       return url.toString();
     }
 
+    function tmdbRecommendationsUrl(item) {
+      const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/${item.mediaType}/${item.tmdbId}/recommendations`);
+      url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
+      url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      url.searchParams.set("page", "1");
+      return url.toString();
+    }
+
     function tmdbSeasonUrl(item, seasonNumber) {
       const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/tv/${item.tmdbId}/season/${seasonNumber}`);
       url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
@@ -2917,6 +3081,14 @@
       const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/person/${personId}/combined_credits`);
       url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
       url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      return url.toString();
+    }
+
+    function tmdbPersonDetailUrl(personId) {
+      const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/person/${personId}`);
+      url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
+      url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      url.searchParams.set("append_to_response", "combined_credits");
       return url.toString();
     }
 
@@ -3299,7 +3471,7 @@
     }
 
     function loadMoreVisible() {
-      if (state.loadingMore || state.activeList === "recent") return;
+      if (state.loadingMore || state.activeList === "recent" || state.activeList === "live") return;
       if (state.activeList === "all") {
         if (preferenceItems().length) {
           useNostrRecommendationsIfReady();
@@ -3377,7 +3549,26 @@
     }
 
     function getList(id) {
-      return window.WEBHOME_CONFIG.tmdb.lists.find((list) => list.id === id);
+      return visibleTmdbLists().find((list) => list.id === id);
+    }
+
+    function visibleTmdbLists() {
+      return (window.WEBHOME_CONFIG.tmdb.lists || []).filter((list) => !list.hidden && !(list.mobileHidden && isPhoneViewport()));
+    }
+
+    function isPhoneViewport() {
+      const width = Math.min(window.innerWidth || 0, document.documentElement.clientWidth || 0) || window.innerWidth || 0;
+      const height = Math.min(window.innerHeight || 0, document.documentElement.clientHeight || 0) || window.innerHeight || 0;
+      const coarse = window.matchMedia ? window.matchMedia("(pointer: coarse)").matches : false;
+      return width > 0 && width < 720 && (coarse || height > width);
+    }
+
+    function isKnownList(id) {
+      return id === "all" || id === "recent" || id === "live" || !!getList(id);
+    }
+
+    function normalizeActiveListForViewport() {
+      if (!isKnownList(state.activeList)) state.activeList = "all";
     }
 
     function hasPoster(item) {
@@ -3400,6 +3591,7 @@
     function renderAll() {
       clearTimeout(state.renderTimer);
       state.renderTimer = 0;
+      normalizeActiveListForViewport();
       renderChips();
       const recommend = state.activeList === "all";
       $("recommendSection").style.display = recommend ? "" : "none";
@@ -3425,7 +3617,8 @@
     }
 
     function renderChips() {
-      const chips = [{ id: "all", title: "Nostr推荐" }, { id: "recent", title: "最近" }].concat(window.WEBHOME_CONFIG.tmdb.lists.map((item) => ({ id: item.id, title: item.title })));
+      const chips = [{ id: "live", title: "直播" }, { id: "all", title: "Nostr推荐" }, { id: "recent", title: "最近" }]
+        .concat(visibleTmdbLists().map((item) => ({ id: item.id, title: item.title })));
       const root = $("chips");
       const keys = chips.map((chip) => chip.id + ":" + chip.title).join("\n");
       if (root.dataset.renderKeys !== keys) {
@@ -3452,6 +3645,7 @@
       state.activeList = id;
       renderAll();
       if (id === "recent") loadRecentList({ refresh: true });
+      else if (id === "live") renderLiveEntry();
       else if (id !== "all") loadCatalogList(id);
       scheduleUiSnapshotSave();
       if (opts.keepFocus) requestAnimationFrame(() => {
@@ -3496,7 +3690,11 @@
         renderRecentList();
         return;
       }
-      const lists = window.WEBHOME_CONFIG.tmdb.lists.filter((list) => list.id === state.activeList);
+      if (state.activeList === "live") {
+        renderLiveEntry();
+        return;
+      }
+      const lists = visibleTmdbLists().filter((list) => list.id === state.activeList);
       if (!lists.length) {
         $("listStack").replaceChildren();
         return;
@@ -3533,6 +3731,34 @@
       } else {
         fillGrid(grid, state.catalog[grid.dataset.listId] || []);
       }
+    }
+
+    function renderLiveEntry() {
+      const block = document.createElement("div");
+      block.className = "list-block";
+      block.innerHTML = `
+        <div class="subsection-head">
+          <h4>直播</h4>
+          <span>电视台与直播源</span>
+        </div>
+      `;
+      const card = document.createElement("button");
+      card.className = "live-entry-card focusable";
+      card.type = "button";
+      card.innerHTML = `
+        <span class="live-icon" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 19v2"/><path d="m9 3 3 3 3-3"/></svg>
+        </span>
+        <div class="live-copy">
+          <h5>观看直播</h5>
+          <p>频道分组、节目单、收藏频道和多线路已接入。</p>
+          <div class="live-tags"><span class="live-tag">频道分组</span><span class="live-tag">节目单</span><span class="live-tag">收藏</span></div>
+        </div>
+        <span class="live-action">继续观看</span>
+      `;
+      card.addEventListener("click", openLiveHome);
+      block.appendChild(card);
+      $("listStack").replaceChildren(block);
     }
 
     function renderRecentList() {
@@ -3700,6 +3926,7 @@
     function canLoadMore() {
       if (state.loadingMore) return false;
       if (state.activeList === "recent") return false;
+      if (state.activeList === "live") return false;
       if (state.activeList === "all") return !preferenceItems().length && state.recommendationSource === "fallback" && !state.fallbackPage.done;
       const page = state.catalogPage[state.activeList];
       return !!(page && !page.loading && page.page < page.total);
@@ -3980,13 +4207,33 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       $("detailTitle").textContent = item.title;
       const fallbackText = item.desc || item.remark || "";
       if (!state.detail || !$("detailText").textContent.trim() || fallbackText) $("detailText").textContent = fallbackText || $("detailText").textContent || "";
-      $("detailMeta").replaceChildren(...detailMeta(item).map((text) => {
+      renderDetailMeta(item, state.detail);
+      renderDetailTitleMeta(item, state.detail);
+      setDetailCoverCarousel(item.landscape ? [item.landscape] : [], "", { allowPoster: false });
+    }
+
+    function renderDetailMeta(item, detail) {
+      $("detailMeta").replaceChildren(...detailMeta(item, detail).map((meta) => {
         const span = document.createElement("span");
-        span.className = "meta-pill";
-        span.textContent = text;
+        span.className = "meta-pill" + (meta.strong ? " strong" : "");
+        span.textContent = meta.text || meta;
         return span;
       }));
-      setDetailCoverCarousel(item.landscape ? [item.landscape] : [], "", { allowPoster: false });
+    }
+
+    function renderDetailTitleMeta(item, detail) {
+      const root = $("detailTitleMeta");
+      const items = detailTitleMeta(item, detail);
+      root.replaceChildren(...items.flatMap((meta, index) => {
+        const span = document.createElement("span");
+        span.className = meta.type || "";
+        span.textContent = meta.text || meta;
+        if (index === 0) return [span];
+        const sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = "·";
+        return [sep, span];
+      }));
     }
 
     function setDetailCoverCarousel(landscapes, poster, options) {
@@ -4077,13 +4324,109 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       return String(value || "").replace(/["\\\n\r]/g, "");
     }
 
-    function detailMeta(item) {
-      return [item.mediaType === "tv" ? "剧集" : "电影", item.releaseDate || "", item.voteAverage ? "评分 " + Number(item.voteAverage).toFixed(1) : ""].filter(Boolean);
+    function detailMeta(item, detail) {
+      const data = detail || {};
+      const mediaType = item.mediaType === "tv" ? "剧集" : "电影";
+      const date = data.first_air_date || data.release_date || item.releaseDate || "";
+      const genres = (data.genres || []).map((genre) => genre && genre.name).filter(Boolean).slice(0, 2);
+      const runtime = detailRuntime(data, item);
+      const seasonText = item.mediaType === "tv" && data.number_of_seasons ? `${data.number_of_seasons}季` : "";
+      const metas = [
+        detailDateLabel(item, date),
+        seasonText,
+        runtime
+      ].filter(Boolean);
+      genres.forEach((name) => metas.push(name));
+      return uniqueMeta(metas).slice(0, 8).map((meta) => typeof meta === "string" ? { text: meta } : meta);
+    }
+
+    function detailTitleMeta(item, detail) {
+      const data = detail || {};
+      const mediaType = item.mediaType === "tv" ? "剧集" : "电影";
+      const rating = Number(data.vote_average || item.voteAverage || 0);
+      const episodeProgress = item.mediaType === "tv" ? detailEpisodeProgress(data) : "";
+      const status = detailStatus(data.status || "");
+      return [
+        rating > 0 ? { text: `${rating.toFixed(1)}分`, type: "score" } : null,
+        { text: mediaType },
+        episodeProgress ? { text: episodeProgress } : null,
+        status ? { text: status } : null
+      ].filter(Boolean);
+    }
+
+    function detailRuntime(detail, item) {
+      const runtimes = item.mediaType === "tv" ? detail.episode_run_time || [] : detail.runtime ? [detail.runtime] : [];
+      const value = runtimes.find((runtime) => Number(runtime) > 0);
+      if (!value) return "";
+      return item.mediaType === "tv" ? `每集${Number(value)}分钟` : `${Number(value)}分钟`;
+    }
+
+    function detailEpisodeProgress(detail) {
+      const total = Number(detail.number_of_episodes || 0);
+      const aired = Math.max(Number(detail.last_episode_to_air && detail.last_episode_to_air.episode_number || 0), airedEpisodeFromSeason(detail));
+      if (aired && total) return `${aired}/${total}集`;
+      if (total) return `共${total}集`;
+      if (aired) return `更新至${aired}集`;
+      return "";
+    }
+
+    function airedEpisodeFromSeason(detail) {
+      const season = detail && (detail["season/1"] || detail.season_1);
+      const episodes = season && Array.isArray(season.episodes) ? season.episodes : [];
+      if (!episodes.length) return 0;
+      const todayMs = dateOnlyMs(today());
+      return episodes.reduce((max, ep) => {
+        const airMs = dateOnlyMs(ep && ep.air_date);
+        if (!airMs || airMs > todayMs) return max;
+        return Math.max(max, Number(ep.episode_number || 0));
+      }, 0);
+    }
+
+    function detailStatus(status) {
+      const map = {
+        "Returning Series": "更新中",
+        "Ended": "已完结",
+        "Canceled": "已取消",
+        "Cancelled": "已取消",
+        "In Production": "制作中",
+        "Planned": "计划中",
+        "Released": "已上映",
+        "Post Production": "后期制作"
+      };
+      return map[status] || status || "";
+    }
+
+    function detailDateLabel(item, date) {
+      if (!date) return "";
+      return `${item.mediaType === "tv" ? "首播" : "上映"} ${formatDateCn(date)}`;
+    }
+
+    function formatDateCn(date) {
+      const match = String(date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return date || "";
+      return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
+    }
+
+    function dateOnlyMs(date) {
+      const match = String(date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return 0;
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime();
+    }
+
+    function uniqueMeta(items) {
+      const seen = new Set();
+      return items.filter((item) => {
+        const text = typeof item === "string" ? item : item && item.text;
+        const key = String(text || "").trim();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     function clearDetailExtras() {
-      ["seasonBlock", "castBlock", "personWorkBlock"].forEach((id) => $(id).style.display = "none");
-      ["seasonTabs", "episodeRail", "castRail", "personWorkRail"].forEach((id) => $(id).replaceChildren());
+      ["seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"].forEach((id) => $(id).style.display = "none");
+      ["seasonTabs", "episodeRail", "castRail", "personInfo", "personWorkRail", "recommendWorkRail"].forEach((id) => $(id).replaceChildren());
     }
 
     async function loadDetail(item) {
@@ -4101,6 +4444,8 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     function renderDetailExtras(item, detail) {
       const overview = detail.overview || item.desc || item.remark;
       if (overview) $("detailText").textContent = overview;
+      renderDetailMeta(item, detail);
+      renderDetailTitleMeta(item, detail);
       const detailLandscapes = bestDetailBackdrops(detail, 8);
       const detailLandscape = detailLandscapes[0] || "";
       const detailPoster = imageUrl(detail.poster_path, false) || item.pic;
@@ -4111,6 +4456,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       }
       renderCast(detail.credits && detail.credits.cast || []);
       if (item.mediaType === "tv") renderSeasons(item, detail);
+      loadRecommendations(item);
       normalizeRails();
       updatePostPanFocusState();
     }
@@ -4230,17 +4576,65 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     async function loadPersonWorks(person) {
       try {
-        $("personWorkTitle").textContent = person.name + " 的关联作品";
+        $("personWorkTitle").textContent = "简介";
         $("personWorkBlock").style.display = "";
+        renderPersonInfo(person, null);
         $("personWorkRail").replaceChildren(emptyNode("加载中..."));
-        const body = await requestJson(tmdbPersonUrl(person.id), 18);
-        const works = (body.cast || []).filter((item) => (item.media_type === "movie" || item.media_type === "tv") && item.poster_path).slice(0, 18).map((value, index) => normalizeTmdb(value, { id: "person", title: "关联作品", mediaType: value.media_type }, index));
+        const body = await requestJson(tmdbPersonDetailUrl(person.id), 18);
+        renderPersonInfo(person, body);
+        const credits = body.combined_credits || body;
+        const works = (credits.cast || []).filter((item) => (item.media_type === "movie" || item.media_type === "tv") && item.poster_path).slice(0, 18).map((value, index) => normalizeTmdb(value, { id: "person", title: "关联作品", mediaType: value.media_type }, index));
         fillRail($("personWorkRail"), works);
         updatePostPanFocusState();
       } catch (e) {
+        renderPersonInfo(person, null);
         $("personWorkRail").replaceChildren(emptyNode("关联作品加载失败"));
         updatePostPanFocusState();
       }
+    }
+
+    async function loadRecommendations(item) {
+      const block = $("recommendBlock");
+      const rail = $("recommendWorkRail");
+      if (!block || !rail || !item || !item.tmdbId || !item.mediaType) return;
+      try {
+        const body = await requestJson(tmdbRecommendationsUrl(item), 18);
+        if (state.selected !== item) return;
+        const works = (body.results || [])
+          .map((value, index) => {
+            const mediaType = value.media_type || item.mediaType;
+            if ((mediaType !== "movie" && mediaType !== "tv") || !value.poster_path) return null;
+            return normalizeTmdb(value, { id: "recommend", title: "相关推荐", mediaType }, index);
+          })
+          .filter(Boolean)
+          .slice(0, 18);
+        if (!works.length) {
+          block.style.display = "none";
+          rail.replaceChildren();
+          return;
+        }
+        block.style.display = "";
+        fillRail(rail, works);
+        updatePostPanFocusState();
+      } catch (e) {
+        if (state.selected === item) {
+          block.style.display = "none";
+          rail.replaceChildren();
+        }
+      }
+    }
+
+    function renderPersonInfo(person, detail) {
+      const root = $("personInfo");
+      if (!root) return;
+      const biography = detail && detail.biography || "暂无人物简介";
+      root.innerHTML = `
+        <div class="person-info" aria-live="polite">
+          <div class="person-info-body">
+            <p>${escapeHtml(biography)}</p>
+          </div>
+        </div>
+      `;
     }
 
     function resetPanSearch() {
@@ -4358,7 +4752,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         if (existing) Object.assign(existing, item);
         else map.set(item.key, item);
       });
-      state.pan.results = Array.from(map.values()).sort((a, b) => a.index - b.index);
+      state.pan.results = Array.from(map.values());
       ensureActivePanType();
       scheduleUiSnapshotSave();
       return state.pan.results;
@@ -4479,22 +4873,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     function rankedPanResults(type) {
       const activeType = type || "";
-      const items = state.pan.results
-        .filter((item) => !activeType || normalizePanDiskType(item.diskType) === activeType)
-        .slice();
-      if (!canCheckPanLinks()) return items.sort((a, b) => a.index - b.index);
-      return items.sort((a, b) => {
-        const aSupported = isPanCheckSupported(a);
-        const bSupported = isPanCheckSupported(b);
-        if (aSupported !== bSupported) return aSupported ? -1 : 1;
-        if (!aSupported && !bSupported) return a.index - b.index;
-        const ha = getPanHealth(a).state || "idle";
-        const hb = getPanHealth(b).state || "idle";
-        const pa = PAN_HEALTH_PRIORITY[ha] ?? PAN_HEALTH_PRIORITY.idle;
-        const pb = PAN_HEALTH_PRIORITY[hb] ?? PAN_HEALTH_PRIORITY.idle;
-        if (pa !== pb) return pa - pb;
-        return a.index - b.index;
-      });
+      return state.pan.results.filter((item) => !activeType || normalizePanDiskType(item.diskType) === activeType);
     }
 
     function renderPanTabs() {
@@ -4562,7 +4941,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     function updatePostPanFocusState() {
       const panActive = !!($("panSearchBlock") && $("panSearchBlock").classList.contains("active") && $("panSearchBlock").style.display !== "none");
-      ["seasonBlock", "castBlock", "personWorkBlock"].forEach((id) => {
+      ["seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"].forEach((id) => {
         const block = $(id);
         if (!block) return;
         block.setAttribute("aria-hidden", panActive ? "true" : "false");
@@ -4609,6 +4988,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       const restoreKey = shouldRestore && activeEl.dataset.panKey || state.pan.focusKey || "";
       list.setAttribute("tabindex", "-1");
       list.setAttribute("role", "listbox");
+      if (patchPanResultList(list, items, active, shouldRestore, restoreKey)) return;
       if (keys === state.pan.renderKeys && list.children.length === items.length) {
         restorePanResultFocus(list, restoreKey, shouldRestore);
         return;
@@ -4617,6 +4997,28 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       list.replaceChildren(...items.map(panResultNode));
       observePanVisibleItems();
       restorePanResultFocus(list, restoreKey, shouldRestore);
+    }
+
+    function patchPanResultList(list, items, active, shouldRestore, restoreKey) {
+      const existing = Array.from(list.querySelectorAll(".pan-result-item"));
+      if (!existing.length || existing.some((node) => !items.some((item) => item.key === node.dataset.panKey))) return false;
+      const nodes = new Map(existing.map((node) => [node.dataset.panKey, node]));
+      items.forEach((item) => {
+        const node = nodes.get(item.key);
+        if (node) updatePanResultNode(node, item);
+        else list.appendChild(panResultNode(item));
+      });
+      state.pan.renderKeys = `${active}\n` + items.map((item) => `${item.key}:${getPanHealth(item).state}:${item.normalizedUrl || ""}`).join("\n");
+      observePanVisibleItems();
+      restorePanResultFocus(list, restoreKey, shouldRestore);
+      return true;
+    }
+
+    function updatePanResultNode(button, item) {
+      const health = getPanHealth(item);
+      button.className = "pan-result-item focusable" + (health.state === "bad" ? " is-bad" : "");
+      button.dataset.panKey = item.key;
+      button.innerHTML = panResultHtml(item, health);
     }
 
     function restorePanResultFocus(list, key, shouldRestore) {
@@ -4717,7 +5119,14 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       button.className = "pan-result-item focusable" + (health.state === "bad" ? " is-bad" : "");
       button.type = "button";
       button.dataset.panKey = item.key;
-      button.innerHTML = `
+      button.innerHTML = panResultHtml(item, health);
+      button.addEventListener("focus", () => { state.pan.focusKey = item.key; state.pan.focusMode = "results"; });
+      button.addEventListener("click", () => playPanResult(item));
+      return button;
+    }
+
+    function panResultHtml(item, health) {
+      return `
         <div class="pan-result-title">
           <span>${escapeHtml(item.title || state.pan.keyword || "盘搜资源")}</span>
           ${panHealthIndicatorHtml(item, health)}
@@ -4725,9 +5134,6 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         <div class="pan-result-meta">${escapeHtml(panDiskName(item.diskType))}${item.password ? " · 提取码 " + escapeHtml(item.password) : ""}${item.source ? " · " + escapeHtml(item.source) : ""}</div>
         <div class="pan-result-url">${escapeHtml(item.normalizedUrl || item.url)}</div>
       `;
-      button.addEventListener("focus", () => { state.pan.focusKey = item.key; state.pan.focusMode = "results"; });
-      button.addEventListener("click", () => playPanResult(item));
-      return button;
     }
 
     async function rememberPanPlaybackReturn(item) {
@@ -5035,6 +5441,25 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       rememberDetailReturn($("detailSearchBtn"));
       await sdk().search(title, { direct: true });
       toast("已发起原生搜索");
+    }
+
+    async function openLiveHome() {
+      try {
+        const api = sdk();
+        if (window.fm && api.openLive) {
+          await api.openLive();
+          toast("已打开直播");
+        } else if (api.openLive) {
+          await api.openLive();
+        } else if (window.fongmi && window.fongmi.app && window.fongmi.app.openLive) {
+          await window.fongmi.app.openLive();
+          toast("已打开直播");
+        } else {
+          toast("当前环境不支持打开直播");
+        }
+      } catch (e) {
+        toast("打开直播失败：" + (e.message || "unknown"));
+      }
     }
 
     function rememberDetailReturn(target) {
@@ -6317,6 +6742,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       if (!isConnectionPanelOpen()) return false;
       const active = document.activeElement;
       if (isPanelTextField(active) && !active.readOnly) {
+        if (normalizeRemoteKey(event) === "Backspace") return false;
         event.preventDefault();
         event.stopPropagation();
         if (event.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -6724,6 +7150,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       state.detailReturn = snapshot.detailReturn || null;
       restoreSearchSnapshot(snapshot.search);
       if (snapshot.activeList) state.activeList = snapshot.activeList;
+      normalizeActiveListForViewport();
       renderAll();
       if (snapshot.connectionOpen && $("connectionDock") && $("connectionBody")) {
         $("connectionDock").classList.add("open");
@@ -6831,12 +7258,14 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       document.body.style.minHeight = getComputedStyle(document.documentElement).getPropertyValue("--fm-web-height");
       lockViewportWidth();
       fitConnectionPanel();
+      renderAll();
       scheduleHistorySettlement();
     });
 
     window.addEventListener("resize", () => {
       lockViewportWidth();
       fitConnectionPanel();
+      renderAll();
     });
     window.addEventListener("scroll", () => {
       state.scrollingUntil = Date.now() + 900;

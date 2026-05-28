@@ -107,6 +107,33 @@ public class Setting {
         DebugLogStore.setEnabled(debugLog);
     }
 
+    public static boolean isShellProxy() {
+        return Prefers.getBoolean("shell_proxy");
+    }
+
+    public static void putShellProxy(boolean shellProxy) {
+        Prefers.put("shell_proxy", shellProxy);
+        ProxySetting.apply();
+    }
+
+    public static String getShellProxyUrl() {
+        return Prefers.getString("shell_proxy_url");
+    }
+
+    public static void putShellProxyUrl(String url) {
+        Prefers.put("shell_proxy_url", url);
+        ProxySetting.apply();
+    }
+
+    public static String getShellProxyHosts() {
+        return Prefers.getString("shell_proxy_hosts", "*");
+    }
+
+    public static void putShellProxyHosts(String hosts) {
+        Prefers.put("shell_proxy_hosts", hosts);
+        ProxySetting.apply();
+    }
+
     public static boolean getUpdate() {
         return Prefers.getBoolean("update", true);
     }

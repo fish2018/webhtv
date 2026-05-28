@@ -147,8 +147,9 @@ public class Util {
     }
 
     public static String getDeviceName() {
-        String model = Build.MODEL;
-        String manufacturer = Build.MANUFACTURER;
+        String model = TextUtils.isEmpty(Build.MODEL) ? "Android" : Build.MODEL.trim();
+        String manufacturer = TextUtils.isEmpty(Build.MANUFACTURER) ? "" : Build.MANUFACTURER.trim();
+        if (TextUtils.isEmpty(manufacturer)) return model;
         return model.startsWith(manufacturer) ? model : manufacturer + " " + model;
     }
 

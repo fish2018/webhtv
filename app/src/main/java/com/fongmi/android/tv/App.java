@@ -12,6 +12,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
+import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.setting.ProxySetting;
+import com.fongmi.android.tv.utils.NsdDeviceDiscovery;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
@@ -82,6 +85,9 @@ public class App extends Application implements Application.ActivityLifecycleCal
     public void onCreate() {
         super.onCreate();
         Notify.createChannel();
+        Server.get().start();
+        NsdDeviceDiscovery.register();
+        ProxySetting.apply();
         registerActivityLifecycleCallbacks(this);
     }
 
