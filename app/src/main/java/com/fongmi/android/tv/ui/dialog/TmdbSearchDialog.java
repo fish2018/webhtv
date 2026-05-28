@@ -87,7 +87,9 @@ public class TmdbSearchDialog {
     }
 
     public void show() {
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
         dialog = new MaterialAlertDialogBuilder(activity).setView(binding.getRoot()).create();
+        if (activity.isFinishing() || activity.isDestroyed()) return;
         dialog.show();
         configureWindow();
         binding.title.setText(title);

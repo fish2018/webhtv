@@ -40,6 +40,7 @@ public class TmdbPersonDialog {
     }
 
     public static void show(Activity activity, TmdbPerson person, List<TmdbItem> works, Listener listener) {
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return;
         DialogTmdbPersonBinding binding = DialogTmdbPersonBinding.inflate(LayoutInflater.from(activity));
         AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
                 .setView(binding.getRoot())
@@ -69,6 +70,7 @@ public class TmdbPersonDialog {
         binding.close.setOnClickListener(view -> dialog.dismiss());
         applyTheme(activity, binding, light);
 
+        if (activity.isFinishing() || activity.isDestroyed()) return;
         dialog.show();
         binding.close.post(binding.close::requestFocus);
         Window window = dialog.getWindow();

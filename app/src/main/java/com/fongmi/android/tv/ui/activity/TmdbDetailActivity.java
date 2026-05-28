@@ -618,7 +618,18 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
             String finalError = error;
             TmdbBundle finalBundle = tmdbBundle;
             List<TmdbItem> finalSearchItems = searchItems;
-            runOnUiThread(() -> applyLoaded(finalVod, finalBundle, finalSearchItems, finalError));
+            runOnAliveUi(() -> applyLoaded(finalVod, finalBundle, finalSearchItems, finalError));
+        });
+    }
+
+    private boolean canTouchUi() {
+        return !isFinishing() && !isDestroyed();
+    }
+
+    private void runOnAliveUi(Runnable runnable) {
+        runOnUiThread(() -> {
+            if (!canTouchUi()) return;
+            runnable.run();
         });
     }
 
@@ -680,6 +691,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     }
 
     private void showTmdbMatchDialog(List<TmdbItem> items, boolean skippable) {
+        if (!canTouchUi()) return;
         TmdbSearchDialog.create(this)
                 .title(getString(R.string.detail_tmdb_match_title))
                 .query(getTmdbSearchQuery())
@@ -699,12 +711,12 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Task.execute(() -> {
             try {
                 List<TmdbItem> items = tmdbService.search(getTmdbSearchQuery(), tmdbConfig);
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     binding.loading.setVisibility(View.GONE);
                     showTmdbMatchDialog(items, false);
                 });
             } catch (Throwable e) {
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     binding.loading.setVisibility(View.GONE);
                     Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
                 });
@@ -734,9 +746,9 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Task.execute(() -> {
             try {
                 List<TmdbItem> items = tmdbService.search(keyword, tmdbConfig);
-                runOnUiThread(() -> dialog.updateItems(items));
+                runOnAliveUi(() -> dialog.updateItems(items));
             } catch (Throwable e) {
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     dialog.updateItems(new ArrayList<>());
                     Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
                 });
@@ -749,7 +761,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Task.execute(() -> {
             try {
                 TmdbBundle bundle = loadTmdbBundle(item);
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     binding.loading.setVisibility(View.GONE);
                     applyTmdbBundle(bundle);
                     saveTmdbMatch(item);
@@ -758,7 +770,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                     Notify.show(R.string.detail_tmdb_match_saved);
                 });
             } catch (Throwable e) {
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     binding.loading.setVisibility(View.GONE);
                     Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
                 });
@@ -966,7 +978,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Task.execute(() -> {
             try {
                 List<TmdbEpisode> episodes = tmdbService.episodes(tmdbService.season(matchedTmdbItem, seasonNumber, tmdbConfig), tmdbConfig);
-                runOnUiThread(() -> {
+                runOnAliveUi(() -> {
                     tmdbSeasonEpisodes.put(seasonNumber, episodes);
                     if (seasonNumber == selectedSeasonNumber) renderEpisodes();
                 });
@@ -1427,6 +1439,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                 if (viewHolder != null) viewHolder.itemView.requestFocus();
             });
         });
+        if (!canTouchUi()) return;
         dialog.show();
         Window window = dialog.getWindow();
         if (window != null) {
@@ -1739,9 +1752,9 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                 JsonObject personDetail = tmdbService.person(person.getPersonId(), tmdbConfig);
                 TmdbPerson profile = tmdbService.personProfile(personDetail, tmdbConfig);
                 List<TmdbItem> works = tmdbService.personWorks(personDetail, tmdbConfig);
-                runOnUiThread(() -> TmdbPersonDialog.show(this, profile, works, this::openRelatedItem));
+                runOnAliveUi(() -> TmdbPersonDialog.show(this, profile, works, this::openRelatedItem));
             } catch (Throwable e) {
-                runOnUiThread(() -> Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_person_empty) : e.getMessage()));
+                runOnAliveUi(() -> Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_person_empty) : e.getMessage()));
             }
         });
     }
@@ -1755,7 +1768,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Notify.show(getString(R.string.detail_work_searching, item.getTitle()));
         Task.execute(() -> {
             Vod match = searchCurrentSite(item.getTitle(), site);
-            runOnUiThread(() -> {
+            runOnAliveUi(() -> {
                 if (match == null) {
                     Notify.show(getString(R.string.detail_work_global_searching, item.getTitle()));
                     SearchActivity.direct(this, item.getTitle());
