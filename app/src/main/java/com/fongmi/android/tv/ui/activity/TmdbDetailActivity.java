@@ -87,6 +87,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.Listener, Clock.Callback {
 
@@ -106,6 +109,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     private Vod vod;
     private History history;
     private TmdbConfig tmdbConfig;
+    private TmdbBundle activeTmdbBundle;
     private TmdbItem initialTmdbItem;
     private TmdbItem matchedTmdbItem;
     private JsonObject matchedTmdbDetail;
@@ -207,7 +211,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         initialTmdbItem = getIntentTmdbItem();
         detailThemeMode = Setting.getTmdbDetailTheme();
         initPage();
-        loadContent();
+        loadContent(null);
     }
 
     @Override
@@ -215,7 +219,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         super.onNewIntent(intent);
         setIntent(intent);
         resetDetailState();
-        loadContent();
+        loadContent(null);
     }
 
     private void resetDetailState() {
@@ -231,6 +235,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         autoPlayed = false;
         pendingInlineResult = null;
         currentInlineResult = null;
+        activeTmdbBundle = null;
         useParse = false;
         if (service() != null) {
             player().stop();
@@ -256,8 +261,11 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         binding.play.setOnClickListener(view -> onPlay());
         binding.keep.setOnClickListener(view -> onKeep());
         binding.keepTop.setOnClickListener(view -> onKeep());
+        binding.keepFusion.setOnClickListener(view -> onKeep());
         binding.rematch.setOnClickListener(view -> showManualTmdbMatchDialog());
         binding.rematchTop.setOnClickListener(view -> showManualTmdbMatchDialog());
+        binding.rematchFusion.setOnClickListener(view -> showManualTmdbMatchDialog());
+        binding.changeSource.setOnClickListener(view -> changeSource());
         binding.themeMode.setOnClickListener(view -> cycleThemeMode());
         binding.overview.setOnClickListener(view -> toggleOverview());
         binding.overviewToggle.setOnClickListener(view -> toggleOverview());
@@ -271,8 +279,9 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         if (isFusionMode()) binding.headerTitle.setText(R.string.setting_detail_open_fusion);
         binding.playerPanel.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
         binding.heroSpacer.setVisibility(isFusionMode() ? View.GONE : View.VISIBLE);
-        binding.keepTop.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
-        binding.rematchTop.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
+        binding.keepTop.setVisibility(View.GONE);
+        binding.rematchTop.setVisibility(View.GONE);
+        binding.fusionActions.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
         binding.detailActions.setVisibility(isFusionMode() ? View.GONE : View.VISIBLE);
         initFusionPlayer();
         binding.episodeEmpty.setText(R.string.detail_source_episode_empty);
@@ -476,8 +485,11 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         tintTextTree(binding.getRoot(), colors);
         setButton(binding.keep, colors.control, colors.line, colors.primary);
         setButton(binding.keepTop, colors.control, colors.line, colors.primary);
+        setButton(binding.keepFusion, colors.control, colors.line, colors.primary);
         setButton(binding.rematch, colors.control, colors.line, colors.primary);
         setButton(binding.rematchTop, colors.control, colors.line, colors.primary);
+        setButton(binding.rematchFusion, colors.control, colors.line, colors.primary);
+        setButton(binding.changeSource, colors.control, colors.line, colors.primary);
         setButton(binding.themeMode, colors.control, colors.line, colors.primary);
         setButton(binding.play, colors.play, colors.play, 0xFFFFFFFF);
         binding.headerTitle.setTextColor(colors.primary);
@@ -572,11 +584,11 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         for (int i = 0; i < group.getChildCount(); i++) tintTextTree(group.getChildAt(i), colors);
     }
 
-    private void loadContent() {
+    private void loadContent(@Nullable TmdbBundle reusableBundle) {
         Task.execute(() -> {
             Vod loadedVod = null;
             String error = null;
-            TmdbBundle tmdbBundle = null;
+            TmdbBundle tmdbBundle = reusableBundle;
             List<TmdbItem> searchItems = new ArrayList<>();
             try {
                 Result result = SiteApi.detailContent(getKeyText(), getIdText());
@@ -590,7 +602,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                 error = e.getMessage();
             }
 
-            if (tmdbConfig.isReady()) {
+            if (tmdbBundle == null && tmdbConfig.isReady()) {
                 try {
                     if (initialTmdbItem != null) {
                         tmdbBundle = loadTmdbBundle(initialTmdbItem);
@@ -671,6 +683,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     }
 
     private void applyTmdbBundle(TmdbBundle bundle) {
+        activeTmdbBundle = bundle;
         matchedTmdbItem = bundle == null ? null : bundle.item();
         matchedTmdbDetail = bundle == null ? null : bundle.detail();
         castItems.clear();
@@ -1739,6 +1752,24 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         String text = Keep.find(getHistoryKey()) == null ? getString(R.string.keep) : getString(R.string.keep_del);
         binding.keep.setText(text);
         binding.keepTop.setText(text);
+        binding.keepFusion.setText(text);
+    }
+
+    private void changeSource() {
+        if (vod == null) return;
+        String keyword = vod != null && !TextUtils.isEmpty(vod.getName()) ? vod.getName() : getNameText();
+        Notify.show(getString(R.string.detail_source_searching));
+        Task.execute(() -> {
+            SourceMatch match = searchChangeSource(keyword);
+            runOnAliveUi(() -> {
+                if (match == null) {
+                    Notify.show(R.string.detail_source_empty);
+                    return;
+                }
+                Notify.show(getString(R.string.play_switch_site, match.vod().getSiteName()));
+                openMatchedDetail(match.site(), match.vod(), matchedTmdbItem);
+            });
+        });
     }
 
     private void loadPersonDetail(TmdbPerson person) {
@@ -1781,6 +1812,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
 
     private void openMatchedDetail(Site site, Vod match, TmdbItem item) {
         if (isFusionMode()) {
+            TmdbBundle reusableBundle = activeTmdbBundle;
             Intent intent = new Intent(getIntent());
             intent.putExtra("fusion", true);
             intent.putExtra("key", site.getKey());
@@ -1789,7 +1821,9 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
             intent.putExtra("pic", match.getPic());
             intent.putExtra("mark", match.getRemarks());
             putTmdbItem(intent, item);
-            onNewIntent(intent);
+            setIntent(intent);
+            resetDetailState();
+            loadContent(reusableBundle);
             return;
         }
         Intent intent = new Intent(this, TmdbDetailActivity.class);
@@ -1810,6 +1844,62 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         } catch (Throwable e) {
             return null;
         }
+    }
+
+    private SourceMatch searchChangeSource(String keyword) {
+        ExecutorCompletionService<SourceMatch> completion = new ExecutorCompletionService<>(Task.searchExecutor());
+        List<Future<SourceMatch>> futures = new ArrayList<>();
+        for (Site site : VodConfig.get().getSites()) {
+            if (isChangeSourceCandidate(site)) futures.add(completion.submit(() -> searchChangeSource(site, keyword)));
+        }
+        SourceMatch best = null;
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Constant.TIMEOUT_SEARCH);
+        try {
+            for (int i = 0; i < futures.size(); i++) {
+                long timeout = deadline - System.nanoTime();
+                if (timeout <= 0) break;
+                Future<SourceMatch> future = completion.poll(timeout, TimeUnit.NANOSECONDS);
+                if (future == null) break;
+                SourceMatch match = future.get();
+                if (match == null) continue;
+                if (best == null || match.score() > best.score()) best = match;
+                if (match.score() >= 300) break;
+            }
+        } catch (Throwable ignored) {
+        } finally {
+            for (Future<SourceMatch> future : futures) future.cancel(true);
+        }
+        return best;
+    }
+
+    private SourceMatch searchChangeSource(Site site, String keyword) {
+        int bestScore = Integer.MIN_VALUE;
+        Vod best = null;
+        try {
+            Result result = SiteApi.searchContent(site, keyword, true, "1");
+            for (Vod item : result != null ? result.getList() : List.<Vod>of()) {
+                if (isSameSource(item, site)) continue;
+                int score = scoreVod(item, keyword);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = item;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return bestScore > 0 ? new SourceMatch(site, best, bestScore) : null;
+    }
+
+    private boolean isChangeSourceCandidate(Site site) {
+        if (site == null || site.isEmpty() || !site.isSearchable()) return false;
+        if (!site.isChangeable()) return false;
+        return !site.getKey().equals(getKeyText());
+    }
+
+    private boolean isSameSource(Vod item, Site site) {
+        if (item == null) return true;
+        if (getIdText().equals(item.getId()) && getKeyText().equals(site.getKey())) return true;
+        return false;
     }
 
     private Vod bestVod(List<Vod> items, String keyword) {
@@ -2075,6 +2165,9 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     }
 
     private record TmdbBundle(TmdbItem item, JsonObject detail, List<TmdbPerson> cast, List<TmdbItem> related, List<Integer> seasons, Map<Integer, Integer> seasonCounts, Map<Integer, List<TmdbEpisode>> seasonEpisodes) {
+    }
+
+    private record SourceMatch(Site site, Vod vod, int score) {
     }
 
     private record ThemeColors(int background, int panel, int control, int chip, int chipActive, int line, int lineStrong, int primary, int secondary, int muted, int body, int accent, int play, int backdropShade) {

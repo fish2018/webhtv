@@ -365,6 +365,62 @@
                 </RelativeLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/fusionActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:alignItems="center"
+                app:flexWrap="wrap">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/changeSource"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="42dp"
+                    android:minWidth="76dp"
+                    android:text="@string/play_change"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rematchFusion"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:minHeight="42dp"
+                    android:minWidth="76dp"
+                    android:text="@string/detail_tmdb_rematch"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/keepFusion"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:minHeight="42dp"
+                    android:minWidth="76dp"
+                    android:text="@string/keep"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+            </com.google.android.flexbox.FlexboxLayout>
+
             <Space
                 android:id="@+id/heroSpacer"
                 android:layout_width="match_parent"
