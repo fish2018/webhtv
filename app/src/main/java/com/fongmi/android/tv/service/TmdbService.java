@@ -60,6 +60,7 @@ public class TmdbService {
                 .addQueryParameter("api_key", config.getApiKey())
                 .addQueryParameter("language", config.getLanguage())
                 .addQueryParameter("append_to_response", "images,credits,recommendations")
+                .addQueryParameter("include_image_language", config.getLanguage() + ",null")
                 .build();
         try (Response response = com.github.catvod.net.OkHttp.newCall(url.toString()).execute()) {
             if (response.body() == null) throw new IllegalStateException("TMDB 详情返回为空");
@@ -129,6 +130,18 @@ public class TmdbService {
                     string(object, "overview"),
                     image(config.getBackdropBase(), string(object, "still_path"))
             ));
+        }
+        return items;
+    }
+
+    public List<String> photos(JsonObject detail, @NonNull TmdbConfig config) {
+        List<String> items = new ArrayList<>();
+        for (JsonElement element : array(detail, "images", "backdrops")) {
+            if (!element.isJsonObject()) continue;
+            String url = image(config.getBackdropBase(), string(element.getAsJsonObject(), "file_path"));
+            if (TextUtils.isEmpty(url) || items.contains(url)) continue;
+            items.add(url);
+            if (items.size() >= 24) break;
         }
         return items;
     }
