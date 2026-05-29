@@ -15,7 +15,7 @@ import java.util.List;
 public class TmdbPhotoAdapter extends RecyclerView.Adapter<TmdbPhotoAdapter.ViewHolder> {
 
     public interface Listener {
-        void onItemClick(String url);
+        void onItemClick(int position, String url);
     }
 
     private final Listener listener;
@@ -48,7 +48,7 @@ public class TmdbPhotoAdapter extends RecyclerView.Adapter<TmdbPhotoAdapter.View
         String url = items.get(position);
         TmdbCardFocusHelper.bind(holder.binding.getRoot(), light ? 0xEEFFFFFF : 0xFF16202A, light ? 0x33647480 : 0x33FFFFFF);
         ImgUtil.load("tmdb_still_" + position, url, holder.binding.photo);
-        holder.binding.getRoot().setOnClickListener(view -> listener.onItemClick(url));
+        holder.binding.getRoot().setOnClickListener(view -> listener.onItemClick(position, url));
     }
 
     @Override

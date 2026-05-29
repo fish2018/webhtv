@@ -1149,9 +1149,15 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         view.setLayoutParams(marginParams);
     }
 
-    private void showPhotoDialog(String url) {
+    private void showPhotoDialog(int position, String url) {
         if (TextUtils.isEmpty(url)) return;
+        List<String> photos = new ArrayList<>(tmdbEpisodePhotos);
+        if (photos.isEmpty()) photos.add(url);
+        int start = position >= 0 && position < photos.size() ? position : Math.max(0, photos.indexOf(url));
+        int[] current = new int[]{Math.max(0, start)};
+
         ImageView image = new ImageView(this);
+        image.setFocusable(true);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);
         int[] size = photoDialogSize();
         image.setLayoutParams(new ViewGroup.LayoutParams(size[0], size[1]));
@@ -1159,7 +1165,56 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(image);
-        image.setOnClickListener(view -> dialog.dismiss());
+        GestureDetector photoGesture = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent event) {
+                return true;
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent event) {
+                if (photos.size() <= 1) {
+                    dialog.dismiss();
+                    return true;
+                }
+                float x = event.getX();
+                int width = image.getWidth();
+                if (x < width * 0.33f) {
+                    showPhotoAt(image, photos, current, -1);
+                } else if (x > width * 0.67f) {
+                    showPhotoAt(image, photos, current, 1);
+                } else {
+                    dialog.dismiss();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onFling(MotionEvent down, MotionEvent up, float velocityX, float velocityY) {
+                if (photos.size() <= 1 || down == null || up == null) return false;
+                float distanceX = up.getX() - down.getX();
+                if (Math.abs(distanceX) < ResUtil.dp2px(48) || Math.abs(velocityX) < 120f) return false;
+                showPhotoAt(image, photos, current, distanceX < 0 ? 1 : -1);
+                return true;
+            }
+        });
+        image.setOnTouchListener((view, event) -> photoGesture.onTouchEvent(event));
+        dialog.setOnKeyListener((instance, keyCode, event) -> {
+            if (!KeyUtil.isActionUp(event)) return false;
+            if (KeyUtil.isLeftKey(event)) {
+                showPhotoAt(image, photos, current, -1);
+                return true;
+            }
+            if (KeyUtil.isRightKey(event)) {
+                showPhotoAt(image, photos, current, 1);
+                return true;
+            }
+            if (KeyUtil.isEnterKey(event)) {
+                dialog.dismiss();
+                return true;
+            }
+            return false;
+        });
         dialog.show();
         Window window = dialog.getWindow();
         if (window != null) {
@@ -1167,6 +1222,19 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
             window.setLayout(size[0], size[1]);
             window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         }
+        image.requestFocus();
+        loadPhotoImage(image, photos.get(current[0]));
+    }
+
+    private void showPhotoAt(ImageView image, List<String> photos, int[] current, int direction) {
+        if (photos.isEmpty()) return;
+        int next = (current[0] + direction + photos.size()) % photos.size();
+        if (next == current[0]) return;
+        current[0] = next;
+        loadPhotoImage(image, photos.get(current[0]));
+    }
+
+    private void loadPhotoImage(ImageView image, String url) {
         try {
             Glide.with(image)
                     .load(ImgUtil.getUrl(highResTmdbImage(url)))
@@ -1175,7 +1243,6 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                     .error(R.drawable.artwork)
                     .into(image);
         } catch (Throwable e) {
-            dialog.dismiss();
             Notify.show(R.string.detail_tmdb_empty);
         }
     }
