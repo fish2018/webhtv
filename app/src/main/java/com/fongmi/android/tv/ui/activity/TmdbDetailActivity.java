@@ -1117,8 +1117,24 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         if (isFusionMode()) playInline();
         else {
             Vod tmdbVod = playbackTmdbVod();
-            TmdbPlaybackActivity.start(this, getKeyText(), getIdText(), vod.getName(), vod.getPic(), selectedEpisode != null ? selectedEpisode.getName() : getMarkText(), playbackTmdbItem(), tmdbVod);
+            TmdbPlaybackActivity.start(this, getKeyText(), getIdText(), vod.getName(), vod.getPic(), selectedEpisode != null ? selectedEpisode.getName() : getMarkText(), selectedTmdbEpisodeTitles(), playbackTmdbItem(), tmdbVod);
         }
+    }
+
+    private ArrayList<String> selectedTmdbEpisodeTitles() {
+        Map<Integer, String> titles = new LinkedHashMap<>();
+        for (Map.Entry<Integer, TmdbEpisode> entry : tmdbEpisodes.entrySet()) {
+            if (!TextUtils.isEmpty(entry.getValue().getTitle())) titles.put(entry.getKey(), entry.getValue().getTitle());
+        }
+        List<TmdbEpisode> episodes = tmdbSeasonEpisodes.get(selectedSeasonNumber);
+        if (episodes != null) {
+            for (TmdbEpisode episode : episodes) {
+                if (!TextUtils.isEmpty(episode.getTitle())) titles.put(episode.getNumber(), episode.getTitle());
+            }
+        }
+        ArrayList<String> result = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : titles.entrySet()) result.add(entry.getKey() + "\t" + entry.getValue());
+        return result;
     }
 
     private boolean isFusionMode() {

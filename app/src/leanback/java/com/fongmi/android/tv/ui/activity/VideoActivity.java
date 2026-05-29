@@ -77,7 +77,6 @@ import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.PartUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
 import com.fongmi.android.tv.utils.Task;
@@ -90,7 +89,6 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -500,6 +498,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private void setText(Vod item) {
         mBinding.content.setTag(item.getContent());
+        setSynopsis(item.getContent());
         setText(mBinding.year, R.string.detail_year, item.getYear());
         setText(mBinding.area, R.string.detail_area, item.getArea());
         setText(mBinding.type, R.string.detail_type, item.getTypeName());
@@ -515,6 +514,12 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         view.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
         view.setLinkTextColor(MDColor.YELLOW_500);
         CustomMovement.bind(view);
+    }
+
+    private void setSynopsis(String text) {
+        mBinding.tmdbContent.setText(text);
+        mBinding.tmdbContent.setVisibility(TextUtils.isEmpty(text) ? View.GONE : View.VISIBLE);
+        mBinding.tmdbContentTitle.setVisibility(TextUtils.isEmpty(text) ? View.GONE : View.VISIBLE);
     }
 
     private ClickableSpan clickableSpan(Result result) {
@@ -542,7 +547,10 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         setQualityVisible(result.getUrl().isMulti());
         result.getUrl().set(mQualityAdapter.getPosition());
         if (result.hasArtwork()) setArtwork(result.getArtwork());
-        if (result.hasDesc()) mBinding.content.setTag(result.getDesc());
+        if (result.hasDesc()) {
+            mBinding.content.setTag(result.getDesc());
+            setSynopsis(result.getDesc());
+        }
         if (result.hasPosition()) mHistory.setPosition(result.getPosition());
         mBinding.control.parse.setVisibility(isUseParse() ? View.VISIBLE : View.GONE);
         startPlayer(getHistoryKey(), result, isUseParse(), getSite().getTimeout(), buildMetadata());
@@ -578,6 +586,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     private void setEpisodeAdapter(List<Episode> items) {
         mBinding.episode.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+        mBinding.episodeTitle.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
         mEpisodeAdapter.addAll(items);
         setArrayAdapter(items.size());
         setR2Callback();
@@ -629,34 +638,27 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     private void setArrayAdapter(int size) {
-        List<String> items = new ArrayList<>();
-        items.add(getString(R.string.play_reverse));
-        items.add(getString(mHistory.getRevPlayText()));
-        mBinding.array.setVisibility(size > 1 ? View.VISIBLE : View.GONE);
-        if (mHistory.isRevSort()) for (int i = size; i > 0; i -= 20) items.add(i + "-" + Math.max(i - 19, 1));
-        else for (int i = 0; i < size; i += 20) items.add((i + 1) + "-" + Math.min(i + 20, size));
-        mArrayAdapter.addAll(items);
+        mBinding.array.setVisibility(View.GONE);
+        mArrayAdapter.clear();
     }
 
     private int findFocusDown(int index) {
-        List<Integer> orders = Arrays.asList(R.id.flag, R.id.quality, R.id.episode, R.id.array, R.id.part, R.id.quick);
+        List<Integer> orders = List.of(R.id.flag, R.id.quality, R.id.episode, R.id.quick);
         for (int i = 0; i < orders.size(); i++) if (i > index) if (isVisible(findViewById(orders.get(i)))) return orders.get(i);
         return 0;
     }
 
     private int findFocusUp(int index) {
-        List<Integer> orders = Arrays.asList(R.id.flag, R.id.quality, R.id.episode, R.id.array, R.id.part, R.id.quick);
+        List<Integer> orders = List.of(R.id.flag, R.id.quality, R.id.episode, R.id.quick);
         for (int i = orders.size() - 1; i >= 0; i--) if (i < index) if (isVisible(findViewById(orders.get(i)))) return orders.get(i);
         return 0;
     }
 
     private void updateFocus() {
-        mPartAdapter.setNextFocusUp(findFocusUp(4));
         mEpisodeAdapter.setNextFocusUp(findFocusUp(2));
         mFlagAdapter.setNextFocusDown(findFocusDown(0));
         mEpisodeAdapter.setNextFocusDown(findFocusDown(2));
         notifyItemChanged(mBinding.episode, mEpisodeAdapter);
-        notifyItemChanged(mBinding.part, mPartAdapter);
         notifyItemChanged(mBinding.flag, mFlagAdapter);
     }
 
@@ -965,24 +967,26 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
             @Override
             public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
                 mBinding.exo.setDefaultArtwork(resource);
+                mBinding.pageBackdrop.setImageDrawable(resource);
             }
 
             @Override
             public void onLoadFailed(@Nullable Drawable errorDrawable) {
                 mBinding.exo.setDefaultArtwork(errorDrawable);
+                mBinding.pageBackdrop.setImageDrawable(errorDrawable);
             }
         });
     }
 
     private void setPartAdapter() {
-        mPartAdapter.addAll(PartUtil.split(mHistory.getVodName()));
-        mBinding.part.setVisibility(View.VISIBLE);
-        setR2Callback();
+        mBinding.part.setVisibility(View.GONE);
+        mPartAdapter.clear();
     }
 
     private void checkFlag(Vod item) {
         boolean empty = item.getFlags().isEmpty();
         mBinding.flag.setVisibility(empty ? View.GONE : View.VISIBLE);
+        mBinding.flagTitle.setVisibility(empty ? View.GONE : View.VISIBLE);
         if (empty) {
             startFlow();
         } else {

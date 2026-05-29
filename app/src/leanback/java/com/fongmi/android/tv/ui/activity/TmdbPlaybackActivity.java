@@ -7,20 +7,27 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.bean.Episode;
+import com.fongmi.android.tv.bean.Flag;
 import com.fongmi.android.tv.bean.TmdbItem;
 import com.fongmi.android.tv.bean.Vod;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackEnhancer.Host {
 
     private TmdbPlaybackEnhancer tmdbEnhancer;
     private TextView tmdbContent;
 
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, TmdbItem item, Vod tmdbVod) {
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, ArrayList<String> episodeTitles, TmdbItem item, Vod tmdbVod) {
         Intent intent = new Intent(activity, TmdbPlaybackActivity.class);
         intent.putExtra("fusion", false);
         intent.putExtra("collect", false);
         intent.putExtra("cast", false);
         intent.putExtra("mark", mark);
+        intent.putStringArrayListExtra("tmdb_episode_titles", episodeTitles);
         intent.putExtra("name", name);
         intent.putExtra("pic", pic);
         intent.putExtra("key", key);
@@ -56,15 +63,14 @@ public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackE
         tmdbEnhancer = new TmdbPlaybackEnhancer(this);
         super.initView(savedInstanceState);
         initTmdbContent();
-        hideIntroButton();
     }
 
     @Override
     protected void onDetailReady(Vod item) {
         Vod merged = mergeIntentTmdbVod(item);
+        applyTmdbEpisodeTitles(merged);
         if (merged != item) updateVod(merged);
         showTmdbContent(merged);
-        hideIntroButton();
         if (!hasIntentTmdbVod()) tmdbEnhancer.onDetailReady(item);
     }
 
@@ -85,9 +91,9 @@ public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackE
 
     @Override
     public void applyTmdbVod(Vod vod) {
+        applyTmdbEpisodeTitles(vod);
         updateVod(vod);
         showTmdbContent(vod);
-        hideIntroButton();
     }
 
     @Override
@@ -114,6 +120,33 @@ public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackE
         return vod;
     }
 
+    private void applyTmdbEpisodeTitles(Vod vod) {
+        Map<Integer, String> titles = getEpisodeTitles();
+        if (vod == null || titles.isEmpty() || vod.getFlags() == null) return;
+        for (Flag flag : vod.getFlags()) {
+            for (Episode episode : flag.getEpisodes()) {
+                String title = titles.get(episode.getNumber());
+                if (TextUtils.isEmpty(title) || TextUtils.isEmpty(episode.getName()) || episode.getName().contains(title)) continue;
+                episode.setDisplayName(episode.getName() + " " + title);
+            }
+        }
+    }
+
+    private Map<Integer, String> getEpisodeTitles() {
+        Map<Integer, String> titles = new HashMap<>();
+        ArrayList<String> values = getIntent().getStringArrayListExtra("tmdb_episode_titles");
+        if (values == null) return titles;
+        for (String value : values) {
+            String[] parts = value.split("\t", 2);
+            if (parts.length != 2 || TextUtils.isEmpty(parts[1])) continue;
+            try {
+                titles.put(Integer.parseInt(parts[0]), parts[1]);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return titles;
+    }
+
     private boolean hasIntentTmdbVod() {
         return !TextUtils.isEmpty(getStringExtra("tmdb_vod_title")) || !TextUtils.isEmpty(getStringExtra("tmdb_vod_content")) || !TextUtils.isEmpty(getStringExtra("tmdb_vod_year")) || !TextUtils.isEmpty(getStringExtra("tmdb_vod_area")) || !TextUtils.isEmpty(getStringExtra("tmdb_vod_type")) || !TextUtils.isEmpty(getStringExtra("tmdb_title")) || !TextUtils.isEmpty(getStringExtra("tmdb_overview"));
     }
@@ -137,10 +170,5 @@ public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackE
         String content = vod.getContent();
         tmdbContent.setText(content);
         tmdbContent.setVisibility(TextUtils.isEmpty(content) ? View.GONE : View.VISIBLE);
-    }
-
-    private void hideIntroButton() {
-        View content = findViewById(R.id.content);
-        if (content != null) content.setVisibility(View.GONE);
     }
 }

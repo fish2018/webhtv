@@ -4,7 +4,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/progressLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#6EAFA2">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/pageBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.52"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:id="@+id/pageShade"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#4D10201F" />
 
     <FrameLayout
         android:id="@+id/video"
@@ -391,19 +405,17 @@
             android:paddingBottom="8dp">
 
             <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/tmdbContent"
+                android:id="@+id/flagTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:ellipsize="end"
-                android:lineSpacingExtra="3dp"
-                android:maxLines="4"
+                android:layout_marginBottom="10dp"
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
-                android:textColor="@color/white_80"
-                android:textSize="15sp"
+                android:text="@string/detail_flag"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold"
                 android:visibility="gone"
-                tools:text="TMDB overview text"
                 tools:visibility="visible" />
 
             <androidx.leanback.widget.HorizontalGridView
@@ -427,6 +439,20 @@
                 android:clipToPadding="false"
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/episodeTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="@string/detail_episode"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold"
                 android:visibility="gone"
                 tools:visibility="visible" />
 
@@ -473,6 +499,36 @@
                 android:paddingStart="24dp"
                 android:paddingEnd="24dp"
                 android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tmdbContentTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="@string/detail_desc"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tmdbContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:ellipsize="end"
+                android:lineSpacingExtra="4dp"
+                android:maxLines="4"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:visibility="gone"
+                tools:text="TMDB overview text"
+                tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.core.widget.NestedScrollView>

@@ -8,16 +8,19 @@ import android.view.View;
 import com.fongmi.android.tv.bean.TmdbItem;
 import com.fongmi.android.tv.bean.Vod;
 
+import java.util.ArrayList;
+
 public class TmdbPlaybackActivity extends VideoActivity implements TmdbPlaybackEnhancer.Host {
 
     private TmdbPlaybackEnhancer tmdbEnhancer;
 
-    public static void start(Activity activity, String key, String id, String name, String pic, String mark, TmdbItem item, Vod tmdbVod) {
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, ArrayList<String> episodeTitles, TmdbItem item, Vod tmdbVod) {
         Intent intent = new Intent(activity, TmdbPlaybackActivity.class);
         intent.putExtra("fusion", false);
         intent.putExtra("collect", false);
         intent.putExtra("cast", false);
         intent.putExtra("mark", mark);
+        intent.putStringArrayListExtra("tmdb_episode_titles", episodeTitles);
         intent.putExtra("name", name);
         intent.putExtra("pic", pic);
         intent.putExtra("key", key);

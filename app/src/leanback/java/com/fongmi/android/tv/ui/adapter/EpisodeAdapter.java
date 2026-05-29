@@ -88,7 +88,7 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         holder.binding.text.setNextFocusUpId(nextFocusUp);
         holder.binding.text.setNextFocusDownId(nextFocusDown);
         holder.binding.text.setSelected(item.isSelected());
-        holder.binding.text.setText(item.getDesc().concat(item.getName()));
+        holder.binding.text.setText(item.getDesc().concat(item.getDisplayName()));
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }
 
