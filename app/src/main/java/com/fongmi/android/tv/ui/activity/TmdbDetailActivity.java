@@ -882,12 +882,11 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     private void enrichVod() {
         if (matchedTmdbItem != null) {
             if (!TextUtils.isEmpty(matchedTmdbItem.getTitle())) vod.setName(matchedTmdbItem.getTitle());
-            if (TextUtils.isEmpty(vod.getContent())) vod.setContent(matchedTmdbItem.getOverview());
             if (TextUtils.isEmpty(vod.getPic())) vod.setPic(matchedTmdbItem.getPosterUrl());
         }
-        if (matchedTmdbDetail == null) return;
-        String overview = tmdbService.translatedOverview(matchedTmdbDetail, tmdbConfig);
+        String overview = tmdbOverview();
         if (!TextUtils.isEmpty(overview)) vod.setContent(overview);
+        if (matchedTmdbDetail == null) return;
         if ((TextUtils.isEmpty(vod.getPic()) || vod.getPic().startsWith("data:")) && matchedTmdbItem != null) {
             vod.setPic(matchedTmdbItem.getPosterUrl());
         }
@@ -933,7 +932,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     private void bindMeta() {
         binding.metaContainer.removeAllViews();
         addMetaChip(getMediaTypeLabel());
-        addMetaChip(vod.getYear());
+        addMetaChip(metaYear());
         addMetaChip(firstGenre());
         addMetaChip(firstCountry());
         addMetaChip(firstCrew("Director"));
@@ -944,7 +943,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     }
 
     private void bindOverview() {
-        String overview = TextUtils.isEmpty(vod.getContent()) ? "" : vod.getContent().trim();
+        String overview = displayOverview();
         binding.overview.setText(overview);
         binding.overview.setVisibility(TextUtils.isEmpty(overview) ? View.GONE : View.VISIBLE);
         if (TextUtils.isEmpty(overview)) {
@@ -1570,7 +1569,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         currentInlineResult = result;
         useParse = result.shouldUseParse();
         if (result.hasPosition() && history != null) history.setPosition(result.getPosition());
-        if (result.hasDesc()) {
+        if (result.hasDesc() && !hasTmdbOverview()) {
             vod.setContent(result.getDesc());
             bindOverview();
         }
@@ -2506,7 +2505,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
     }
 
     private String releaseDate() {
-        if (matchedTmdbDetail == null) return vod.getYear();
+        if (matchedTmdbDetail == null) return hasTmdbOverview() ? tmdbItemYear() : vod.getYear();
         return string(matchedTmdbDetail, "first_air_date", "release_date");
     }
 
@@ -2517,7 +2516,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
                 matchedTmdbItem.getMediaType(),
                 TextUtils.isEmpty(vod.getName()) ? matchedTmdbItem.getTitle() : vod.getName(),
                 buildSubtitle(),
-                vod.getContent(),
+                displayOverview(),
                 TextUtils.isEmpty(matchedTmdbItem.getPosterUrl()) ? vod.getPic() : matchedTmdbItem.getPosterUrl(),
                 TextUtils.isEmpty(matchedTmdbItem.getBackdropUrl()) ? vod.getPic() : matchedTmdbItem.getBackdropUrl(),
                 matchedTmdbItem.getCredit());
@@ -2527,7 +2526,7 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         if (vod == null) return null;
         Vod item = new Vod();
         item.setName(coalesce(vod.getName(), matchedTmdbItem == null ? "" : matchedTmdbItem.getTitle()));
-        item.setContent(coalesce(vod.getContent(), matchedTmdbItem == null ? "" : matchedTmdbItem.getOverview()));
+        item.setContent(displayOverview());
         item.setPic(coalesce(matchedTmdbItem == null ? "" : matchedTmdbItem.getBackdropUrl(), matchedTmdbItem == null ? "" : matchedTmdbItem.getPosterUrl(), vod.getPic()));
         item.setYear(yearLabel());
         item.setArea(coalesce(firstCountry(), vod.getArea()));
@@ -2543,9 +2542,37 @@ public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.
         return vod == null ? "" : vod.getYear();
     }
 
+    private String metaYear() {
+        if (matchedTmdbDetail != null) return yearLabel();
+        if (hasTmdbOverview()) return tmdbItemYear();
+        return vod == null ? "" : vod.getYear();
+    }
+
     private String ratingLabel() {
         if (matchedTmdbDetail == null || !matchedTmdbDetail.has("vote_average") || matchedTmdbDetail.get("vote_average").isJsonNull()) return "";
         return getString(R.string.detail_score, String.format(Locale.US, "%.1f", matchedTmdbDetail.get("vote_average").getAsDouble()));
+    }
+
+    private boolean hasTmdbOverview() {
+        return !TextUtils.isEmpty(tmdbOverview());
+    }
+
+    private String displayOverview() {
+        String overview = tmdbOverview();
+        if (TextUtils.isEmpty(overview) && vod != null) overview = vod.getContent();
+        return TextUtils.isEmpty(overview) ? "" : overview.trim();
+    }
+
+    private String tmdbOverview() {
+        String overview = matchedTmdbDetail == null ? "" : tmdbService.translatedOverview(matchedTmdbDetail, tmdbConfig);
+        if (TextUtils.isEmpty(overview) && matchedTmdbItem != null) overview = matchedTmdbItem.getOverview();
+        return TextUtils.isEmpty(overview) ? "" : overview.trim();
+    }
+
+    private String tmdbItemYear() {
+        if (matchedTmdbItem == null) return "";
+        String subtitle = matchedTmdbItem.getSubtitle();
+        return !TextUtils.isEmpty(subtitle) && subtitle.length() >= 4 ? subtitle.substring(0, 4) : "";
     }
 
     private String certificationLabel() {

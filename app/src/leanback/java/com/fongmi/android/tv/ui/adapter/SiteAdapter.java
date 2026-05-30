@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.AdapterSiteBinding;
-import com.fongmi.android.tv.setting.Setting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +53,11 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         return mItems;
     }
 
+    public int getSelectedPosition() {
+        for (int i = 0; i < mItems.size(); i++) if (mItems.get(i).isSelected()) return i;
+        return 0;
+    }
+
     @Override
     public int getItemCount() {
         return mItems.size();
@@ -70,11 +74,13 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         Site item = mItems.get(position);
         holder.binding.text.setText(item.getName());
         holder.binding.check.setChecked(getChecked(item));
+        holder.binding.getRoot().setSelected(item.isSelected());
         holder.binding.text.setSelected(item.isSelected());
+        holder.binding.indicator.setVisibility(item.isSelected() ? View.VISIBLE : View.INVISIBLE);
         holder.binding.check.setVisibility(type == 0 ? View.GONE : View.VISIBLE);
         holder.binding.getRoot().setOnLongClickListener(v -> setLongListener(item));
         holder.binding.getRoot().setOnClickListener(v -> setListener(item, position));
-        holder.binding.text.setGravity(Setting.getSiteMode() == 0 ? Gravity.CENTER : Gravity.START);
+        holder.binding.text.setGravity(Gravity.CENTER_VERTICAL);
     }
 
     private boolean getChecked(Site item) {

@@ -4,8 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/shape_site_dialog_panel"
     android:orientation="horizontal"
-    android:padding="24dp">
+    android:paddingStart="22dp"
+    android:paddingTop="20dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="20dp">
 
     <com.fongmi.android.tv.ui.custom.CustomRecyclerView
         android:id="@+id/recycler"
@@ -15,7 +19,9 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:overScrollMode="never"
-        app:maxHeight="264dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        app:maxHeight="336dp"
         tools:itemCount="5"
         tools:listitem="@layout/adapter_site" />
 
@@ -30,9 +36,9 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/search"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/selector_chip_round"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/selector_site_action"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:nextFocusUp="@id/search"
@@ -43,10 +49,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/change"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
-            android:background="@drawable/selector_chip_round"
+            android:background="@drawable/selector_site_action"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:nextFocusUp="@id/search"
@@ -57,10 +63,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/select"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
-            android:background="@drawable/selector_chip_round"
+            android:background="@drawable/selector_site_action"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:nextFocusUp="@id/change"
@@ -70,10 +76,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/cancel"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
-            android:background="@drawable/selector_chip_round"
+            android:background="@drawable/selector_site_action"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:nextFocusUp="@id/select"
@@ -83,10 +89,10 @@
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/mode"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
-            android:background="@drawable/selector_chip_round"
+            android:background="@drawable/selector_site_action"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:nextFocusUp="@id/cancel"

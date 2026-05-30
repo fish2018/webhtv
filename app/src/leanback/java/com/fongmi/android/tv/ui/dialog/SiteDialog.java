@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.dialog;
 
+import android.view.Window;
 import android.view.View;
 
 import androidx.fragment.app.FragmentActivity;
@@ -95,9 +96,9 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         binding.recycler.setHasFixedSize(true);
         binding.recycler.setItemAnimator(null);
         if (decoration != null) binding.recycler.removeItemDecoration(decoration);
-        binding.recycler.addItemDecoration(decoration = new SpaceItemDecoration(getCount(), 16));
+        binding.recycler.addItemDecoration(decoration = new SpaceItemDecoration(getCount(), 12));
         binding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), getCount()));
-        if (!binding.mode.hasFocus()) binding.recycler.post(() -> binding.recycler.scrollToPosition(VodConfig.getHomeIndex()));
+        if (!binding.mode.hasFocus()) focusSelectedSite();
     }
 
     private void setType(int type) {
@@ -118,6 +119,18 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         setWidth(getWidth());
     }
 
+    private void focusSelectedSite() {
+        int position = adapter.getSelectedPosition();
+        binding.recycler.post(() -> {
+            binding.recycler.scrollToPosition(position);
+            binding.recycler.post(() -> {
+                RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(position);
+                if (holder != null) holder.itemView.requestFocus();
+                else binding.recycler.requestFocus();
+            });
+        });
+    }
+
     private void onMode(View view) {
         Setting.putSiteMode(Math.abs(Setting.getSiteMode() - 1));
         setRecyclerView();
@@ -135,6 +148,16 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     public void onStart() {
         super.onStart();
         if (adapter.getItemCount() == 0) dismiss();
-        else setWidth();
+        else {
+            setBackground();
+            setWidth();
+            focusSelectedSite();
+        }
+    }
+
+    private void setBackground() {
+        if (getDialog() == null) return;
+        Window window = getDialog().getWindow();
+        if (window != null) window.setBackgroundDrawableResource(android.R.color.transparent);
     }
 }

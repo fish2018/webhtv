@@ -3,22 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="40dp"
-    android:background="@drawable/selector_chip_round"
+    android:layout_height="48dp"
+    android:background="@drawable/selector_site_item"
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp">
+
+    <View
+        android:id="@+id/indicator"
+        android:layout_width="4dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/shape_site_current_indicator"
+        android:visibility="invisible"
+        tools:visibility="visible" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/text"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_weight="1"
+        android:duplicateParentState="true"
         android:ellipsize="marquee"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:singleLine="true"
-        android:textColor="@color/text"
+        android:textColor="@color/site_item_text"
         android:textSize="18sp"
         tools:text="泥巴" />
 
@@ -26,7 +38,7 @@
         android:id="@+id/check"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="10dp"
         android:clickable="false"
         android:enabled="false"
         android:focusable="false"
