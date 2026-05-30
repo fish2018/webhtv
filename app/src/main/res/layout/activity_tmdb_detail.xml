@@ -646,16 +646,56 @@
                             android:orientation="horizontal" />
                     </HorizontalScrollView>
 
-                    <TextView
-                        android:id="@+id/episodeTitle"
+                    <LinearLayout
+                        android:id="@+id/episodeHeader"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:layout_marginTop="22dp"
-                        android:text="@string/detail_episode"
-                        android:textColor="@android:color/white"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:visibility="gone" />
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/episodeTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/detail_episode"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeReverse"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:minHeight="36dp"
+                            android:minWidth="58dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/detail_episode_reverse"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            app:backgroundTint="#2B3743"
+                            app:strokeColor="@android:color/transparent" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeViewMode"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:minHeight="36dp"
+                            android:minWidth="58dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="@string/detail_episode_view_list"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            app:backgroundTint="#2B3743"
+                            app:strokeColor="@android:color/transparent" />
+                    </LinearLayout>
 
                     <FrameLayout
                         android:id="@+id/seasonScroll"
@@ -690,6 +730,33 @@
                         android:clipToPadding="false"
                         android:paddingEnd="8dp"
                         android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/episodeSkeleton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

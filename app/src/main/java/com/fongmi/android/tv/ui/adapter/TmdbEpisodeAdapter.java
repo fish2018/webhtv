@@ -21,6 +21,11 @@ import java.util.Map;
 
 public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.ViewHolder> {
 
+    public enum Mode {
+        LIST,
+        GRID
+    }
+
     public interface Listener {
         void onItemClick(Episode item);
 
@@ -30,7 +35,9 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
     private final Listener listener;
     private final List<Episode> items = new ArrayList<>();
     private final Map<Integer, TmdbEpisode> tmdbItems = new HashMap<>();
+    private final Map<Episode, Integer> episodeNumbers = new HashMap<>();
     private Episode selected;
+    private Mode mode = Mode.LIST;
     private boolean light;
     private boolean compactPlain;
     private int activeStrokeColor = 0xFF2CC56F;
@@ -40,10 +47,16 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
     }
 
     public void setItems(List<Episode> episodes, Map<Integer, TmdbEpisode> tmdbEpisodes, Episode selected) {
+        setItems(episodes, tmdbEpisodes, Map.of(), selected);
+    }
+
+    public void setItems(List<Episode> episodes, Map<Integer, TmdbEpisode> tmdbEpisodes, Map<Episode, Integer> numbers, Episode selected) {
         items.clear();
         items.addAll(episodes);
         tmdbItems.clear();
         tmdbItems.putAll(tmdbEpisodes);
+        episodeNumbers.clear();
+        episodeNumbers.putAll(numbers);
         compactPlain = items.size() == 1 && tmdbItems.isEmpty() && TextUtils.isEmpty(items.get(0).getDesc());
         this.selected = selected;
         notifyDataSetChanged();
@@ -64,6 +77,11 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
         notifyDataSetChanged();
     }
 
+    public void setMode(Mode mode) {
+        this.mode = mode == null ? Mode.LIST : mode;
+        notifyDataSetChanged();
+    }
+
     public int getPosition(Episode episode) {
         return items.indexOf(episode);
     }
@@ -77,7 +95,8 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Episode episode = items.get(position);
-        TmdbEpisode tmdbEpisode = tmdbItems.get(position + 1);
+        int episodeNumber = episodeNumber(episode, position);
+        TmdbEpisode tmdbEpisode = tmdbItems.get(episodeNumber);
         String title = tmdbEpisode != null && !TextUtils.isEmpty(tmdbEpisode.getTitle()) ? tmdbEpisode.getTitle() : episode.getName();
         String date = tmdbEpisode != null ? tmdbEpisode.getDate() : "";
         String overview = tmdbEpisode != null ? tmdbEpisode.getOverview() : episode.getDesc();
@@ -85,7 +104,15 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
         boolean compact = compactPlain && tmdbEpisode == null && TextUtils.isEmpty(overview);
 
         applyCardSize(holder, compact);
-        if (compact) {
+        if (mode == Mode.GRID) {
+            holder.binding.index.setText(String.valueOf(episodeNumber));
+            holder.binding.index.setTextSize(14f);
+            holder.binding.title.setText(title);
+            holder.binding.title.setVisibility(TextUtils.isEmpty(title) ? View.GONE : View.VISIBLE);
+            holder.binding.date.setText(date);
+            holder.binding.date.setVisibility(TextUtils.isEmpty(date) ? View.GONE : View.VISIBLE);
+            holder.binding.overview.setVisibility(View.GONE);
+        } else if (compact) {
             holder.binding.index.setText(episode.getName());
             holder.binding.index.setTextSize(14f);
             holder.binding.title.setVisibility(View.GONE);
@@ -112,7 +139,7 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
                 activated ? (light ? 0xFFE5F7EC : 0x6630A86B) : (light ? 0xEEFFFFFF : 0xCC16202A),
                 activated ? activeStrokeColor : (light ? 0x33647480 : 0x33FFFFFF),
                 activated ? 2 : 1);
-        if (tmdbEpisode != null && !TextUtils.isEmpty(tmdbEpisode.getStillUrl())) {
+        if (mode == Mode.LIST && tmdbEpisode != null && !TextUtils.isEmpty(tmdbEpisode.getStillUrl())) {
             holder.binding.stillFrame.setVisibility(View.VISIBLE);
             ImgUtil.load(title, tmdbEpisode.getStillUrl(), holder.binding.still);
         } else {
@@ -120,16 +147,26 @@ public class TmdbEpisodeAdapter extends RecyclerView.Adapter<TmdbEpisodeAdapter.
         }
         holder.binding.getRoot().setOnClickListener(view -> listener.onItemClick(episode));
         holder.binding.getRoot().setOnLongClickListener(view -> {
-            listener.onItemLongClick(episode, position + 1);
+            listener.onItemLongClick(episode, episodeNumber);
             return true;
         });
     }
 
     private void applyCardSize(ViewHolder holder, boolean compact) {
         ViewGroup.LayoutParams params = holder.binding.getRoot().getLayoutParams();
-        params.width = dp(holder.itemView, compact ? 220 : 230);
-        params.height = dp(holder.itemView, compact ? 78 : 190);
+        if (mode == Mode.GRID) {
+            params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            params.height = dp(holder.itemView, 86);
+        } else {
+            params.width = dp(holder.itemView, compact ? 220 : 230);
+            params.height = dp(holder.itemView, compact ? 78 : 190);
+        }
         holder.binding.getRoot().setLayoutParams(params);
+    }
+
+    private int episodeNumber(Episode episode, int position) {
+        Integer number = episodeNumbers.get(episode);
+        return number == null ? position + 1 : number;
     }
 
     private int dp(View view, int value) {

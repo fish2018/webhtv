@@ -286,6 +286,10 @@
     <string name="detail_tmdb_photos">Photos</string>
     <string name="detail_flag">Line</string>
     <string name="detail_episode">Episode</string>
+    <string name="detail_episode_reverse">Reverse</string>
+    <string name="detail_episode_forward">Forward</string>
+    <string name="detail_episode_view_grid">Grid</string>
+    <string name="detail_episode_view_list">List</string>
     <string name="detail_episode_detail_title">Episode %1$d · %2$s</string>
     <string name="detail_episode_crew">Crew</string>
     <string name="detail_episode_guests">Guest Cast</string>

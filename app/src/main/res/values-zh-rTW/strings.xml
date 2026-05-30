@@ -280,6 +280,10 @@
     <string name="detail_tmdb_photos">劇照</string>
     <string name="detail_flag">線路</string>
     <string name="detail_episode">選集</string>
+    <string name="detail_episode_reverse">倒序</string>
+    <string name="detail_episode_forward">正序</string>
+    <string name="detail_episode_view_grid">網格</string>
+    <string name="detail_episode_view_list">列表</string>
     <string name="detail_episode_detail_title">第 %1$d 集 · %2$s</string>
     <string name="detail_episode_crew">職員</string>
     <string name="detail_episode_guests">客串演員</string>
