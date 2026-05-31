@@ -6,4 +6,9 @@
         <attr name="maxWidth" format="dimension" />
         <attr name="maxHeight" format="dimension" />
     </declare-styleable>
+
+    <declare-styleable name="CustomNestedScrollView">
+        <attr name="android:minHeight" />
+        <attr name="maxHeight" />
+    </declare-styleable>
 </resources>

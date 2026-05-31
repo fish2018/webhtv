@@ -100,6 +100,7 @@ public class HomeWebBridge {
                 case "device.info" -> device();
                 case "site.info" -> site();
                 case "config.info" -> config();
+                case "ui.setToolbar" -> setToolbar(payload);
                 case "navigation.back" -> back();
                 case "navigation.reload" -> reload();
                 default -> throw new IllegalArgumentException("Unknown method: " + method);
@@ -241,6 +242,12 @@ public class HomeWebBridge {
         object.addProperty("desc", VodConfig.getDesc());
         object.addProperty("driveCheck", Setting.isDriveCheck());
         return object.toString();
+    }
+
+    private String setToolbar(JsonObject payload) {
+        boolean visible = !payload.has("visible") || payload.get("visible").getAsBoolean();
+        App.post(() -> controller.setToolbar(visible));
+        return "{}";
     }
 
     private String back() {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -10,13 +11,13 @@
         android:layout_width="0dp"
         android:layout_height="40dp"
         android:layout_weight="1"
-        android:background="@drawable/selector_chip_round"
+        android:background="@drawable/selector_config_history_item"
         android:ellipsize="middle"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:gravity="center"
         android:singleLine="true"
-        android:textColor="@color/white"
+        android:textColor="@color/config_history_text"
         android:textSize="18sp"
         tools:text="https://fongmi.github.io/cat.json" />
 
@@ -25,10 +26,11 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginStart="12dp"
-        android:background="@drawable/selector_chip_round"
+        android:background="@drawable/selector_config_history_item"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:padding="8dp"
-        android:src="@drawable/ic_setting_delete" />
+        android:src="@drawable/ic_setting_delete"
+        app:tint="@color/config_history_icon" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

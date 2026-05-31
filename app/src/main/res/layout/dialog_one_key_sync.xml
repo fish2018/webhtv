@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/shape_one_key_sync_dialog"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="22dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="16dp">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/setting_one_key_sync"
+            android:textColor="#202124"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/refresh"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="false"
+            android:nextFocusDown="@id/recycler"
+            android:padding="8dp"
+            android:src="@drawable/ic_setting_refresh"
+            app:tint="#5F6368" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/contentScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="false"
+        android:overScrollMode="never">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/options"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/selected"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:text="@string/sync_mode_to_remote"
+                        android:textColor="#202124"
+                        android:textSize="14sp" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/localCard"
+                        android:layout_width="0dp"
+                        android:layout_height="112dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#F3F5F7"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="#DADCE0"
+                        app:strokeWidth="1dp">
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp">
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/localIcon"
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:tint="#2F6FED"
+                                tools:src="@drawable/ic_sync_phone" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:gravity="center"
+                                android:text="@string/sync_local_device"
+                                android:textColor="#5F6368"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/localRole"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:text="@string/sync_sender"
+                                android:textColor="#0B57D0"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/localName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:textColor="#202124"
+                                android:textSize="14sp"
+                                tools:text="Pixel 8" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/localHost"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:textColor="#5F6368"
+                                android:textSize="11sp"
+                                tools:text="192.168.1.10:9978" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/mode"
+                        android:layout_width="74dp"
+                        android:layout_height="58dp"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/shape_sync_direction"
+                        android:drawablePadding="2dp"
+                        android:focusable="false"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:text="@string/sync_push"
+                        android:textColor="#174EA6"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        app:drawableTopCompat="@drawable/ic_sync_arrow_right_blue" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/remoteCard"
+                        android:layout_width="0dp"
+                        android:layout_height="112dp"
+                        android:layout_weight="1"
+                        app:cardBackgroundColor="#F3F5F7"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="#DADCE0"
+                        app:strokeWidth="1dp">
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp">
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/remoteIcon"
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:tint="#2F6FED"
+                                tools:src="@drawable/ic_sync_tv" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:gravity="center"
+                                android:text="@string/sync_remote_device"
+                                android:textColor="#5F6368"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/remoteRole"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:text="@string/sync_receiver"
+                                android:textColor="#0B57D0"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/remoteName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:textColor="#202124"
+                                android:textSize="14sp"
+                                tools:text="Living Room TV" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/remoteHost"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:textColor="#5F6368"
+                                android:textSize="11sp"
+                                tools:text="192.168.1.20:9978" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/actionBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/start"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1.2"
+                        android:minWidth="112dp"
+                        android:text="@string/sync_start"
+                        android:textColor="@color/dialog_primary_button_text"
+                        app:backgroundTint="@color/dialog_primary_button_bg" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/modeButton"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:minWidth="0dp"
+                        android:text="@string/sync_push"
+                        android:textColor="@color/dialog_tonal_button_text"
+                        app:backgroundTint="@color/dialog_tonal_button_bg" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/selectAll"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:minWidth="0dp"
+                        android:text="@string/sync_select_all"
+                        android:textColor="@color/dialog_tonal_button_text"
+                        app:backgroundTint="@color/dialog_tonal_button_bg" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/changeDevice"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:minWidth="0dp"
+                        android:text="@string/sync_change_device"
+                        android:textColor="@color/dialog_tonal_button_text"
+                        app:backgroundTint="@color/dialog_tonal_button_bg" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/syncPaths"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    app:cardBackgroundColor="@color/dialog_card_bg"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/dialog_card_stroke"
+                    app:strokeWidth="1dp">
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:duplicateParentState="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="8dp">
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sync_paths_title"
+                                android:textColor="#202124"
+                                android:textSize="14sp" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/syncPathsSummary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:textColor="#5F6368"
+                                android:textSize="12sp"
+                                tools:text="TV&#10;TVBox&#10;TVData" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:duplicateParentState="true"
+                            android:text="@string/sync_paths_edit"
+                            android:textColor="@color/dialog_card_action_text"
+                            android:textSize="13sp" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/config"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_config"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/spider"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_spider"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/webHome"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_webhome"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/search"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_search"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/history"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_history"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/keep"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:checked="true"
+                    android:text="@string/sync_item_keep"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/settings"
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:text="@string/sync_item_settings"
+                    android:textColor="#202124"
+                    app:buttonTint="@color/dialog_checkbox_tint" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:nextFocusUp="@id/refresh"
+                android:visibility="gone"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:maxHeight="220dp"
+                tools:listitem="@layout/adapter_sync_device"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/sync_discovering"
+                android:textColor="#5F6368"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/progressWrap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/progressBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ProgressBar
+                android:id="@+id/progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:max="100"
+                android:progress="0" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/progressText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#5F6368"
+                android:textSize="12sp"
+                tools:text="42% · 12.4 MB / 29.6 MB · 1.8 MB/s · 128 个文件" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -5,21 +5,27 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.ConsoleMessage;
+import android.webkit.WebChromeClient;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.github.catvod.crawler.SpiderDebug;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.UrlUtil;
+
+import java.util.Locale;
 
 public class HomeWebController {
 
@@ -59,6 +65,8 @@ public class HomeWebController {
         webView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> injectViewport());
         webView.addJavascriptInterface(new HomeWebBridge(this, activity, webView), BRIDGE);
         webView.setWebViewClient(client());
+        webView.setWebChromeClient(chrome());
+        logWebViewProvider();
     }
 
     public boolean load(Site site) {
@@ -104,6 +112,10 @@ public class HomeWebController {
         if (!webView.canGoBack()) return false;
         webView.goBack();
         return true;
+    }
+
+    public void setToolbar(boolean visible) {
+        listener.setToolbar(visible);
     }
 
     public void onResume() {
@@ -184,12 +196,14 @@ public class HomeWebController {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                SpiderDebug.log("webhome-webview", "page started url=%s", url);
                 listener.onWebLoading();
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                SpiderDebug.log("webhome-webview", "page finished url=%s title=%s", url, view.getTitle());
                 injectSdk();
                 listener.onWebReady();
             }
@@ -197,6 +211,7 @@ public class HomeWebController {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
+                SpiderDebug.log("webhome-webview", "resource error main=%s code=%s desc=%s url=%s", request.isForMainFrame(), error.getErrorCode(), error.getDescription(), request.getUrl());
                 if (request.isForMainFrame()) {
                     homePage = null;
                     Notify.show(error.getDescription().toString());
@@ -211,6 +226,7 @@ public class HomeWebController {
 
             @Override
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                SpiderDebug.log("webhome-webview", "render process gone didCrash=%s priority=%s", detail.didCrash(), detail.rendererPriorityAtExit());
                 recreateWebView();
                 if (!TextUtils.isEmpty(homePage)) {
                     listener.onWebLoading();
@@ -221,6 +237,30 @@ public class HomeWebController {
                 return true;
             }
         };
+    }
+
+    private WebChromeClient chrome() {
+        return new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage message) {
+                if (message != null) SpiderDebug.log("webhome-console", "%s %s:%s %s", message.messageLevel(), message.sourceId(), message.lineNumber(), message.message());
+                return super.onConsoleMessage(message);
+            }
+        };
+    }
+
+    private void logWebViewProvider() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        try {
+            android.content.pm.PackageInfo info = WebView.getCurrentWebViewPackage();
+            if (info == null) {
+                SpiderDebug.log("webhome-webview", "provider unavailable");
+            } else {
+                SpiderDebug.log("webhome-webview", "provider package=%s version=%s", info.packageName, info.versionName);
+            }
+        } catch (Throwable e) {
+            SpiderDebug.log("webhome-webview", e);
+        }
     }
 
     private void injectSdk() {
@@ -262,10 +302,11 @@ public class HomeWebController {
     }
 
     private String getSdk() {
-        return """
+        return String.format(Locale.ROOT, """
                 (function(){
                   if(window.fm&&window.fongmi){window.dispatchEvent(new CustomEvent('fmsdk'));return;}
                   if(document&&document.documentElement)document.documentElement.classList.add('fm-native');
+                  window.fongmiClient={mode:'%s',isLeanback:%s};
                   const callbacks={};
                   let seq=0;
                   function invoke(method,payload){
@@ -307,6 +348,9 @@ public class HomeWebController {
                     check:(items)=>invoke('pan.check',{items}),
                     play:(payload)=>invoke('pan.play',payload||{})
                   };
+                  const ui={
+                    setToolbar:(visible)=>invoke('ui.setToolbar',{visible:visible!==false})
+                  };
                   window.fongmi={invoke,player,net,cache,
                     app:{
                       search:(keyword,options)=>invoke('app.search',Object.assign({},options||{},{keyword})),
@@ -318,6 +362,7 @@ public class HomeWebController {
                     device:{info:()=>invoke('device.info',{})},
                     site:{info:()=>invoke('site.info',{})},
                     config:{info:()=>invoke('config.info',{})},
+                    ui,
                     navigation:{
                       back:()=>invoke('navigation.back',{}),
                       reload:()=>invoke('navigation.reload',{})
@@ -337,6 +382,7 @@ public class HomeWebController {
                     pan,
                     check:window.fongmi.pan.check,
                     cache,
+                    ui,
                     device:window.fongmi.device.info,
                     site:window.fongmi.site.info,
                     config:window.fongmi.config.info,
@@ -345,7 +391,7 @@ public class HomeWebController {
                   };
                   window.dispatchEvent(new CustomEvent('fmsdk'));
                 })();
-                """;
+                """, com.fongmi.android.tv.BuildConfig.FLAVOR_mode, com.fongmi.android.tv.utils.Util.isLeanback());
     }
 
     public interface Listener {
@@ -355,5 +401,8 @@ public class HomeWebController {
         void onWebReady();
 
         void onWebError();
+
+        default void setToolbar(boolean visible) {
+        }
     }
 }

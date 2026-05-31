@@ -33,6 +33,7 @@
             android:layout_weight="1"
             android:ellipsize="marquee"
             android:focusable="false"
+            android:nextFocusDown="@id/typeRecycler"
             android:singleLine="true"
             android:text="@string/app_name"
             android:textColor="@color/white"
@@ -48,10 +49,28 @@
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
+    <androidx.leanback.widget.HorizontalGridView
+        android:id="@+id/typeRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:nextFocusUp="@id/title"
+        android:nextFocusDown="@id/recycler"
+        android:paddingStart="24dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone"
+        app:focusOutEnd="false"
+        app:focusOutFront="false"
+        tools:visibility="visible" />
+
     <com.fongmi.android.tv.ui.custom.ProgressLayout
         android:id="@+id/progressLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <androidx.leanback.widget.VerticalGridView
             android:id="@+id/recycler"
@@ -59,6 +78,7 @@
             android:layout_height="match_parent"
             android:clipChildren="false"
             android:clipToPadding="false"
+            android:nextFocusUp="@id/typeRecycler"
             android:paddingStart="24dp"
             android:paddingTop="8dp"
             android:paddingEnd="24dp"

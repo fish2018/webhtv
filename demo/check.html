@@ -521,9 +521,9 @@
       let attempts = 0;
       const tick = () => {
         attempts += 1;
-        const ready = !!(window.fm && window.fm.check) ;
+        const ready = !!getPanChecker();
         $("sdkDot").className = "dot" + (ready ? " ok" : "");
-        $("sdkText").textContent = ready ? "App SDK 已连接" : "浏览器 / HTTP 模式";
+        $("sdkText").textContent = ready ? "App SDK fm.pan.check 已连接" : "浏览器 / HTTP 模式";
         if (!ready && attempts < 40) setTimeout(tick, 250);
       };
       tick();
@@ -672,8 +672,15 @@
       updateRow(item);
     }
 
+    function getPanChecker() {
+      if (window.fm && window.fm.pan && window.fm.pan.check) return window.fm.pan.check.bind(window.fm.pan);
+      if (window.fongmi && window.fongmi.pan && window.fongmi.pan.check) return window.fongmi.pan.check.bind(window.fongmi.pan);
+      return null;
+    }
+
     async function checkItems(items) {
-      if (window.fm && window.fm.check) return await window.fm.check(items);
+      const check = getPanChecker();
+      if (check) return await check(items);
       const endpoint = $("endpointInput").value.trim();
       const response = await fetch(endpoint, {
         method: "POST",

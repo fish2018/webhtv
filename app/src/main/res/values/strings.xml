@@ -44,6 +44,8 @@
     <string name="play_scale">Default</string>
     <string name="play_config">Config</string>
     <string name="play_change">Change</string>
+    <string name="play_fullscreen">Fullscreen</string>
+    <string name="play_exit_fullscreen">Exit full</string>
     <string name="play_invert">Invert</string>
     <string name="play_across">Across</string>
     <string name="play_reverse">Reverse</string>
@@ -123,6 +125,21 @@
     <string name="setting_danmaku">Danmaku setting</string>
     <string name="setting_enhance">Enhancements</string>
     <string name="setting_debug_log">Debug log</string>
+    <string name="setting_shell_proxy">Proxy</string>
+    <string name="setting_shell_proxy_config">Proxy</string>
+    <string name="setting_proxy_url">socks5://127.0.0.1:9978</string>
+    <string name="setting_proxy_hosts">Matched hosts</string>
+    <string name="setting_proxy_rules">Proxy rules</string>
+    <string name="setting_proxy_rules_raw">Raw rules</string>
+    <string name="setting_proxy_rules_hint">Raw JSON: {&quot;proxy&quot;:[{&quot;hosts&quot;:[&quot;example.com&quot;],&quot;urls&quot;:[&quot;socks5://127.0.0.1:1080&quot;]}]}</string>
+    <string name="setting_proxy_default_url">Default proxy URL</string>
+    <string name="setting_proxy_rule_url">Proxy URL</string>
+    <string name="setting_proxy_text_mode">Text</string>
+    <string name="setting_proxy_ui_mode">Edit</string>
+    <string name="setting_proxy_add_rule">Add rule</string>
+    <string name="setting_proxy_rule_count">%1$d rules</string>
+    <string name="setting_proxy_invalid">Invalid proxy URL</string>
+    <string name="setting_one_key_sync">One-key sync</string>
     <string name="setting_incognito">Incognito mode</string>
     <string name="setting_drive_check">Drive link check</string>
     <string name="setting_search_thread">Search threads</string>
@@ -149,6 +166,53 @@
     <string name="backup_success">Backup successful</string>
     <string name="backup_fail">Backup failed</string>
 
+    <!-- Device Sync -->
+    <string name="device_select">Select devices</string>
+    <string name="device_offline">Device is offline</string>
+    <string name="sync_success">Sync completed</string>
+    <string name="sync_progress">Syncing...</string>
+    <string name="sync_failed">Sync failed</string>
+    <string name="sync_mode_to_remote">This device -> selected device</string>
+    <string name="sync_mode_from_remote">Selected device -> this device</string>
+    <string name="sync_local_device">This device</string>
+    <string name="sync_remote_device">Selected device</string>
+    <string name="sync_sender">Sender</string>
+    <string name="sync_receiver">Receiver</string>
+    <string name="sync_direction_change">Switch sync direction</string>
+    <string name="sync_change_device">Change</string>
+    <string name="sync_switch_short">Switch</string>
+    <string name="sync_push">Push</string>
+    <string name="sync_pull">Pull</string>
+    <string name="sync_select_all">Select all</string>
+    <string name="sync_select_none">Clear</string>
+    <string name="sync_item_config">Interfaces and source lists</string>
+    <string name="sync_item_spider">Jar/script saved data</string>
+    <string name="sync_item_webhome">WebHome saved data</string>
+    <string name="sync_item_search">Search records</string>
+    <string name="sync_item_history">Watch history</string>
+    <string name="sync_item_keep">Favorites</string>
+    <string name="sync_item_settings">App settings</string>
+    <string name="sync_device_mobile">Phone</string>
+    <string name="sync_device_tv">TV</string>
+    <string name="sync_discovering">Discovering devices...</string>
+    <string name="sync_no_device">No device found. Keep both devices on the same LAN with WebHTV open, then refresh.</string>
+    <string name="sync_selected">Selected: %1$s · %2$s</string>
+    <string name="sync_start">Start sync</string>
+    <string name="sync_cancel">Cancel sync</string>
+    <string name="sync_prepare_files">Preparing sync files...</string>
+    <string name="sync_prepare_progress">Compressing: %1$d files, %2$s, %3$s/s</string>
+    <string name="sync_wait_remote">Waiting for the selected device to send data...</string>
+    <string name="sync_upload_prepare">Ready to upload: %1$d files, %2$s, compressed %3$s</string>
+    <string name="sync_upload_progress">%1$d%% · %2$s / %3$s · %4$s/s · %5$d files</string>
+    <string name="sync_canceled">Sync canceled</string>
+    <string name="sync_select_device_first">Select a device first</string>
+    <string name="sync_failed_with_reason">Sync failed: %1$s</string>
+    <string name="sync_receive_success">Sync data received</string>
+    <string name="sync_paths_title">Sync folders</string>
+    <string name="sync_paths_edit">Edit</string>
+    <string name="sync_paths_desc">One external-storage relative path per line. TV, TVBox and TVData are synced by default. You can add local package folders; folder contents are synced with Jar/script saved data.</string>
+    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+
     <!-- Player -->
     <string name="player">Player</string>
     <string name="player_render">Render</string>
@@ -173,6 +237,7 @@
 
     <!-- Search -->
     <string name="search_keyword">Keywords…</string>
+    <string name="site_search_hint">Search sites…</string>
     <string name="search_record">History</string>
     <string name="search_suggest">Suggest</string>
     <string name="search_hot">Hot</string>
@@ -181,6 +246,7 @@
     <string name="dialog_edit">Edit</string>
     <string name="dialog_positive">OK</string>
     <string name="dialog_negative">Cancel</string>
+    <string name="dialog_reset">Reset</string>
     <string name="dialog_select_title">Select chapter</string>
     <string name="dialog_config_hint">Please enter the config…</string>
     <string name="dialog_config_name">Please enter the name…</string>
@@ -213,6 +279,11 @@
 
     <!-- Hint -->
     <string name="copied">Copied</string>
+    <string name="debug_log_dialog_message">Debug log service is running.\n\nLAN URL:\n%1$s\n\nLocal URL:\n%2$s\n\nIf this TV has no browser, open the LAN URL from a computer or phone on the same network.</string>
+    <string name="debug_log_open_browser">Open browser</string>
+    <string name="debug_log_copy_url">Copy URL</string>
+    <string name="debug_log_no_browser">No browser app found. Use the LAN URL from another device.</string>
+    <string name="debug_log_url_copied">Debug log URL copied</string>
 
     <!-- UNIT -->
     <string name="all">All</string>
@@ -348,8 +419,6 @@
     <string name="detail_theme_dark">Dark</string>
     <string name="detail_theme_light">Light</string>
     <string name="detail_quality">Quality</string>
-    <string name="play_fullscreen">Full</string>
-    <string name="play_exit_fullscreen">Exit</string>
     <string name="setting_tmdb">TMDB config</string>
     <string name="setting_detail_open_mode">Detail open mode</string>
     <string name="setting_detail_open_fusion">Immersive fusion</string>

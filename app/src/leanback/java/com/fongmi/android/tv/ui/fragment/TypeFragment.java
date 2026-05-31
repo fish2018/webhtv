@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.fragment;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -286,9 +287,12 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         }
     }
 
-    @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        super.setUserVisibleHint(isVisibleToUser);
-        if (mBinding != null) mBinding.recycler.moveToTop();
+    public boolean requestContentFocus() {
+        if (mBinding == null || !mBinding.progressLayout.isContent() || mAdapter == null || mAdapter.size() == 0) return false;
+        View child = mBinding.recycler.getFocusedChild();
+        if (child == null && mBinding.recycler.getChildCount() > 0) child = mBinding.recycler.getChildAt(0);
+        if (child != null) return child.requestFocus();
+        return mBinding.recycler.requestFocus();
     }
+
 }

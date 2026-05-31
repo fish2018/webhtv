@@ -4,11 +4,14 @@ import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Backup;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Keep;
+import com.fongmi.android.tv.bean.SyncOptions;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.event.CastEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
@@ -20,10 +23,14 @@ import com.fongmi.android.tv.server.impl.Process;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ProgressRequestBody;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.SyncFiles;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Path;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,8 +38,13 @@ import java.util.Objects;
 import fi.iki.elonen.NanoHTTPD.IHTTPSession;
 import fi.iki.elonen.NanoHTTPD.Response;
 import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 
 public class Action implements Process {
+
+    private static final MediaType ZIP = MediaType.parse("application/zip");
 
     @Override
     public boolean isRequest(IHTTPSession session, String url) {
@@ -44,22 +56,46 @@ public class Action implements Process {
         Map<String, String> params = session.getParms();
         String param = params.get("do");
         SpiderDebug.log("action", "do=%s params=%s", param, params);
-        if (!TextUtils.isEmpty(param)) doJob(param, params);
-        return Nano.ok();
+        return TextUtils.isEmpty(param) ? Nano.ok() : doJob(param, params, files);
     }
 
-    private void doJob(String param, Map<String, String> params) {
-        switch (param) {
-            case "file" -> onFile(params);
-            case "push" -> onPush(params);
-            case "cast" -> onCast(params);
-            case "sync" -> onSync(params);
-            case "search" -> onSearch(params);
-            case "setting" -> onSetting(params);
-            case "refresh" -> onRefresh(params);
-            case "control" -> onControl(params);
-            case "danmaku" -> onDanmaku(params);
-        }
+    private Response doJob(String param, Map<String, String> params, Map<String, String> files) {
+        return switch (param) {
+            case "file" -> {
+                onFile(params);
+                yield Nano.ok();
+            }
+            case "push" -> {
+                onPush(params);
+                yield Nano.ok();
+            }
+            case "cast" -> {
+                onCast(params);
+                yield Nano.ok();
+            }
+            case "sync" -> onSync(params, files);
+            case "search" -> {
+                onSearch(params);
+                yield Nano.ok();
+            }
+            case "setting" -> {
+                onSetting(params);
+                yield Nano.ok();
+            }
+            case "refresh" -> {
+                onRefresh(params);
+                yield Nano.ok();
+            }
+            case "control" -> {
+                onControl(params);
+                yield Nano.ok();
+            }
+            case "danmaku" -> {
+                onDanmaku(params);
+                yield Nano.ok();
+            }
+            default -> Nano.ok();
+        };
     }
 
     private void onFile(Map<String, String> params) {
@@ -135,51 +171,116 @@ public class Action implements Process {
         CastEvent.post(Config.find(config), device, history);
     }
 
-    private void onSync(Map<String, String> params) {
-        String type = params.get("type");
-        boolean force = Objects.equals(params.get("force"), "true");
-        String mode = Objects.requireNonNullElse(params.get("mode"), "0");
-        if (params.get("device") != null && (mode.equals("0") || mode.equals("2"))) {
-            Device device = Device.objectFrom(params.get("device"));
-            if ("history".equals(type)) sendHistory(device, params);
-            else if ("keep".equals(type)) sendKeep(device);
-        }
-        if (mode.equals("0") || mode.equals("1")) {
-            if ("history".equals(type)) syncHistory(params, force);
-            else if ("keep".equals(type)) syncKeep(params, force);
+    private Response onSync(Map<String, String> params, Map<String, String> files) {
+        try {
+            String type = params.get("type");
+            boolean force = Objects.equals(params.get("force"), "true");
+            String mode = Objects.requireNonNullElse(params.get("mode"), "0");
+            boolean success = true;
+            if (params.get("device") != null && (mode.equals("0") || mode.equals("2"))) {
+                Device device = Device.objectFrom(params.get("device"));
+                if ("history".equals(type)) success = sendHistory(device, params);
+                else if ("keep".equals(type)) success = sendKeep(device);
+                else if ("backup".equals(type)) success = sendBackup(device, params);
+            }
+            if (mode.equals("0") || mode.equals("1")) {
+                if ("history".equals(type)) syncHistory(params, force);
+                else if ("keep".equals(type)) syncKeep(params, force);
+                else if ("backup".equals(type)) syncBackup(params, files, force);
+            }
+            return success ? Nano.ok() : Nano.error(ResUtil.getString(R.string.sync_failed));
+        } catch (Exception e) {
+            SpiderDebug.log("sync", e);
+            return Nano.error(Notify.getError(R.string.sync_failed, e));
         }
     }
 
-    private void post(Device device, String type, FormBody.Builder body) {
+    private boolean post(Device device, String type, FormBody.Builder body) {
+        return post(device, type, body.build());
+    }
+
+    private boolean post(Device device, String type, RequestBody body) {
         try {
-            OkHttp.newCall(OkHttp.client(Constant.TIMEOUT_SYNC), device.getIp().concat("/action?do=sync&mode=0&type=" + type), body.build()).execute();
+            try (okhttp3.Response response = OkHttp.newCall(OkHttp.client(Constant.TIMEOUT_SYNC_TRANSFER), device.getIp().concat("/action?do=sync&mode=0&type=" + type), body).execute()) {
+                if (response.isSuccessful()) return true;
+                throw new IllegalStateException(response.message());
+            }
         } catch (Exception e) {
             App.post(() -> Notify.show(e.getMessage()));
+            return false;
         }
     }
 
-    private void sendHistory(Device device, Map<String, String> params) {
+    private boolean sendHistory(Device device, Map<String, String> params) {
         try {
             Config config = Config.find(Config.objectFrom(params.get("config")));
             if (config.getUrl() == null) config = Config.vod();
             FormBody.Builder body = new FormBody.Builder();
             body.add("config", config.toString());
             body.add("targets", App.gson().toJson(History.get(config.getId())));
-            post(device, "history", body);
+            return post(device, "history", body);
         } catch (Exception e) {
             App.post(() -> Notify.show(e.getMessage()));
+            return false;
         }
     }
 
-    private void sendKeep(Device device) {
+    private boolean sendKeep(Device device) {
         try {
             FormBody.Builder body = new FormBody.Builder();
             body.add("targets", App.gson().toJson(Keep.getVod()));
             body.add("configs", App.gson().toJson(Config.findUrls()));
-            post(device, "keep", body);
+            return post(device, "keep", body);
         } catch (Exception e) {
             App.post(() -> Notify.show(e.getMessage()));
+            return false;
         }
+    }
+
+    private boolean sendBackup(Device device, Map<String, String> params) {
+        try {
+            SyncOptions options = SyncOptions.objectFrom(params.get("options"));
+            SyncFiles.Archive archive = options.isSpider() ? SyncFiles.createArchive(SyncFiles.getPaths(options.getPaths())) : null;
+            try {
+                return post(device, "backup", getBackupBody(options, archive));
+            } finally {
+                if (archive != null) archive.delete();
+            }
+        } catch (Exception e) {
+            App.post(() -> Notify.show(e.getMessage()));
+            return false;
+        }
+    }
+
+    private RequestBody getBackupBody(SyncOptions options, SyncFiles.Archive archive) {
+        if (archive == null) {
+            FormBody.Builder body = new FormBody.Builder();
+            body.add("options", options.toString());
+            body.add("backup", Backup.create(options).toString());
+            return body.build();
+        }
+        MultipartBody.Builder body = new MultipartBody.Builder().setType(MultipartBody.FORM);
+        body.addFormDataPart("options", options.toString());
+        body.addFormDataPart("backup", Backup.create(options).toString());
+        body.addFormDataPart(SyncFiles.PART_NAME, archive.getFile().getName(), new ProgressRequestBody(archive.getFile(), ZIP, null));
+        return body.build();
+    }
+
+    private void syncBackup(Map<String, String> params, Map<String, String> files, boolean force) {
+        Backup backup = Backup.objectFrom(params.get("backup"));
+        SyncOptions options = SyncOptions.objectFrom(params.get("options"));
+        if (options.isSpider() && files.containsKey(SyncFiles.PART_NAME)) {
+            File archive = new File(files.get(SyncFiles.PART_NAME));
+            try {
+                SyncFiles.restoreArchive(archive);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally {
+                Path.clear(archive);
+            }
+        }
+        backup.restore(options, force);
+        App.post(() -> Notify.show(R.string.sync_receive_success));
     }
 
     public void syncHistory(Map<String, String> params, boolean force) {

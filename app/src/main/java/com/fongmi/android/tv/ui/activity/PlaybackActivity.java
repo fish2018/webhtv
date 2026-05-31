@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -28,6 +30,7 @@ import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomSeekView;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.github.catvod.crawler.SpiderDebug;
 import com.google.common.util.concurrent.ListenableFuture;
 
 public abstract class PlaybackActivity extends BaseActivity implements MediaController.Listener, Player.Listener, ServiceConnection {
@@ -97,6 +100,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected abstract PlayerView getExoView();
 
     protected abstract String getPlaybackKey();
+
+    protected boolean deferPlaybackServiceBinding() {
+        return false;
+    }
 
     protected boolean isOwner() {
         String key = getPlaybackKey();
@@ -172,25 +179,47 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void bindPlaybackService() {
+        if (bound) return;
+        long start = System.currentTimeMillis();
+        SpiderDebug.log("playback-flow", "bind service start key=%s", getPlaybackKey());
         startService(new Intent(this, PlaybackService.class));
         bindService(new Intent(this, PlaybackService.class).setAction(PlaybackService.LOCAL_BIND_ACTION), this, BIND_AUTO_CREATE);
         buildControllerAsync();
         bound = true;
+        SpiderDebug.log("playback-flow", "bind service requested cost=%dms key=%s", System.currentTimeMillis() - start, getPlaybackKey());
+    }
+
+    private void bindPlaybackServiceAfterFirstFrame() {
+        View root = getExoView().getRootView();
+        root.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (root.getViewTreeObserver().isAlive()) root.getViewTreeObserver().removeOnPreDrawListener(this);
+                root.post(() -> {
+                    if (!isFinishing() && !isDestroyed()) bindPlaybackService();
+                });
+                return true;
+            }
+        });
     }
 
     private void buildControllerAsync() {
+        long start = System.currentTimeMillis();
         SessionToken token = new SessionToken(this, new ComponentName(this, PlaybackService.class));
         mControllerFuture = new MediaController.Builder(this, token).setListener(this).buildAsync();
         mControllerFuture.addListener(this::onControllerConnected, ContextCompat.getMainExecutor(this));
+        SpiderDebug.log("playback-flow", "controller build requested cost=%dms key=%s", System.currentTimeMillis() - start, getPlaybackKey());
     }
 
     private void onControllerConnected() {
+        long start = System.currentTimeMillis();
         try {
             mController = mControllerFuture.get();
             getSeekView().setPlayer(mController);
             mController.addListener(this);
         } catch (Exception ignored) {
         }
+        SpiderDebug.log("playback-flow", "controller connected cost=%dms key=%s", System.currentTimeMillis() - start, getPlaybackKey());
     }
 
     private PendingIntent buildSessionIntent() {
@@ -290,10 +319,13 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     @Override
     protected void initView(Bundle savedInstanceState) {
+        long start = System.currentTimeMillis();
         super.initView(savedInstanceState);
         if (!shouldBindPlaybackService()) return;
         ExoUtil.setPlayerView(getExoView());
-        bindPlaybackService();
+        if (deferPlaybackServiceBinding()) bindPlaybackServiceAfterFirstFrame();
+        else bindPlaybackService();
+        SpiderDebug.log("playback-flow", "initView cost=%dms key=%s deferred=%s", System.currentTimeMillis() - start, getPlaybackKey(), deferPlaybackServiceBinding());
     }
 
     @Override
@@ -316,11 +348,13 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
+        long start = System.currentTimeMillis();
         mService = ((PlaybackService.LocalBinder) binder).getService();
         mService.replaceBinding(this::closePiP);
         mService.setSessionActivity(buildSessionIntent());
         mService.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
         mService.addPlayerCallback(mPlayerCallback);
+        SpiderDebug.log("playback-flow", "service connected cost=%dms key=%s", System.currentTimeMillis() - start, getPlaybackKey());
         onServiceConnected();
     }
 

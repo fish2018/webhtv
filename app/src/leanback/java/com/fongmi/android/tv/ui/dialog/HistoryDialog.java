@@ -14,6 +14,7 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
 
     private DialogHistoryBinding binding;
     private ConfigAdapter adapter;
+    private ConfigListener listener;
     private boolean readOnly;
     private int type;
 
@@ -43,6 +44,12 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
 
     public void show(FragmentActivity activity) {
         show(activity.getSupportFragmentManager(), null);
+        if (activity instanceof ConfigListener) listener = (ConfigListener) activity;
+    }
+
+    public void show(FragmentActivity activity, ConfigListener listener) {
+        show(activity.getSupportFragmentManager(), null);
+        this.listener = listener;
     }
 
     @Override
@@ -66,7 +73,7 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
 
     @Override
     public void onTextClick(Config item) {
-        ((ConfigListener) requireActivity()).setConfig(item);
+        if (listener != null) listener.setConfig(item);
         dismiss();
     }
 

@@ -73,6 +73,28 @@ public class History implements Diffable<History> {
         this.duration = C.TIME_UNSET;
     }
 
+    public History copy() {
+        History item = new History();
+        item.key = key;
+        item.vodPic = vodPic;
+        item.vodName = vodName;
+        item.vodFlag = vodFlag;
+        item.vodRemarks = vodRemarks;
+        item.episodeUrl = episodeUrl;
+        item.revSort = revSort;
+        item.revPlay = revPlay;
+        item.createTime = createTime;
+        item.opening = opening;
+        item.ending = ending;
+        item.position = position;
+        item.duration = duration;
+        item.speed = speed;
+        item.scale = scale;
+        item.cid = cid;
+        item.updateTime = updateTime;
+        return item;
+    }
+
     public static History objectFrom(String str) {
         return App.gson().fromJson(str, History.class);
     }

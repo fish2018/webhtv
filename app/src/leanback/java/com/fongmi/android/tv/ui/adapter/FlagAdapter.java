@@ -84,6 +84,7 @@ public class FlagAdapter extends RecyclerView.Adapter<FlagAdapter.ViewHolder> {
     }
 
     public void setNextFocusDown(int nextFocusDown) {
+        if (this.nextFocusDown == nextFocusDown) return;
         this.nextFocusDown = nextFocusDown;
         notifyDataSetChanged();
     }

@@ -43,7 +43,7 @@ import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CollectActivity extends BaseActivity {
+public class CollectActivity extends BaseActivity implements CollectAdapter.OnClickListener {
 
     private ActivityCollectBinding mBinding;
     private CollectAdapter mAdapter;
@@ -159,7 +159,7 @@ public class CollectActivity extends BaseActivity {
     }
 
     private void setRecyclerView() {
-        mAdapter = new CollectAdapter();
+        mAdapter = new CollectAdapter(this);
         setupRecycler(mBinding.horiRecycler);
         setupRecycler(mBinding.vertRecycler);
         applySearchUi();
@@ -325,6 +325,14 @@ public class CollectActivity extends BaseActivity {
         if ((mOldView = child != null ? child.itemView : null) == null) return;
         mOldView.setSelected(true);
         App.post(mRunnable, 100);
+    }
+
+    @Override
+    public void onItemClick(int position, Collect item) {
+        if (position < 0 || position >= mAdapter.getItemCount()) return;
+        getRecycler().setSelectedPosition(position);
+        getPager().setCurrentItem(position, false);
+        getRecycler().requestFocus();
     }
 
     private final Runnable mRunnable = new Runnable() {

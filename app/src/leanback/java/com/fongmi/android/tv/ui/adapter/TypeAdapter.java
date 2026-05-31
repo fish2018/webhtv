@@ -54,6 +54,9 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Class item = mItems.get(position);
         holder.binding.text.setText(item.getTypeName());
+        holder.binding.getRoot().setSelected(item.isSelected());
+        holder.binding.getRoot().setNextFocusUpId(R.id.title);
+        holder.binding.getRoot().setNextFocusDownId(R.id.recycler);
         holder.binding.text.setCompoundDrawablePadding(ResUtil.dp2px(4));
         holder.binding.text.setCompoundDrawablesWithIntrinsicBounds(0, 0, getIcon(item), 0);
         holder.binding.text.setListener(() -> mListener.onRefresh(item));

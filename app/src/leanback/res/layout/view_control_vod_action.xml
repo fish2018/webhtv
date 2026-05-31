@@ -6,7 +6,7 @@
     android:fillViewport="true"
     android:scrollbars="none">
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -36,6 +36,12 @@
             style="@style/Control"
             android:layout_marginEnd="12dp"
             android:text="@string/play_change" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/fullscreen"
+            style="@style/Control"
+            android:layout_marginEnd="12dp"
+            android:text="@string/play_fullscreen" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
@@ -117,5 +123,5 @@
             android:nextFocusRight="@id/next"
             android:text="@string/play_repeat" />
 
-    </androidx.appcompat.widget.LinearLayoutCompat>
+    </LinearLayout>
 </HorizontalScrollView>

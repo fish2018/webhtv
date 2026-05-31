@@ -45,10 +45,15 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     }
 
     public static void start(Activity activity, String key, Result result) {
+        start(activity, key, result, 0);
+    }
+
+    public static void start(Activity activity, String key, Result result, int position) {
         if (result == null || result.getTypes().isEmpty()) return;
         Intent intent = new Intent(activity, VodActivity.class);
         intent.putExtra("key", key);
         intent.putExtra("result", result);
+        intent.putExtra("position", Math.max(position, 0));
         activity.startActivity(intent);
     }
 
@@ -58,6 +63,10 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
 
     private Result getResult() {
         return getIntent().getParcelableExtra("result");
+    }
+
+    private int getPosition() {
+        return Math.min(getIntent().getIntExtra("position", 0), Math.max(mAdapter.getItemCount() - 1, 0));
     }
 
     private Class getType() {
@@ -110,6 +119,8 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
 
     private void setPager() {
         mBinding.pager.setAdapter(new PageAdapter(getSupportFragmentManager()));
+        mBinding.pager.setCurrentItem(getPosition());
+        mBinding.recycler.setSelectedPosition(getPosition());
     }
 
     private void onChildSelected(@Nullable RecyclerView.ViewHolder child) {
@@ -162,7 +173,13 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (KeyUtil.isMenuKey(event)) updateFilter();
+        if (KeyUtil.isActionDown(event) && KeyUtil.isDownKey(event) && mBinding.recycler.hasFocus()) return requestContentFocus();
         return super.dispatchKeyEvent(event);
+    }
+
+    private boolean requestContentFocus() {
+        FolderFragment fragment = getFragment();
+        return fragment != null && fragment.requestContentFocus();
     }
 
     @Override

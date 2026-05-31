@@ -17,7 +17,7 @@ public class DebugLogs implements Process {
 
     @Override
     public boolean isRequest(IHTTPSession session, String url) {
-        return url.startsWith("/debug/logs") || url.startsWith("/debug/clear") || url.startsWith("/debug/enable") || url.startsWith("/debug/disable");
+        return url.startsWith("/debug/logs") || url.startsWith("/debug/stream") || url.startsWith("/debug/clear") || url.startsWith("/debug/enable") || url.startsWith("/debug/disable");
     }
 
     @Override
@@ -34,6 +34,7 @@ public class DebugLogs implements Process {
             DebugLogStore.clear();
             return noCache(NanoHTTPD.newFixedLengthResponse(Response.Status.REDIRECT, NanoHTTPD.MIME_HTML, ""), "/debug/logs");
         }
+        if (url.startsWith("/debug/stream")) return stream();
         if (url.startsWith("/debug/logs.txt")) return download();
         return page();
     }
@@ -48,6 +49,12 @@ public class DebugLogs implements Process {
         Response response = NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/plain; charset=utf-8", text);
         response.addHeader("Content-Disposition", "attachment; filename=webhtv-debug-log.txt");
         response.addHeader("Content-Length", String.valueOf(text.getBytes(StandardCharsets.UTF_8).length));
+        return noCache(response, null);
+    }
+
+    private Response stream() {
+        String text = DebugLogStore.text();
+        Response response = NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "application/json; charset=utf-8", "{\"enabled\":" + DebugLogStore.isEnabled() + ",\"size\":" + DebugLogStore.size() + ",\"text\":\"" + json(text) + "\"}");
         return noCache(response, null);
     }
 
@@ -77,10 +84,16 @@ public class DebugLogs implements Process {
                 + "pre{box-sizing:border-box;margin:0;min-height:calc(100vh - 96px);white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:#08090b;color:#d7dae0;padding:12px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}"
                 + "@media(max-width:520px){header{flex-wrap:wrap}.meta{width:100%;margin-left:0}a,button{padding:6px 8px}main{padding:8px}pre{font-size:11px}}"
                 + "</style></head><body>"
-                + "<header><h1>调试日志</h1><a href=\"/debug/logs\">刷新</a><a href=\"/debug/logs.txt\">下载</a><a href=\"/debug/clear\">清空</a><a href=\"" + (enabled ? "/debug/disable" : "/debug/enable") + "\">" + (enabled ? "关闭" : "开启") + "</a><span class=\"meta\">" + (enabled ? "开启" : "关闭") + " · " + DebugLogStore.size() + " 行</span></header>"
+                + "<header><h1>调试日志</h1><a href=\"/debug/logs\">刷新</a><a href=\"/debug/logs.txt\">下载</a><a href=\"/debug/clear\">清空</a><a href=\"" + (enabled ? "/debug/disable" : "/debug/enable") + "\">" + (enabled ? "关闭" : "开启") + "</a><span id=\"meta\" class=\"meta\">" + (enabled ? "开启" : "关闭") + " · " + DebugLogStore.size() + " 行</span></header>"
                 + "<main><p class=\"hint\">本页显示 App 当前进程内调试日志。调试日志默认关闭，开启后记录 WebHome、SDK、HTTP 服务、爬虫请求和播放链路；关闭会自动清空。</p>"
-                + "<div class=\"addr\"><a href=\"" + escape(localUrl) + "\">本机地址：" + escape(localUrl) + "</a><a href=\"" + escape(lanUrl) + "\">局域网地址：" + escape(lanUrl) + "</a></div><pre>" + logs + "</pre></main>"
+                + "<div class=\"addr\"><a href=\"" + escape(localUrl) + "\">本机地址：" + escape(localUrl) + "</a><a href=\"" + escape(lanUrl) + "\">局域网地址：" + escape(lanUrl) + "</a></div><pre id=\"logs\">" + logs + "</pre></main>"
+                + "<script>const pre=document.getElementById('logs'),meta=document.getElementById('meta');let stick=true;addEventListener('scroll',()=>{stick=(innerHeight+scrollY)>=(document.body.scrollHeight-60)});async function poll(){try{const r=await fetch('/debug/stream?_='+Date.now(),{cache:'no-store'});const j=await r.json();pre.textContent=j.text;meta.textContent=(j.enabled?'开启':'关闭')+' · '+j.size+' 行';if(stick)scrollTo(0,document.body.scrollHeight)}catch(e){}setTimeout(poll,1000)}poll();</script>"
                 + "</body></html>";
+    }
+
+    private String json(String text) {
+        if (TextUtils.isEmpty(text)) return "";
+        return text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n").replace("\t", "\\t");
     }
 
     private String escape(String text) {

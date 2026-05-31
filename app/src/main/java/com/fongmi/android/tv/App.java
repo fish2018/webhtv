@@ -12,8 +12,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
+import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.setting.ProxySetting;
+import com.fongmi.android.tv.utils.NsdDeviceDiscovery;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.hook.Hook;
+import com.github.catvod.crawler.DebugLogStore;
+import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.Init;
 import com.google.gson.Gson;
 
@@ -81,8 +86,18 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     public void onCreate() {
         super.onCreate();
+        DebugLogStore.restoreEnabled();
         Notify.createChannel();
+        ProxySetting.apply();
         registerActivityLifecycleCallbacks(this);
+        post(this::startBackgroundServices, 1200);
+    }
+
+    private void startBackgroundServices() {
+        SpiderDebug.log("startup", "background services start cost=%sms", System.currentTimeMillis() - time);
+        Server.get().start();
+        NsdDeviceDiscovery.register();
+        SpiderDebug.log("startup", "background services ready cost=%sms", System.currentTimeMillis() - time);
     }
 
     @Override

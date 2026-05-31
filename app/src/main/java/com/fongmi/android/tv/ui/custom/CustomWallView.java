@@ -26,6 +26,7 @@ import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.FileUtil;
+import com.github.catvod.crawler.SpiderDebug;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -47,6 +48,8 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     private GifDrawable drawable;
     private PlayerView video;
     private ExoPlayer player;
+    private final Runnable refreshRunnable = this::refresh;
+    private boolean observerAdded;
 
     public CustomWallView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -56,9 +59,22 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         if (isInEditMode()) return;
-        binding = ViewWallBinding.inflate(LayoutInflater.from(getContext()), this, true);
-        ((ComponentActivity) getContext()).getLifecycle().addObserver(this);
-        refresh();
+        if (binding == null) {
+            binding = ViewWallBinding.inflate(LayoutInflater.from(getContext()), this, true);
+            loadPlaceholder();
+        }
+        if (!observerAdded) {
+            ((ComponentActivity) getContext()).getLifecycle().addObserver(this);
+            observerAdded = true;
+        }
+        removeCallbacks(refreshRunnable);
+        post(refreshRunnable);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        removeCallbacks(refreshRunnable);
+        super.onDetachedFromWindow();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -67,9 +83,16 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void refresh() {
+        if (!isReady()) return;
+        long start = System.currentTimeMillis();
         stop();
         load();
         theme();
+        SpiderDebug.log("startup", "wall refresh cost=%sms", System.currentTimeMillis() - start);
+    }
+
+    private boolean isReady() {
+        return binding != null && binding.image != null && isAttachedToWindow();
     }
 
     private void stop() {
@@ -106,16 +129,29 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void loadRes(int resId) {
+        if (!isReady()) return;
         binding.image.setImageResource(resId);
     }
 
     private void loadImage() {
+        if (!isReady()) return;
         Drawable cache = cache();
         if (cache != null) binding.image.setImageDrawable(cache);
+        else loadPlaceholder();
+    }
+
+    private void loadPlaceholder() {
+        if (binding == null || binding.image == null) return;
+        int wall = Setting.getWall();
+        int type = Setting.getWallType();
+        Drawable cache = cache();
+        if (!isBuiltIn(wall, type) && cache != null) binding.image.setImageDrawable(cache);
+        else if (isBuiltIn(wall, type)) binding.image.setImageResource(WALL_PAPERS[wall]);
         else binding.image.setImageResource(R.drawable.wallpaper_1);
     }
 
     private void loadVideo(File file) {
+        if (!isReady()) return;
         ensurePlayer();
         ensureVideoView();
         video.setPlayer(player);
@@ -126,6 +162,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void loadGif(File file) {
+        if (!isReady()) return;
         drawable = gif(file);
         if (drawable != null) binding.image.setImageDrawable(drawable);
         else loadImage();
@@ -217,10 +254,12 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
 
     @Override
     public void onDestroy(@NonNull LifecycleOwner owner) {
+        removeCallbacks(refreshRunnable);
         EventBus.getDefault().unregister(this);
         if (drawable != null) drawable.recycle();
         if (video != null) removeView(video);
         if (player != null) player.release();
+        observerAdded = false;
         drawable = null;
         binding = null;
         player = null;

@@ -51,6 +51,12 @@ public class VodPresenter extends Presenter {
         this.size = Product.getSpec(width, ResUtil.dp2px(48) + ResUtil.dp2px(16 * (column - 1)), column, style);
     }
 
+    public VodPresenter(OnClickListener listener, Style style, int[] size) {
+        this.listener = listener;
+        this.style = style;
+        this.size = size;
+    }
+
     public interface OnClickListener {
 
         void onItemClick(Vod item);

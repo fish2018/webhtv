@@ -1,14 +1,17 @@
 package com.fongmi.android.tv.setting;
 
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.webkit.WebView;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.TmdbConfig;
 import com.fongmi.android.tv.bean.TmdbMatchCache;
 import com.github.catvod.crawler.DebugLogStore;
+import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.Prefers;
 
 public class Setting {
@@ -89,6 +92,14 @@ public class Setting {
         Prefers.put("sync_mode", mode);
     }
 
+    public static String getSyncPaths() {
+        return Prefers.getString("sync_paths", "TV\nTVBox\nTVData");
+    }
+
+    public static void putSyncPaths(String paths) {
+        Prefers.put("sync_paths", paths);
+    }
+
     public static boolean isIncognito() {
         return Prefers.getBoolean("incognito");
     }
@@ -143,6 +154,61 @@ public class Setting {
 
     public static void putDebugLog(boolean debugLog) {
         DebugLogStore.setEnabled(debugLog);
+        if (debugLog) logWebViewProvider();
+    }
+
+    private static void logWebViewProvider() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        try {
+            PackageInfo info = WebView.getCurrentWebViewPackage();
+            if (info == null) SpiderDebug.log("webview", "provider unavailable");
+            else SpiderDebug.log("webview", "provider package=%s version=%s", info.packageName, info.versionName);
+        } catch (Throwable e) {
+            SpiderDebug.log("webview", e);
+        }
+    }
+
+    public static boolean isShellProxy() {
+        return Prefers.getBoolean("shell_proxy");
+    }
+
+    public static void putShellProxy(boolean shellProxy) {
+        Prefers.put("shell_proxy", shellProxy);
+        ProxySetting.apply();
+    }
+
+    public static String getShellProxyRules() {
+        return Prefers.getString("shell_proxy_rules");
+    }
+
+    public static void putShellProxyRules(String rules) {
+        Prefers.put("shell_proxy_rules", rules);
+        ProxySetting.apply();
+    }
+
+    public static void putShellProxyConfig(String url, String rules) {
+        Prefers.put("shell_proxy_url", url);
+        Prefers.put("shell_proxy_rules", rules);
+        Prefers.put("shell_proxy_hosts", "*");
+        ProxySetting.apply();
+    }
+
+    public static String getShellProxyUrl() {
+        return Prefers.getString("shell_proxy_url");
+    }
+
+    public static void putShellProxyUrl(String url) {
+        Prefers.put("shell_proxy_url", url);
+        ProxySetting.apply();
+    }
+
+    public static String getShellProxyHosts() {
+        return Prefers.getString("shell_proxy_hosts", "*");
+    }
+
+    public static void putShellProxyHosts(String hosts) {
+        Prefers.put("shell_proxy_hosts", hosts);
+        ProxySetting.apply();
     }
 
     public static String getTmdbConfig() {

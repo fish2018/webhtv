@@ -33,6 +33,7 @@ import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.engine.PlaySpec;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Task;
+import com.github.catvod.crawler.SpiderDebug;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -83,16 +84,21 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
 
     @Override
     public void onCreate() {
+        long start = System.currentTimeMillis();
         super.onCreate();
+        SpiderDebug.log("playback-flow", "service onCreate start");
         running = true;
         player = new PlayerManager(this);
+        SpiderDebug.log("playback-flow", "service player ready cost=%dms", System.currentTimeMillis() - start);
         exoPlayer = player.getPlayer();
         exoPlayer.addListener(listener);
         session = new MediaLibrarySession.Builder(this, wrap(exoPlayer), this).build();
+        SpiderDebug.log("playback-flow", "service session ready cost=%dms", System.currentTimeMillis() - start);
         session.setSessionActivity(buildDefaultIntent());
         EventBus.getDefault().register(this);
         Server.get().setService(this);
         setupNotification();
+        SpiderDebug.log("playback-flow", "service onCreate end cost=%dms", System.currentTimeMillis() - start);
     }
 
     private PendingIntent buildDefaultIntent() {

@@ -8,6 +8,131 @@
   <script>
     window.WEBHOME_PAGE_OPENED_AT = Date.now();
     if (window.fongmiBridge) document.documentElement.classList.add("fm-native");
+    (function () {
+      var protoList = [
+        window.Element && Element.prototype,
+        window.Document && Document.prototype,
+        window.DocumentFragment && DocumentFragment.prototype
+      ];
+      for (var p = 0; p < protoList.length; p++) {
+        var proto = protoList[p];
+        if (!proto) continue;
+        if (proto.replaceChildren) continue;
+        proto.replaceChildren = function () {
+          while (this.firstChild) this.removeChild(this.firstChild);
+          for (var i = 0; i < arguments.length; i++) {
+            var child = arguments[i];
+            this.appendChild(child && child.nodeType ? child : document.createTextNode(String(child)));
+          }
+        };
+      }
+      if (window.Element && !Element.prototype.matches) {
+        Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+      }
+      if (window.Element && !Element.prototype.closest) {
+        Element.prototype.closest = function (selector) {
+          var el = this;
+          while (el && el.nodeType === 1) {
+            if (el.matches && el.matches(selector)) return el;
+            el = el.parentElement || el.parentNode;
+          }
+          return null;
+        };
+      }
+      if (!Object.values) {
+        Object.values = function (obj) {
+          return Object.keys(obj || {}).map(function (key) { return obj[key]; });
+        };
+      }
+      if (!Object.entries) {
+        Object.entries = function (obj) {
+          return Object.keys(obj || {}).map(function (key) { return [key, obj[key]]; });
+        };
+      }
+      if (!Array.from) {
+        Array.from = function (value, mapFn, thisArg) {
+          var result = [];
+          if (value == null) return result;
+          var iterator = typeof Symbol !== "undefined" && value[Symbol.iterator];
+          var i = 0;
+          if (typeof iterator === "function") {
+            var step;
+            var iter = iterator.call(value);
+            while (!(step = iter.next()).done) {
+              result.push(mapFn ? mapFn.call(thisArg, step.value, i++) : step.value);
+            }
+            return result;
+          }
+          var length = Number(value.length) || 0;
+          for (; i < length; i++) {
+            result.push(mapFn ? mapFn.call(thisArg, value[i], i) : value[i]);
+          }
+          return result;
+        };
+      }
+      if (window.NodeList && !NodeList.prototype.forEach) {
+        NodeList.prototype.forEach = Array.prototype.forEach;
+      }
+      if (window.HTMLCollection && !HTMLCollection.prototype.forEach) {
+        HTMLCollection.prototype.forEach = Array.prototype.forEach;
+      }
+      if (!Array.prototype.includes) {
+        Array.prototype.includes = function (value, fromIndex) {
+          return this.indexOf(value, fromIndex || 0) !== -1;
+        };
+      }
+      if (!Array.prototype.flat) {
+        Array.prototype.flat = function (depth) {
+          var maxDepth = depth == null ? 1 : Number(depth) || 0;
+          var flatten = function (items, level) {
+            var acc = [];
+            for (var i = 0; i < items.length; i++) {
+              var item = items[i];
+              if (Array.isArray(item) && level < maxDepth) {
+                var nested = flatten(item, level + 1);
+                for (var n = 0; n < nested.length; n++) acc.push(nested[n]);
+              } else {
+                acc.push(item);
+              }
+            }
+            return acc;
+          };
+          return flatten(this, 0);
+        };
+      }
+      if (!Array.prototype.flatMap) {
+        Array.prototype.flatMap = function (callback, thisArg) {
+          return this.map(callback, thisArg).flat();
+        };
+      }
+      if (!String.prototype.includes) {
+        String.prototype.includes = function (search, start) {
+          return this.indexOf(search, start || 0) !== -1;
+        };
+      }
+      if (!String.prototype.startsWith) {
+        String.prototype.startsWith = function (search, start) {
+          return this.substr(start || 0, search.length) === search;
+        };
+      }
+      if (!String.prototype.endsWith) {
+        String.prototype.endsWith = function (search, length) {
+          var value = String(this);
+          var end = length == null ? value.length : Math.min(Number(length) || 0, value.length);
+          return value.substring(end - search.length, end) === search;
+        };
+      }
+      if (window.Promise && !Promise.prototype.finally) {
+        Promise.prototype.finally = function (callback) {
+          var P = this.constructor;
+          return this.then(function (value) {
+            return P.resolve(callback()).then(function () { return value; });
+          }, function (reason) {
+            return P.resolve(callback()).then(function () { throw reason; });
+          });
+        };
+      }
+    })();
   </script>
   <style>
     :root {
@@ -34,9 +159,13 @@
       --danger: #f09d9d;
       --shadow: 0 16px 42px rgba(0, 0, 0, .24);
       --radius: 8px;
-      --fm-web-height: 100dvh;
+      --fm-web-height: 100vh;
       --fm-safe-bottom: 20px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    @supports (height: 100dvh) {
+      :root { --fm-web-height: 100dvh; }
     }
 
     * { box-sizing: border-box; }
@@ -200,15 +329,43 @@
       border-color: rgba(255, 220, 220, .24);
     }
 
+    .btn.link {
+      min-height: 30px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: rgba(184, 226, 255, .92);
+      font-size: 13px;
+      font-weight: 760;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .38);
+      backdrop-filter: none;
+    }
+
     .search {
       width: 100%;
       min-width: 0;
+      display: flex;
+      align-items: stretch;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 10px;
       margin: 14px 0 8px;
       position: relative;
       z-index: 20;
+    }
+
+    .search .field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .search .btn {
+      flex: 0 0 auto;
+      margin-left: 10px;
+    }
+
+    @supports (display: grid) {
+      .search .btn { margin-left: 0; }
     }
 
     .search.suggesting {
@@ -222,6 +379,8 @@
       top: calc(100% + 8px);
       z-index: 1;
       display: none;
+      max-height: 460px;
+      max-height: 54vh;
       max-height: min(54vh, 460px);
       overflow-y: auto;
       padding: 6px;
@@ -233,11 +392,14 @@
       scrollbar-width: none;
     }
 
-    .suggest-panel.open { display: grid; gap: 6px; }
+    .suggest-panel.open { display: block; display: grid; gap: 6px; }
     .suggest-panel::-webkit-scrollbar { display: none; }
 
     .suggest-item {
       min-width: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
@@ -397,6 +559,10 @@
       margin-top: 0;
     }
 
+    html.tv-mode .list-block {
+      overflow: visible;
+    }
+
     .subsection-head {
       min-width: 0;
       display: flex;
@@ -434,6 +600,11 @@
       padding: 2px 0 5px;
     }
 
+    html.tv-mode .rail {
+      overflow-y: visible;
+      padding: 10px 5px 14px;
+    }
+
     .media-grid {
       width: 100%;
       max-width: 100%;
@@ -441,6 +612,15 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+    }
+
+    html.tv-mode .media-grid {
+      overflow: visible;
+      padding: 10px 5px 14px;
+    }
+
+    .list-panel[hidden] {
+      display: none !important;
     }
 
     .infinite-sentinel {
@@ -470,6 +650,7 @@
       width: 100%;
       max-width: none;
       flex: none;
+      contain: layout style;
     }
 
     .poster {
@@ -628,6 +809,110 @@
       pointer-events: none;
     }
 
+    .person-info {
+      display: block;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(10px) saturate(1.05);
+    }
+
+    .person-info-body {
+      min-width: 0;
+    }
+
+    .person-info-body p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .live-entry-card {
+      width: 100%;
+      min-height: 96px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(var(--panel-rgb), .72), rgba(34, 43, 51, .36));
+      border: 1px solid var(--line);
+      color: var(--text);
+      text-align: left;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .14);
+      backdrop-filter: blur(12px) saturate(1.05);
+    }
+
+    .live-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .18);
+    }
+
+    .live-icon .icon {
+      width: 21px;
+      height: 21px;
+    }
+
+    .live-copy {
+      min-width: 0;
+    }
+
+    .live-copy h5 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .live-copy p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .live-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+    }
+
+    .live-tag {
+      min-height: 21px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .14);
+      color: rgba(238, 244, 250, .86);
+      font-size: 11px;
+      font-weight: 720;
+      line-height: 1;
+    }
+
+    .live-action {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .2);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
     .empty {
       min-height: 92px;
       display: grid;
@@ -672,36 +957,50 @@
     }
 
     .sheet {
+      --sheet-x: 14px;
       display: none;
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       z-index: 60;
       width: 100%;
       max-width: 100%;
       min-width: 0;
+      height: 100vh;
       min-height: var(--fm-web-height);
       background: transparent;
       backdrop-filter: none;
       overflow-y: auto;
       overflow-x: hidden;
-      padding: max(16px, env(safe-area-inset-top)) 14px calc(22px + var(--fm-safe-bottom) + env(safe-area-inset-bottom));
+      padding: max(16px, env(safe-area-inset-top)) var(--sheet-x) calc(22px + var(--fm-safe-bottom) + env(safe-area-inset-bottom));
     }
 
     .sheet.active { display: block; }
 
     .detail-cover {
       position: relative;
-      aspect-ratio: 16 / 10;
+      width: 100%;
+      max-width: 100%;
+      height: 56.25vw;
+      min-height: 180px;
       max-height: 42vh;
+      aspect-ratio: 16 / 9;
       border-radius: var(--radius);
       overflow: hidden;
-      background: rgba(var(--panel-rgb), .24);
+      background: transparent;
       margin: 14px 0;
     }
 
     .detail-cover.loading::before {
       content: "";
       position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       background: linear-gradient(110deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .11), rgba(255, 255, 255, .04));
       background-size: 220% 100%;
@@ -715,12 +1014,17 @@
 
     .detail-cover img {
       position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      object-position: left center;
       opacity: 0;
-      transition: opacity .42s ease;
+      transition: opacity .18s ease;
     }
 
     .detail-cover img.active {
@@ -728,38 +1032,67 @@
     }
 
     .detail-cover.poster-mode {
-      background: rgba(var(--panel-rgb), .38);
+      background: transparent !important;
+      background-image: none !important;
     }
 
     .detail-cover.poster-mode::before {
-      content: "";
-      position: absolute;
-      inset: -18px;
-      background-image: var(--detail-cover-bg, none);
-      background-size: cover;
-      background-position: center;
-      filter: blur(18px) saturate(1.08);
-      opacity: .42;
-      transform: scale(1.06);
+      display: none !important;
     }
 
     .detail-cover.poster-mode::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(0, 0, 0, .22), rgba(0, 0, 0, .02), rgba(0, 0, 0, .22));
+      display: none !important;
     }
 
     .detail-cover.poster-mode img {
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover !important;
+      object-position: center 24%;
       z-index: 1;
+    }
+
+    @media (max-width: 719px) {
+      html:not(.tv-mode) .detail-cover.has-multiple {
+        touch-action: pan-y;
+      }
+    }
+
+    html.tv-mode .detail-cover {
+      width: min(calc(100vw - 68px), calc(clamp(360px, 58vh, 680px) * 16 / 9));
+      max-width: none;
+      height: auto;
+      min-height: 180px;
+      max-height: none;
+      aspect-ratio: 16 / 9;
+      margin-top: 0;
+    }
+
+    html.tv-mode #closeDetailBtn {
+      display: none;
+    }
+
+    @media (max-height: 760px) {
+      html.tv-mode .detail-cover {
+        width: min(calc(100vw - 68px), calc(clamp(320px, 56vh, 430px) * 16 / 9));
+      }
     }
 
     .detail-info {
       padding: 0 2px 12px;
+    }
+
+    .detail-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0 0 8px;
     }
 
     .detail-info h2 {
@@ -768,11 +1101,46 @@
       line-height: 1.12;
     }
 
+    .detail-title-row h2 {
+      margin: 0;
+    }
+
+    .detail-title-meta {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      color: rgba(244, 247, 251, .9);
+      font-size: 13px;
+      font-weight: 720;
+      line-height: 1.2;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .38);
+    }
+
+    .detail-title-meta .score {
+      color: rgba(255, 218, 128, .95);
+      font-weight: 820;
+    }
+
+    .detail-title-meta .sep {
+      color: rgba(244, 247, 251, .42);
+      font-weight: 600;
+    }
+
     .detail-info p {
       margin: 0;
       color: rgba(244, 247, 251, .82);
       line-height: 1.5;
       font-size: 14px;
+    }
+
+    .detail-info p.clamped {
+      max-height: var(--detail-text-max, none);
+      overflow: hidden;
+    }
+
+    #detailMoreBtn {
+      margin-top: 2px;
+      display: none;
     }
 
     .detail-meta {
@@ -789,6 +1157,14 @@
       background: var(--panel);
       border: 1px solid var(--line);
       font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .meta-pill.strong {
+      color: var(--text);
+      border-color: var(--line-strong);
+      background: var(--control-active);
+      font-weight: 760;
     }
 
     .detail-block {
@@ -820,7 +1196,7 @@
     }
 
     .episode-card.has-still .episode-body {
-      padding: 10px;
+      padding: 8px 9px 9px;
     }
 
     .episode-still {
@@ -835,23 +1211,37 @@
     .person-card b {
       display: block;
       font-size: 14px;
-      line-height: 1.25;
+      line-height: 1.18;
+    }
+
+    .person-card b {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .episode-card span,
     .person-card span {
       display: block;
-      margin-top: 6px;
+      margin-top: 3px;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.35;
+      line-height: 1.22;
+    }
+
+    .person-card span {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
     }
 
     .episode-card p {
-      margin: 8px 0 0;
+      margin: 3px 0 0;
       color: rgba(244, 247, 251, .78);
       font-size: 12px;
-      line-height: 1.45;
+      line-height: 1.26;
       display: -webkit-box;
       -webkit-line-clamp: 4;
       -webkit-box-orient: vertical;
@@ -861,6 +1251,9 @@
     .person-card {
       flex: 0 0 116px;
       max-width: 128px;
+      height: 244px;
+      display: flex;
+      flex-direction: column;
       border-radius: var(--radius);
       background: var(--panel);
       border: 1px solid var(--line);
@@ -874,13 +1267,20 @@
     .person-card img {
       width: calc(100% + 2px);
       max-width: calc(100% + 2px);
+      height: 176px;
+      flex: 0 0 176px;
       margin: -1px -1px 0;
-      aspect-ratio: 2 / 3;
       object-fit: cover;
+      object-position: center top;
+      background: rgba(255, 255, 255, .04);
     }
 
     .person-card div {
-      padding: 9px;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      padding: 8px 9px 9px;
+      overflow: hidden;
     }
 
     .sync-panel {
@@ -1133,8 +1533,12 @@
     .pan-result-list {
       display: grid;
       gap: 9px;
-      max-height: min(calc(var(--fm-web-height) * .52), 560px);
-      min-height: 92px;
+      align-content: flex-start;
+      align-items: start;
+      grid-auto-rows: max-content;
+      height: 52vh;
+      max-height: 560px;
+      min-height: 260px;
       overflow-y: auto;
       overscroll-behavior-y: contain;
       padding-right: 2px;
@@ -1153,6 +1557,11 @@
       min-height: 30px;
       padding: 0 10px;
       font-size: 12px;
+    }
+
+    .pan-tabs .chip.active {
+      background: rgba(82, 98, 108, .82);
+      border-color: rgba(184, 226, 255, .74);
     }
 
     .pan-result-item {
@@ -1243,8 +1652,13 @@
     .image-viewer {
       display: none;
       position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       inset: 0;
       z-index: 100;
+      height: 100vh;
       min-height: var(--fm-web-height);
       background: var(--panel-strong);
       backdrop-filter: blur(8px) saturate(1.05);
@@ -1336,7 +1750,7 @@
       border-color: var(--focus-line);
       box-shadow: none;
       z-index: 5;
-      transition: border-color .06s ease, background-color .06s ease, opacity .06s ease;
+      transition: none;
     }
 
     .focusable:not(.back-top):focus,
@@ -1354,7 +1768,7 @@
     .card:focus,
     .episode-card:focus,
     .person-card:focus {
-      transform: translateY(-2px) scale(1.025);
+      transform: translateY(-1px) scale(1.035);
       border-color: var(--focus-line);
       background: rgba(var(--panel-rgb), .66);
       box-shadow: none;
@@ -1364,6 +1778,41 @@
     .episode-card:focus img,
     .person-card:focus img {
       filter: brightness(1.06) saturate(1.04);
+    }
+
+    html.tv-mode .card:focus,
+    html.tv-mode .episode-card:focus,
+    html.tv-mode .person-card:focus {
+      transform: translateY(-1px) scale(1.050);
+      outline: 2px solid rgba(255, 255, 255, .9);
+      outline-offset: -2px;
+      border-color: rgba(255, 255, 255, .96);
+      background: rgba(var(--panel-rgb), .72);
+      box-shadow: inset 0 0 0 1px rgba(168, 218, 255, .72);
+      transition: none;
+      z-index: 12;
+    }
+
+    html.tv-mode .episode-card:focus {
+      transform: translateY(-1px) scale(1.03);
+    }
+
+    html.tv-mode .card:focus {
+      border-color: rgba(255, 255, 255, .98);
+      box-shadow: inset 0 0 0 1px rgba(168, 218, 255, .74);
+    }
+
+    html.tv-mode .card,
+    html.tv-mode .rating-badge,
+    html.tv-mode .recent-badge,
+    html.tv-mode .live-entry-card {
+      backdrop-filter: none;
+    }
+
+    html.tv-mode .card:focus img,
+    html.tv-mode .episode-card:focus img,
+    html.tv-mode .person-card:focus img {
+      filter: none;
     }
 
     .pan-result-item:focus {
@@ -1421,8 +1870,20 @@
     @media (min-width: 720px) {
       .app,
       .sheet {
+        --sheet-x: 34px;
         padding-left: 34px;
         padding-right: 34px;
+      }
+
+      .detail-cover {
+        width: min(100%, 78vw, 960px);
+        max-width: calc(100vw - 68px);
+        height: auto;
+        aspect-ratio: 16 / 9;
+        min-height: 180px;
+        max-height: none;
+        margin: 14px 0;
+        border-radius: var(--radius);
       }
 
       .grid {
@@ -1446,6 +1907,7 @@
     @media (min-width: 1180px) {
       .app,
       .sheet {
+        --sheet-x: 56px;
         padding-left: 56px;
         padding-right: 56px;
       }
@@ -1463,7 +1925,7 @@
 <body>
   <main class="app" id="home">
     <form class="search" id="searchForm" autocomplete="off">
-      <input class="field focusable" id="searchInput" type="search" placeholder="搜索关键词" aria-autocomplete="list" aria-controls="suggestPanel" readonly>
+      <input class="field focusable" id="searchInput" type="search" inputmode="search" enterkeyhint="search" placeholder="搜索关键词" aria-autocomplete="list" aria-controls="suggestPanel" readonly>
       <button class="btn blue focusable" type="submit">
         <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         搜索
@@ -1549,9 +2011,13 @@
       <img id="detailImage" alt="">
     </div>
     <div class="detail-info">
-      <h2 id="detailTitle"></h2>
+      <div class="detail-title-row">
+        <h2 id="detailTitle"></h2>
+        <span class="detail-title-meta" id="detailTitleMeta"></span>
+      </div>
       <div class="detail-meta" id="detailMeta"></div>
       <p id="detailText"></p>
+      <button class="btn link focusable" id="detailMoreBtn" type="button">更多</button>
     </div>
     <div class="actions">
       <button class="btn primary focusable" id="detailSearchBtn" type="button">搜索播放</button>
@@ -1575,8 +2041,14 @@
       <div class="rail" id="castRail"></div>
     </div>
     <div class="detail-block" id="personWorkBlock" style="display:none">
-      <h3 id="personWorkTitle">关联作品</h3>
+      <h3 id="personWorkTitle">简介</h3>
+      <div id="personInfo"></div>
+      <h3 style="margin-top:16px">关联作品</h3>
       <div class="rail" id="personWorkRail"></div>
+    </div>
+    <div class="detail-block" id="recommendBlock" style="display:none">
+      <h3>相关推荐</h3>
+      <div class="rail" id="recommendWorkRail"></div>
     </div>
   </section>
 
@@ -1664,6 +2136,7 @@
             id: "western-animation",
             title: "美漫",
             hint: "英文动画剧集",
+            mobileHidden: true,
             mediaType: "tv",
             endpoint: "discover/tv",
             params: {
@@ -1701,7 +2174,7 @@
         cacheKey: "fish2018_home_v1_pan_config",
         diskTypes: ["quark", "aliyun", "baidu", "uc", "tianyi", "xunlei", "123", "115", "mobile", "pikpak", "guangya", "magnet", "ed2k"],
         checkableDiskTypes: ["quark", "aliyun", "baidu", "uc", "tianyi", "xunlei", "123", "115", "mobile"],
-        pollIntervals: [4500, 9000, 16000, 26000]
+        pollIntervals: [4500, 9000]
       }
     };
 
@@ -1724,6 +2197,9 @@
     const PAN_CHECKABLE_DISK_TYPES = new Set(window.WEBHOME_CONFIG.pan.checkableDiskTypes || ["quark", "aliyun", "baidu", "uc", "tianyi", "xunlei", "123", "115", "mobile"]);
     const PAN_HEALTH_PRIORITY = { ok: 0, locked: 1, pending: 2, idle: 3, unsupported: 4, uncertain: 5, bad: 6 };
     const PAGE_OPENED_AT = window.WEBHOME_PAGE_OPENED_AT || Date.now();
+    const GRID_INITIAL_ROWS = 3;
+    const GRID_APPEND_ROWS = 2;
+    const RECENT_UI_TTL_MS = 30000;
     const state = {
       site: null,
       config: null,
@@ -1734,9 +2210,11 @@
       catalog: {},
       catalogPage: {},
       recent: { items: [], loading: false, loaded: false, error: "", refreshedAt: 0 },
+      gridRender: {},
       fallback: [],
       fallbackPage: { sourceIndex: 0, page: 0, loading: false, loaded: false, done: false },
       loadingMore: false,
+      chipFocusTimer: 0,
       railScroll: {},
       searchItems: [],
       suggestions: { keyword: "", items: [], loading: false, timer: 0, seq: 0, controller: null },
@@ -1751,13 +2229,18 @@
         publish: "暂无发布",
         identity: "未就绪"
       },
+      deleteState: { loaded: false, users: {} },
       pan: { config: null, configDirty: false, loading: false, keyword: "", activeType: "", results: [], health: {}, pending: {}, queued: new Map(), inFlight: new Set(), observer: null, flushTimer: 0, pollTimers: [], pollRound: 0, viewToken: "", renderKeys: "", tabKeys: "", checkEnabled: false, focusKey: "", focusMode: "", playbackReturn: null },
       watch: { item: null, timer: 0, bestMs: 0, durationMs: 0, lastAt: 0, published: false, intentAction: "" },
-      detailCover: { images: [], index: 0, timer: 0, token: 0 },
+      detailCover: { images: [], index: 0, timer: 0, token: 0, swipe: null },
       detailReturn: null,
       focusReturnEl: null,
       remoteInitialFocused: false,
       renderTimer: 0,
+      homeContentTimer: 0,
+      homeContentSeq: 0,
+      activeGridAppendTimer: 0,
+      activeGridAppendId: "",
       scrollingUntil: 0,
       infiniteObserver: null,
       scrollLoadTimer: 0,
@@ -1792,6 +2275,8 @@
     const HOT_RENDER_LIMIT = 1000;
     const UI_SNAPSHOT_TTL_MS = 2 * 60 * 60 * 1000;
     const PAN_PLAYBACK_RETURN_TTL_MS = 10 * 60 * 1000;
+    const DELETE_REPUBLISH_BLOCK_MS = 24 * 60 * 60 * 1000;
+    const DELETE_TOMBSTONE_TTL_MS = HOT_WINDOW_MS + HOT_DAY_SECONDS * 1000;
 
     let nativeSdkWait = null;
 
@@ -1829,19 +2314,74 @@
         res: (url) => url,
         play: async (url, title) => window.open(url, "_blank", "noopener,noreferrer"),
         search: async (kw) => toast("原生搜索：" + kw),
+        openLive: async () => toast("请在 App 中打开直播"),
         openKeep: async () => toast("请在 App 中打开收藏"),
         history: async () => [],
         vod: async (siteKey, vodId, title) => toast("原生播放：" + (title || vodId || siteKey || "")),
         pan: { check, play },
         check,
+        ui: { setToolbar: async () => {} },
         cache: {
           get: async (key) => localStorage.getItem("fm_" + key) || "",
           set: async (key, value) => localStorage.setItem("fm_" + key, value),
           del: async (key) => localStorage.removeItem("fm_" + key)
         },
         site: async () => ({ key: "browser", name: "浏览器预览" }),
-        config: async () => ({ id: "browser", url: location.href, driveCheck: false })
+        config: async () => ({ id: "browser", url: location.href, driveCheck: false }),
+        device: async () => ({ type: 1 })
       };
+    }
+
+    function isTvMode() {
+      return document.documentElement.classList.contains("tv-mode");
+    }
+
+    function isNativeLeanbackClient() {
+      const client = window.fongmiClient || {};
+      if (client.isLeanback === true) return true;
+      if (String(client.mode || "").toLowerCase() === "leanback") return true;
+      return false;
+    }
+
+    function setTvMode(tv) {
+      document.documentElement.classList.toggle("tv-mode", !!tv);
+      syncNativeToolbarForRoute();
+    }
+
+    function setNativeToolbarVisible(visible, force) {
+      if (!force && !isTvMode()) return;
+      try {
+        const ui = sdk().ui || {};
+        if (ui.setToolbar) ui.setToolbar(visible);
+      } catch (e) {}
+    }
+
+    function syncNativeToolbarForRoute() {
+      setNativeToolbarVisible(uiSnapshotRoute() === "home");
+    }
+
+    async function detectDeviceMode() {
+      try {
+        if (window.fongmiBridge && !window.fm) await waitForNativeSdk(1500);
+        const api = sdk();
+        if (isNativeLeanbackClient()) {
+          setTvMode(true);
+          return true;
+        }
+        if (!api.device) {
+          setNativeToolbarVisible(true, true);
+          document.documentElement.classList.remove("tv-mode");
+          return false;
+        }
+        const device = await api.device();
+        const tv = Number(device && device.type) === 0 || String(device && device.mode || "").toLowerCase() === "leanback";
+        setTvMode(tv);
+        return tv;
+      } catch (e) {
+        setNativeToolbarVisible(true, true);
+        document.documentElement.classList.remove("tv-mode");
+        return false;
+      }
     }
 
     function cacheKey(type) {
@@ -1849,6 +2389,7 @@
       if (type === "nsec") return window.WEBHOME_CONFIG.nostr.nsecKey || "fish2018_home_v1_nsec";
       if (type === "pan") return window.WEBHOME_CONFIG.pan.cacheKey || "fish2018_home_v1_pan_config";
       if (type === "ui") return "fish2018_home_v1_ui_snapshot";
+      if (type === "deleteState") return "fish2018_home_v1_delete_state";
       return type;
     }
 
@@ -2085,6 +2626,76 @@
       return String(pubkey || "").slice(0, 32);
     }
 
+    function normalizeDeleteState(raw) {
+      const now = Date.now();
+      const users = {};
+      Object.entries(raw && raw.users || {}).forEach(([pubkey, marker]) => {
+        const key = String(pubkey || "").trim();
+        if (!key || !marker || typeof marker !== "object") return;
+        const expiresAt = Number(marker.expiresAt || 0);
+        if (expiresAt && expiresAt <= now) return;
+        users[key] = {
+          cutoff: Math.max(0, Number(marker.cutoff || 0)),
+          blockPublishUntil: Math.max(0, Number(marker.blockPublishUntil || 0)),
+          expiresAt: expiresAt || now + DELETE_TOMBSTONE_TTL_MS,
+          updatedAt: Math.max(0, Number(marker.updatedAt || 0))
+        };
+      });
+      return { loaded: true, users };
+    }
+
+    async function ensureDeleteStateLoaded() {
+      if (state.deleteState.loaded) return state.deleteState;
+      let saved = null;
+      try { saved = safeJson(await sdk().cache.get(cacheKey("deleteState")), null); } catch (e) { saved = null; }
+      state.deleteState = normalizeDeleteState(saved);
+      return state.deleteState;
+    }
+
+    async function persistDeleteState() {
+      await sdk().cache.set(cacheKey("deleteState"), JSON.stringify({ users: state.deleteState.users || {} }));
+    }
+
+    async function markIdentityDeletedLocally(identity) {
+      if (!identity || !identity.pubkey) return null;
+      await ensureDeleteStateLoaded();
+      const now = Date.now();
+      const marker = {
+        cutoff: hotNow() + 1,
+        blockPublishUntil: now + DELETE_REPUBLISH_BLOCK_MS,
+        expiresAt: now + DELETE_TOMBSTONE_TTL_MS,
+        updatedAt: now
+      };
+      state.deleteState.users[identity.pubkey] = marker;
+      await persistDeleteState().catch(() => {});
+      return marker;
+    }
+
+    function localDeleteMarker(pubkey) {
+      const marker = state.deleteState.users && state.deleteState.users[String(pubkey || "")];
+      if (!marker) return null;
+      if (Number(marker.expiresAt || 0) && Number(marker.expiresAt || 0) <= Date.now()) {
+        delete state.deleteState.users[String(pubkey || "")];
+        persistDeleteState().catch(() => {});
+        return null;
+      }
+      return marker;
+    }
+
+    function isLocallyDeletedPreferenceEvent(event) {
+      const pubkey = eventUserKey(event);
+      const marker = localDeleteMarker(pubkey);
+      if (!marker) return false;
+      return Number(event && event.created_at || 0) <= Number(marker.cutoff || 0);
+    }
+
+    async function isPreferencePublishBlocked() {
+      await ensureDeleteStateLoaded();
+      const pubkey = state.identity && state.identity.pubkey;
+      const marker = localDeleteMarker(pubkey);
+      return !!(marker && Number(marker.blockPublishUntil || 0) > Date.now());
+    }
+
     function eventExpiration(event) {
       const tag = (event && event.tags || []).find((item) => item && item[0] === "expiration");
       const value = tag ? Number(tag[1]) : 0;
@@ -2151,6 +2762,7 @@
     }
 
     async function hotIngestEventsNow(events) {
+      await ensureDeleteStateLoaded();
       const incoming = new Map();
       for (const event of events || []) {
         const vector = heatVectorFromEvent(event);
@@ -2193,6 +2805,7 @@
 
     function heatVectorFromEvent(event) {
       if (eventExpired(event) || getD(event) !== HOT_VECTOR_D) return null;
+      if (isLocallyDeletedPreferenceEvent(event)) return null;
       const content = eventContent(event);
       if (!content || content.v !== HOT_VECTOR_VERSION) return null;
       const pubkey = eventUserKey(event);
@@ -2906,6 +3519,14 @@
       return url.toString();
     }
 
+    function tmdbRecommendationsUrl(item) {
+      const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/${item.mediaType}/${item.tmdbId}/recommendations`);
+      url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
+      url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      url.searchParams.set("page", "1");
+      return url.toString();
+    }
+
     function tmdbSeasonUrl(item, seasonNumber) {
       const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/tv/${item.tmdbId}/season/${seasonNumber}`);
       url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
@@ -2917,6 +3538,14 @@
       const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/person/${personId}/combined_credits`);
       url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
       url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      return url.toString();
+    }
+
+    function tmdbPersonDetailUrl(personId) {
+      const url = new URL(`${window.WEBHOME_CONFIG.tmdb.apiBase}/person/${personId}`);
+      url.searchParams.set("api_key", window.WEBHOME_CONFIG.tmdb.apiKey);
+      url.searchParams.set("language", window.WEBHOME_CONFIG.tmdb.language);
+      url.searchParams.set("append_to_response", "combined_credits");
       return url.toString();
     }
 
@@ -2964,8 +3593,11 @@
       try { return sdk().res(url, { credentials: "include" }); } catch (e) { return url; }
     }
 
-    function imageAttrs(src) {
-      return `src="${escapeAttr(src)}" decoding="async"`;
+    function imageAttrs(src, options) {
+      const opts = options || {};
+      const loading = opts.loading || "lazy";
+      const fetchPriority = opts.fetchPriority ? ` fetchpriority="${escapeAttr(opts.fetchPriority)}"` : "";
+      return `src="${escapeAttr(src)}" loading="${escapeAttr(loading)}" decoding="async"${fetchPriority}`;
     }
 
     function normalizeTmdb(item, list, index) {
@@ -3104,6 +3736,10 @@
         });
     }
 
+    function shouldRefreshRecentList() {
+      return !state.recent.loaded || Date.now() - Number(state.recent.refreshedAt || 0) > RECENT_UI_TTL_MS;
+    }
+
     async function loadRecentList(options) {
       const opts = options || {};
       if (state.recent.loading) return;
@@ -3131,6 +3767,7 @@
 
     async function loadInfo() {
       try {
+        await detectDeviceMode();
         state.site = await sdk().site();
         state.config = await sdk().config();
         state.pan.checkEnabled = !!(state.config && state.config.driveCheck);
@@ -3148,7 +3785,7 @@
     async function loadCatalog() {
       setStatus("tmdb", "等待按需请求");
       loadRecentList({ silent: true }).catch(() => {});
-      renderAll();
+      renderAll({ deferContent: true });
     }
 
     function prefetchRecommendationFallback() {
@@ -3299,7 +3936,8 @@
     }
 
     function loadMoreVisible() {
-      if (state.loadingMore || state.activeList === "recent") return;
+      if (appendActiveGridBatch()) return;
+      if (state.loadingMore || state.activeList === "recent" || state.activeList === "live") return;
       if (state.activeList === "all") {
         if (preferenceItems().length) {
           useNostrRecommendationsIfReady();
@@ -3377,7 +4015,26 @@
     }
 
     function getList(id) {
-      return window.WEBHOME_CONFIG.tmdb.lists.find((list) => list.id === id);
+      return visibleTmdbLists().find((list) => list.id === id);
+    }
+
+    function visibleTmdbLists() {
+      return (window.WEBHOME_CONFIG.tmdb.lists || []).filter((list) => !list.hidden && !(list.mobileHidden && isPhoneViewport()));
+    }
+
+    function isPhoneViewport() {
+      const width = Math.min(window.innerWidth || 0, document.documentElement.clientWidth || 0) || window.innerWidth || 0;
+      const height = Math.min(window.innerHeight || 0, document.documentElement.clientHeight || 0) || window.innerHeight || 0;
+      const coarse = window.matchMedia ? window.matchMedia("(pointer: coarse)").matches : false;
+      return width > 0 && width < 720 && (coarse || height > width);
+    }
+
+    function isKnownList(id) {
+      return id === "all" || id === "recent" || id === "live" || !!getList(id);
+    }
+
+    function normalizeActiveListForViewport() {
+      if (!isKnownList(state.activeList)) state.activeList = "all";
     }
 
     function hasPoster(item) {
@@ -3397,19 +4054,55 @@
       scheduleUiSnapshotSave();
     }
 
-    function renderAll() {
+    function renderAll(options) {
+      const opts = options || {};
       clearTimeout(state.renderTimer);
       state.renderTimer = 0;
+      normalizeActiveListForViewport();
       renderChips();
+      if (opts.deferContent) scheduleHomeContentRender({ afterPaint: true });
+      else renderHomeContent();
+      renderMetrics();
+      normalizeRails();
+    }
+
+    function renderHomeContent() {
       const recommend = state.activeList === "all";
       $("recommendSection").style.display = recommend ? "" : "none";
       $("listSection").style.display = recommend ? "none" : "";
       if (recommend) renderRecommendations();
       else renderLists();
-      renderMetrics();
-      normalizeRails();
       observeInfiniteScroll();
       requestAnimationFrame(ensureScrollablePage);
+    }
+
+    function scheduleHomeContentRender(options) {
+      const opts = options || {};
+      const seq = ++state.homeContentSeq;
+      if (state.homeContentTimer) {
+        cancelAnimationFrame(state.homeContentTimer);
+        state.homeContentTimer = 0;
+      }
+      const run = () => {
+        if (seq !== state.homeContentSeq) return;
+        state.homeContentTimer = 0;
+        renderHomeContent();
+        if (typeof opts.after === "function") opts.after();
+      };
+      if (!opts.afterPaint) {
+        run();
+        return;
+      }
+      state.homeContentTimer = requestAnimationFrame(() => {
+        if (seq !== state.homeContentSeq) return;
+        state.homeContentTimer = requestAnimationFrame(run);
+      });
+    }
+
+    function ensureActiveListData(id) {
+      if (!id || state.activeList !== id) return;
+      if (id === "recent") loadRecentList({ refresh: shouldRefreshRecentList() });
+      else if (id !== "all" && id !== "live") loadCatalogList(id);
     }
 
     function scheduleRender() {
@@ -3420,12 +4113,13 @@
           scheduleRender();
           return;
         }
-        renderAll();
+        renderAll({ deferContent: uiSnapshotRoute() === "home" });
       }, delay);
     }
 
     function renderChips() {
-      const chips = [{ id: "all", title: "Nostr推荐" }, { id: "recent", title: "最近" }].concat(window.WEBHOME_CONFIG.tmdb.lists.map((item) => ({ id: item.id, title: item.title })));
+      const chips = [{ id: "live", title: "直播" }, { id: "all", title: "Nostr推荐" }, { id: "recent", title: "最近" }]
+        .concat(visibleTmdbLists().map((item) => ({ id: item.id, title: item.title })));
       const root = $("chips");
       const keys = chips.map((chip) => chip.id + ":" + chip.title).join("\n");
       if (root.dataset.renderKeys !== keys) {
@@ -3438,7 +4132,7 @@
           button.textContent = chip.title;
           button.addEventListener("click", () => selectChip(chip.id));
           button.addEventListener("focus", () => {
-            if (state.activeList !== chip.id) selectChip(chip.id, { keepFocus: true });
+            scheduleChipFocusSelect(chip.id);
           });
           return button;
         }));
@@ -3446,13 +4140,19 @@
       Array.from(root.children).forEach((button) => button.classList.toggle("active", button.dataset.chipId === state.activeList));
     }
 
+    function scheduleChipFocusSelect(id) {
+      clearTimeout(state.chipFocusTimer);
+      if (!id || state.activeList === id) return;
+      state.chipFocusTimer = setTimeout(() => selectChip(id, { keepFocus: true, fromFocus: true }), 45);
+    }
+
     function selectChip(id, options) {
       const opts = options || {};
+      if (!opts.fromFocus) clearTimeout(state.chipFocusTimer);
       if (!id || state.activeList === id) return;
       state.activeList = id;
-      renderAll();
-      if (id === "recent") loadRecentList({ refresh: true });
-      else if (id !== "all") loadCatalogList(id);
+      renderChips();
+      scheduleHomeContentRender({ afterPaint: true, after: () => ensureActiveListData(id) });
       scheduleUiSnapshotSave();
       if (opts.keepFocus) requestAnimationFrame(() => {
         const target = findByDataset($("chips"), "chipId", id);
@@ -3470,14 +4170,12 @@
       }
       if (state.recommendationSource === "nostr") state.recommendationSource = "pending";
       if (state.recommendationSource === "pending" && !nostrReadyForFallback()) {
-        $("recommendRail").dataset.renderKeys = "";
-        $("recommendRail").replaceChildren(emptyNode("Nostr 推荐同步中..."));
+        showGridStatus($("recommendRail"), "Nostr 推荐同步中...");
       } else {
         state.recommendationSource = "fallback";
         ensureRecommendationFallback();
         if (state.fallbackPage.loading && !state.fallback.length) {
-          $("recommendRail").dataset.renderKeys = "";
-          $("recommendRail").replaceChildren(emptyNode("推荐兜底加载中..."));
+          showGridStatus($("recommendRail"), "推荐兜底加载中...");
           return;
         }
         fillGrid($("recommendRail"), state.fallback.length ? state.fallback : ranked(allItems()));
@@ -3496,75 +4194,103 @@
         renderRecentList();
         return;
       }
-      const lists = window.WEBHOME_CONFIG.tmdb.lists.filter((list) => list.id === state.activeList);
+      if (state.activeList === "live") {
+        renderLiveEntry();
+        return;
+      }
+      const lists = visibleTmdbLists().filter((list) => list.id === state.activeList);
       if (!lists.length) {
-        $("listStack").replaceChildren();
+        activateListPanel("");
         return;
       }
       const list = lists[0];
-      let grid = Array.from($("listStack").querySelectorAll(".media-grid"))
-        .find((item) => item.dataset.listId === list.id);
-      if (!grid || $("listStack").children.length !== 1) {
-        const block = document.createElement("div");
-        block.className = "list-block";
-        block.innerHTML = `
-          <div class="subsection-head">
-            <h4>${escapeHtml(list.title)}</h4>
-            <span>${escapeHtml(list.hint || "")}</span>
-          </div>
-        `;
-        const grid = document.createElement("div");
-        grid.className = "media-grid";
-        grid.dataset.listId = list.id;
-        block.appendChild(grid);
-        $("listStack").replaceChildren(block);
-      }
-      grid = $("listStack").querySelector(".media-grid");
-      const page = state.catalogPage[grid.dataset.listId];
+      const panel = ensureListPanel(list.id, list.title, list.hint || "");
+      const grid = panel.querySelector(".media-grid");
+      activateListPanel(list.id);
+      const page = state.catalogPage[list.id];
       if (page && page.loading) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("加载中..."));
+        if (!grid.dataset.renderKeys) showGridStatus(grid, "加载中...");
       } else if (page && page.error) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("加载失败"));
+        showGridStatus(grid, "加载失败");
       } else if (!page || !page.loaded) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("点击后加载片单"));
+        showGridStatus(grid, "点击后加载片单");
       } else {
-        fillGrid(grid, state.catalog[grid.dataset.listId] || []);
+        fillGrid(grid, state.catalog[list.id] || []);
       }
     }
 
+    function renderLiveEntry() {
+      const panel = ensureListPanel("live", "直播", "电视台与直播源", { grid: false });
+      activateListPanel("live");
+      if (panel.dataset.liveReady === "1") return;
+      panel.dataset.liveReady = "1";
+      const body = document.createElement("div");
+      const card = document.createElement("button");
+      card.className = "live-entry-card focusable";
+      card.type = "button";
+      card.innerHTML = `
+        <span class="live-icon" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 19v2"/><path d="m9 3 3 3 3-3"/></svg>
+        </span>
+        <div class="live-copy">
+          <h5>观看直播</h5>
+          <p>频道分组、节目单、收藏频道和多线路已接入。</p>
+          <div class="live-tags"><span class="live-tag">频道分组</span><span class="live-tag">节目单</span><span class="live-tag">收藏</span></div>
+        </div>
+        <span class="live-action">继续观看</span>
+      `;
+      card.addEventListener("click", openLiveHome);
+      body.appendChild(card);
+      panel.appendChild(body);
+    }
+
     function renderRecentList() {
-      let grid = Array.from($("listStack").querySelectorAll(".media-grid"))
-        .find((item) => item.dataset.listId === "recent");
-      if (!grid || $("listStack").children.length !== 1) {
-        const block = document.createElement("div");
-        block.className = "list-block";
-        block.innerHTML = `
-          <div class="subsection-head">
-            <h4>最近</h4>
-            <span>继续观看</span>
-          </div>
-        `;
-        grid = document.createElement("div");
-        grid.className = "media-grid";
-        grid.dataset.listId = "recent";
-        block.appendChild(grid);
-        $("listStack").replaceChildren(block);
-      }
+      const panel = ensureListPanel("recent", "最近", "继续观看");
+      const grid = panel.querySelector(".media-grid");
+      activateListPanel("recent");
       if (state.recent.loading && !state.recent.loaded) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("读取最近观看..."));
+        showGridStatus(grid, "读取最近观看...");
       } else if (state.recent.error) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("最近观看读取失败"));
+        showGridStatus(grid, "最近观看读取失败");
       } else if (!state.recent.loaded) {
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(emptyNode("点击后读取最近观看"));
+        showGridStatus(grid, "点击后读取最近观看");
       } else {
         fillGrid(grid, state.recent.items || []);
       }
+    }
+
+    function ensureListPanel(id, title, hint, options) {
+      const stack = $("listStack");
+      Array.from(stack.children).forEach((child) => {
+        if (!child.classList || !child.classList.contains("list-panel")) child.remove();
+      });
+      let panel = Array.from(stack.querySelectorAll(".list-panel")).find((item) => item.dataset.listId === id);
+      if (panel) return panel;
+      panel = document.createElement("div");
+      panel.className = "list-block list-panel";
+      panel.dataset.listId = id;
+      panel.hidden = true;
+      panel.innerHTML = `
+        <div class="subsection-head">
+          <h4>${escapeHtml(title || "")}</h4>
+          <span>${escapeHtml(hint || "")}</span>
+        </div>
+      `;
+      if (!options || options.grid !== false) {
+        const grid = document.createElement("div");
+        grid.className = "media-grid";
+        grid.dataset.listId = id;
+        panel.appendChild(grid);
+      }
+      stack.appendChild(panel);
+      return panel;
+    }
+
+    function activateListPanel(id) {
+      const stack = $("listStack");
+      Array.from(stack.querySelectorAll(".list-panel")).forEach((panel) => {
+        panel.hidden = panel.dataset.listId !== id;
+      });
     }
 
     function renderRail(id, items) {
@@ -3597,37 +4323,163 @@
     }
 
     function fillGrid(grid, items) {
-      items = uniqueMedia(items).filter(hasPoster);
+      if (!grid) return;
+      const rawItems = Array.isArray(items) ? items : [];
+      const gridId = gridRenderId(grid);
+      const cached = state.gridRender[gridId];
+      if (cached && cached.source === rawItems && cached.sourceLength === rawItems.length && Number(cached.rendered || 0) > 0 && grid.children.length >= Number(cached.rendered || 0)) {
+        const need = Math.min(Number(cached.total || 0), initialGridBatchSize(grid));
+        if (Number(cached.rendered || 0) >= need) {
+          ensureRemoteInitialFocus();
+          return;
+        }
+      }
+      items = uniqueMedia(rawItems).filter(hasPoster);
       if (!items.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty";
-        empty.textContent = "暂无内容";
-        grid.dataset.renderKeys = "";
-        grid.replaceChildren(empty);
+        showGridStatus(grid, "暂无内容");
         return;
       }
       const keys = items.map(mediaDomKey);
-      const previousKeys = grid.dataset.renderKeys ? grid.dataset.renderKeys.split("\n") : [];
-      const canAppend = previousKeys.length > 0
-        && keys.length >= previousKeys.length
-        && grid.children.length === previousKeys.length
-        && previousKeys.every((key, index) => key && key === keys[index]);
-      if (canAppend) {
-        const shownKeys = new Set(previousKeys);
-        const nextItems = items
-          .slice(previousKeys.length)
-          .filter((item) => {
-            const key = mediaDomKey(item);
-            if (!key || shownKeys.has(key)) return false;
-            shownKeys.add(key);
-            return true;
-          });
-        if (nextItems.length) grid.append(...nextItems.map(mediaCard));
-      } else {
-        grid.replaceChildren(...items.map(mediaCard));
+      const renderKeys = items.map(mediaRenderKey);
+      const previousKeys = grid.dataset.itemKeys ? grid.dataset.itemKeys.split("\n") : [];
+      const previousRenderKeys = grid.dataset.renderKeys ? grid.dataset.renderKeys.split("\n") : [];
+      const samePrefix = previousKeys.length > 0 && previousKeys.every((key, index) => key && key === keys[index]);
+      let info = state.gridRender[gridId];
+      const oldRendered = Number(info && info.rendered || 0);
+      const oldTotal = Number(info && info.total || 0);
+      const renderedCount = Math.min(oldRendered, previousRenderKeys.length, renderKeys.length);
+      const sameRendered = samePrefix && renderedCount > 0 && previousRenderKeys.slice(0, renderedCount).every((key, index) => key === renderKeys[index]);
+      if (!info || !samePrefix || !sameRendered) {
+        info = state.gridRender[gridId] = { rendered: 0, total: 0, keys: "", items: [] };
+        grid.replaceChildren();
+        grid.dataset.renderKeys = "";
       }
-      grid.dataset.renderKeys = keys.join("\n");
+      grid.dataset.itemKeys = keys.join("\n");
+      info.total = items.length;
+      info.keys = grid.dataset.itemKeys;
+      info.items = items;
+      info.source = rawItems;
+      info.sourceLength = rawItems.length;
+      let target = Math.min(items.length, Math.max(Number(info.rendered || 0), initialGridBatchSize(grid)));
+      if (sameRendered && items.length > oldTotal && oldRendered >= oldTotal) target = Math.min(items.length, oldRendered + appendGridBatchSize(grid));
+      appendGridItems(grid, items, target);
       ensureRemoteInitialFocus();
+    }
+
+    function showGridStatus(grid, text) {
+      if (!grid) return;
+      const gridId = gridRenderId(grid);
+      delete state.gridRender[gridId];
+      grid.dataset.renderKeys = "";
+      grid.dataset.itemKeys = "";
+      grid.replaceChildren(emptyNode(text));
+    }
+
+    function gridRenderId(grid) {
+      return grid && (grid.dataset.listId || grid.id) || "grid";
+    }
+
+    function gridColumns(grid) {
+      const value = grid ? getComputedStyle(grid).gridTemplateColumns : "";
+      const count = value && value !== "none" ? value.split(" ").filter(Boolean).length : 0;
+      if (count > 0) return count;
+      if (isTvMode()) return 5;
+      if ((window.innerWidth || 0) >= 1180) return 6;
+      if ((window.innerWidth || 0) >= 720) return 4;
+      return 3;
+    }
+
+    function initialGridBatchSize(grid) {
+      const cols = gridColumns(grid);
+      return Math.max(cols * GRID_INITIAL_ROWS, isTvMode() ? 18 : 12);
+    }
+
+    function appendGridBatchSize(grid) {
+      const cols = gridColumns(grid);
+      return Math.max(cols * GRID_APPEND_ROWS, isTvMode() ? 10 : 6);
+    }
+
+    function appendGridItems(grid, items, target) {
+      const gridId = gridRenderId(grid);
+      const info = state.gridRender[gridId] || (state.gridRender[gridId] = { rendered: 0, total: items.length, keys: "", items: [] });
+      const start = Math.max(0, Number(info.rendered || 0));
+      const end = Math.max(start, Math.min(items.length, target));
+      info.items = items;
+      info.total = items.length;
+      if (end <= start) return;
+      const fragment = document.createDocumentFragment();
+      for (let index = start; index < end; index++) fragment.appendChild(mediaCard(items[index], index));
+      grid.appendChild(fragment);
+      info.rendered = end;
+      grid.dataset.renderKeys = items.slice(0, end).map(mediaRenderKey).join("\n");
+    }
+
+    function appendGridBatch(grid) {
+      if (!grid || grid.closest && grid.closest(".list-panel[hidden]")) return false;
+      const gridId = gridRenderId(grid);
+      if (gridId === "recommendRail" && state.activeList !== "all") return false;
+      if (grid.dataset.listId && grid.dataset.listId !== state.activeList) return false;
+      const info = state.gridRender[gridId];
+      if (!info || !info.total || Number(info.rendered || 0) >= Number(info.total || 0)) return false;
+      const items = Array.isArray(info.items) && info.items.length ? info.items : itemsForGrid(gridId);
+      if (!items.length) return false;
+      appendGridItems(grid, items, Math.min(items.length, Number(info.rendered || 0) + appendGridBatchSize(grid)));
+      return true;
+    }
+
+    function appendActiveGridBatch() {
+      const grid = activeMediaGrid();
+      if (appendGridBatch(grid)) {
+        observeInfiniteScroll();
+        return true;
+      }
+      return false;
+    }
+
+    function canAppendActiveGrid() {
+      const grid = activeMediaGrid();
+      if (!grid) return false;
+      const info = state.gridRender[gridRenderId(grid)];
+      return !!(info && Number(info.rendered || 0) < Number(info.total || 0));
+    }
+
+    function activeMediaGrid() {
+      if (state.activeList === "all") return $("recommendRail");
+      const panel = Array.from($("listStack").querySelectorAll(".list-panel")).find((item) => !item.hidden && item.dataset.listId === state.activeList);
+      return panel && panel.querySelector(".media-grid");
+    }
+
+    function itemsForGrid(gridId) {
+      if (gridId === "recommendRail" || gridId === "all") {
+        const source = preferenceItems().length ? preferenceItems() : state.fallback.length ? state.fallback : ranked(allItems());
+        return uniqueMedia(source).filter(hasPoster);
+      }
+      if (gridId === "recent") return uniqueMedia(state.recent.items || []).filter(hasPoster);
+      return uniqueMedia(state.catalog[gridId] || []).filter(hasPoster);
+    }
+
+    function maybeAppendGridForFocus(card) {
+      const grid = card && card.closest && card.closest(".media-grid");
+      if (!grid) return;
+      const info = state.gridRender[gridRenderId(grid)];
+      if (!info || Number(info.rendered || 0) >= Number(info.total || 0)) return;
+      const cards = Array.from(grid.querySelectorAll(".card"));
+      const index = cards.indexOf(card);
+      if (index < 0) return;
+      const threshold = Math.max(0, Number(info.rendered || 0) - gridColumns(grid) * 2);
+      if (index >= threshold) scheduleGridAppend(grid);
+    }
+
+    function scheduleGridAppend(grid) {
+      const gridId = gridRenderId(grid);
+      if (state.activeGridAppendTimer && state.activeGridAppendId === gridId) return;
+      if (state.activeGridAppendTimer) cancelAnimationFrame(state.activeGridAppendTimer);
+      state.activeGridAppendId = gridId;
+      state.activeGridAppendTimer = requestAnimationFrame(() => {
+        state.activeGridAppendTimer = 0;
+        state.activeGridAppendId = "";
+        if (appendGridBatch(grid)) observeInfiniteScroll();
+      });
     }
 
     function ensureRemoteInitialFocus() {
@@ -3694,12 +4546,13 @@
         }, { root: null, rootMargin: "900px 0px", threshold: 0 });
       }
       state.infiniteObserver.unobserve(sentinel);
-      if (canLoadMore()) state.infiniteObserver.observe(sentinel);
+      if (canAppendActiveGrid() || canLoadMore()) state.infiniteObserver.observe(sentinel);
     }
 
     function canLoadMore() {
       if (state.loadingMore) return false;
       if (state.activeList === "recent") return false;
+      if (state.activeList === "live") return false;
       if (state.activeList === "all") return !preferenceItems().length && state.recommendationSource === "fallback" && !state.fallbackPage.done;
       const page = state.catalogPage[state.activeList];
       return !!(page && !page.loading && page.page < page.total);
@@ -3729,9 +4582,10 @@
       if (key) button.dataset.mediaKey = key;
       const rating = item.voteAverage ? Number(item.voteAverage).toFixed(1) : "";
       const poster = displayImage(item.pic, { size: "w342" });
+      const imageOpt = { loading: index < initialGridBatchSize(null) ? "eager" : "lazy", fetchPriority: index < 8 ? "high" : "" };
       const progress = Math.min(100, Math.max(0, Number(item.progress || 0)));
       button.innerHTML = recent ? `
-        <img class="poster" alt="" ${imageAttrs(poster)}>
+        <img class="poster" alt="" ${imageAttrs(poster, imageOpt)}>
         ${item.badge ? `<span class="recent-badge">${escapeHtml(item.badge)}</span>` : ""}
         <div class="card-body">
           <div class="card-title">${escapeHtml(item.title)}</div>
@@ -3739,7 +4593,7 @@
         </div>
         ${progress > 0 ? `<div class="recent-progress" aria-hidden="true"><span style="--recent-progress:${escapeAttr(progress + "%")}"></span></div>` : ""}
       ` : `
-        <img class="poster" alt="" ${imageAttrs(poster)}>
+        <img class="poster" alt="" ${imageAttrs(poster, imageOpt)}>
         ${rating ? `<span class="rating-badge">${escapeHtml(rating)}</span>` : ""}
         ${people > 0 ? `<span class="card-people">${escapeHtml(people)}人</span>` : ""}
         <div class="card-body">
@@ -3771,6 +4625,13 @@
     function mediaDomKey(item) {
       if (!item) return "";
       return item.id || (item.tmdbId && item.mediaType ? `tmdb:${item.mediaType}:${item.tmdbId}` : item.title || "");
+    }
+
+    function mediaRenderKey(item) {
+      if (!item) return "";
+      return [mediaDomKey(item), item.title, item.pic, item.remark, item.voteAverage, item.people, item.progress, item.badge]
+        .map((value) => String(value == null ? "" : value).replace(/[\r\n]+/g, " "))
+        .join("\t");
     }
 
     function mediaHeatKey(item) {
@@ -3941,6 +4802,13 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       if ($("searchInput")) $("searchInput").readOnly = true;
     }
 
+    function submitSearchInput() {
+      const input = $("searchInput");
+      if (!input) return;
+      enableSearchEditing();
+      searchTmdb(input.value);
+    }
+
     async function searchTmdb(keyword) {
       const kw = keyword.trim();
       if (!kw) return;
@@ -3964,29 +4832,76 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       state.selected = item;
       state.detail = null;
       if (!opts.keepPan) resetPanSearch();
-      renderDetailBase(item);
-      clearDetailExtras();
+      ensureSheetViewport($("detailSheet"));
       document.body.classList.add("detail-active");
       $("detailSheet").classList.add("active");
       $("detailSheet").setAttribute("aria-hidden", "false");
+      if (isNativeLeanbackClient()) setTvMode(true);
+      try {
+        renderDetailBase(item);
+        clearDetailExtras();
+      } catch (e) {
+        $("detailTitle").textContent = item && item.title || "详情";
+        $("detailText").textContent = "详情渲染失败：" + (e.message || "unknown");
+      }
       if (!opts.skipHistory && location.hash !== "#detail") history.pushState({ sheet: "detail" }, "", "#detail");
       if (!opts.restore) rememberWatchIntent(item, "view");
+      setNativeToolbarVisible(false, isNativeLeanbackClient());
       loadDetail(item);
       scheduleUiSnapshotSave();
       if (!opts.restore) setTimeout(() => focusRemoteTarget($("detailSearchBtn") || $("closeDetailBtn")), 40);
     }
 
+    function ensureSheetViewport(sheet, display) {
+      if (!sheet) return;
+      sheet.style.position = "fixed";
+      sheet.style.top = "0";
+      sheet.style.right = "0";
+      sheet.style.bottom = "0";
+      sheet.style.left = "0";
+      sheet.style.width = "100%";
+      sheet.style.height = "100vh";
+      sheet.style.display = display || "block";
+      sheet.style.zIndex = sheet.id === "imageViewer" ? "100" : "60";
+    }
+
     function renderDetailBase(item) {
+      resetDetailTextClamp();
       $("detailTitle").textContent = item.title;
       const fallbackText = item.desc || item.remark || "";
-      if (!state.detail || !$("detailText").textContent.trim() || fallbackText) $("detailText").textContent = fallbackText || $("detailText").textContent || "";
-      $("detailMeta").replaceChildren(...detailMeta(item).map((text) => {
+      $("detailText").textContent = fallbackText || "";
+      renderDetailMeta(item, state.detail);
+      renderDetailTitleMeta(item, state.detail);
+      setDetailCoverCarousel(item.landscape ? [item.landscape] : [], "", { allowPoster: false });
+      scheduleDetailTextClamp();
+    }
+
+    function renderDetailMeta(item, detail) {
+      if (isTvMode()) {
+        $("detailMeta").replaceChildren();
+        return;
+      }
+      $("detailMeta").replaceChildren(...detailMeta(item, detail).map((meta) => {
         const span = document.createElement("span");
-        span.className = "meta-pill";
-        span.textContent = text;
+        span.className = "meta-pill" + (meta.strong ? " strong" : "");
+        span.textContent = meta.text || meta;
         return span;
       }));
-      setDetailCoverCarousel(item.landscape ? [item.landscape] : [], "", { allowPoster: false });
+    }
+
+    function renderDetailTitleMeta(item, detail) {
+      const root = $("detailTitleMeta");
+      const items = isTvMode() ? uniqueMeta(detailTitleMeta(item, detail).concat(detailMeta(item, detail))) : detailTitleMeta(item, detail);
+      root.replaceChildren(...items.flatMap((meta, index) => {
+        const span = document.createElement("span");
+        span.className = meta.type || "";
+        span.textContent = meta.text || meta;
+        if (index === 0) return [span];
+        const sep = document.createElement("span");
+        sep.className = "sep";
+        sep.textContent = "·";
+        return [sep, span];
+      }));
     }
 
     function setDetailCoverCarousel(landscapes, poster, options) {
@@ -3996,14 +4911,59 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       state.detailCover.index = 0;
       state.detailCover.token += 1;
       setDetailCoverImage(images[0] || "", poster, options);
+      updateDetailCoverControls();
       if (images.length > 1) {
         const token = state.detailCover.token;
         state.detailCover.timer = setInterval(() => {
           if (token !== state.detailCover.token || !$('detailSheet').classList.contains('active') || document.visibilityState === 'hidden') return;
-          state.detailCover.index = (state.detailCover.index + 1) % state.detailCover.images.length;
-          setDetailCoverImage(state.detailCover.images[state.detailCover.index], "", { allowPoster: false, keepLoading: false });
+          switchDetailCover(1, { allowPoster: false, keepLoading: false });
         }, 5200);
       }
+    }
+
+    function updateDetailCoverControls() {
+      const cover = $("detailImage") && $("detailImage").parentElement;
+      if (!cover) return;
+      const enabled = state.detailCover.images.length > 1;
+      cover.classList.toggle("has-multiple", enabled);
+    }
+
+    function shiftDetailCover(delta) {
+      const images = state.detailCover.images || [];
+      if (images.length <= 1) return;
+      pauseDetailCoverCarousel();
+      switchDetailCover(delta, { allowPoster: false, keepLoading: false });
+      updateDetailCoverControls();
+    }
+
+    function switchDetailCover(delta, options) {
+      const images = state.detailCover.images || [];
+      if (images.length <= 1) return;
+      const start = Math.max(0, Math.min(Number(state.detailCover.index || 0), images.length - 1));
+      const step = delta < 0 ? -1 : 1;
+      const token = state.detailCover.token;
+      tryPreloadDetailCover(start, step, 0, token, options || {});
+    }
+
+    function tryPreloadDetailCover(current, step, attempts, token, options) {
+      const images = state.detailCover.images || [];
+      if (token !== state.detailCover.token || !$('detailSheet').classList.contains('active')) return;
+      if (!images.length || attempts >= images.length - 1) return;
+      const next = (current + step + images.length) % images.length;
+      const src = displayImage(images[next], { size: "w1280" });
+      if (!src) return tryPreloadDetailCover(next, step, attempts + 1, token, options);
+      preloadImage(src, () => {
+        if (token !== state.detailCover.token || !$('detailSheet').classList.contains('active')) return;
+        state.detailCover.index = next;
+        setDetailCoverImage(images[next], "", Object.assign({}, options, { preloadedSrc: src }));
+      }, () => tryPreloadDetailCover(next, step, attempts + 1, token, options));
+    }
+
+    function preloadImage(src, onload, onerror) {
+      const img = new Image();
+      img.onload = onload;
+      img.onerror = onerror;
+      img.src = src;
     }
 
     function restartDetailCoverCarousel() {
@@ -4025,15 +4985,45 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       const src = usePoster ? post || land : land;
       cover.classList.toggle("loading", !src && opts.keepLoading !== false);
       cover.classList.toggle("poster-mode", !!usePoster && !!src);
+      cover.dataset.coverMode = usePoster ? "poster" : "landscape";
       cover.style.setProperty("--detail-cover-bg", src ? `url("${cssUrl(src)}")` : "none");
-      image.classList.remove("active");
       if (src) {
-        image.onload = () => image.classList.add("active");
-        image.src = displayImage(src, { size: usePoster ? "w780" : "w780" });
+        const nextSrc = opts.preloadedSrc || displayImage(src, { size: usePoster ? "w780" : "w1280" });
+        const applyLoaded = () => {
+          image.onload = null;
+          image.onerror = null;
+          image.src = nextSrc;
+          resetDetailCoverFrame(cover);
+          image.classList.add("active");
+        };
+        if (opts.preloadedSrc) {
+          applyLoaded();
+          return;
+        }
+        if (image.getAttribute("src") === nextSrc && image.classList.contains("active")) return;
+        preloadImage(nextSrc, applyLoaded, () => {
+          if (!image.getAttribute("src")) image.classList.remove("active");
+        });
       } else {
         image.onload = null;
+        image.onerror = null;
+        image.classList.remove("active");
         image.removeAttribute("src");
+        resetDetailCoverFrame(cover);
       }
+    }
+
+    function syncDetailCoverFrame(image) {
+      const cover = image && image.parentElement;
+      resetDetailCoverFrame(cover);
+    }
+
+    function resetDetailCoverFrame(cover) {
+      if (!cover) return;
+      cover.style.width = "";
+      cover.style.height = "";
+      cover.style.minHeight = "";
+      cover.style.maxHeight = "";
     }
 
     function pauseDetailCoverCarousel() {
@@ -4046,6 +5036,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       pauseDetailCoverCarousel();
       state.detailCover.images = [];
       state.detailCover.index = 0;
+      updateDetailCoverControls();
       if (clearImage) {
         const image = $("detailImage");
         const cover = image.parentElement;
@@ -4053,7 +5044,9 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         image.classList.remove("active");
         image.removeAttribute("src");
         cover.classList.remove("loading", "poster-mode");
+        delete cover.dataset.coverMode;
         cover.style.setProperty("--detail-cover-bg", "none");
+        resetDetailCoverFrame(cover);
       }
     }
 
@@ -4077,13 +5070,109 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       return String(value || "").replace(/["\\\n\r]/g, "");
     }
 
-    function detailMeta(item) {
-      return [item.mediaType === "tv" ? "剧集" : "电影", item.releaseDate || "", item.voteAverage ? "评分 " + Number(item.voteAverage).toFixed(1) : ""].filter(Boolean);
+    function detailMeta(item, detail) {
+      const data = detail || {};
+      const mediaType = item.mediaType === "tv" ? "剧集" : "电影";
+      const date = data.first_air_date || data.release_date || item.releaseDate || "";
+      const genres = (data.genres || []).map((genre) => genre && genre.name).filter(Boolean).slice(0, 2);
+      const runtime = detailRuntime(data, item);
+      const seasonText = item.mediaType === "tv" && data.number_of_seasons ? `${data.number_of_seasons}季` : "";
+      const metas = [
+        detailDateLabel(item, date),
+        seasonText,
+        runtime
+      ].filter(Boolean);
+      genres.forEach((name) => metas.push(name));
+      return uniqueMeta(metas).slice(0, 8).map((meta) => typeof meta === "string" ? { text: meta } : meta);
+    }
+
+    function detailTitleMeta(item, detail) {
+      const data = detail || {};
+      const mediaType = item.mediaType === "tv" ? "剧集" : "电影";
+      const rating = Number(data.vote_average || item.voteAverage || 0);
+      const episodeProgress = item.mediaType === "tv" ? detailEpisodeProgress(data) : "";
+      const status = detailStatus(data.status || "");
+      return [
+        rating > 0 ? { text: `${rating.toFixed(1)}分`, type: "score" } : null,
+        { text: mediaType },
+        episodeProgress ? { text: episodeProgress } : null,
+        status ? { text: status } : null
+      ].filter(Boolean);
+    }
+
+    function detailRuntime(detail, item) {
+      const runtimes = item.mediaType === "tv" ? detail.episode_run_time || [] : detail.runtime ? [detail.runtime] : [];
+      const value = runtimes.find((runtime) => Number(runtime) > 0);
+      if (!value) return "";
+      return item.mediaType === "tv" ? `每集${Number(value)}分钟` : `${Number(value)}分钟`;
+    }
+
+    function detailEpisodeProgress(detail) {
+      const total = Number(detail.number_of_episodes || 0);
+      const aired = Math.max(Number(detail.last_episode_to_air && detail.last_episode_to_air.episode_number || 0), airedEpisodeFromSeason(detail));
+      if (aired && total) return `${aired}/${total}集`;
+      if (total) return `共${total}集`;
+      if (aired) return `更新至${aired}集`;
+      return "";
+    }
+
+    function airedEpisodeFromSeason(detail) {
+      const season = detail && (detail["season/1"] || detail.season_1);
+      const episodes = season && Array.isArray(season.episodes) ? season.episodes : [];
+      if (!episodes.length) return 0;
+      const todayMs = dateOnlyMs(today());
+      return episodes.reduce((max, ep) => {
+        const airMs = dateOnlyMs(ep && ep.air_date);
+        if (!airMs || airMs > todayMs) return max;
+        return Math.max(max, Number(ep.episode_number || 0));
+      }, 0);
+    }
+
+    function detailStatus(status) {
+      const map = {
+        "Returning Series": "更新中",
+        "Ended": "已完结",
+        "Canceled": "已取消",
+        "Cancelled": "已取消",
+        "In Production": "制作中",
+        "Planned": "计划中",
+        "Released": "已上映",
+        "Post Production": "后期制作"
+      };
+      return map[status] || status || "";
+    }
+
+    function detailDateLabel(item, date) {
+      if (!date) return "";
+      return `${item.mediaType === "tv" ? "首播" : "上映"} ${formatDateCn(date)}`;
+    }
+
+    function formatDateCn(date) {
+      const match = String(date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return date || "";
+      return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`;
+    }
+
+    function dateOnlyMs(date) {
+      const match = String(date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return 0;
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime();
+    }
+
+    function uniqueMeta(items) {
+      const seen = new Set();
+      return items.filter((item) => {
+        const text = typeof item === "string" ? item : item && item.text;
+        const key = String(text || "").trim();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     function clearDetailExtras() {
-      ["seasonBlock", "castBlock", "personWorkBlock"].forEach((id) => $(id).style.display = "none");
-      ["seasonTabs", "episodeRail", "castRail", "personWorkRail"].forEach((id) => $(id).replaceChildren());
+      ["seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"].forEach((id) => $(id).style.display = "none");
+      ["seasonTabs", "episodeRail", "castRail", "personInfo", "personWorkRail", "recommendWorkRail"].forEach((id) => $(id).replaceChildren());
     }
 
     async function loadDetail(item) {
@@ -4094,6 +5183,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         renderDetailExtras(item, body);
       } catch (e) {
         $("detailText").textContent = `详情加载失败：${e.message || "unknown"}`;
+        scheduleDetailTextClamp();
         toast("详情加载失败");
       }
     }
@@ -4101,18 +5191,106 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     function renderDetailExtras(item, detail) {
       const overview = detail.overview || item.desc || item.remark;
       if (overview) $("detailText").textContent = overview;
+      renderDetailMeta(item, detail);
+      renderDetailTitleMeta(item, detail);
+      scheduleDetailTextClamp();
+      renderDetailCoverFromDetail(item, detail);
+      renderCast(detail.credits && detail.credits.cast || []);
+      if (item.mediaType === "tv") renderSeasons(item, detail);
+      loadRecommendations(item);
+      normalizeRails();
+      updatePostPanFocusState();
+    }
+
+    function scheduleDetailTextClamp() {
+      requestAnimationFrame(() => requestAnimationFrame(updateDetailTextClamp));
+    }
+
+    function resetDetailTextClamp() {
+      const text = $("detailText");
+      const more = $("detailMoreBtn");
+      if (text) {
+        text.classList.remove("clamped");
+        text.style.removeProperty("--detail-text-max");
+      }
+      if (more) {
+        more.dataset.expanded = "";
+        more.style.display = "none";
+        more.style.visibility = "";
+        more.textContent = "更多";
+      }
+    }
+
+    function measureDetailMoreHeight(more) {
+      const display = more.style.display;
+      const visibility = more.style.visibility;
+      more.style.display = "inline-flex";
+      more.style.visibility = "hidden";
+      const height = more.offsetHeight || 30;
+      more.style.display = display;
+      more.style.visibility = visibility;
+      return height;
+    }
+
+    function updateDetailTextClamp() {
+      const sheet = $("detailSheet");
+      const text = $("detailText");
+      const more = $("detailMoreBtn");
+      const actions = more && more.closest(".detail-info") && more.closest(".detail-info").nextElementSibling;
+      if (!sheet || !text || !more || !actions || !sheet.classList.contains("active")) return;
+      if (more.dataset.expanded === "1") {
+        text.classList.remove("clamped");
+        text.style.removeProperty("--detail-text-max");
+        more.style.display = "inline-flex";
+        more.style.visibility = "";
+        more.textContent = "收起";
+        return;
+      }
+      text.classList.remove("clamped");
+      text.style.removeProperty("--detail-text-max");
+      more.style.display = "none";
+      more.style.visibility = "";
+      more.textContent = "更多";
+      const sheetRect = sheet.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
+      const textRect = text.getBoundingClientRect();
+      const firstScreenBottom = Math.min(sheetRect.bottom, sheetRect.top + (sheet.clientHeight || window.innerHeight || 0));
+      const safeBottom = firstScreenBottom - Math.max(58, (window.innerHeight || 0) * .06);
+      const overflow = actionsRect.bottom - safeBottom;
+      const naturalHeight = text.scrollHeight;
+      const lineHeight = parseFloat(getComputedStyle(text).lineHeight || "21") || 21;
+      const minHeight = Math.max(44, lineHeight * 2.05);
+      if (overflow <= 0 || naturalHeight <= minHeight + 1) return;
+      const maxHeight = Math.max(minHeight, textRect.height - overflow - measureDetailMoreHeight(more) - 6);
+      if (maxHeight >= naturalHeight - 2) return;
+      text.style.setProperty("--detail-text-max", `${Math.round(maxHeight)}px`);
+      text.classList.add("clamped");
+      more.style.display = "inline-flex";
+      more.style.visibility = "";
+    }
+
+    function toggleDetailTextMore() {
+      const more = $("detailMoreBtn");
+      if (!more) return;
+      more.dataset.expanded = more.dataset.expanded === "1" ? "" : "1";
+      updateDetailTextClamp();
+      scheduleUiSnapshotSave();
+    }
+
+    function renderDetailCoverFromDetail(item, detail) {
       const detailLandscapes = bestDetailBackdrops(detail, 8);
       const detailLandscape = detailLandscapes[0] || "";
       const detailPoster = imageUrl(detail.poster_path, false) || item.pic;
-      if (detailLandscapes.length || detailPoster) {
-        item.landscape = detailLandscape || item.landscape || "";
-        item.pic = item.pic || detailPoster || "";
-        setDetailCoverCarousel(detailLandscapes.length ? detailLandscapes : item.landscape ? [item.landscape] : [], detailPoster || item.pic, { allowPoster: !detailLandscapes.length && !item.landscape });
+      const posterFallback = detailPoster || item.pic || "";
+      if (detailLandscapes.length) {
+        item.landscape = detailLandscape;
+        item.pic = item.pic || posterFallback;
+        setDetailCoverCarousel(detailLandscapes, posterFallback, { allowPoster: false });
+      } else if (posterFallback) {
+        item.landscape = "";
+        item.pic = item.pic || posterFallback;
+        setDetailCoverCarousel([], posterFallback, { allowPoster: true, keepLoading: false });
       }
-      renderCast(detail.credits && detail.credits.cast || []);
-      if (item.mediaType === "tv") renderSeasons(item, detail);
-      normalizeRails();
-      updatePostPanFocusState();
     }
 
     function bestDetailBackdrops(detail, limit) {
@@ -4230,17 +5408,65 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     async function loadPersonWorks(person) {
       try {
-        $("personWorkTitle").textContent = person.name + " 的关联作品";
+        $("personWorkTitle").textContent = "简介";
         $("personWorkBlock").style.display = "";
+        renderPersonInfo(person, null);
         $("personWorkRail").replaceChildren(emptyNode("加载中..."));
-        const body = await requestJson(tmdbPersonUrl(person.id), 18);
-        const works = (body.cast || []).filter((item) => (item.media_type === "movie" || item.media_type === "tv") && item.poster_path).slice(0, 18).map((value, index) => normalizeTmdb(value, { id: "person", title: "关联作品", mediaType: value.media_type }, index));
+        const body = await requestJson(tmdbPersonDetailUrl(person.id), 18);
+        renderPersonInfo(person, body);
+        const credits = body.combined_credits || body;
+        const works = (credits.cast || []).filter((item) => (item.media_type === "movie" || item.media_type === "tv") && item.poster_path).slice(0, 18).map((value, index) => normalizeTmdb(value, { id: "person", title: "关联作品", mediaType: value.media_type }, index));
         fillRail($("personWorkRail"), works);
         updatePostPanFocusState();
       } catch (e) {
+        renderPersonInfo(person, null);
         $("personWorkRail").replaceChildren(emptyNode("关联作品加载失败"));
         updatePostPanFocusState();
       }
+    }
+
+    async function loadRecommendations(item) {
+      const block = $("recommendBlock");
+      const rail = $("recommendWorkRail");
+      if (!block || !rail || !item || !item.tmdbId || !item.mediaType) return;
+      try {
+        const body = await requestJson(tmdbRecommendationsUrl(item), 18);
+        if (state.selected !== item) return;
+        const works = (body.results || [])
+          .map((value, index) => {
+            const mediaType = value.media_type || item.mediaType;
+            if ((mediaType !== "movie" && mediaType !== "tv") || !value.poster_path) return null;
+            return normalizeTmdb(value, { id: "recommend", title: "相关推荐", mediaType }, index);
+          })
+          .filter(Boolean)
+          .slice(0, 18);
+        if (!works.length) {
+          block.style.display = "none";
+          rail.replaceChildren();
+          return;
+        }
+        block.style.display = "";
+        fillRail(rail, works);
+        updatePostPanFocusState();
+      } catch (e) {
+        if (state.selected === item) {
+          block.style.display = "none";
+          rail.replaceChildren();
+        }
+      }
+    }
+
+    function renderPersonInfo(person, detail) {
+      const root = $("personInfo");
+      if (!root) return;
+      const biography = detail && detail.biography || "暂无人物简介";
+      root.innerHTML = `
+        <div class="person-info" aria-live="polite">
+          <div class="person-info-body">
+            <p>${escapeHtml(biography)}</p>
+          </div>
+        </div>
+      `;
     }
 
     function resetPanSearch() {
@@ -4270,6 +5496,8 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       state.pan.tabKeys = "";
       state.pan.focusKey = "";
       state.pan.focusMode = "";
+      state.pan.lastTypeSelect = null;
+      state.pan.keepBlockPositionUntil = 0;
       state.pan.playbackReturn = null;
       if (hideBlock && $("panSearchBlock")) {
         $("panSearchBlock").classList.remove("active");
@@ -4358,7 +5586,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         if (existing) Object.assign(existing, item);
         else map.set(item.key, item);
       });
-      state.pan.results = Array.from(map.values()).sort((a, b) => a.index - b.index);
+      state.pan.results = Array.from(map.values());
       ensureActivePanType();
       scheduleUiSnapshotSave();
       return state.pan.results;
@@ -4448,6 +5676,12 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       return state.pan.health[key] || { state: "idle", summary: "未检测" };
     }
 
+    function panHealthPriority(item) {
+      const health = getPanHealth(item);
+      const value = health && health.state || "idle";
+      return PAN_HEALTH_PRIORITY[value] == null ? PAN_HEALTH_PRIORITY.idle : PAN_HEALTH_PRIORITY[value];
+    }
+
     function panAvailableTypes() {
       const counts = new Map();
       state.pan.results.forEach((item) => {
@@ -4479,22 +5713,12 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     function rankedPanResults(type) {
       const activeType = type || "";
-      const items = state.pan.results
-        .filter((item) => !activeType || normalizePanDiskType(item.diskType) === activeType)
-        .slice();
-      if (!canCheckPanLinks()) return items.sort((a, b) => a.index - b.index);
-      return items.sort((a, b) => {
-        const aSupported = isPanCheckSupported(a);
-        const bSupported = isPanCheckSupported(b);
-        if (aSupported !== bSupported) return aSupported ? -1 : 1;
-        if (!aSupported && !bSupported) return a.index - b.index;
-        const ha = getPanHealth(a).state || "idle";
-        const hb = getPanHealth(b).state || "idle";
-        const pa = PAN_HEALTH_PRIORITY[ha] ?? PAN_HEALTH_PRIORITY.idle;
-        const pb = PAN_HEALTH_PRIORITY[hb] ?? PAN_HEALTH_PRIORITY.idle;
-        if (pa !== pb) return pa - pb;
-        return a.index - b.index;
-      });
+      const source = state.pan.results.filter((item) => !activeType || normalizePanDiskType(item.diskType) === activeType);
+      if (!canCheckPanLinks() || !activeType || !PAN_CHECKABLE_DISK_TYPES.has(normalizePanDiskType(activeType))) return source;
+      return source
+        .map((item, index) => ({ item, index, priority: panHealthPriority(item) }))
+        .sort((a, b) => a.priority - b.priority || Number(a.item.index || a.index) - Number(b.item.index || b.index) || a.index - b.index)
+        .map(({ item }) => item);
     }
 
     function renderPanTabs() {
@@ -4503,7 +5727,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       const types = panAvailableTypes();
       const active = ensureActivePanType();
       const activeEl = document.activeElement;
-      const restoreId = activeEl && tabs.contains(activeEl) && activeEl.dataset.panType || "";
+      const restoreId = activeEl && tabs.contains(activeEl) && getPanTypeFromElement(activeEl) || "";
       const tabKeys = types.map((type) => `${type.id}:${type.count}`).join("\n");
       if (!types.length) {
         state.pan.tabKeys = "";
@@ -4512,9 +5736,10 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       }
       if (tabKeys === state.pan.tabKeys && tabs.children.length === types.length) {
         Array.from(tabs.children).forEach((button) => {
-          const isActive = button.dataset.panType === active;
+          const buttonType = getPanTypeFromElement(button);
+          const isActive = buttonType === active;
           button.classList.toggle("active", isActive);
-          const type = types.find((item) => item.id === button.dataset.panType);
+          const type = types.find((item) => item.id === buttonType);
           if (type) button.textContent = `${type.name} ${type.count}`;
         });
         if (state.pan.focusMode === "tabs") lockPanFocus(findByDataset(tabs, "panType", active) || tabs.querySelector(".chip.active") || tabs.querySelector(".chip"), "tabs");
@@ -4526,30 +5751,72 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         button.className = "chip focusable" + (type.id === active ? " active" : "");
         button.type = "button";
         button.dataset.panType = type.id;
+        button.setAttribute("data-pan-type", type.id);
         button.textContent = `${type.name} ${type.count}`;
         button.addEventListener("focus", () => { state.pan.focusMode = "tabs"; });
-        button.addEventListener("click", () => {
-          if (state.pan.activeType === type.id) {
-            state.pan.focusMode = "results";
-            focusFirstPanResult();
-            return;
-          }
-          const detailTop = $("detailSheet") ? $("detailSheet").scrollTop : 0;
-          state.pan.activeType = type.id;
-          state.pan.renderKeys = "";
-          state.pan.focusMode = "tabs";
-          const list = $("panResultList");
-          if (list) list.scrollTop = 0;
-          renderPanResults();
-          if ($("detailSheet")) $("detailSheet").scrollTop = detailTop;
-          requestAnimationFrame(() => { if ($("detailSheet")) $("detailSheet").scrollTop = detailTop; });
-          lockPanFocus(findByDataset($("panTabs"), "panType", type.id) || $("panTabs").querySelector(".chip.active"), "tabs");
-          scheduleUiSnapshotSave();
-        });
         return button;
       }));
       const restoreTarget = restoreId ? findByDataset(tabs, "panType", restoreId) : state.pan.focusMode === "tabs" ? tabs.querySelector(".chip.active") || tabs.querySelector(".chip") : null;
       if (restoreTarget) lockPanFocus(restoreTarget, "tabs");
+    }
+
+    function getPanTypeFromElement(el) {
+      return el ? String(el.getAttribute("data-pan-type") || el.dataset && el.dataset.panType || "") : "";
+    }
+
+    function handlePanTabEvent(event) {
+      const tabs = $("panTabs");
+      if (!tabs) return false;
+      const target = event && event.target && closestPanTab(event.target);
+      if (!target || !tabs.contains(target)) return false;
+      const typeId = getPanTypeFromElement(target);
+      if (!typeId) return false;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      selectPanType(typeId);
+      return true;
+    }
+
+    function closestPanTab(el) {
+      while (el && el !== document && el !== $("panTabs")) {
+        if (el.getAttribute && el.getAttribute("data-pan-type")) return el;
+        el = el.parentNode;
+      }
+      return null;
+    }
+
+    function selectPanType(typeId) {
+      if (!typeId) return;
+      const now = Date.now();
+      if (state.pan.lastTypeSelect && state.pan.lastTypeSelect.type === typeId && now - state.pan.lastTypeSelect.at < 520) return;
+      state.pan.lastTypeSelect = { type: typeId, at: now };
+      if (state.pan.activeType === typeId) {
+        state.pan.focusMode = "results";
+        focusFirstPanResult();
+        return;
+      }
+      const detailTop = $("detailSheet") ? $("detailSheet").scrollTop : 0;
+      state.pan.keepBlockPositionUntil = now + 600;
+      state.pan.activeType = typeId;
+      state.pan.renderKeys = "";
+      state.pan.focusMode = "tabs";
+      const list = $("panResultList");
+      if (list) list.scrollTop = 0;
+      updatePanTabActive(typeId);
+      renderPanResults();
+      if ($("detailSheet")) $("detailSheet").scrollTop = detailTop;
+      requestAnimationFrame(() => { if ($("detailSheet")) $("detailSheet").scrollTop = detailTop; });
+      lockPanFocus(findByDataset($("panTabs"), "panType", typeId) || $("panTabs").querySelector(".chip.active"), "tabs", { keepBlockPosition: true });
+      scheduleUiSnapshotSave();
+    }
+
+    function updatePanTabActive(typeId) {
+      const tabs = $("panTabs");
+      if (!tabs) return;
+      Array.from(tabs.querySelectorAll("[data-pan-type]")).forEach((button) => {
+        button.classList.toggle("active", getPanTypeFromElement(button) === typeId);
+      });
     }
 
     function focusFirstPanTab() {
@@ -4560,9 +5827,14 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       }
     }
 
+    function isPanSearchActive() {
+      const block = $("panSearchBlock");
+      return !!(block && block.classList.contains("active") && block.style.display !== "none");
+    }
+
     function updatePostPanFocusState() {
-      const panActive = !!($("panSearchBlock") && $("panSearchBlock").classList.contains("active") && $("panSearchBlock").style.display !== "none");
-      ["seasonBlock", "castBlock", "personWorkBlock"].forEach((id) => {
+      const panActive = isPanSearchActive();
+      ["seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"].forEach((id) => {
         const block = $(id);
         if (!block) return;
         block.setAttribute("aria-hidden", panActive ? "true" : "false");
@@ -4609,6 +5881,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       const restoreKey = shouldRestore && activeEl.dataset.panKey || state.pan.focusKey || "";
       list.setAttribute("tabindex", "-1");
       list.setAttribute("role", "listbox");
+      if (patchPanResultList(list, items, active, shouldRestore, restoreKey)) return;
       if (keys === state.pan.renderKeys && list.children.length === items.length) {
         restorePanResultFocus(list, restoreKey, shouldRestore);
         return;
@@ -4619,15 +5892,49 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       restorePanResultFocus(list, restoreKey, shouldRestore);
     }
 
+    function patchPanResultList(list, items, active, shouldRestore, restoreKey) {
+      const existing = Array.from(list.querySelectorAll(".pan-result-item"));
+      if (!existing.length || existing.some((node) => !items.some((item) => item.key === node.dataset.panKey))) return false;
+      const nodes = new Map(existing.map((node) => [node.dataset.panKey, node]));
+      const ordered = items.map((item) => {
+        const node = nodes.get(item.key);
+        if (node) {
+          updatePanResultNode(node, item);
+          return node;
+        }
+        return panResultNode(item);
+      });
+      let reference = list.firstChild;
+      ordered.forEach((node) => {
+        if (node === reference) {
+          reference = reference.nextSibling;
+          return;
+        }
+        list.insertBefore(node, reference);
+      });
+      state.pan.renderKeys = `${active}\n` + items.map((item) => `${item.key}:${getPanHealth(item).state}:${item.normalizedUrl || ""}`).join("\n");
+      observePanVisibleItems();
+      restorePanResultFocus(list, restoreKey, shouldRestore);
+      return true;
+    }
+
+    function updatePanResultNode(button, item) {
+      const health = getPanHealth(item);
+      button.className = "pan-result-item focusable" + (health.state === "bad" ? " is-bad" : "");
+      button.dataset.panKey = item.key;
+      button.innerHTML = panResultHtml(item, health);
+    }
+
     function restorePanResultFocus(list, key, shouldRestore) {
       if (!shouldRestore || !list) return;
       const target = key ? findByDataset(list, "panKey", key) : null;
       const fallback = list.querySelector(".pan-result-item");
-      lockPanFocus(target || fallback, "results");
+      lockPanFocus(target || fallback, "results", { keepBlockPosition: true, once: true });
     }
 
-    function lockPanFocus(target, mode) {
+    function lockPanFocus(target, mode, options) {
       if (!target) return;
+      const opts = options || {};
       const apply = () => {
         if (!$("panSearchBlock") || $("panSearchBlock").style.display === "none") return;
         if (mode && state.pan.focusMode && state.pan.focusMode !== mode) return;
@@ -4637,18 +5944,21 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         if (inPan && active === target) return;
         if (!isVisibleFocusable(target)) return;
         state.pan.focusMode = mode || state.pan.focusMode;
-        focusPanTarget(target);
+        focusPanTarget(target, opts);
       };
       requestAnimationFrame(apply);
+      if (opts.once) return;
       setTimeout(apply, 80);
       setTimeout(apply, 220);
     }
 
-    function focusPanTarget(target) {
+    function focusPanTarget(target, options) {
       if (!target) return;
+      const opts = options || {};
       const list = $("panResultList");
       const tabs = $("panTabs");
-      if (tabs && tabs.contains(target)) centerPanSearchBlock();
+      const keepBlockPosition = opts.keepBlockPosition || Date.now() < Number(state.pan.keepBlockPositionUntil || 0);
+      if (tabs && tabs.contains(target) && !keepBlockPosition) centerPanSearchBlock();
       try {
         target.focus({ preventScroll: true });
       } catch (e) {
@@ -4656,7 +5966,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       }
       if (list && list.contains(target)) {
         keepPanResultItemVisible(target, list);
-        ensurePanListViewport();
+        if (!opts.keepBlockPosition) ensurePanListViewport();
         return;
       }
       if (tabs && tabs.contains(target)) return;
@@ -4717,7 +6027,14 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       button.className = "pan-result-item focusable" + (health.state === "bad" ? " is-bad" : "");
       button.type = "button";
       button.dataset.panKey = item.key;
-      button.innerHTML = `
+      button.innerHTML = panResultHtml(item, health);
+      button.addEventListener("focus", () => { state.pan.focusKey = item.key; state.pan.focusMode = "results"; });
+      button.addEventListener("click", () => playPanResult(item));
+      return button;
+    }
+
+    function panResultHtml(item, health) {
+      return `
         <div class="pan-result-title">
           <span>${escapeHtml(item.title || state.pan.keyword || "盘搜资源")}</span>
           ${panHealthIndicatorHtml(item, health)}
@@ -4725,9 +6042,6 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         <div class="pan-result-meta">${escapeHtml(panDiskName(item.diskType))}${item.password ? " · 提取码 " + escapeHtml(item.password) : ""}${item.source ? " · " + escapeHtml(item.source) : ""}</div>
         <div class="pan-result-url">${escapeHtml(item.normalizedUrl || item.url)}</div>
       `;
-      button.addEventListener("focus", () => { state.pan.focusKey = item.key; state.pan.focusMode = "results"; });
-      button.addEventListener("click", () => playPanResult(item));
-      return button;
     }
 
     async function rememberPanPlaybackReturn(item) {
@@ -4806,11 +6120,32 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         });
       }, { root: list, threshold: [0.25, 0.6] });
       list.querySelectorAll(".pan-result-item").forEach((node) => state.pan.observer.observe(node));
+      scheduleVisiblePanCheck();
+    }
+
+    function scheduleVisiblePanCheck() {
+      clearTimeout(scheduleVisiblePanCheck.timer);
+      scheduleVisiblePanCheck.timer = setTimeout(queueVisiblePanChecks, 90);
+    }
+
+    function queueVisiblePanChecks() {
+      if (!canCheckPanLinks()) return;
+      const list = $("panResultList");
+      if (!list) return;
+      const listRect = list.getBoundingClientRect();
+      const bottomLimit = listRect.bottom + Math.max(80, listRect.height * .35);
+      Array.from(list.querySelectorAll(".pan-result-item")).some((node) => {
+        const rect = node.getBoundingClientRect();
+        if (rect.bottom < listRect.top || rect.top > bottomLimit) return false;
+        const item = state.pan.results.find((value) => value.key === node.dataset.panKey);
+        queuePanCheck(item);
+        return state.pan.queued.size + state.pan.inFlight.size >= 10;
+      });
     }
 
     function queueAllVisiblePanFallback() {
       if (!canCheckPanLinks()) return;
-      rankedPanResults(state.pan.activeType).filter(isPanCheckSupported).slice(0, 8).forEach(queuePanCheck);
+      queueVisiblePanChecks();
     }
 
     function queuePanCheck(item) {
@@ -4871,6 +6206,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
           state.pan.inFlight.delete(key);
         });
         renderPanResults();
+        scheduleVisiblePanCheck();
         if (state.pan.queued.size) schedulePanCheckFlush();
       }
     }
@@ -4951,19 +6287,23 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     }
 
     function closeDetail(fromPopState) {
+      const sheet = $("detailSheet");
       document.body.classList.remove("detail-active");
       document.body.classList.remove("episode-active");
-      $("detailSheet").classList.remove("active");
-      $("detailSheet").setAttribute("aria-hidden", "true");
+      sheet.classList.remove("active");
+      sheet.style.display = "";
+      sheet.setAttribute("aria-hidden", "true");
       state.detailReturn = null;
       stopDetailCoverCarousel(true);
       resetPanSearch();
+      setNativeToolbarVisible(true);
       scheduleUiSnapshotSave();
       if (!fromPopState && location.hash === "#detail") history.back();
     }
 
     function openSync(options) {
       const opts = options || {};
+      ensureSheetViewport($("syncSheet"));
       $("syncSheet").classList.add("active");
       $("syncSheet").setAttribute("aria-hidden", "false");
       $("nsecInput").value = state.identity ? state.identity.nsec : "";
@@ -4973,8 +6313,10 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     }
 
     function closeSync(fromPopState) {
-      $("syncSheet").classList.remove("active");
-      $("syncSheet").setAttribute("aria-hidden", "true");
+      const sheet = $("syncSheet");
+      sheet.classList.remove("active");
+      sheet.style.display = "";
+      sheet.setAttribute("aria-hidden", "true");
       scheduleUiSnapshotSave();
       if (!fromPopState && location.hash === "#sync") history.back();
     }
@@ -5009,6 +6351,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         image.style.display = "";
         image.src = url;
       }
+      ensureSheetViewport($("imageViewer"), "grid");
       $("imageViewer").classList.add("active");
       $("imageViewer").setAttribute("aria-hidden", "false");
       if (!opts.skipHistory) history.pushState({ sheet: "image" }, "", "#image");
@@ -5017,10 +6360,12 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     }
 
     function closeImage(fromPopState) {
+      const viewer = $("imageViewer");
       document.body.classList.remove("episode-active");
-      $("imageViewer").classList.remove("active");
-      $("imageViewer").classList.remove("episode-mode");
-      $("imageViewer").setAttribute("aria-hidden", "true");
+      viewer.classList.remove("active");
+      viewer.classList.remove("episode-mode");
+      viewer.style.display = "";
+      viewer.setAttribute("aria-hidden", "true");
       $("viewerImage").removeAttribute("src");
       $("viewerImage").style.display = "";
       $("episodeViewer").style.display = "none";
@@ -5035,6 +6380,25 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       rememberDetailReturn($("detailSearchBtn"));
       await sdk().search(title, { direct: true });
       toast("已发起原生搜索");
+    }
+
+    async function openLiveHome() {
+      try {
+        const api = sdk();
+        if (window.fm && api.openLive) {
+          await api.openLive();
+          toast("已打开直播");
+        } else if (api.openLive) {
+          await api.openLive();
+        } else if (window.fongmi && window.fongmi.app && window.fongmi.app.openLive) {
+          await window.fongmi.app.openLive();
+          toast("已打开直播");
+        } else {
+          toast("当前环境不支持打开直播");
+        }
+      } catch (e) {
+        toast("打开直播失败：" + (e.message || "unknown"));
+      }
     }
 
     function rememberDetailReturn(target) {
@@ -5261,6 +6625,10 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     async function recordPreference(item, action, extra) {
       if (action !== "watch") return;
+      if (await isPreferencePublishBlocked()) {
+        setStatus("publish", "删除保护中，暂停发布");
+        return;
+      }
       if (action === "watch" && await hasPublishedHeat(item)) return;
       const event = await createPreferenceEvent(item, action, extra || {});
       if (!event) return;
@@ -5849,8 +7217,8 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       toast("本机偏好缓存已清理");
     }
 
-    async function clearMyNostrData() {
-      const identity = await ensureIdentity();
+    async function clearMyNostrData(identity) {
+      identity = identity || await ensureIdentity();
       if (!identity || !identity.pubkey || !identity.secret) return toast("请先同步或生成身份");
       setStatus("publish", "查询我的事件");
       const since = hotWindowStart();
@@ -5879,8 +7247,12 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     }
 
     async function deleteAllPreferenceData() {
+      const identity = await ensureIdentity();
+      await markIdentityDeletedLocally(identity);
+      stopWatchTracking(false);
+      await clearPendingWatch();
       await clearLocalPreferenceData();
-      await clearMyNostrData();
+      await clearMyNostrData(identity);
     }
 
     function stripLocal(event) {
@@ -5943,6 +7315,20 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       $("imageViewer").addEventListener("click", (event) => {
         if (event.target === $("imageViewer")) closeImage(false);
       });
+      bindDetailCoverSwipe();
+      $("detailMoreBtn").addEventListener("click", toggleDetailTextMore);
+      $("panTabs").addEventListener("click", handlePanTabEvent);
+      $("panTabs").addEventListener("touchend", handlePanTabEvent);
+      $("panTabs").addEventListener("keydown", (event) => {
+        const key = normalizeRemoteKey(event);
+        if (key !== "Enter" && event.key !== " ") return;
+        handlePanTabEvent(event);
+      });
+      $("panTabs").addEventListener("keyup", (event) => {
+        const key = normalizeRemoteKey(event);
+        if (key !== "Enter" && event.key !== " ") return;
+        handlePanTabEvent(event);
+      });
       $("searchInput").addEventListener("input", scheduleSearchSuggest);
       $("searchInput").addEventListener("pointerdown", enableSearchEditing);
       $("searchInput").addEventListener("mousedown", enableSearchEditing);
@@ -5986,11 +7372,11 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       });
       $("searchForm").addEventListener("submit", (event) => {
         event.preventDefault();
-        searchTmdb($("searchInput").value);
+        submitSearchInput();
       });
       $("searchForm").querySelector("button[type='submit']").addEventListener("click", (event) => {
         event.preventDefault();
-        searchTmdb($("searchInput").value);
+        submitSearchInput();
       });
       $("clearSearchBtn").addEventListener("click", clearSearchResults);
       $("closeDetailBtn").addEventListener("click", () => closeDetail(false));
@@ -6007,6 +7393,44 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       $("backTopBtn").addEventListener("click", () => {
         scrollHomeToTop();
       });
+    }
+
+    function bindDetailCoverSwipe() {
+      const cover = $("detailImage") && $("detailImage").parentElement;
+      if (!cover) return;
+      cover.addEventListener("touchstart", (event) => {
+        if (document.documentElement.classList.contains("tv-mode") || state.detailCover.images.length <= 1) return;
+        const touch = event.touches && event.touches[0];
+        if (!touch) return;
+        state.detailCover.swipe = { x: touch.clientX, y: touch.clientY, at: Date.now(), moved: false };
+      }, { passive: true });
+      cover.addEventListener("touchmove", (event) => {
+        const swipe = state.detailCover.swipe;
+        const touch = event.touches && event.touches[0];
+        if (!swipe || !touch) return;
+        const dx = touch.clientX - swipe.x;
+        const dy = touch.clientY - swipe.y;
+        if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+          swipe.moved = true;
+          event.preventDefault();
+        }
+      }, { passive: false });
+      cover.addEventListener("touchend", (event) => {
+        const swipe = state.detailCover.swipe;
+        state.detailCover.swipe = null;
+        if (!swipe || !swipe.moved || state.detailCover.images.length <= 1) return;
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+        const dx = touch.clientX - swipe.x;
+        const dy = touch.clientY - swipe.y;
+        if (Math.abs(dx) < 42 || Math.abs(dx) < Math.abs(dy) * 1.25 || Date.now() - swipe.at > 900) return;
+        event.preventDefault();
+        event.stopPropagation();
+        shiftDetailCover(dx < 0 ? 1 : -1);
+      }, { passive: false });
+      cover.addEventListener("touchcancel", () => {
+        state.detailCover.swipe = null;
+      }, { passive: true });
     }
 
     function scrollHomeToTop() {
@@ -6082,6 +7506,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) return;
         if (handleScrollableOverlayKey(key, event)) return;
         if (handlePanDirectionalKey(key, event)) return;
+        if (handleDetailDirectionalKey(key, event)) return;
         const target = nearestFocusable(key);
         if (target) {
           event.preventDefault();
@@ -6104,7 +7529,18 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       if (isTextEditingElement(el)) return false;
       event.preventDefault();
       event.stopPropagation();
-      el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+      const panType = getPanTypeFromElement(el);
+      if (panType) {
+        selectPanType(panType);
+        return true;
+      }
+      if (typeof el.click === "function") {
+        el.click();
+      } else {
+        const click = document.createEvent("MouseEvents");
+        click.initMouseEvent("click", true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+        el.dispatchEvent(click);
+      }
       return true;
     }
 
@@ -6317,6 +7753,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       if (!isConnectionPanelOpen()) return false;
       const active = document.activeElement;
       if (isPanelTextField(active) && !active.readOnly) {
+        if (normalizeRemoteKey(event) === "Backspace") return false;
         event.preventDefault();
         event.stopPropagation();
         if (event.stopImmediatePropagation) event.stopImmediatePropagation();
@@ -6420,21 +7857,27 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       const inTabs = tabs.contains(active);
       const inResults = list.contains(active);
       if (!inTabs && !inResults) {
-        if (active === $("panSearchBtn") && key === "ArrowDown" && $("panSearchBlock") && $("panSearchBlock").classList.contains("active")) {
+        if ((active === $("panSearchBtn") || active === $("detailSearchBtn")) && key === "ArrowDown" && isPanSearchActive()) {
           const target = tabs.querySelector(".chip.active") || tabs.querySelector(".chip") || list.querySelector(".pan-result-item");
           if (target) {
             event.preventDefault();
             state.pan.focusMode = tabs.contains(target) ? "tabs" : "results";
-            focusPanTarget(target);
+            focusPanTarget(target, { keepBlockPosition: true });
             return true;
           }
         }
-        if ($("panSearchBlock") && $("panSearchBlock").classList.contains("active") && $("detailSheet") && $("detailSheet").contains(active)) {
+        if (isPanSearchActive() && $("detailSheet") && $("detailSheet").contains(active)) {
           const panRect = $("panSearchBlock").getBoundingClientRect();
           const activeRect = active.getBoundingClientRect ? active.getBoundingClientRect() : null;
           if (key === "ArrowDown" && activeRect && activeRect.bottom <= panRect.bottom + 8) {
             event.preventDefault();
-            centerPanSearchBlock();
+            const target = tabs.querySelector(".chip.active") || tabs.querySelector(".chip") || list.querySelector(".pan-result-item");
+            if (target) {
+              state.pan.focusMode = tabs.contains(target) ? "tabs" : "results";
+              focusPanTarget(target, { keepBlockPosition: true });
+            } else {
+              centerPanSearchBlock();
+            }
             return true;
           }
         }
@@ -6458,10 +7901,12 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       if (list.contains(target)) {
         state.pan.focusKey = target.dataset.panKey || state.pan.focusKey;
         state.pan.focusMode = "results";
-        focusPanTarget(target);
+        focusPanTarget(target, { keepBlockPosition: true });
       } else {
         state.pan.focusMode = "tabs";
-        focusPanTarget(target);
+        const panType = getPanTypeFromElement(target);
+        if (panType && panType !== state.pan.activeType) selectPanType(panType);
+        focusPanTarget(target, { keepBlockPosition: true });
       }
       return true;
     }
@@ -6490,6 +7935,113 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       return best || items[0];
     }
 
+    function handleDetailDirectionalKey(key, event) {
+      const sheet = $("detailSheet");
+      const active = document.activeElement;
+      if (!sheet || !sheet.classList.contains("active") || !active || !sheet.contains(active)) return false;
+      if (isPanSearchActive() && isPanFocusTarget(active)) return false;
+      const currentBlock = detailFocusBlock(active);
+      if (!currentBlock) return false;
+      let target = null;
+      if (key === "ArrowLeft" || key === "ArrowRight") target = detailHorizontalTarget(currentBlock, active, key === "ArrowRight" ? 1 : -1);
+      else target = detailVerticalTarget(currentBlock, active, key === "ArrowDown" ? 1 : -1);
+      if (!target) return false;
+      event.preventDefault();
+      event.stopPropagation();
+      state.pan.focusMode = "";
+      focusRemoteTarget(target);
+      return true;
+    }
+
+    function detailFocusBlock(el) {
+      if (el === $("closeDetailBtn")) return { id: "closeDetailBtn", root: $("closeDetailBtn") };
+      if (el === $("detailMoreBtn")) return { id: "detailInfo", root: el.closest(".detail-info") };
+      if (el === $("detailSearchBtn") || el === $("panSearchBtn")) return { id: "detailActions", root: el.closest(".actions") };
+      const ids = ["panSearchBlock", "seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"];
+      for (const id of ids) {
+        const root = $(id);
+        if (root && root.contains(el)) return { id, root };
+      }
+      return null;
+    }
+
+    function detailBlockOrder() {
+      const order = [];
+      if (isVisibleFocusable($("closeDetailBtn"))) order.push({ id: "closeDetailBtn", root: $("closeDetailBtn") });
+      const info = $("detailMoreBtn") && $("detailMoreBtn").closest(".detail-info");
+      if (info && detailBlockFocusables(info).length) order.push({ id: "detailInfo", root: info });
+      const actions = $("detailSearchBtn") && $("detailSearchBtn").closest(".actions");
+      if (actions && detailBlockFocusables(actions).length) order.push({ id: "detailActions", root: actions });
+      ["panSearchBlock", "seasonBlock", "castBlock", "personWorkBlock", "recommendBlock"].forEach((id) => {
+        const root = $(id);
+        if (root && root.style.display !== "none" && root.getAttribute("aria-hidden") !== "true" && detailBlockFocusables(root).length) order.push({ id, root });
+      });
+      return order;
+    }
+
+    function detailVerticalTarget(currentBlock, active, delta) {
+      const seasonTarget = currentBlock.id === "seasonBlock" ? detailSeasonVerticalTarget(active, delta) : null;
+      if (seasonTarget) return seasonTarget;
+      const order = detailBlockOrder();
+      const index = order.findIndex((block) => block.id === currentBlock.id);
+      if (index < 0) return null;
+      const blocks = delta > 0 ? order.slice(index + 1) : order.slice(0, index).reverse();
+      for (const block of blocks) {
+        const target = detailClosestInBlock(block.root, active, delta);
+        if (target) return target;
+      }
+      return null;
+    }
+
+    function detailHorizontalTarget(currentBlock, active, delta) {
+      const row = active && active.closest && active.closest("#seasonTabs, #episodeRail, #castRail, #personWorkRail, #recommendWorkRail, #panTabs, .actions");
+      const items = detailBlockFocusables(row || currentBlock.root);
+      const index = items.indexOf(active);
+      if (index < 0) return null;
+      return items[index + delta] || null;
+    }
+
+    function detailSeasonVerticalTarget(active, delta) {
+      const tabs = $("seasonTabs");
+      const rail = $("episodeRail");
+      if (tabs && tabs.contains(active)) {
+        if (delta < 0) return null;
+        return detailClosestInBlock(rail, active, delta);
+      }
+      if (rail && rail.contains(active)) {
+        if (delta > 0) return null;
+        return detailClosestInBlock(tabs, active, delta);
+      }
+      return null;
+    }
+
+    function detailClosestInBlock(root, active, delta) {
+      const items = detailBlockFocusables(root);
+      if (!items.length) return null;
+      if (!active || !active.getBoundingClientRect) return delta > 0 ? items[0] : items[items.length - 1];
+      const from = center(active.getBoundingClientRect());
+      let best = null;
+      let bestScore = Infinity;
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+        const to = center(rect);
+        const vertical = Math.max(0, delta > 0 ? rect.top - from.y : from.y - rect.bottom);
+        const cross = Math.abs(to.x - from.x);
+        const score = vertical * 1.1 + cross * 1.5;
+        if (score < bestScore) {
+          best = item;
+          bestScore = score;
+        }
+      }
+      return best || (delta > 0 ? items[0] : items[items.length - 1]);
+    }
+
+    function detailBlockFocusables(root) {
+      if (!root) return [];
+      if (root.matches && root.matches(".focusable,button,input,textarea")) return isVisibleFocusable(root) ? [root] : [];
+      return Array.from(root.querySelectorAll(".focusable,button,input,textarea")).filter(isVisibleFocusable);
+    }
+
     function isFirstVisiblePanResult(el) {
       const list = $("panResultList");
       if (!list || !list.contains(el)) return false;
@@ -6498,6 +8050,14 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
 
     function siblingFocusable(root, current, delta) {
       if (!root || !current) return null;
+      if (root.id === "panResultList" && current.classList && current.classList.contains("pan-result-item")) {
+        let target = delta > 0 ? current.nextElementSibling : current.previousElementSibling;
+        while (target) {
+          if (target.classList && target.classList.contains("pan-result-item") && isVisibleFocusable(target)) return target;
+          target = delta > 0 ? target.nextElementSibling : target.previousElementSibling;
+        }
+        return null;
+      }
       const items = Array.from(root.querySelectorAll(".focusable,button,input,textarea")).filter(isVisibleFocusable);
       const index = items.indexOf(current);
       if (index < 0) return null;
@@ -6517,6 +8077,7 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       } catch (e) {
         target.focus();
       }
+      maybeAppendGridForFocus(target);
       keepFocusInView(target);
     }
 
@@ -6724,7 +8285,8 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       state.detailReturn = snapshot.detailReturn || null;
       restoreSearchSnapshot(snapshot.search);
       if (snapshot.activeList) state.activeList = snapshot.activeList;
-      renderAll();
+      normalizeActiveListForViewport();
+      renderAll({ deferContent: snapshot.route === "home" });
       if (snapshot.connectionOpen && $("connectionDock") && $("connectionBody")) {
         $("connectionDock").classList.add("open");
         $("connectionBody").classList.add("open");
@@ -6766,9 +8328,9 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       fitConnectionPanel();
       renderConnection();
       if (!isPanPlaybackReturn) {
-        if ($("detailSheet") && $("detailSheet").classList.contains("active") && state.selected) renderDetailBase(state.selected);
+        if ($("detailSheet") && $("detailSheet").classList.contains("active") && state.selected) refreshActiveDetailView();
         if ($("panSearchBlock") && $("panSearchBlock").classList.contains("active")) renderPanResults();
-        renderAll();
+        renderAll({ deferContent: uiSnapshotRoute() === "home" });
         normalizeRails();
       }
       if (!restorePanPlaybackReturn({ skipRender: isPanPlaybackReturn })) restoreDetailReturn();
@@ -6784,6 +8346,19 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
         }
       }
       scheduleUiSnapshotSave();
+    }
+
+    function refreshActiveDetailView() {
+      if (state.detail && state.selected) {
+        renderDetailExtras(state.selected, state.detail);
+        return;
+      }
+      if (state.detailCover.images && state.detailCover.images.length) {
+        updateDetailCoverControls();
+        syncDetailCoverFrame($("detailImage"));
+        return;
+      }
+      renderDetailBase(state.selected);
     }
 
     function safeJson(text, fallback) {
@@ -6831,12 +8406,16 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
       document.body.style.minHeight = getComputedStyle(document.documentElement).getPropertyValue("--fm-web-height");
       lockViewportWidth();
       fitConnectionPanel();
+      renderAll({ deferContent: uiSnapshotRoute() === "home" });
+      scheduleDetailTextClamp();
       scheduleHistorySettlement();
     });
 
     window.addEventListener("resize", () => {
       lockViewportWidth();
       fitConnectionPanel();
+      renderAll({ deferContent: uiSnapshotRoute() === "home" });
+      scheduleDetailTextClamp();
     });
     window.addEventListener("scroll", () => {
       state.scrollingUntil = Date.now() + 900;
@@ -6866,10 +8445,13 @@ nsec: ${state.identity.nsec}` : "身份未就绪";
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         saveUiSnapshotNow();
+        state.detailCover.swipe = null;
         pauseDetailCoverCarousel();
       }
       if (document.visibilityState === "visible") {
         restartDetailCoverCarousel();
+        updateDetailCoverControls();
+        syncDetailCoverFrame($("detailImage"));
         scheduleWebHomeResume();
       }
     });

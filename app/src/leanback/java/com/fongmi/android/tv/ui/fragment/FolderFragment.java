@@ -81,6 +81,11 @@ public class FolderFragment extends BaseFragment {
         Optional.ofNullable(getChild()).ifPresent(f -> f.toggleFilter(visible));
     }
 
+    public boolean requestContentFocus() {
+        TypeFragment child = getChild();
+        return child != null && child.requestContentFocus();
+    }
+
     public void onRefresh() {
         Optional.ofNullable(getChild()).ifPresent(TypeFragment::onRefresh);
     }

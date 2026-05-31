@@ -44,6 +44,8 @@
     <string name="play_scale">原始</string>
     <string name="play_config">配置</string>
     <string name="play_change">換源</string>
+    <string name="play_fullscreen">全螢幕</string>
+    <string name="play_exit_fullscreen">退出全螢幕</string>
     <string name="play_invert">反轉</string>
     <string name="play_across">跨類</string>
     <string name="play_reverse">倒序</string>
@@ -122,6 +124,21 @@
     <string name="setting_danmaku">彈幕設定</string>
     <string name="setting_enhance">增強功能</string>
     <string name="setting_debug_log">調試日誌</string>
+    <string name="setting_shell_proxy">Proxy</string>
+    <string name="setting_shell_proxy_config">Proxy</string>
+    <string name="setting_proxy_url">socks5://127.0.0.1:9978</string>
+    <string name="setting_proxy_hosts">匹配網域</string>
+    <string name="setting_proxy_rules">Proxy 規則</string>
+    <string name="setting_proxy_rules_raw">Raw 規則</string>
+    <string name="setting_proxy_rules_hint">Raw JSON：{&quot;proxy&quot;:[{&quot;hosts&quot;:[&quot;example.com&quot;],&quot;urls&quot;:[&quot;socks5://127.0.0.1:1080&quot;]}]}</string>
+    <string name="setting_proxy_default_url">預設代理位址</string>
+    <string name="setting_proxy_rule_url">代理位址</string>
+    <string name="setting_proxy_text_mode">文字</string>
+    <string name="setting_proxy_ui_mode">編輯</string>
+    <string name="setting_proxy_add_rule">新增規則</string>
+    <string name="setting_proxy_rule_count">%1$d 條規則</string>
+    <string name="setting_proxy_invalid">代理地址無效</string>
+    <string name="setting_one_key_sync">一鍵同步</string>
     <string name="setting_incognito">無痕模式</string>
     <string name="setting_drive_check">網盤檢測</string>
     <string name="setting_search_thread">搜索線程</string>
@@ -148,6 +165,53 @@
     <string name="backup_success">備份成功</string>
     <string name="backup_fail">備份失敗</string>
 
+    <!-- Device Sync -->
+    <string name="device_select">選擇設備</string>
+    <string name="device_offline">設備已離線</string>
+    <string name="sync_success">同步完成</string>
+    <string name="sync_progress">正在同步...</string>
+    <string name="sync_failed">同步失敗</string>
+    <string name="sync_mode_to_remote">本機 -> 選中設備</string>
+    <string name="sync_mode_from_remote">選中設備 -> 本機</string>
+    <string name="sync_local_device">本機</string>
+    <string name="sync_remote_device">選中設備</string>
+    <string name="sync_sender">發送</string>
+    <string name="sync_receiver">接收</string>
+    <string name="sync_direction_change">切換同步方向</string>
+    <string name="sync_change_device">更換設備</string>
+    <string name="sync_switch_short">切換</string>
+    <string name="sync_push">推送</string>
+    <string name="sync_pull">拉取</string>
+    <string name="sync_select_all">全選</string>
+    <string name="sync_select_none">取消</string>
+    <string name="sync_item_config">接口與站源列表</string>
+    <string name="sync_item_spider">Jar/腳本保存資料</string>
+    <string name="sync_item_webhome">WebHome 主頁資料</string>
+    <string name="sync_item_search">搜尋記錄</string>
+    <string name="sync_item_history">觀看記錄</string>
+    <string name="sync_item_keep">收藏資料</string>
+    <string name="sync_item_settings">應用設定</string>
+    <string name="sync_paths_title">同步目錄</string>
+    <string name="sync_paths_edit">編輯</string>
+    <string name="sync_paths_desc">每行一個外置儲存相對路徑，預設同步 TV、TVBox、TVData。可加入本地包目錄；目錄內容會隨 Jar/腳本保存資料一起同步。</string>
+    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+    <string name="sync_device_mobile">手機</string>
+    <string name="sync_device_tv">電視</string>
+    <string name="sync_discovering">正在發現設備...</string>
+    <string name="sync_no_device">未發現設備，請確認兩台設備在同一局域網並已打開 WebHTV，然後刷新。</string>
+    <string name="sync_selected">已選擇：%1$s · %2$s</string>
+    <string name="sync_start">開始同步</string>
+    <string name="sync_cancel">取消同步</string>
+    <string name="sync_prepare_files">正在準備同步文件...</string>
+    <string name="sync_prepare_progress">正在壓縮：%1$d 個文件，%2$s，%3$s/s</string>
+    <string name="sync_wait_remote">正在等待選中設備發送資料...</string>
+    <string name="sync_upload_prepare">準備上傳：%1$d 個文件，%2$s，壓縮後 %3$s</string>
+    <string name="sync_upload_progress">%1$d%% · %2$s / %3$s · %4$s/s · %5$d 個文件</string>
+    <string name="sync_canceled">同步已取消</string>
+    <string name="sync_select_device_first">請先選擇設備</string>
+    <string name="sync_failed_with_reason">同步失敗：%1$s</string>
+    <string name="sync_receive_success">已接收同步資料</string>
+
     <!-- Player -->
     <string name="player">播放核心</string>
     <string name="player_render">渲染方式</string>
@@ -172,6 +236,7 @@
 
     <!-- Search -->
     <string name="search_keyword">關鍵字…</string>
+    <string name="site_search_hint">搜尋站點…</string>
     <string name="search_record">歷史</string>
     <string name="search_suggest">建議</string>
     <string name="search_hot">熱搜</string>
@@ -180,6 +245,7 @@
     <string name="dialog_edit">修改</string>
     <string name="dialog_positive">確定</string>
     <string name="dialog_negative">取消</string>
+    <string name="dialog_reset">重置</string>
     <string name="dialog_select_title">選擇章節</string>
     <string name="dialog_config_hint">請輸入配置…</string>
     <string name="dialog_config_name">請輸入名稱…</string>
@@ -212,6 +278,11 @@
 
     <!-- Hint -->
     <string name="copied">已複製</string>
+    <string name="debug_log_dialog_message">調試日誌服務已啟動。\n\n局域網地址：\n%1$s\n\n本機地址：\n%2$s\n\n電視端沒有瀏覽器也沒關係，請在同一局域網的電腦或手機瀏覽器中打開局域網地址。</string>
+    <string name="debug_log_open_browser">打開瀏覽器</string>
+    <string name="debug_log_copy_url">複製地址</string>
+    <string name="debug_log_no_browser">未找到可打開網頁的應用，請使用局域網地址訪問</string>
+    <string name="debug_log_url_copied">調試日誌地址已複製</string>
 
     <!-- UNIT -->
     <string name="all">全部</string>
@@ -342,8 +413,6 @@
     <string name="detail_theme_dark">深色</string>
     <string name="detail_theme_light">淺色</string>
     <string name="detail_quality">畫質</string>
-    <string name="play_fullscreen">全螢幕</string>
-    <string name="play_exit_fullscreen">退出</string>
     <string name="setting_tmdb">TMDB 設定</string>
     <string name="setting_detail_open_mode">詳情開啟方式</string>
     <string name="setting_detail_open_fusion">沉浸融合</string>

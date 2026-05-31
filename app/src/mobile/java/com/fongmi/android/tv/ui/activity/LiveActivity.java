@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
@@ -649,6 +650,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.widget.line.setText(mChannel.getLine());
         mBinding.widget.name.setText(mChannel.getShow());
         mBinding.control.title.setText(mChannel.getShow());
+        setSizeText();
         mBinding.widget.namePip.setText(mChannel.getShow());
         mBinding.widget.number.setText(mChannel.getNumber());
         mBinding.widget.numberPip.setText(mChannel.getNumber());
@@ -704,9 +706,17 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.right.lock.setImageResource(isLock() ? R.drawable.ic_control_lock_on : R.drawable.ic_control_lock_off);
     }
 
+    private void setSizeText() {
+        String text = player().getSizeText();
+        mBinding.control.size.setText(text);
+        mBinding.control.size.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
     private void resetAdapter() {
         mBinding.control.action.line.setVisibility(View.GONE);
         mBinding.control.title.setText("");
+        mBinding.control.size.setText("");
+        mBinding.control.size.setVisibility(View.GONE);
         mEpgDataAdapter.clear();
         mChannelAdapter.clear();
         mGroupAdapter.clear();
@@ -779,6 +789,11 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
                 checkEnded();
                 break;
         }
+    }
+
+    @Override
+    protected void onSizeChanged(VideoSize size) {
+        setSizeText();
     }
 
     @Override

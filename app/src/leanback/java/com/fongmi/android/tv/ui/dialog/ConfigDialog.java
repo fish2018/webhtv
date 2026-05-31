@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
@@ -30,6 +31,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+
+import java.util.Objects;
 
 public class ConfigDialog extends BaseAlertDialog {
 
@@ -170,7 +173,13 @@ public class ConfigDialog extends BaseAlertDialog {
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) return;
-        ((ConfigListener) requireActivity()).setConfig(Config.find("file:/" + FileChooser.getPathFromUri(result.getData().getData()).replace(Path.rootPath(), ""), type));
-        dismiss();
+        FragmentActivity activity = requireActivity();
+        String path = Objects.toString(FileChooser.getPathFromUri(result.getData().getData()), "");
+        if (TextUtils.isEmpty(path)) return;
+        App.post(() -> {
+            if (activity.isFinishing() || activity.isDestroyed()) return;
+            dismissAllowingStateLoss();
+            App.post(() -> ((ConfigListener) activity).setConfig(Config.find("file:/" + path.replace(Path.rootPath(), ""), type)), 100);
+        }, 100);
     });
 }

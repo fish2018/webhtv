@@ -25,9 +25,14 @@ public class OkProxySelector extends ProxySelector {
 
     public synchronized void addAll(List<Proxy> items) {
         if (items.isEmpty()) return;
+        Authenticator.setDefault(new ProxyAuthenticator(this));
         items.forEach(Proxy::init);
         proxy.addAll(items);
         proxy.sort(null);
+    }
+
+    public synchronized void remove(String name) {
+        proxy.removeIf(item -> item.getName().equals(name));
     }
 
     public synchronized void clear() {
