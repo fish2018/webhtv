@@ -153,6 +153,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void onReclaim() {
     }
 
+    protected boolean shouldBindPlaybackService() {
+        return true;
+    }
+
     protected void seekTo(long time) {
         mController.seekTo(player().getPosition() + time);
         mController.play();
@@ -317,6 +321,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void initView(Bundle savedInstanceState) {
         long start = System.currentTimeMillis();
         super.initView(savedInstanceState);
+        if (!shouldBindPlaybackService()) return;
         ExoUtil.setPlayerView(getExoView());
         if (deferPlaybackServiceBinding()) bindPlaybackServiceAfterFirstFrame();
         else bindPlaybackService();

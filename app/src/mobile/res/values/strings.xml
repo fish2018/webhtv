@@ -34,8 +34,15 @@
     <!-- Control -->
     <string name="control_speed">Speed</string>
     <string name="control_scale">Scale</string>
+    <string name="control_display">Display</string>
     <string name="control_track">Track</string>
     <string name="control_other">Other</string>
+    <string name="display_time">Time</string>
+    <string name="display_traffic">Speed</string>
+    <string name="display_size">Resolution</string>
+    <string name="display_progress">Progress</string>
+    <string name="display_mini">Mini</string>
+    <string name="display_title">Title</string>
 
     <!-- Dialog -->
     <string name="dialog_delete_record">Delete all records?</string>

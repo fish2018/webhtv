@@ -24,6 +24,8 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Word;
 import com.fongmi.android.tv.databinding.FragmentSearchBinding;
 import com.fongmi.android.tv.impl.Callback;
@@ -33,7 +35,7 @@ import com.fongmi.android.tv.ui.adapter.WordAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
-import com.fongmi.android.tv.utils.SearchSuggest;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.net.OkHttp;
 import com.google.android.flexbox.FlexDirection;
@@ -41,8 +43,7 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.common.net.HttpHeaders;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URLEncoder;
 import java.util.Map;
 import java.util.Optional;
 
@@ -54,12 +55,10 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     private FragmentSearchBinding mBinding;
     private RecordAdapter mRecordAdapter;
     private WordAdapter mWordAdapter;
-    private List<Word.Data> mIqiyiWords = new ArrayList<>();
-    private List<Word.Data> mTencentWords = new ArrayList<>();
-    private int mSuggestSeq;
+    private boolean mCurrentSite;
 
     public static SearchFragment newInstance(String keyword) {
-        return newInstance(keyword, null);
+        return newInstance(keyword, "");
     }
 
     public static SearchFragment newInstance(String keyword, String siteKey) {
@@ -76,7 +75,12 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     }
 
     private String getSiteKey() {
-        return getArguments().getString("siteKey");
+        String siteKey = getArguments().getString("siteKey");
+        return siteKey == null ? "" : siteKey;
+    }
+
+    private Site getHome() {
+        return VodConfig.get().getHome();
     }
 
     private boolean empty() {
@@ -100,6 +104,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
 
     @Override
     protected void initView() {
+        mCurrentSite = !TextUtils.isEmpty(getSiteKey());
         setRecyclerView();
         checkKeyword();
         search();
@@ -158,9 +163,14 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
         if (fm.findFragmentByTag(collectTag) != null) return;
         String searchTag = SearchFragment.class.getSimpleName();
         FragmentTransaction ft = fm.beginTransaction().setTransition(TRANSIT_FRAGMENT_OPEN);
-        ft.add(R.id.container, CollectFragment.newInstance(keyword, getSiteKey()), collectTag);
+        ft.add(R.id.container, CollectFragment.newInstance(keyword, getSearchSiteKey()), collectTag);
         Optional.ofNullable(fm.findFragmentByTag(searchTag)).ifPresent(ft::hide);
         ft.setReorderingAllowed(true).addToBackStack(null).commit();
+    }
+
+    private String getSearchSiteKey() {
+        if (!mCurrentSite) return "";
+        return TextUtils.isEmpty(getSiteKey()) ? getHome().getKey() : getSiteKey();
     }
 
     private void getWord(String text) {
@@ -176,11 +186,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
 
     private void getSuggest(String text) {
         mBinding.word.setText(R.string.search_suggest);
-        int seq = ++mSuggestSeq;
-        mIqiyiWords = new ArrayList<>();
-        mTencentWords = new ArrayList<>();
-        OkHttp.newCall(SearchSuggest.iqiyiUrl(text)).enqueue(getSuggestCallback(seq, false));
-        OkHttp.newCall(SearchSuggest.tencentUrl(text)).enqueue(getSuggestCallback(seq, true));
+        OkHttp.newCall("https://suggest.video.iqiyi.com/?if=mobile&key=" + URLEncoder.encode(text)).enqueue(getCallback(false));
     }
 
     private Callback getCallback(boolean hot) {
@@ -200,24 +206,6 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
         if (save) Setting.putHot(result);
     }
 
-    private Callback getSuggestCallback(int seq, boolean tencent) {
-        return new Callback() {
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                String result = response.body().string();
-                if (TextUtils.isEmpty(result)) return;
-                App.post(() -> setSuggestAdapter(seq, result, tencent));
-            }
-        };
-    }
-
-    private void setSuggestAdapter(int seq, String result, boolean tencent) {
-        if (seq != mSuggestSeq || mBinding.keyword.getText().toString().trim().isEmpty()) return;
-        if (tencent) mTencentWords = SearchSuggest.parseTencent(result);
-        else mIqiyiWords = SearchSuggest.parseIqiyi(result);
-        mWordAdapter.setItems(SearchSuggest.merge(mIqiyiWords, mTencentWords));
-    }
-
     private void onReset() {
         mBinding.keyword.setText("");
         requireActivity().invalidateOptionsMenu();
@@ -226,6 +214,19 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     private void onSite() {
         Util.hideKeyboard(mBinding.keyword);
         mBinding.keyword.post(() -> SiteDialog.create().search().show(this));
+    }
+
+    private void onScope() {
+        if (!mCurrentSite) {
+            Site site = getHome();
+            if (site.isEmpty() || !site.isSearchable()) {
+                Notify.show(R.string.detail_site_not_searchable);
+                return;
+            }
+            Notify.show(getString(R.string.search_scope_current_hint, site.getName()));
+        }
+        mCurrentSite = !mCurrentSite;
+        requireActivity().invalidateOptionsMenu();
     }
 
     @Override
@@ -249,12 +250,14 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     @Override
     public void onPrepareMenu(@NonNull Menu menu) {
         menu.findItem(R.id.action_reset).setVisible(!empty());
+        menu.findItem(R.id.action_scope).setTitle(mCurrentSite ? R.string.search_scope_current : R.string.search_scope_all);
     }
 
     @Override
     public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
         if (menuItem.getItemId() == android.R.id.home) requireActivity().getOnBackPressedDispatcher().onBackPressed();
         if (menuItem.getItemId() == R.id.action_reset) onReset();
+        if (menuItem.getItemId() == R.id.action_scope) onScope();
         if (menuItem.getItemId() == R.id.action_site) onSite();
         return true;
     }

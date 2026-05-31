@@ -143,6 +143,10 @@ public class Vod implements Parcelable, Diffable<Vod> {
         return TextUtils.isEmpty(typeName) ? "" : typeName.trim();
     }
 
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
+    }
+
     public String getPic() {
         return TextUtils.isEmpty(vodPic) ? "" : vodPic.trim();
     }
@@ -155,12 +159,24 @@ public class Vod implements Parcelable, Diffable<Vod> {
         return TextUtils.isEmpty(vodRemarks) ? "" : vodRemarks.trim();
     }
 
+    public void setRemarks(String vodRemarks) {
+        this.vodRemarks = vodRemarks;
+    }
+
     public String getYear() {
         return TextUtils.isEmpty(vodYear) ? "" : vodYear.trim();
     }
 
+    public void setYear(String vodYear) {
+        this.vodYear = vodYear;
+    }
+
     public String getArea() {
         return TextUtils.isEmpty(vodArea) ? "" : vodArea.trim();
+    }
+
+    public void setArea(String vodArea) {
+        this.vodArea = vodArea;
     }
 
     public String getDirector() {

@@ -56,7 +56,7 @@ class VodBrowse {
 
     @NonNull
     static ImmutableList<MediaItem> getHistory() {
-        return History.get().stream().map(history -> BrowseTree.playable(VOD_PLAY + history.getKey(), history.getVodName(), history.getVodRemarks(), history.getVodPic())).collect(ImmutableList.toImmutableList());
+        return History.get().stream().map(history -> BrowseTree.playable(VOD_PLAY + history.getKey(), history.getVodName(), history.getDisplayVodRemarks(), history.getVodPic())).collect(ImmutableList.toImmutableList());
     }
 
     @NonNull

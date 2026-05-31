@@ -219,20 +219,22 @@
                             android:textColor="@color/white"
                             android:textSize="16sp" />
 
-                        <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/reverse"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="8dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_action_reverse"
-                            android:visibility="gone"
-                            tools:visibility="visible" />
-
                         <View
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_weight="1" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/reverse"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/detail_episode_reverse"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_action_reverse"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/more"

@@ -86,5 +86,13 @@
             app:focusOutEnd="true"
             app:focusOutFront="true" />
 
+        <WebView
+            android:id="@+id/homeWeb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:visibility="gone" />
+
     </com.fongmi.android.tv.ui.custom.ProgressLayout>
 </androidx.appcompat.widget.LinearLayoutCompat>

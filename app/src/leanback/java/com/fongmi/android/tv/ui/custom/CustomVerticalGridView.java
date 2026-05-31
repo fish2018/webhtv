@@ -60,7 +60,7 @@ public class CustomVerticalGridView extends VerticalGridView {
     }
 
     public void hideHeader() {
-        if (views != null) for (View view : views) view.setVisibility(View.GONE);
+        if (views != null) for (View view : views) if (view.getId() != R.id.recycler) view.setVisibility(View.INVISIBLE);
     }
 
     public void showHeader() {

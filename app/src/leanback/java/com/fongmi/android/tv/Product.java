@@ -26,10 +26,14 @@ public class Product {
     }
 
     public static int[] getSpec(int space, int column, Style style) {
-        int base = ResUtil.getScreenWidth() - space;
-        int width = base / column;
-        int height = (int) (width / style.getRatio());
-        return new int[]{width, height};
+        return getSpec(ResUtil.getScreenWidth(), space, column, style);
+    }
+
+    public static int[] getSpec(int totalWidth, int space, int column, Style style) {
+        int base = Math.max(totalWidth - space, column);
+        int itemWidth = base / column;
+        int itemHeight = (int) (itemWidth / style.getRatio());
+        return new int[]{itemWidth, itemHeight};
     }
 
     public static int getEms() {

@@ -1,11 +1,13 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.databinding.AdapterQualityBinding;
 
@@ -14,10 +16,13 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
     private final OnClickListener listener;
     private Result result;
     private int position;
+    private int nextFocusDown;
+    private View.OnKeyListener keyListener;
 
     public QualityAdapter(OnClickListener listener) {
         this.listener = listener;
         this.result = Result.empty();
+        this.nextFocusDown = R.id.episode;
     }
 
     public interface OnClickListener {
@@ -31,6 +36,16 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
 
     public void addAll(Result result) {
         this.result = result;
+        notifyDataSetChanged();
+    }
+
+    public void setNextFocusDown(int nextFocusDown) {
+        this.nextFocusDown = nextFocusDown;
+        notifyDataSetChanged();
+    }
+
+    public void setOnKeyListener(View.OnKeyListener keyListener) {
+        this.keyListener = keyListener;
         notifyDataSetChanged();
     }
 
@@ -48,6 +63,8 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         holder.binding.text.setText(result.getUrl().n(position));
+        holder.binding.text.setNextFocusDownId(nextFocusDown);
+        holder.binding.text.setOnKeyListener(keyListener);
         holder.binding.text.setOnClickListener(v -> onItemClick(position));
         holder.binding.text.setSelected(result.getUrl().getPosition() == position);
     }

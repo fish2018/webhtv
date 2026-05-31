@@ -11,23 +11,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.AdapterSiteBinding;
-import com.github.catvod.crawler.SpiderDebug;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
 
     private final OnClickListener listener;
-    private final List<Site> allItems;
     private final List<Site> mItems;
-    private boolean firstBindLogged;
     private int type;
 
     public SiteAdapter(OnClickListener listener) {
         this.listener = listener;
-        this.allItems = new ArrayList<>();
         this.mItems = new ArrayList<>();
         this.addAll();
     }
@@ -42,13 +37,6 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         notifyDataSetChanged();
     }
 
-    public void filter(String keyword) {
-        String text = keyword == null ? "" : keyword.trim().toLowerCase(Locale.getDefault());
-        mItems.clear();
-        for (Site site : allItems) if (text.isEmpty() || site.getName().toLowerCase(Locale.getDefault()).contains(text) || site.getKey().toLowerCase(Locale.getDefault()).contains(text)) mItems.add(site);
-        notifyDataSetChanged();
-    }
-
     public void selectAll() {
         setEnable(type != 3);
     }
@@ -58,12 +46,16 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     }
 
     private void addAll() {
-        for (Site site : VodConfig.get().getSites()) if (!site.isHide()) allItems.add(site);
-        mItems.addAll(allItems);
+        for (Site site : VodConfig.get().getSites()) if (!site.isHide()) mItems.add(site);
     }
 
     public List<Site> getItems() {
         return mItems;
+    }
+
+    public int getSelectedPosition() {
+        for (int i = 0; i < mItems.size(); i++) if (mItems.get(i).isSelected()) return i;
+        return 0;
     }
 
     @Override
@@ -80,19 +72,15 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Site item = mItems.get(position);
-        if (!firstBindLogged) {
-            firstBindLogged = true;
-            SpiderDebug.log("site-dialog", "first bind position=%s name=%s", position, item.getName());
-        }
         holder.binding.text.setText(item.getName());
         holder.binding.check.setChecked(getChecked(item));
-        holder.binding.text.setSelected(item.isSelected());
         holder.binding.getRoot().setSelected(item.isSelected());
-        holder.binding.getRoot().setOnFocusChangeListener((v, hasFocus) -> holder.binding.text.setSelected(hasFocus || item.isSelected()));
+        holder.binding.text.setSelected(item.isSelected());
+        holder.binding.indicator.setVisibility(item.isSelected() ? View.VISIBLE : View.INVISIBLE);
         holder.binding.check.setVisibility(type == 0 ? View.GONE : View.VISIBLE);
         holder.binding.getRoot().setOnLongClickListener(v -> setLongListener(item));
         holder.binding.getRoot().setOnClickListener(v -> setListener(item, position));
-        holder.binding.text.setGravity(Gravity.CENTER);
+        holder.binding.text.setGravity(Gravity.CENTER_VERTICAL);
     }
 
     private boolean getChecked(Site item) {

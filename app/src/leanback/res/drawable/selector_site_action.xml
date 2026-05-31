@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/shape_config_history_item_focused" android:state_focused="true" />
-    <item android:drawable="@drawable/shape_config_history_item_focused" android:state_pressed="true" />
-    <item android:drawable="@drawable/shape_config_history_item_focused" android:state_selected="true" />
-    <item android:drawable="@drawable/shape_config_history_item_normal" />
+    <item android:drawable="@drawable/shape_site_action_active_focused" android:state_focused="true" android:state_selected="true" />
+    <item android:drawable="@drawable/shape_site_action_focused" android:state_focused="true" />
+    <item android:drawable="@drawable/shape_site_action_active" android:state_selected="true" />
+    <item android:drawable="@drawable/shape_site_action_normal" />
 </selector>

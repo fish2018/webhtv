@@ -103,6 +103,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.logo.setOnClickListener(this::onLogo);
         mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
+        mBinding.title.setOnLongClickListener(this::onReloadConfig);
         mBinding.filter.setOnClickListener(this::onFilter);
         mBinding.filter.setOnLongClickListener(this::onLink);
         mBinding.toolbar.setOnMenuItemClickListener(this::onMenuItemClick);
@@ -189,8 +190,28 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         SiteDialog.create().change().show(this);
     }
 
+    private boolean onReloadConfig(View view) {
+        setConfig(getConfig());
+        return true;
+    }
+
     private void onFilter(View view) {
         if (mAdapter.getItemCount() > 0) FilterDialog.create().filter(mAdapter.get(mBinding.pager.getCurrentItem()).getFilters()).show(this);
+    }
+
+    private void setSearchLongClick() {
+        View search = mBinding.toolbar.findViewById(R.id.search);
+        if (search != null) search.setOnLongClickListener(this::onSearchLongClick);
+    }
+
+    private boolean onSearchLongClick(View view) {
+        if (getHome().isEmpty() || !getHome().isSearchable()) {
+            Notify.show(R.string.detail_site_not_searchable);
+            return true;
+        }
+        Notify.show(getString(R.string.search_scope_current_hint, getHome().getName()));
+        SearchActivity.start(requireActivity(), "", getHome().getKey());
+        return true;
     }
 
     private boolean onMenuItemClick(MenuItem item) {
@@ -202,15 +223,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         else if (item.getItemId() == R.id.history) HistoryActivity.start(requireActivity());
         else if (item.getItemId() == R.id.sync) OneKeySyncDialog.create().show(requireActivity());
         return true;
-    }
-
-    private void setSearchLongClick() {
-        View search = mBinding.toolbar.findViewById(R.id.search);
-        if (search == null) return;
-        search.setOnLongClickListener(view -> {
-            SearchActivity.start(requireActivity(), "", getHome().getKey());
-            return true;
-        });
     }
 
     private void showProgress() {
@@ -286,6 +298,13 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             case CATEGORY:
                 if (mWeb != null && mWeb.isVisible()) return;
                 getFragment().onRefresh();
+                break;
+            case HISTORY:
+                if (mWeb != null && mWeb.isVisible()) {
+                    mWeb.reload();
+                } else if (mBinding.pager.getCurrentItem() == 0) {
+                    homeContent();
+                }
                 break;
         }
     }

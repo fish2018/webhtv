@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_layout"
+        android:icon="@drawable/ic_action_reverse"
+        android:title="@string/setting_search_ui"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_column"
+        android:icon="@drawable/ic_action_more"
+        android:title="@string/setting_search_column"
+        app:showAsAction="always" />
+
+</menu>

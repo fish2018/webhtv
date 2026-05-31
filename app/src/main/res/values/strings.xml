@@ -141,7 +141,11 @@
     <string name="setting_proxy_invalid">Invalid proxy URL</string>
     <string name="setting_one_key_sync">One-key sync</string>
     <string name="setting_incognito">Incognito mode</string>
+    <string name="setting_home_history">Home recent history</string>
     <string name="setting_drive_check">Drive link check</string>
+    <string name="setting_search_thread">Search threads</string>
+    <string name="setting_search_ui">Search layout</string>
+    <string name="setting_search_column">Items per row</string>
     <string name="setting_theme_color">Theme color</string>
     <string name="setting_auto">Auto</string>
     <string name="setting_custom">Custom</string>
@@ -306,6 +310,16 @@
         <item>Extra</item>
     </string-array>
 
+    <string-array name="select_search_ui">
+        <item>Horizontal</item>
+        <item>Vertical</item>
+    </string-array>
+
+    <string-array name="select_search_column">
+        <item>Auto</item>
+        <item>1 item</item>
+    </string-array>
+
     <string-array name="select_scale">
         <item>Default</item>
         <item>16:9</item>
@@ -329,5 +343,107 @@
         <item>Select video track</item>
         <item>Select subtitle track</item>
     </string-array>
+
+    <!-- TMDB detail -->
+    <string name="detail_tmdb">TMDB</string>
+    <string name="detail_page_title">Media Detail</string>
+    <string name="detail_aggregate">Overview</string>
+    <string name="detail_back">Back</string>
+    <string name="detail_close">Close</string>
+    <string name="detail_tmdb_empty">No TMDB data</string>
+    <string name="detail_tmdb_cast">Cast</string>
+    <string name="detail_tmdb_creators">Creators</string>
+    <string name="detail_tmdb_season">Seasons</string>
+    <string name="detail_season_format">Season %1$d</string>
+    <string name="detail_tmdb_works">You Might Like</string>
+    <string name="detail_tmdb_photos">Photos</string>
+    <string name="detail_flag">Line</string>
+    <string name="detail_episode">Episode</string>
+    <string name="detail_episode_reverse">Reverse</string>
+    <string name="detail_episode_forward">Forward</string>
+    <string name="detail_episode_view_grid">Grid</string>
+    <string name="detail_episode_view_list">List</string>
+    <string name="detail_episode_detail_title">Episode %1$d · %2$s</string>
+    <string name="detail_episode_crew">Crew</string>
+    <string name="detail_episode_guests">Guest Cast</string>
+    <string name="detail_runtime_format">%1$d min</string>
+    <string name="detail_source">Sources</string>
+    <string name="detail_source_searching">Searching sources...</string>
+    <string name="detail_source_select">Select source</string>
+    <string name="detail_source_current">Current source: %1$s</string>
+    <string name="detail_source_switching">Switching source: %1$s</string>
+    <string name="detail_source_empty">No available source</string>
+    <string name="detail_source_episode_empty">No available episodes or source</string>
+    <string name="detail_play_now">Play now</string>
+    <string name="detail_play_resume">Resume - %1$s</string>
+    <string name="detail_expand">Read more</string>
+    <string name="detail_collapse">Collapse</string>
+    <string name="detail_media_tv">Series</string>
+    <string name="detail_media_movie">Movie</string>
+    <string name="detail_media_unknown">Detail</string>
+    <string name="detail_score">Score %1$s</string>
+    <string name="detail_person_loading">Loading cast details...</string>
+    <string name="detail_person_biography">Biography</string>
+    <string name="detail_person_empty">No person information</string>
+    <string name="detail_person_info">Personal Info</string>
+    <string name="detail_person_photos">Photos</string>
+    <string name="detail_person_works">Works</string>
+    <string name="detail_person_work_hint">Works are from TMDB. Select one to search it in the current source.</string>
+    <string name="detail_person_work_count">%1$d works</string>
+    <string name="detail_filter_all">All</string>
+    <string name="detail_filter_cast">Cast</string>
+    <string name="detail_filter_crew">Crew</string>
+    <string name="detail_filter_director">Director</string>
+    <string name="detail_filter_movie">Movies</string>
+    <string name="detail_filter_tv">TV</string>
+    <string name="detail_work_searching">Searching current source for %1$s...</string>
+    <string name="detail_work_not_found">No current-source result for %1$s</string>
+    <string name="detail_work_global_searching">No current-source result. Searching all sites for %1$s...</string>
+    <string name="detail_site_not_searchable">Current source does not support search</string>
+    <string name="search_scope_all">All sites</string>
+    <string name="search_scope_current">Current site</string>
+    <string name="search_scope_current_hint">Current site: %1$s</string>
+    <string name="search_result_all">Search results for %1$s</string>
+    <string name="search_result_current">Current site search for %1$s</string>
+    <string name="detail_tmdb_searching">Searching TMDB...</string>
+    <string name="detail_tmdb_loading_detail">Loading TMDB details...</string>
+    <string name="detail_tmdb_search_hint">Search title</string>
+    <string name="detail_tmdb_search_action">Search</string>
+    <string name="detail_tmdb_result_count">%1$d results</string>
+    <string name="detail_tmdb_match_title">Match TMDB title</string>
+    <string name="detail_tmdb_rematch">Change match</string>
+    <string name="detail_tmdb_match_saved">TMDB match saved</string>
+    <string name="detail_tmdb_skip">Skip</string>
+    <string name="detail_tmdb_need_key">Configure a TMDB token or API key first</string>
+    <string name="detail_tmdb_site_disabled">TMDB matching is disabled for this source</string>
+    <string name="detail_theme_auto">Auto</string>
+    <string name="detail_theme_dark">Dark</string>
+    <string name="detail_theme_light">Light</string>
+    <string name="detail_quality">Quality</string>
+    <string name="setting_tmdb">TMDB config</string>
+    <string name="setting_detail_open_mode">Detail open mode</string>
+    <string name="setting_detail_open_fusion">Immersive fusion</string>
+    <string name="setting_detail_open_enhanced">Enhanced detail</string>
+    <string name="setting_detail_open_direct">Direct playback</string>
+    <string name="setting_configured">Configured</string>
+    <string name="setting_unconfigured">Not configured</string>
+    <string name="dialog_tmdb_key">TMDB API key</string>
+    <string name="dialog_tmdb_token">Access token or API key</string>
+    <string name="dialog_tmdb_lang">TMDB language</string>
+    <string name="dialog_tmdb_api_base">API host</string>
+    <string name="dialog_tmdb_image_base">Image host</string>
+    <string name="dialog_tmdb_site_rules">Site rules: enabled sources line 1, empty means all; excluded keywords line 2, separated by ;</string>
+    <string name="dialog_tmdb_site_rules_value">Enabled: %1$s\nExclude: %2$s</string>
+    <string name="dialog_tmdb_site_enabled_prefix">Enabled:</string>
+    <string name="dialog_tmdb_site_exclude_prefix">Exclude:</string>
+    <string name="dialog_tmdb_site_manage">Select enabled sources</string>
+    <string name="dialog_tmdb_site_clear">Default all</string>
+    <string name="dialog_tmdb_test">Test connection</string>
+    <string name="dialog_tmdb_testing">Testing TMDB...</string>
+    <string name="dialog_tmdb_test_success">TMDB connection succeeded</string>
+    <string name="dialog_tmdb_test_failed">TMDB connection failed</string>
+    <string name="dialog_tmdb_test_result">API: %1$s\nAuth: %2$s\nLanguage: %3$s\nImage: %4$s\nSizes: %5$s</string>
+    <string name="dialog_tmdb_auth_token">Access Token</string>
+    <string name="dialog_tmdb_auth_key">API Key</string>
 
 </resources>

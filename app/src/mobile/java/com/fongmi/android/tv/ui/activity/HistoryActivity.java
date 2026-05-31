@@ -17,6 +17,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.databinding.ActivityHistoryBinding;
 import com.fongmi.android.tv.event.RefreshEvent;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.adapter.HistoryAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.SyncDialog;
@@ -85,7 +86,9 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
 
     @Override
     public void onItemClick(History item) {
-        VideoActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
+        if (Setting.isSearchDetailPage()) TmdbDetailActivity.startPlayback(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), item.getVodRemarks(), false);
+        else if (Setting.isFusionDetailPage()) TmdbDetailActivity.startPlayback(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), item.getVodRemarks(), true);
+        else VideoActivity.startDirect(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), item.getVodRemarks());
     }
 
     @Override
@@ -98,6 +101,12 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     @Override
     public boolean onLongClick() {
         mAdapter.setDelete(!mAdapter.isDelete());
+        return true;
+    }
+
+    @Override
+    public boolean onItemLongClick(History item) {
+        TmdbDetailActivity.start(this, item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic(), item.getVodRemarks());
         return true;
     }
 

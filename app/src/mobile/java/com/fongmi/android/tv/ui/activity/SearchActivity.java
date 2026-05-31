@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import androidx.viewbinding.ViewBinding;
 
@@ -19,25 +20,25 @@ public class SearchActivity extends BaseActivity {
     }
 
     public static void start(Activity activity, String keyword) {
-        start(activity, keyword, null);
+        start(activity, keyword, "");
     }
 
     public static void start(Activity activity, String keyword, String siteKey) {
         Intent intent = new Intent(activity, SearchActivity.class);
         intent.putExtra("keyword", keyword);
-        intent.putExtra("siteKey", siteKey);
+        if (!TextUtils.isEmpty(siteKey)) intent.putExtra("siteKey", siteKey);
         activity.startActivity(intent);
     }
 
     public static void direct(Activity activity, String keyword) {
-        direct(activity, keyword, null);
+        direct(activity, keyword, "");
     }
 
     public static void direct(Activity activity, String keyword, String siteKey) {
         Intent intent = new Intent(activity, SearchActivity.class);
         intent.putExtra("keyword", keyword);
-        intent.putExtra("siteKey", siteKey);
         intent.putExtra("direct", true);
+        if (!TextUtils.isEmpty(siteKey)) intent.putExtra("siteKey", siteKey);
         activity.startActivity(intent);
     }
 
@@ -45,12 +46,13 @@ public class SearchActivity extends BaseActivity {
         return getIntent().getStringExtra("keyword");
     }
 
-    private boolean isDirect() {
-        return getIntent().getBooleanExtra("direct", false);
+    private String getSiteKey() {
+        String siteKey = getIntent().getStringExtra("siteKey");
+        return siteKey == null ? "" : siteKey;
     }
 
-    private String getSiteKey() {
-        return getIntent().getStringExtra("siteKey");
+    private boolean isDirect() {
+        return getIntent().getBooleanExtra("direct", false);
     }
 
     @Override

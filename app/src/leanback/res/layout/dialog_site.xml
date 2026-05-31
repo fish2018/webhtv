@@ -4,139 +4,101 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/shape_site_dialog"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@drawable/shape_site_dialog_panel"
+    android:orientation="horizontal"
+    android:paddingStart="22dp"
+    android:paddingTop="20dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="20dp">
 
-    <androidx.appcompat.widget.AppCompatEditText
-        android:id="@+id/keyword"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/selector_chip_round"
-        android:drawablePadding="8dp"
-        android:ellipsize="end"
-        android:hint="@string/site_search_hint"
-        android:imeOptions="actionDone"
-        android:inputType="text"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textColorHint="@color/text"
-        android:textSize="16sp"
-        app:drawableStartCompat="@drawable/ic_site_search" />
+    <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        app:maxHeight="336dp"
+        tools:itemCount="5"
+        tools:listitem="@layout/adapter_site" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:id="@+id/action"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
 
-        <com.fongmi.android.tv.ui.custom.CustomRecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            app:maxHeight="344dp"
-            tools:itemCount="5"
-            tools:listitem="@layout/adapter_site" />
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/search"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/selector_site_action"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusUp="@id/search"
+            android:nextFocusDown="@id/change"
+            android:padding="8dp"
+            android:src="@drawable/ic_site_search"
+            app:tint="@color/white" />
 
-        <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/action"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="16dp"
-            android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/change"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/selector_site_action"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusUp="@id/search"
+            android:nextFocusDown="@id/select"
+            android:padding="8dp"
+            android:src="@drawable/ic_site_change"
+            app:tint="@color/white" />
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/config"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/config"
-                android:nextFocusDown="@id/search"
-                android:padding="8dp"
-                android:src="@drawable/ic_site_config"
-                app:tint="@color/site_action_icon" />
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/select"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/selector_site_action"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusUp="@id/change"
+            android:nextFocusDown="@id/cancel"
+            android:padding="8dp"
+            android:src="@drawable/ic_site_select" />
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/search"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/config"
-                android:nextFocusDown="@id/change"
-                android:padding="8dp"
-                android:src="@drawable/ic_site_search"
-                app:tint="@color/site_action_icon" />
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/cancel"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/selector_site_action"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusUp="@id/select"
+            android:nextFocusDown="@id/mode"
+            android:padding="8dp"
+            android:src="@drawable/ic_site_cancel" />
 
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/change"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/search"
-                android:nextFocusDown="@id/select"
-                android:padding="8dp"
-                android:src="@drawable/ic_site_change"
-                app:tint="@color/site_action_icon" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/select"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/change"
-                android:nextFocusDown="@id/cancel"
-                android:padding="8dp"
-                android:src="@drawable/ic_site_select"
-                app:tint="@color/site_action_icon" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/cancel"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/select"
-                android:nextFocusDown="@id/mode"
-                android:padding="8dp"
-                android:src="@drawable/ic_site_cancel"
-                app:tint="@color/site_action_icon" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/mode"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/selector_site_action"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusUp="@id/cancel"
-                android:nextFocusDown="@id/mode"
-                android:padding="8dp"
-                app:tint="@color/site_action_icon"
-                tools:src="@drawable/ic_site_list" />
-
-        </androidx.appcompat.widget.LinearLayoutCompat>
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/mode"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/selector_site_action"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusUp="@id/cancel"
+            android:nextFocusDown="@id/mode"
+            android:padding="8dp"
+            tools:src="@drawable/ic_site_list" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.appcompat.widget.LinearLayoutCompat>

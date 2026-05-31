@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -15,9 +16,15 @@ import java.util.List;
 public class CollectAdapter extends BaseDiffAdapter<Collect, CollectAdapter.ViewHolder> {
 
     private final OnClickListener listener;
+    private boolean horizontal;
 
     public CollectAdapter(OnClickListener listener) {
+        this(listener, false);
+    }
+
+    public CollectAdapter(OnClickListener listener, boolean horizontal) {
         this.listener = listener;
+        this.horizontal = horizontal;
     }
 
     public interface OnClickListener {
@@ -47,15 +54,31 @@ public class CollectAdapter extends BaseDiffAdapter<Collect, CollectAdapter.View
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(AdapterCollectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        AdapterCollectBinding binding = AdapterCollectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        setItemWidth(binding.getRoot());
+        return new ViewHolder(binding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Collect item = getItem(position);
+        setItemWidth(holder.binding.getRoot());
         holder.binding.text.setSelected(item.isSelected());
         holder.binding.text.setText(item.getSite().getName());
         holder.binding.text.setOnClickListener(v -> listener.onItemClick(position, item));
+    }
+
+    private void setItemWidth(View view) {
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if (params == null) params = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.width = horizontal ? ViewGroup.LayoutParams.WRAP_CONTENT : ViewGroup.LayoutParams.MATCH_PARENT;
+        view.setLayoutParams(params);
+    }
+
+    public void setHorizontal(boolean horizontal) {
+        if (this.horizontal == horizontal) return;
+        this.horizontal = horizontal;
+        notifyDataSetChanged();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

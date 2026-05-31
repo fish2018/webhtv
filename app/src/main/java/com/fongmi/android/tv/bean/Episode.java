@@ -21,6 +21,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
     private String desc;
     @SerializedName("url")
     private String url;
+    private String displayName;
 
     private int index;
     private int number;
@@ -58,6 +59,14 @@ public class Episode implements Parcelable, Diffable<Episode> {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDisplayName() {
+        return TextUtils.isEmpty(displayName) ? getName() : displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public String getDesc() {

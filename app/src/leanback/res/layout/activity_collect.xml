@@ -6,48 +6,106 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/result"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="16dp"
-        android:singleLine="true"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        tools:text="@string/collect_result" />
-
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <androidx.leanback.widget.VerticalGridView
-            android:id="@+id/collect"
-            android:layout_width="196dp"
-            android:layout_height="match_parent"
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/result"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            tools:text="@string/collect_result" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/searchColumn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/selector_item"
+            android:contentDescription="@string/setting_search_column"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:padding="12dp"
+            android:scaleType="center" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/searchUi"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/selector_item"
+            android:contentDescription="@string/setting_search_ui"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:padding="12dp"
+            android:scaleType="center" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/horiLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/horiRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:paddingStart="24dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="24dp"
-            app:focusOutEnd="true"
+            android:paddingEnd="24dp"
+            app:focusOutEnd="false"
             app:focusOutFront="false" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:clipChildren="true"
-            android:clipToPadding="true"
-            android:overScrollMode="never"
+        <com.fongmi.android.tv.ui.custom.CustomViewPager
+            android:id="@+id/horiPager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/vertLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <androidx.leanback.widget.VerticalGridView
+            android:id="@+id/vertRecycler"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingStart="24dp"
             android:paddingEnd="24dp"
-            android:paddingBottom="24dp" />
+            app:focusOutEnd="false"
+            app:focusOutFront="false" />
+
+        <com.fongmi.android.tv.ui.custom.CustomViewPager
+            android:id="@+id/vertPager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 </androidx.appcompat.widget.LinearLayoutCompat>
+

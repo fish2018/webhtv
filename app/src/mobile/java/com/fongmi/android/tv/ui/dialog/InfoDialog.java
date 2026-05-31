@@ -16,6 +16,7 @@ public class InfoDialog extends BaseAlertDialog {
 
     private DialogInfoBinding binding;
     private String header;
+    private String params;
     private String title;
     private String url;
 
@@ -30,6 +31,11 @@ public class InfoDialog extends BaseAlertDialog {
 
     public InfoDialog headers(Map<String, String> header) {
         this.header = buildHeader(header);
+        return this;
+    }
+
+    public InfoDialog params(String params) {
+        this.params = TextUtils.isEmpty(params) ? "" : params;
         return this;
     }
 
@@ -55,14 +61,17 @@ public class InfoDialog extends BaseAlertDialog {
     @Override
     protected void initView() {
         if (header == null) header = "";
+        if (params == null) params = "";
         if (title == null) title = "";
         if (url == null) url = "";
         binding.url.setText(url);
         binding.title.setText(title);
         binding.header.setText(header);
+        binding.params.setText(params);
         binding.title.setSingleLine(title.contains(url));
         binding.url.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
         binding.header.setVisibility(TextUtils.isEmpty(header) ? View.GONE : View.VISIBLE);
+        binding.params.setVisibility(TextUtils.isEmpty(params) ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -70,6 +79,7 @@ public class InfoDialog extends BaseAlertDialog {
         binding.url.setOnClickListener(this::onShare);
         binding.url.setOnLongClickListener(v -> onCopy(url));
         binding.header.setOnLongClickListener(v -> onCopy(header));
+        binding.params.setOnLongClickListener(v -> onCopy(params));
     }
 
     private void onShare(View view) {

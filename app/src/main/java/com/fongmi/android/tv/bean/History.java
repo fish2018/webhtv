@@ -178,6 +178,10 @@ public class History implements Diffable<History> {
         return vodRemarks == null ? "" : vodRemarks;
     }
 
+    public String getDisplayVodRemarks() {
+        return getVodRemarks().replaceFirst("^\\s*(\\d+)\\.\\s*$", "$1");
+    }
+
     public void setVodRemarks(String vodRemarks) {
         this.vodRemarks = vodRemarks;
     }

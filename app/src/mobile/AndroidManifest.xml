@@ -121,6 +121,26 @@
             android:screenOrientation="fullUser"
             android:supportsPictureInPicture="true" />
 
+        <activity
+            android:name=".ui.activity.TmdbDetailActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.TmdbPersonActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.TmdbPlaybackActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:launchMode="singleTop"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser"
+            android:supportsPictureInPicture="true" />
+
         <receiver
             android:name=".receiver.ShortcutReceiver"
             android:exported="false" />

@@ -4,6 +4,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.MediaTitle;
@@ -177,12 +179,61 @@ public class PlayerManager implements ParseCallback {
         return (getVideoWidth() == 0 && getVideoHeight() == 0) ? "" : getVideoWidth() + " x " + getVideoHeight();
     }
 
+    public String getVideoParamsText() {
+        StringBuilder builder = new StringBuilder();
+        append(builder, "分辨率", getSizeText());
+        Format video = getSelectedFormat(C.TRACK_TYPE_VIDEO);
+        Format audio = getSelectedFormat(C.TRACK_TYPE_AUDIO);
+        if (video != null) {
+            if (video.frameRate > 0) append(builder, "帧率", String.format(Locale.getDefault(), "%.2f fps", video.frameRate));
+            append(builder, "视频编码", firstText(video.codecs, video.sampleMimeType, video.containerMimeType));
+            append(builder, "视频码率", formatBitrate(video.averageBitrate > 0 ? video.averageBitrate : video.peakBitrate));
+        }
+        if (audio != null) {
+            append(builder, "音频编码", firstText(audio.codecs, audio.sampleMimeType, audio.containerMimeType));
+            append(builder, "采样率", audio.sampleRate > 0 ? audio.sampleRate + " Hz" : "");
+            append(builder, "声道", audio.channelCount > 0 ? String.valueOf(audio.channelCount) : "");
+            append(builder, "音频码率", formatBitrate(audio.averageBitrate > 0 ? audio.averageBitrate : audio.peakBitrate));
+        }
+        append(builder, "解码", getDecodeText());
+        append(builder, "倍速", getSpeedText());
+        append(builder, "时长", getDurationTime());
+        return builder.toString();
+    }
+
     public String getSpeedText() {
         return String.format(Locale.getDefault(), "%.2f", getSpeed());
     }
 
     public String getDecodeText() {
         return engine.getDecodeText();
+    }
+
+    private Format getSelectedFormat(int type) {
+        Tracks tracks = getCurrentTracks();
+        if (tracks == null || tracks.isEmpty()) return null;
+        for (Tracks.Group group : tracks.getGroups()) {
+            if (group.getType() != type) continue;
+            for (int i = 0; i < group.length; i++) {
+                if (group.isTrackSelected(i)) return group.getTrackFormat(i);
+            }
+        }
+        return null;
+    }
+
+    private static void append(StringBuilder builder, String name, String value) {
+        if (TextUtils.isEmpty(value)) return;
+        builder.append(name).append(" : ").append(value).append("\n");
+    }
+
+    private static String firstText(String... values) {
+        for (String value : values) if (!TextUtils.isEmpty(value)) return value;
+        return "";
+    }
+
+    private static String formatBitrate(int bitrate) {
+        if (bitrate <= 0) return "";
+        return bitrate >= 1_000_000 ? String.format(Locale.getDefault(), "%.2f Mbps", bitrate / 1_000_000f) : bitrate / 1000 + " Kbps";
     }
 
     public String getPositionTime(long delta) {

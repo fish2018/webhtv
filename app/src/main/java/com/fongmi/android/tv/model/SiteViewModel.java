@@ -102,7 +102,7 @@ public class SiteViewModel extends ViewModel {
     public void searchContent(List<Site> sites, String keyword, boolean quick) {
         int epoch = stopSearch();
         sites.forEach(site -> {
-            FluentFuture<Result> future = FluentFuture.from(Task.largeExecutor().submit(SearchTask.create(site, keyword, quick))).withTimeout(Constant.TIMEOUT_SEARCH, TimeUnit.MILLISECONDS, Task.scheduler());
+            FluentFuture<Result> future = FluentFuture.from(Task.searchExecutor().submit(SearchTask.create(site, keyword, quick))).withTimeout(Constant.TIMEOUT_SEARCH, TimeUnit.MILLISECONDS, Task.scheduler());
             searchFuture.add(future);
             future.addCallback(Task.callback(
                     result -> {

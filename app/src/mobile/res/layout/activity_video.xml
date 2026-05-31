@@ -81,6 +81,77 @@
                     android:paddingTop="16dp"
                     android:paddingBottom="8dp">
 
+                    <FrameLayout
+                        android:id="@+id/tmdbHero"
+                        android:layout_width="match_parent"
+                        android:layout_height="190dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/tmdbBackdrop"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:alpha="0.76"
+                            android:scaleType="centerCrop" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@color/black_60" />
+
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="bottom"
+                            android:orientation="horizontal"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingBottom="14dp">
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/tmdbPoster"
+                                android:layout_width="82dp"
+                                android:layout_height="123dp"
+                                android:scaleType="centerCrop" />
+
+                            <androidx.appcompat.widget.LinearLayoutCompat
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <com.google.android.material.textview.MaterialTextView
+                                    android:id="@+id/tmdbTitle"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:ellipsize="end"
+                                    android:maxLines="2"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="庆余年 第二季" />
+
+                                <com.google.android.material.textview.MaterialTextView
+                                    android:id="@+id/tmdbSubtitle"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="6dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="2"
+                                    android:textColor="@color/white_80"
+                                    android:textSize="13sp"
+                                    tools:text="剧集 · 2024 · 评分 7.3 · 中国大陆" />
+
+                            </androidx.appcompat.widget.LinearLayoutCompat>
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    </FrameLayout>
+
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/name"
                         android:layout_width="wrap_content"
@@ -218,20 +289,22 @@
                             android:textColor="@color/white"
                             android:textSize="16sp" />
 
-                        <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/reverse"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="8dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_action_reverse"
-                            android:visibility="gone"
-                            tools:visibility="visible" />
-
                         <View
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_weight="1" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/reverse"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/detail_episode_reverse"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_action_reverse"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/more"

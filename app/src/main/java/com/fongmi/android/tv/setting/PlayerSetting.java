@@ -68,6 +68,54 @@ public class PlayerSetting {
         Prefers.put("speed", speed);
     }
 
+    public static boolean isDisplayTime() {
+        return Prefers.getBoolean("display_time");
+    }
+
+    public static void putDisplayTime(boolean displayTime) {
+        Prefers.put("display_time", displayTime);
+    }
+
+    public static boolean isDisplayTraffic() {
+        return Prefers.getBoolean("display_traffic");
+    }
+
+    public static void putDisplayTraffic(boolean displayTraffic) {
+        Prefers.put("display_traffic", displayTraffic);
+    }
+
+    public static boolean isDisplaySize() {
+        return Prefers.getBoolean("display_size", true);
+    }
+
+    public static void putDisplaySize(boolean displaySize) {
+        Prefers.put("display_size", displaySize);
+    }
+
+    public static boolean isDisplayProgress() {
+        return Prefers.getBoolean("display_progress", true);
+    }
+
+    public static void putDisplayProgress(boolean displayProgress) {
+        Prefers.put("display_progress", displayProgress);
+    }
+
+    public static boolean isDisplayMini() {
+        return Prefers.getBoolean("display_mini");
+    }
+
+    public static void putDisplayMini(boolean displayMini) {
+        Prefers.put("display_mini", displayMini);
+    }
+
+    public static boolean isDisplayTitle() {
+        return Prefers.getBoolean("display_title", true);
+    }
+
+    public static void putDisplayTitle(boolean displayTitle) {
+        Prefers.put("display_title", displayTitle);
+    }
+
     public static boolean isCaption() {
         return Prefers.getBoolean("caption");
     }

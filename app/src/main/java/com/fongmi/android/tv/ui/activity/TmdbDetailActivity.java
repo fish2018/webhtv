@@ -1,0 +1,3390 @@
+package com.fongmi.android.tv.ui.activity;
+
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.pm.ActivityInfo;
+import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.GestureDetector;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaMetadata;
+import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
+import androidx.media3.ui.PlayerView;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.Constant;
+import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.SiteApi;
+import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Danmaku;
+import com.fongmi.android.tv.bean.Episode;
+import com.fongmi.android.tv.bean.Flag;
+import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Keep;
+import com.fongmi.android.tv.bean.Parse;
+import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.bean.Sub;
+import com.fongmi.android.tv.bean.TmdbConfig;
+import com.fongmi.android.tv.bean.TmdbEpisode;
+import com.fongmi.android.tv.bean.TmdbItem;
+import com.fongmi.android.tv.bean.TmdbMatchCache;
+import com.fongmi.android.tv.bean.TmdbPerson;
+import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.databinding.ActivityTmdbDetailBinding;
+import com.fongmi.android.tv.databinding.DialogTmdbEpisodeBinding;
+import com.fongmi.android.tv.db.AppDatabase;
+import com.fongmi.android.tv.event.RefreshEvent;
+import com.fongmi.android.tv.player.PlayerHelper;
+import com.fongmi.android.tv.service.PlaybackService;
+import com.fongmi.android.tv.service.TmdbService;
+import com.fongmi.android.tv.setting.PlayerSetting;
+import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.ui.adapter.InlineEpisodeAdapter;
+import com.fongmi.android.tv.ui.adapter.TmdbEpisodeAdapter;
+import com.fongmi.android.tv.ui.adapter.TmdbPersonAdapter;
+import com.fongmi.android.tv.ui.adapter.TmdbPhotoAdapter;
+import com.fongmi.android.tv.ui.adapter.TmdbRailAdapter;
+import com.fongmi.android.tv.ui.controller.VodPlayerControlController;
+import com.fongmi.android.tv.ui.custom.CustomSeekView;
+import com.fongmi.android.tv.ui.dialog.DanmakuDialog;
+import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
+import com.fongmi.android.tv.ui.dialog.TmdbSearchDialog;
+import com.fongmi.android.tv.ui.dialog.TrackDialog;
+import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.KeyUtil;
+import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.utils.Util;
+import com.fongmi.android.tv.utils.Clock;
+import com.google.android.flexbox.FlexboxLayout;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.github.catvod.crawler.SpiderDebug;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TmdbDetailActivity extends PlaybackActivity implements TrackDialog.Listener, Clock.Callback {
+
+    private static final int FOCUS_STROKE = 0xFFFFD166;
+    private static final int FOCUS_STROKE_DP = 3;
+    private static final int CHIP_STROKE_DP = 1;
+    private static final int PHOTO_PRELOAD_RADIUS = 2;
+
+    private final TmdbService tmdbService = new TmdbService();
+    private final List<TmdbPerson> detailCastItems = new ArrayList<>();
+    private final List<TmdbPerson> castItems = new ArrayList<>();
+    private final List<TmdbPerson> creatorItems = new ArrayList<>();
+    private final List<TmdbItem> relatedItems = new ArrayList<>();
+    private final Map<Integer, TmdbEpisode> tmdbEpisodes = new HashMap<>();
+    private final List<Integer> seasonNumbers = new ArrayList<>();
+    private final Map<Integer, Integer> seasonEpisodeCounts = new HashMap<>();
+    private final Map<Integer, List<TmdbEpisode>> tmdbSeasonEpisodes = new HashMap<>();
+    private final Map<Integer, List<TmdbPerson>> tmdbSeasonCast = new HashMap<>();
+    private final Map<Integer, List<String>> tmdbSeasonPhotos = new HashMap<>();
+    private final Set<Integer> loadingSeasons = new HashSet<>();
+    private final List<String> detailTmdbPhotos = new ArrayList<>();
+    private final List<String> tmdbEpisodePhotos = new ArrayList<>();
+
+    private ActivityTmdbDetailBinding binding;
+    private Vod vod;
+    private History history;
+    private TmdbConfig tmdbConfig;
+    private TmdbBundle activeTmdbBundle;
+    private TmdbItem initialTmdbItem;
+    private TmdbItem matchedTmdbItem;
+    private JsonObject matchedTmdbDetail;
+    private Flag selectedFlag;
+    private Episode selectedEpisode;
+    private TmdbEpisodeAdapter episodeAdapter;
+    private TmdbPersonAdapter castAdapter;
+    private TmdbPersonAdapter creatorAdapter;
+    private TmdbPhotoAdapter episodePhotoAdapter;
+    private TmdbRailAdapter relatedAdapter;
+    private boolean overviewExpanded;
+    private boolean useParse;
+    private boolean inlineStarted;
+    private boolean detailPlayerActive;
+    private boolean autoPlayed;
+    private boolean inlineFullscreen;
+    private GestureDetector inlineGestureDetector;
+    private Clock inlineClock;
+    private VodPlayerControlController inlineControlController;
+    private final Runnable inlineHideControls = this::hideInlineControls;
+    private Result pendingInlineResult;
+    private Result currentInlineResult;
+    private ViewGroup playerParent;
+    private ViewGroup.LayoutParams playerLayoutParams;
+    private View inlineControlFocus;
+    private boolean inlineWakeControlsByKey;
+    private int selectedSeasonNumber = -1;
+    private int playerIndex = -1;
+    private int requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+    private int detailThemeMode;
+    private int loadGeneration;
+    private boolean episodeGridMode;
+    private boolean episodeReverse;
+    private boolean scrollEpisodeStartOnce;
+    private boolean tmdbMediaLoading;
+    private boolean lightTheme;
+
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark) {
+        start(activity, key, id, name, pic, mark, null);
+    }
+
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, @Nullable TmdbItem tmdbItem) {
+        start(activity, key, id, name, pic, mark, tmdbItem, false, false);
+    }
+
+    public static void startFusion(Activity activity, String key, String id, String name, String pic, String mark) {
+        start(activity, key, id, name, pic, mark, null, true, false);
+    }
+
+    public static void startFusion(Activity activity, String key, String id, String name, String pic, String mark, @Nullable TmdbItem tmdbItem) {
+        start(activity, key, id, name, pic, mark, tmdbItem, true, false);
+    }
+
+    public static void startPlayback(Activity activity, String key, String id, String name, String pic, String mark, boolean fusion) {
+        start(activity, key, id, name, pic, mark, null, fusion, true);
+    }
+
+    private static void start(Activity activity, String key, String id, String name, String pic, String mark, @Nullable TmdbItem tmdbItem, boolean fusion, boolean autoPlay) {
+        Intent intent = new Intent(activity, TmdbDetailActivity.class);
+        intent.putExtra("fusion", fusion);
+        intent.putExtra("auto_play", autoPlay);
+        intent.putExtra("key", key);
+        intent.putExtra("id", id);
+        intent.putExtra("name", name);
+        intent.putExtra("pic", pic);
+        intent.putExtra("mark", mark);
+        putTmdbItem(intent, tmdbItem);
+        activity.startActivity(intent);
+    }
+
+    private static void putTmdbItem(Intent intent, @Nullable TmdbItem item) {
+        if (item == null || item.getTmdbId() <= 0 || TextUtils.isEmpty(item.getMediaType())) return;
+        intent.putExtra("tmdb_id", item.getTmdbId());
+        intent.putExtra("tmdb_media_type", item.getMediaType());
+        intent.putExtra("tmdb_title", item.getTitle());
+        intent.putExtra("tmdb_subtitle", item.getSubtitle());
+        intent.putExtra("tmdb_overview", item.getOverview());
+        intent.putExtra("tmdb_poster", item.getPosterUrl());
+        intent.putExtra("tmdb_backdrop", item.getBackdropUrl());
+        intent.putExtra("tmdb_credit", item.getCredit());
+    }
+
+    @Override
+    protected androidx.viewbinding.ViewBinding getBinding() {
+        return binding = ActivityTmdbDetailBinding.inflate(getLayoutInflater());
+    }
+
+    @Override
+    protected PlaybackService.NavigationCallback getNavigationCallback() {
+        return mNavigationCallback;
+    }
+
+    @Override
+    protected CustomSeekView getSeekView() {
+        return binding.seek;
+    }
+
+    @Override
+    protected PlayerView getExoView() {
+        return binding.exo;
+    }
+
+    @Override
+    protected String getPlaybackKey() {
+        return getHistoryKey();
+    }
+
+    @Override
+    protected void initView(Bundle savedInstanceState) {
+        super.initView(savedInstanceState);
+        tmdbConfig = TmdbConfig.objectFrom(Setting.getTmdbConfig());
+        initialTmdbItem = getIntentTmdbItem();
+        detailThemeMode = Setting.getTmdbDetailTheme();
+        initPage();
+        loadContent(null);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        resetDetailState();
+        loadContent(null);
+    }
+
+    private void resetDetailState() {
+        tmdbConfig = TmdbConfig.objectFrom(Setting.getTmdbConfig());
+        initialTmdbItem = getIntentTmdbItem();
+        vod = null;
+        matchedTmdbItem = null;
+        matchedTmdbDetail = null;
+        history = null;
+        selectedFlag = null;
+        selectedEpisode = null;
+        inlineStarted = false;
+        detailPlayerActive = false;
+        autoPlayed = false;
+        pendingInlineResult = null;
+        currentInlineResult = null;
+        activeTmdbBundle = null;
+        useParse = false;
+        if (service() != null) {
+            player().stop();
+            player().clear();
+        }
+        binding.loading.setVisibility(View.VISIBLE);
+        binding.playerProgress.setVisibility(View.GONE);
+        binding.playerError.setVisibility(View.GONE);
+        binding.playerControls.setVisibility(View.GONE);
+        binding.flagContainer.removeAllViews();
+        binding.seasonContainer.removeAllViews();
+        episodeAdapter.setItems(List.of(), Map.of(), null);
+        if (episodePhotoAdapter != null) episodePhotoAdapter.setItems(List.of());
+        castAdapter.setItems(new ArrayList<>());
+        creatorAdapter.setItems(new ArrayList<>());
+        relatedAdapter.setItems(new ArrayList<>());
+        binding.tmdbStatus.setVisibility(View.GONE);
+        if (!TextUtils.isEmpty(getPicText())) {
+            ImgUtil.load(getNameText(), getPicText(), binding.poster);
+            ImgUtil.load(getNameText(), getPicText(), binding.backdropFill);
+            ImgUtil.load(getNameText(), getPicText(), binding.backdrop, false);
+        }
+    }
+
+    private void initPage() {
+        binding.play.setOnClickListener(view -> onPlay());
+        binding.keep.setOnClickListener(view -> onKeep());
+        binding.keepTop.setOnClickListener(view -> onKeep());
+        binding.keepFusion.setOnClickListener(view -> onKeep());
+        binding.rematch.setOnClickListener(view -> showManualTmdbMatchDialog());
+        binding.rematchTop.setOnClickListener(view -> showManualTmdbMatchDialog());
+        binding.rematchFusion.setOnClickListener(view -> showManualTmdbMatchDialog());
+        binding.changeSource.setOnClickListener(view -> changeSource());
+        binding.changeSourceDetail.setOnClickListener(view -> changeSource());
+        binding.changeSource.setOnLongClickListener(view -> openGlobalSourceSearch());
+        binding.changeSourceDetail.setOnLongClickListener(view -> openGlobalSourceSearch());
+        binding.themeMode.setOnClickListener(view -> cycleThemeMode());
+        binding.episodeReverse.setOnClickListener(view -> toggleEpisodeReverse());
+        binding.episodeViewMode.setOnClickListener(view -> toggleEpisodeViewMode());
+        binding.overview.setOnClickListener(view -> toggleOverview());
+        binding.overviewToggle.setOnClickListener(view -> toggleOverview());
+        binding.headerTitle.setText(R.string.detail_page_title);
+        binding.title.setText(getNameText());
+        binding.subtitle.setText("");
+        binding.sourceValue.setText(getString(R.string.detail_source_current, getKeyText()));
+        binding.overviewToggle.setVisibility(View.GONE);
+        binding.play.setText(R.string.detail_play_now);
+        binding.keep.setText(R.string.keep);
+        if (isFusionMode()) binding.headerTitle.setText(R.string.setting_detail_open_fusion);
+        binding.playerPanel.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
+        binding.heroSpacer.setVisibility(isFusionMode() ? View.GONE : View.VISIBLE);
+        binding.keepTop.setVisibility(View.GONE);
+        binding.rematchTop.setVisibility(View.GONE);
+        binding.fusionActions.setVisibility(isFusionMode() ? View.VISIBLE : View.GONE);
+        binding.detailActions.setVisibility(isFusionMode() ? View.GONE : View.VISIBLE);
+        initFusionPlayer();
+        binding.episodeEmpty.setText(R.string.detail_source_episode_empty);
+        if (!TextUtils.isEmpty(getPicText())) {
+            ImgUtil.load(getNameText(), getPicText(), binding.poster);
+            ImgUtil.load(getNameText(), getPicText(), binding.backdropFill);
+            ImgUtil.load(getNameText(), getPicText(), binding.backdrop, false);
+        }
+        episodeAdapter = new TmdbEpisodeAdapter(new TmdbEpisodeAdapter.Listener() {
+            @Override
+            public void onItemClick(Episode episode) {
+                selectedEpisode = episode;
+                episodeAdapter.setSelected(episode);
+                updatePlayLabel();
+                onPlay();
+            }
+
+            @Override
+            public void onItemLongClick(Episode episode, int episodeNumber) {
+                showTmdbEpisodeDetail(episode, episodeNumber);
+            }
+        });
+        castAdapter = new TmdbPersonAdapter(this::loadPersonDetail);
+        creatorAdapter = new TmdbPersonAdapter(this::loadPersonDetail);
+        episodePhotoAdapter = new TmdbPhotoAdapter(this::showPhotoDialog);
+        relatedAdapter = new TmdbRailAdapter(this::openRelatedItem);
+        updateEpisodeLayoutManager();
+        binding.episodeContainer.setNestedScrollingEnabled(false);
+        binding.episodeContainer.setAdapter(episodeAdapter);
+        binding.episodePhotoList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        binding.episodePhotoList.setNestedScrollingEnabled(false);
+        binding.episodePhotoList.setAdapter(episodePhotoAdapter);
+        binding.castList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        binding.castList.setNestedScrollingEnabled(false);
+        binding.castList.setAdapter(castAdapter);
+        binding.creatorList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        binding.creatorList.setNestedScrollingEnabled(false);
+        binding.creatorList.setAdapter(creatorAdapter);
+        binding.relatedList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        binding.relatedList.setNestedScrollingEnabled(false);
+        binding.relatedList.setAdapter(relatedAdapter);
+        applyDetailTheme();
+    }
+
+    private void initFusionPlayer() {
+        inlineControlController = new VodPlayerControlController(new VodPlayerControlController.Host() {
+            @Override
+            public com.fongmi.android.tv.player.PlayerManager player() {
+                return service() == null ? null : TmdbDetailActivity.this.player();
+            }
+
+            @Override
+            public void showDanmakuDialog() {
+                showInlineDanmaku();
+            }
+
+            @Override
+            public void showPlayerInfoDialog() {
+                showInlinePlayerInfo();
+            }
+
+            @Override
+            public void onDanmakuStateChanged(boolean show) {
+                binding.playerDanmaku.setSelected(show);
+            }
+        });
+        inlineClock = Clock.create();
+        inlineClock.setCallback(this);
+        inlineClock.start();
+        inlineGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                if (!inlineStarted) onPlay();
+                else if (!inlineFullscreen) enterInlineFullscreen();
+                else toggleInlineControls();
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                if (!inlineStarted) onPlay();
+                else if (!inlineFullscreen) enterInlineFullscreen();
+                else toggleInlineControls();
+                return true;
+            }
+        });
+        binding.playerPanel.setOnTouchListener(this::onInlineTouch);
+        binding.playerPanel.setOnKeyListener(this::onInlinePanelKey);
+        binding.playerPanel.setOnFocusChangeListener((view, focused) -> updatePlayerPanelFocus());
+        setupInlineControlFocus();
+        setupInlineFocusNavigation();
+        binding.playerToggle.setOnClickListener(view -> toggleInlinePlayback());
+        binding.playerPrev.setOnClickListener(view -> playAdjacentEpisode(-1));
+        binding.playerNext.setOnClickListener(view -> playAdjacentEpisode(1));
+        binding.playerQuality.setOnClickListener(view -> cycleInlineQuality());
+        binding.playerParse.setOnClickListener(view -> cycleInlineParse());
+        binding.playerSpeed.setOnClickListener(view -> changeInlineSpeed());
+        binding.playerSpeed.setOnLongClickListener(view -> resetInlineSpeed());
+        binding.playerScale.setOnClickListener(view -> cycleInlineScale());
+        binding.playerRefresh.setOnClickListener(view -> refreshInlinePlayback());
+        binding.playerDecode.setOnClickListener(view -> toggleInlineDecode());
+        binding.playerTextTrack.setOnClickListener(this::showInlineTrack);
+        binding.playerTextTrack.setOnLongClickListener(view -> showInlineSubtitle());
+        binding.playerAudioTrack.setOnClickListener(this::showInlineTrack);
+        binding.playerVideoTrack.setOnClickListener(this::showInlineTrack);
+        binding.playerDanmaku.setOnClickListener(view -> showInlineDanmaku());
+        binding.playerExternal.setOnClickListener(view -> openInlineExternal());
+        binding.playerExternal.setOnLongClickListener(view -> inlineControlController.showPlayerInfo());
+        binding.playerEpisodes.setOnClickListener(view -> showInlineEpisodes());
+        binding.playerFullscreen.setOnClickListener(view -> toggleInlineFullscreen());
+        binding.playerCast.setOnClickListener(view -> onInlineCast());
+        binding.playerInfo.setOnClickListener(view -> onInlineInfo());
+        binding.playerControls.setOnTouchListener(this::onInlineTouch);
+        hideInlineControls();
+        updateInlineButtons(false);
+        focusInlinePlayerPanel();
+    }
+
+    private void setupInlineFocusNavigation() {
+        View timeBar = binding.seek.findViewById(R.id.timeBar);
+        if (timeBar != null) {
+            timeBar.setNextFocusUpId(R.id.playerToggle);
+            timeBar.setNextFocusRightId(R.id.playerFullscreen);
+        }
+        binding.playerPrev.setNextFocusDownId(R.id.timeBar);
+        binding.playerToggle.setNextFocusDownId(R.id.timeBar);
+        binding.playerNext.setNextFocusDownId(R.id.timeBar);
+        binding.playerFullscreen.setNextFocusLeftId(R.id.timeBar);
+        binding.playerFullscreen.setNextFocusUpId(R.id.playerToggle);
+        binding.playerExternal.setNextFocusUpId(R.id.playerFullscreen);
+        binding.playerDecode.setNextFocusUpId(R.id.playerFullscreen);
+        binding.playerEpisodes.setNextFocusUpId(R.id.playerFullscreen);
+    }
+
+    private void setupInlineControlFocus() {
+        setupInlineControl(binding.playerCast);
+        setupInlineControl(binding.playerInfo);
+        setupInlineControl(binding.playerFullscreen);
+        setupInlineControl(binding.playerPrev);
+        setupInlineControl(binding.playerToggle);
+        setupInlineControl(binding.playerNext);
+        setupInlineControl(binding.playerExternal);
+        setupInlineControl(binding.playerDecode);
+        setupInlineControl(binding.playerSpeed);
+        setupInlineControl(binding.playerScale);
+        setupInlineControl(binding.playerRefresh);
+        setupInlineControl(binding.playerQuality);
+        setupInlineControl(binding.playerParse);
+        setupInlineControl(binding.playerTextTrack);
+        setupInlineControl(binding.playerAudioTrack);
+        setupInlineControl(binding.playerVideoTrack);
+        setupInlineControl(binding.playerDanmaku);
+        setupInlineControl(binding.playerEpisodes);
+    }
+
+    private void setupInlineControl(View view) {
+        view.setClickable(true);
+        view.setFocusable(true);
+        view.setOnFocusChangeListener((control, focused) -> {
+            if (focused) inlineControlFocus = control;
+            updatePlayerPanelFocus();
+        });
+    }
+
+    private boolean hasFocusedChild(View view) {
+        if (view == null) return false;
+        if (view.hasFocus()) return true;
+        if (!(view instanceof ViewGroup group)) return false;
+        for (int i = 0; i < group.getChildCount(); i++) if (hasFocusedChild(group.getChildAt(i))) return true;
+        return false;
+    }
+
+    private boolean onInlineTouch(View view, MotionEvent event) {
+        if (inlineGestureDetector != null) inlineGestureDetector.onTouchEvent(event);
+        return true;
+    }
+
+    private boolean onInlinePanelKey(View view, int keyCode, KeyEvent event) {
+        if (!KeyUtil.isEnterKey(event)) return false;
+        if (KeyUtil.isActionUp(event)) onInlinePanelConfirm();
+        return true;
+    }
+
+    private void onInlinePanelConfirm() {
+        if (!isInlinePlayerMode()) return;
+        if (!inlineStarted) {
+            onPlay();
+        } else if (!inlineFullscreen) {
+            enterInlineFullscreen();
+        } else if (isInlineControlsVisible()) {
+            hideInlineControls();
+        } else {
+            showInlineControls(true, false);
+        }
+    }
+
+    private void cycleThemeMode() {
+        detailThemeMode = (detailThemeMode + 1) % 3;
+        Setting.putTmdbDetailTheme(detailThemeMode);
+        applyDetailTheme();
+        if (vod != null) {
+            bindMeta();
+            renderFlagSelection();
+            renderSeasonSelection();
+            renderEpisodes();
+        }
+    }
+
+    private void applyDetailTheme() {
+        lightTheme = resolveLightTheme();
+        ThemeColors colors = lightTheme ? ThemeColors.light() : ThemeColors.dark();
+        binding.root.setBackgroundColor(colors.background);
+        binding.hero.setBackgroundColor(colors.background);
+        binding.backdropFill.setAlpha(lightTheme ? 0.35f : 0.5f);
+        binding.backdrop.setAlpha(lightTheme ? 0.92f : 1f);
+        binding.backdropShade.setBackgroundColor(colors.backdropShade);
+        setCard(binding.contentPanel, colors.panel, colors.line);
+        setPlayerCard(colors);
+        setCard(binding.tmdbPanel, colors.panel, colors.line);
+        tintTextTree(binding.getRoot(), colors);
+        setButton(binding.keep, colors.control, colors.line, colors.primary);
+        setButton(binding.keepTop, colors.control, colors.line, colors.primary);
+        setButton(binding.keepFusion, colors.control, colors.line, colors.primary);
+        setButton(binding.rematch, colors.control, colors.line, colors.primary);
+        setButton(binding.rematchTop, colors.control, colors.line, colors.primary);
+        setButton(binding.rematchFusion, colors.control, colors.line, colors.primary);
+        setButton(binding.changeSource, colors.control, colors.line, colors.primary);
+        setButton(binding.changeSourceDetail, colors.control, colors.line, colors.primary);
+        setButton(binding.themeMode, colors.control, colors.line, colors.primary);
+        setButton(binding.episodeReverse, colors.control, colors.line, colors.primary);
+        setButton(binding.episodeViewMode, colors.control, colors.line, colors.primary);
+        setButton(binding.play, colors.play, colors.play, 0xFFFFFFFF);
+        binding.headerTitle.setTextColor(colors.primary);
+        binding.title.setTextColor(colors.primary);
+        binding.subtitle.setTextColor(colors.secondary);
+        binding.sourceValue.setTextColor(colors.muted);
+        binding.overview.setTextColor(colors.body);
+        binding.overviewToggle.setTextColor(colors.accent);
+        binding.episodeEmpty.setTextColor(colors.secondary);
+        binding.tmdbStatus.setTextColor(colors.secondary);
+        binding.themeMode.setText(themeModeLabel());
+        if (isInlinePlayerMode()) {
+            binding.playerError.setTextColor(0xFFFFFFFF);
+            binding.playerTitle.setTextColor(0xFFFFFFFF);
+            tintInlineControl(binding.playerControls);
+        }
+        if (episodeAdapter != null) {
+            episodeAdapter.setLight(lightTheme);
+            episodeAdapter.setActiveStrokeColor(colors.accent);
+        }
+        if (episodePhotoAdapter != null) episodePhotoAdapter.setLight(lightTheme);
+    }
+
+    private void tintInlineControl(View view) {
+        if (view instanceof TextView textView) textView.setTextColor(0xFFFFFFFF);
+        if (!(view instanceof ViewGroup group)) return;
+        for (int i = 0; i < group.getChildCount(); i++) tintInlineControl(group.getChildAt(i));
+    }
+
+    private boolean resolveLightTheme() {
+        if (detailThemeMode == 1) return false;
+        if (detailThemeMode == 2) return true;
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) != Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private int themeModeLabel() {
+        if (detailThemeMode == 1) return R.string.detail_theme_dark;
+        if (detailThemeMode == 2) return R.string.detail_theme_light;
+        return R.string.detail_theme_auto;
+    }
+
+    private void setCard(MaterialCardView card, int background, int stroke) {
+        card.setCardBackgroundColor(background);
+        card.setStrokeColor(stroke);
+    }
+
+    private void setPlayerCard(ThemeColors colors) {
+        if (!isInlinePlayerMode()) return;
+        binding.playerPanel.setCardBackgroundColor(0xFF000000);
+        binding.playerPanel.setRadius(inlineFullscreen ? 0 : ResUtil.dp2px(20));
+        updatePlayerPanelFocus(colors);
+    }
+
+    private void updatePlayerPanelFocus() {
+        updatePlayerPanelFocus(lightTheme ? ThemeColors.light() : ThemeColors.dark());
+    }
+
+    private void updatePlayerPanelFocus(ThemeColors colors) {
+        if (!isInlinePlayerMode()) return;
+        if (inlineFullscreen) {
+            binding.playerPanel.setStrokeColor(0x00000000);
+            binding.playerPanel.setStrokeWidth(0);
+            return;
+        }
+        boolean focused = binding.playerPanel.hasFocus() && !hasFocusedChild(binding.playerControls);
+        binding.playerPanel.setStrokeColor(focused ? FOCUS_STROKE : colors.line);
+        binding.playerPanel.setStrokeWidth(ResUtil.dp2px(focused ? FOCUS_STROKE_DP : CHIP_STROKE_DP));
+    }
+
+    private void focusInlinePlayerPanel() {
+        if (!isFusionMode()) return;
+        binding.playerPanel.post(() -> {
+            if (!isFinishing() && binding.playerPanel.getVisibility() == View.VISIBLE && !inlineFullscreen) binding.playerPanel.requestFocus();
+        });
+    }
+
+    private void setButton(MaterialButton button, int background, int stroke, int text) {
+        button.setBackgroundTintList(ColorStateList.valueOf(background));
+        button.setTextColor(text);
+        button.setOnFocusChangeListener(null);
+        applyButtonFocus(button, stroke, button.hasFocus());
+        button.setOnFocusChangeListener((view, focused) -> applyButtonFocus(button, stroke, focused));
+    }
+
+    private void applyButtonFocus(MaterialButton button, int stroke, boolean focused) {
+        button.setStrokeWidth(ResUtil.dp2px(focused ? FOCUS_STROKE_DP : CHIP_STROKE_DP));
+        button.setStrokeColor(ColorStateList.valueOf(focused ? FOCUS_STROKE : stroke));
+    }
+
+    private void tintTextTree(View view, ThemeColors colors) {
+        if (view instanceof RecyclerView) return;
+        if (view instanceof TextView textView && !(view instanceof MaterialButton)) {
+            textView.setTextColor(colors.primary);
+        }
+        if (!(view instanceof ViewGroup group)) return;
+        for (int i = 0; i < group.getChildCount(); i++) tintTextTree(group.getChildAt(i), colors);
+    }
+
+    private void loadContent(@Nullable TmdbBundle reusableBundle) {
+        int generation = ++loadGeneration;
+        Task.execute(() -> {
+            boolean tmdbAllowed = isTmdbAllowedForCurrentSite();
+            Future<TmdbLoadResult> tmdbFuture = reusableBundle == null && tmdbConfig.isReady() && tmdbAllowed ? Task.executor().submit(this::loadTmdbResult) : null;
+            Vod loadedVod = null;
+            String error = null;
+            try {
+                Result result = SiteApi.detailContent(getKeyText(), getIdText());
+                if (result != null && !result.getList().isEmpty()) {
+                    loadedVod = result.getVod();
+                    if (loadedVod != null && loadedVod.getSite() == null) {
+                        loadedVod.setSite(VodConfig.get().getSite(getKeyText()));
+                    }
+                }
+            } catch (Throwable e) {
+                error = e.getMessage();
+            }
+
+            Vod finalVod = loadedVod;
+            String finalError = error;
+            runOnAliveUi(() -> {
+                if (generation != loadGeneration) return;
+                applyLoaded(finalVod, reusableBundle, new ArrayList<>(), finalError, false);
+            });
+            if (finalVod == null || tmdbFuture == null) {
+                if (tmdbFuture != null) tmdbFuture.cancel(true);
+                return;
+            }
+            try {
+                TmdbLoadResult result = tmdbFuture.get();
+                if (result != null && result.bundle() == null && finalVod != null) {
+                    String query = cleanTmdbSearchQuery(finalVod.getName());
+                    logTmdbMatch("基础匹配未命中，使用站源详情继续消歧：片名=%s，清洗后=%s，年份=%s，演员=%s，导演=%s，简介长度=%d",
+                            finalVod.getName(), query, finalVod.getYear(), finalVod.getActor(), finalVod.getDirector(), finalVod.getContent().length());
+                    TmdbBundle bundle = chooseTmdbBundle(result.searchItems(), query, finalVod);
+                    if (bundle != null) result = new TmdbLoadResult(bundle, result.searchItems());
+                }
+                TmdbLoadResult finalResult = result;
+                runOnAliveUi(() -> {
+                    if (generation != loadGeneration || vod == null) return;
+                    applyTmdbResult(finalResult);
+                });
+            } catch (Throwable ignored) {
+            }
+        });
+    }
+
+    private boolean canTouchUi() {
+        return !isFinishing() && !isDestroyed();
+    }
+
+    private void runOnAliveUi(Runnable runnable) {
+        runOnUiThread(() -> {
+            if (!canTouchUi()) return;
+            runnable.run();
+        });
+    }
+
+    private void applyLoaded(Vod loadedVod, TmdbBundle bundle, List<TmdbItem> searchItems, String error) {
+        applyLoaded(loadedVod, bundle, searchItems, error, true);
+    }
+
+    private void applyLoaded(Vod loadedVod, TmdbBundle bundle, List<TmdbItem> searchItems, String error, boolean allowMatchDialog) {
+        binding.loading.setVisibility(View.GONE);
+        if (loadedVod == null) {
+            if (!TextUtils.isEmpty(error)) Notify.show(error);
+            VideoActivity.startDirect(this, getKeyText(), getIdText(), getNameText(), getPicText(), getMarkText());
+            finish();
+            return;
+        }
+        vod = loadedVod;
+        applyTmdbBundle(bundle);
+        if (bundle != null && initialTmdbItem != null) saveTmdbMatch(bundle.item());
+        enrichVod();
+        initHistory();
+        bindPage();
+        focusInlinePlayerPanel();
+        maybeAutoPlayInline();
+        if (bundle != null) loadTmdbMediaBlocks(bundle);
+        if (allowMatchDialog && canMatchTmdb() && bundle == null && initialTmdbItem == null) showTmdbMatchDialog(searchItems);
+    }
+
+    private TmdbLoadResult loadTmdbResult() {
+        TmdbBundle tmdbBundle = null;
+        List<TmdbItem> searchItems = new ArrayList<>();
+        try {
+            if (initialTmdbItem != null) {
+                tmdbBundle = loadTmdbBundle(initialTmdbItem);
+            } else {
+                TmdbItem match = getCachedTmdbMatch();
+                if (match != null) {
+                    try {
+                        tmdbBundle = loadTmdbBundle(match);
+                    } catch (Throwable ignored) {
+                        match = null;
+                        tmdbBundle = null;
+                    }
+                }
+                if (match == null) {
+                    String query = getTmdbSearchQuery();
+                    searchItems = searchTmdbItems(query, getNameText());
+                    logTmdbMatch("搜索完成：原始标题=%s，实际搜索词=%s，返回数量=%d", getNameText(), query, searchItems.size());
+                    match = chooseTmdbMatch(searchItems, query, null);
+                }
+                if (match != null && tmdbBundle == null) tmdbBundle = loadTmdbBundle(match);
+            }
+        } catch (Throwable ignored) {
+        }
+        return new TmdbLoadResult(tmdbBundle, searchItems);
+    }
+
+    private void applyTmdbResult(TmdbLoadResult result) {
+        TmdbBundle bundle = result == null ? null : result.bundle();
+        applyTmdbBundle(bundle);
+        if (bundle != null && initialTmdbItem != null) saveTmdbMatch(bundle.item());
+        enrichVod();
+        bindBackdrop();
+        bindHeader();
+        bindMeta();
+        bindOverview();
+        renderSeasonSelection();
+        renderEpisodes();
+        bindTmdbSection();
+        focusInlinePlayerPanel();
+        if (bundle != null) loadTmdbMediaBlocks(bundle);
+        if (canMatchTmdb() && bundle == null && initialTmdbItem == null) showTmdbMatchDialog(result == null ? List.of() : result.searchItems());
+    }
+
+    private TmdbBundle loadTmdbBundle(TmdbItem item) throws Exception {
+        JsonObject detail = tmdbService.detail(item, tmdbConfig);
+        List<Integer> seasons = new ArrayList<>();
+        Map<Integer, Integer> seasonCounts = new HashMap<>();
+        Map<Integer, List<TmdbEpisode>> seasonEpisodes = new HashMap<>();
+        Map<Integer, List<TmdbPerson>> seasonCast = new HashMap<>();
+        Map<Integer, List<String>> seasonPhotos = new HashMap<>();
+        if ("tv".equalsIgnoreCase(item.getMediaType())) {
+            seasonCounts = seasonEpisodeCounts(detail);
+            seasons.addAll(seasonCounts.keySet());
+        }
+        return new TmdbBundle(item, detail, List.of(), List.of(), List.of(), List.of(), seasons, seasonCounts, seasonEpisodes, seasonCast, seasonPhotos);
+    }
+
+    private void loadTmdbMediaBlocks(TmdbBundle bundle) {
+        if (bundle == null || bundle.item() == null || bundle.detail() == null) return;
+        int generation = loadGeneration;
+        tmdbMediaLoading = true;
+        bindTmdbSection();
+        Task.execute(() -> {
+            List<TmdbPerson> cast = new ArrayList<>();
+            List<TmdbPerson> creators = new ArrayList<>();
+            List<String> photos = new ArrayList<>();
+            List<TmdbItem> related = new ArrayList<>();
+            try {
+                cast = tmdbService.cast(bundle.detail(), tmdbConfig);
+            } catch (Throwable ignored) {
+            }
+            try {
+                creators = tmdbService.creators(bundle.detail(), tmdbConfig);
+            } catch (Throwable ignored) {
+            }
+            try {
+                photos = tmdbService.photos(bundle.detail(), tmdbConfig);
+            } catch (Throwable ignored) {
+            }
+            try {
+                related = tmdbService.recommendations(bundle.detail(), tmdbConfig);
+                if (related.isEmpty()) related = tmdbService.similar(bundle.detail(), tmdbConfig);
+            } catch (Throwable ignored) {
+            }
+            List<TmdbPerson> finalCast = cast;
+            List<TmdbPerson> finalCreators = creators;
+            List<String> finalPhotos = photos;
+            List<TmdbItem> finalRelated = related;
+            runOnAliveUi(() -> {
+                if (generation != loadGeneration || bundle.item() != matchedTmdbItem) return;
+                tmdbMediaLoading = false;
+                detailCastItems.clear();
+                detailCastItems.addAll(finalCast);
+                creatorItems.clear();
+                creatorItems.addAll(finalCreators);
+                relatedItems.clear();
+                relatedItems.addAll(finalRelated);
+                detailTmdbPhotos.clear();
+                detailTmdbPhotos.addAll(finalPhotos);
+                bindSeasonTmdbMedia(selectedSeasonNumber);
+                bindTmdbSection();
+            });
+        });
+    }
+
+    private void applyTmdbBundle(TmdbBundle bundle) {
+        activeTmdbBundle = bundle;
+        matchedTmdbItem = bundle == null ? null : bundle.item();
+        matchedTmdbDetail = bundle == null ? null : bundle.detail();
+        detailCastItems.clear();
+        if (bundle != null) detailCastItems.addAll(bundle.cast());
+        castItems.clear();
+        castItems.addAll(detailCastItems);
+        creatorItems.clear();
+        if (bundle != null) creatorItems.addAll(bundle.creators());
+        detailTmdbPhotos.clear();
+        if (bundle != null) detailTmdbPhotos.addAll(bundle.photos());
+        tmdbEpisodePhotos.clear();
+        tmdbEpisodePhotos.addAll(detailTmdbPhotos);
+        relatedItems.clear();
+        if (bundle != null) relatedItems.addAll(bundle.related());
+        tmdbEpisodes.clear();
+        seasonNumbers.clear();
+        if (bundle != null) seasonNumbers.addAll(bundle.seasons());
+        seasonEpisodeCounts.clear();
+        if (bundle != null) seasonEpisodeCounts.putAll(bundle.seasonCounts());
+        tmdbSeasonEpisodes.clear();
+        if (bundle != null) tmdbSeasonEpisodes.putAll(bundle.seasonEpisodes());
+        tmdbSeasonCast.clear();
+        if (bundle != null) tmdbSeasonCast.putAll(bundle.seasonCast());
+        tmdbSeasonPhotos.clear();
+        if (bundle != null) tmdbSeasonPhotos.putAll(bundle.seasonPhotos());
+        loadingSeasons.clear();
+        tmdbMediaLoading = false;
+    }
+
+    private void showTmdbMatchDialog(List<TmdbItem> items) {
+        showTmdbMatchDialog(items, true);
+    }
+
+    private void showTmdbMatchDialog(List<TmdbItem> items, boolean skippable) {
+        if (!canTouchUi() || !canMatchTmdb()) return;
+        TmdbSearchDialog.create(this)
+                .title(getString(R.string.detail_tmdb_match_title))
+                .query(getTmdbSearchQuery())
+                .items(items)
+                .listener(this::applyManualTmdb)
+                .searchListener(this::searchTmdb)
+                .skipListener(skippable ? this::onPlay : null)
+                .show();
+    }
+
+    private void showManualTmdbMatchDialog() {
+        if (!tmdbConfig.isReady()) {
+            Notify.show(getString(R.string.detail_tmdb_need_key));
+            return;
+        }
+        if (!isTmdbAllowedForCurrentSite()) {
+            Notify.show(R.string.detail_tmdb_site_disabled);
+            return;
+        }
+        binding.loading.setVisibility(View.VISIBLE);
+        Task.execute(() -> {
+            try {
+                List<TmdbItem> items = searchTmdbItems(getTmdbSearchQuery(), getNameText());
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    showTmdbMatchDialog(items, false);
+                });
+            } catch (Throwable e) {
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
+                });
+            }
+        });
+    }
+
+    private TmdbItem getCachedTmdbMatch() {
+        if (!isTmdbAllowedForCurrentSite()) return null;
+        return Setting.getTmdbMatchCache().find(getKeyText(), getIdText());
+    }
+
+    private boolean canMatchTmdb() {
+        return tmdbConfig != null && tmdbConfig.isReady() && isTmdbAllowedForCurrentSite();
+    }
+
+    private boolean isTmdbAllowedForCurrentSite() {
+        if (tmdbConfig == null) return false;
+        Site site = getCurrentSite();
+        String key = site == null || site.isEmpty() ? getKeyText() : site.getKey();
+        String name = site == null || site.isEmpty() ? getKeyText() : site.getName();
+        return tmdbConfig.isSiteEnabled(key, name);
+    }
+
+    private void saveTmdbMatch(TmdbItem item) {
+        if (item == null || item.getTmdbId() <= 0) return;
+        TmdbMatchCache cache = Setting.getTmdbMatchCache();
+        cache.put(getKeyText(), getIdText(), item);
+        Setting.putTmdbMatchCache(cache);
+    }
+
+    private String getTmdbSearchQuery() {
+        if (matchedTmdbItem != null && !TextUtils.isEmpty(matchedTmdbItem.getTitle())) return matchedTmdbItem.getTitle();
+        if (vod != null && !TextUtils.isEmpty(vod.getName())) return cleanTmdbSearchQuery(vod.getName());
+        return cleanTmdbSearchQuery(getNameText());
+    }
+
+    private void searchTmdb(String keyword, TmdbSearchDialog dialog) {
+        dialog.loading();
+        Task.execute(() -> {
+            try {
+                String query = cleanTmdbSearchQuery(keyword);
+                List<TmdbItem> items = searchTmdbItems(query, keyword);
+                runOnAliveUi(() -> dialog.updateItems(items));
+            } catch (Throwable e) {
+                runOnAliveUi(() -> {
+                    dialog.updateItems(new ArrayList<>());
+                    Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void applyManualTmdb(TmdbItem item) {
+        binding.loading.setVisibility(View.VISIBLE);
+        Task.execute(() -> {
+            try {
+                TmdbBundle bundle = loadTmdbBundle(item);
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    applyTmdbBundle(bundle);
+                    saveTmdbMatch(item);
+                    enrichVod();
+                    bindPage();
+                    loadTmdbMediaBlocks(bundle);
+                    Notify.show(R.string.detail_tmdb_match_saved);
+                });
+            } catch (Throwable e) {
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void enrichVod() {
+        if (matchedTmdbItem != null) {
+            if (!TextUtils.isEmpty(matchedTmdbItem.getTitle())) vod.setName(matchedTmdbItem.getTitle());
+            if (!TextUtils.isEmpty(matchedTmdbItem.getPosterUrl())) vod.setPic(matchedTmdbItem.getPosterUrl());
+        }
+        String overview = tmdbOverview();
+        if (!TextUtils.isEmpty(overview)) vod.setContent(overview);
+        if (matchedTmdbDetail == null) return;
+        String poster = tmdbService.image(tmdbConfig.getImageBase(), string(matchedTmdbDetail, "poster_path"));
+        if (!TextUtils.isEmpty(poster)) {
+            vod.setPic(poster);
+        } else if ((TextUtils.isEmpty(vod.getPic()) || vod.getPic().startsWith("data:")) && matchedTmdbItem != null) {
+            vod.setPic(matchedTmdbItem.getPosterUrl());
+        }
+        if (TextUtils.isEmpty(vod.getDirector())) {
+            String director = firstCrew("Director");
+            if (!TextUtils.isEmpty(director)) vod.setDirector(director);
+        }
+    }
+
+    private void bindPage() {
+        binding.contentPanel.setVisibility(View.VISIBLE);
+        bindBackdrop();
+        bindHeader();
+        bindMeta();
+        bindOverview();
+        bindSource();
+        bindFlags();
+        bindTmdbSection();
+        updateKeepState();
+    }
+
+    private void bindBackdrop() {
+        String backdrop = matchedTmdbItem != null ? matchedTmdbItem.getBackdropUrl() : "";
+        if (TextUtils.isEmpty(backdrop) && matchedTmdbDetail != null) {
+            backdrop = tmdbService.image(tmdbConfig.getBackdropBase(), string(matchedTmdbDetail, "backdrop_path"));
+        }
+        if (TextUtils.isEmpty(backdrop)) backdrop = vod.getPic();
+        binding.hero.setVisibility(TextUtils.isEmpty(backdrop) ? View.GONE : View.VISIBLE);
+        if (!TextUtils.isEmpty(backdrop)) {
+            ImgUtil.load(vod.getName(), backdrop, binding.backdropFill);
+            ImgUtil.load(vod.getName(), backdrop, binding.backdrop, false);
+        }
+        ImgUtil.load(vod.getName(), vod.getPic(), binding.poster);
+    }
+
+    private void bindHeader() {
+        overviewExpanded = false;
+        binding.title.setText(vod.getName());
+        binding.subtitle.setText(buildSubtitle());
+        binding.sourceValue.setText(getString(R.string.detail_source_current, getSiteName()));
+    }
+
+    private void bindMeta() {
+        binding.metaContainer.removeAllViews();
+        addMetaChip(getMediaTypeLabel());
+        addMetaChip(metaYear());
+        addMetaChip(firstGenre());
+        addMetaChip(firstCountry());
+        addMetaChip(firstCrew("Director"));
+        addMetaChip(certificationLabel());
+        String rating = ratingLabel();
+        if (!TextUtils.isEmpty(rating)) addMetaChip(rating);
+        addMetaChip(externalIdLabel());
+    }
+
+    private void bindOverview() {
+        String overview = displayOverview();
+        binding.overview.setText(overview);
+        binding.overview.setVisibility(TextUtils.isEmpty(overview) ? View.GONE : View.VISIBLE);
+        if (TextUtils.isEmpty(overview)) {
+            binding.overviewToggle.setVisibility(View.GONE);
+            return;
+        }
+        applyOverviewState();
+        binding.overview.post(() -> {
+            if (isOverviewOverflowing()) {
+                binding.overviewToggle.setVisibility(View.VISIBLE);
+                applyOverviewState();
+            } else {
+                binding.overviewToggle.setVisibility(View.GONE);
+                binding.overview.setMaxLines(Integer.MAX_VALUE);
+                binding.overview.setEllipsize(null);
+            }
+        });
+    }
+
+    private List<TmdbItem> searchTmdbItems(String query, String fallback) throws Exception {
+        List<TmdbItem> items = tmdbService.search(query, tmdbConfig);
+        logTmdbMatch("TMDB 搜索：搜索词=%s，结果数=%d", query, items.size());
+        String fallbackQuery = Objects.toString(fallback, "").trim();
+        if (!items.isEmpty() || TextUtils.isEmpty(fallbackQuery) || query.equals(fallbackQuery)) return items;
+        List<TmdbItem> fallbackItems = tmdbService.search(fallbackQuery, tmdbConfig);
+        logTmdbMatch("TMDB 搜索回退：清洗后无结果，原始词=%s，结果数=%d", fallbackQuery, fallbackItems.size());
+        return fallbackItems;
+    }
+
+    private void toggleOverview() {
+        if (binding.overviewToggle.getVisibility() != View.VISIBLE) return;
+        overviewExpanded = !overviewExpanded;
+        applyOverviewState();
+    }
+
+    private void applyOverviewState() {
+        binding.overview.setMaxLines(overviewExpanded ? Integer.MAX_VALUE : 5);
+        binding.overview.setEllipsize(overviewExpanded ? null : TextUtils.TruncateAt.END);
+        binding.overviewToggle.setText(overviewExpanded ? R.string.detail_collapse : R.string.detail_expand);
+    }
+
+    private boolean isOverviewOverflowing() {
+        if (binding.overview.getLineCount() > 5) return true;
+        android.text.Layout layout = binding.overview.getLayout();
+        return layout != null && layout.getLineCount() >= 5 && layout.getEllipsisCount(layout.getLineCount() - 1) > 0;
+    }
+
+    private void bindSource() {
+        boolean hasFlags = vod != null && vod.getFlags() != null && !vod.getFlags().isEmpty();
+        binding.flagTitle.setVisibility(hasFlags ? View.VISIBLE : View.GONE);
+        binding.flagScroll.setVisibility(hasFlags ? View.VISIBLE : View.GONE);
+    }
+
+    private void bindFlags() {
+        binding.flagContainer.removeAllViews();
+        List<Flag> flags = vod.getFlags();
+        boolean hasFlags = flags != null && !flags.isEmpty();
+        if (!hasFlags) {
+            binding.episodeTitle.setVisibility(View.GONE);
+            binding.episodeContainer.setVisibility(View.GONE);
+            binding.seasonScroll.setVisibility(View.GONE);
+            binding.episodeEmpty.setVisibility(View.VISIBLE);
+            updatePlayLabel();
+            return;
+        }
+        Flag currentFlag = findInitialFlag(flags);
+        selectedFlag = currentFlag;
+        selectedEpisode = null;
+        selectedSeasonNumber = -1;
+        for (Flag flag : flags) {
+            MaterialButton button = createChipButton(flag.getShow());
+            setChipState(button, flag.equals(currentFlag));
+            button.setOnClickListener(view -> {
+                selectedFlag = flag;
+                selectedEpisode = null;
+                selectedSeasonNumber = -1;
+                renderFlagSelection();
+                renderEpisodes();
+                if (isFusionMode()) onPlay();
+            });
+            binding.flagContainer.addView(button);
+        }
+        renderFlagSelection();
+        renderEpisodes();
+    }
+
+    private void renderFlagSelection() {
+        List<Flag> flags = vod.getFlags();
+        for (int i = 0; i < binding.flagContainer.getChildCount() && i < flags.size(); i++) {
+            View child = binding.flagContainer.getChildAt(i);
+            if (child instanceof MaterialButton button) {
+                setChipState(button, flags.get(i).equals(selectedFlag));
+            }
+        }
+    }
+
+    private void renderEpisodes() {
+        List<Episode> episodes = selectedFlag == null ? null : selectedFlag.getEpisodes();
+        boolean hasEpisodes = episodes != null && !episodes.isEmpty();
+        binding.episodeHeader.setVisibility(hasEpisodes ? View.VISIBLE : View.GONE);
+        binding.episodeContainer.setVisibility(hasEpisodes ? View.VISIBLE : View.GONE);
+        binding.episodeEmpty.setVisibility(hasEpisodes ? View.GONE : View.VISIBLE);
+        if (!hasEpisodes) {
+            binding.seasonScroll.setVisibility(View.GONE);
+            binding.episodeSkeleton.setVisibility(View.GONE);
+            episodeAdapter.setItems(List.of(), Map.of(), null);
+            updatePlayLabel();
+            return;
+        }
+        if (selectedEpisode == null) {
+            String remarks = history != null ? history.getVodRemarks() : "";
+            selectedEpisode = findEpisodeByUrl(history == null ? "" : history.getEpisodeUrl(), selectedFlag.getEpisodes());
+            if (selectedEpisode == null) selectedEpisode = selectedFlag.find(remarks, getMarkText().isEmpty());
+            if (selectedEpisode == null) selectedEpisode = episodes.get(0);
+        }
+        if (selectedSeasonNumber < 0) selectedSeasonNumber = seasonForEpisode(selectedEpisode, episodes);
+        renderSeasonSelection();
+        List<Episode> visibleEpisodes = visibleEpisodes(episodes);
+        bindSeasonEpisodes();
+        refreshCurrentHistoryEpisodeTitle();
+        Map<Episode, Integer> episodeNumbers = episodeNumbers(visibleEpisodes, episodes);
+        List<Episode> displayEpisodes = new ArrayList<>(visibleEpisodes);
+        if (episodeReverse) Collections.reverse(displayEpisodes);
+        binding.episodeReverse.setText(episodeReverse ? R.string.detail_episode_forward : R.string.detail_episode_reverse);
+        binding.episodeViewMode.setText(episodeGridMode ? R.string.detail_episode_view_list : R.string.detail_episode_view_grid);
+        episodeAdapter.setMode(episodeGridMode ? TmdbEpisodeAdapter.Mode.GRID : TmdbEpisodeAdapter.Mode.LIST);
+        updateEpisodeLayoutManager();
+        episodeAdapter.setItems(displayEpisodes, tmdbEpisodes, episodeNumbers, selectedEpisode);
+        updateEpisodeSkeleton();
+        scrollEpisodeToSelected();
+        updatePlayLabel();
+        bindTmdbSection();
+    }
+
+    private void scrollEpisodeToSelected() {
+        if (selectedEpisode == null || episodeAdapter == null) return;
+        binding.episodeContainer.post(() -> {
+            if (scrollEpisodeStartOnce) {
+                scrollEpisodeStartOnce = false;
+                scrollEpisodeToPosition(0, ResUtil.dp2px(8));
+                return;
+            }
+            if (selectedEpisode == null) return;
+            int position = episodeAdapter.getPosition(selectedEpisode);
+            if (position < 0) return;
+            scrollEpisodeToPosition(position, ResUtil.dp2px(12));
+        });
+    }
+
+    private void scrollEpisodeToPosition(int position, int offset) {
+        RecyclerView.LayoutManager layoutManager = binding.episodeContainer.getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager gridLayoutManager) {
+            gridLayoutManager.scrollToPositionWithOffset(position, offset);
+        } else if (layoutManager instanceof LinearLayoutManager linearLayoutManager) {
+            linearLayoutManager.scrollToPositionWithOffset(position, offset);
+        } else {
+            binding.episodeContainer.scrollToPosition(position);
+        }
+    }
+
+    private void toggleEpisodeReverse() {
+        episodeReverse = !episodeReverse;
+        scrollEpisodeStartOnce = episodeReverse;
+        renderEpisodes();
+    }
+
+    private void toggleEpisodeViewMode() {
+        episodeGridMode = !episodeGridMode;
+        renderEpisodes();
+    }
+
+    private void updateEpisodeLayoutManager() {
+        RecyclerView.LayoutManager current = binding.episodeContainer.getLayoutManager();
+        if (episodeGridMode) {
+            if (current instanceof GridLayoutManager) return;
+            binding.episodeContainer.setPadding(0, 0, 0, 0);
+            binding.episodeContainer.setLayoutManager(new GridLayoutManager(this, episodeSpanCount()));
+        } else {
+            if (current instanceof LinearLayoutManager linear && linear.getOrientation() == LinearLayoutManager.HORIZONTAL) return;
+            binding.episodeContainer.setPadding(0, 0, ResUtil.dp2px(8), 0);
+            binding.episodeContainer.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        }
+    }
+
+    private int episodeSpanCount() {
+        int width = getResources().getDisplayMetrics().widthPixels;
+        return Math.max(2, width / ResUtil.dp2px(isFusionMode() ? 190 : 220));
+    }
+
+    private Map<Episode, Integer> episodeNumbers(List<Episode> visibleEpisodes, List<Episode> allEpisodes) {
+        Map<Episode, Integer> numbers = new HashMap<>();
+        for (int i = 0; i < visibleEpisodes.size(); i++) numbers.put(visibleEpisodes.get(i), i + 1);
+        return numbers;
+    }
+
+    private void renderSeasonSelection() {
+        boolean hasSeasons = seasonNumbers.size() > 1;
+        binding.seasonScroll.setVisibility(hasSeasons ? View.VISIBLE : View.GONE);
+        binding.seasonContainer.removeAllViews();
+        if (!hasSeasons) return;
+        for (Integer season : seasonNumbers) {
+            MaterialButton button = createChipButton(getString(R.string.detail_season_format, season));
+            setChipState(button, season == selectedSeasonNumber);
+            button.setOnClickListener(view -> {
+                selectedSeasonNumber = season;
+                List<Episode> visibleEpisodes = visibleEpisodes(selectedFlag.getEpisodes());
+                selectedEpisode = visibleEpisodes.isEmpty() ? null : visibleEpisodes.get(0);
+                renderSeasonSelection();
+                fetchSeasonIfNeeded(season);
+                renderEpisodes();
+            });
+            binding.seasonContainer.addView(button);
+        }
+    }
+
+    private void bindSeasonEpisodes() {
+        tmdbEpisodes.clear();
+        List<TmdbEpisode> episodes = tmdbSeasonEpisodes.get(selectedSeasonNumber);
+        if (episodes != null) {
+            for (TmdbEpisode episode : episodes) tmdbEpisodes.put(episode.getNumber(), episode);
+        }
+        bindSeasonTmdbMedia(selectedSeasonNumber);
+        fetchSeasonIfNeeded(selectedSeasonNumber);
+    }
+
+    private void fetchSeasonIfNeeded(int seasonNumber) {
+        if (seasonNumber < 0 || tmdbSeasonEpisodes.containsKey(seasonNumber) || loadingSeasons.contains(seasonNumber) || matchedTmdbItem == null || !"tv".equalsIgnoreCase(matchedTmdbItem.getMediaType()) || !canMatchTmdb()) return;
+        loadingSeasons.add(seasonNumber);
+        updateEpisodeSkeleton();
+        Task.execute(() -> {
+            try {
+                JsonObject season = tmdbService.season(matchedTmdbItem, seasonNumber, tmdbConfig, matchedTmdbDetail);
+                List<TmdbEpisode> episodes = tmdbService.episodes(season, tmdbConfig);
+                List<TmdbPerson> cast = tmdbService.seasonCast(season, tmdbConfig);
+                List<String> photos = tmdbService.seasonPhotos(season, tmdbConfig);
+                runOnAliveUi(() -> {
+                    loadingSeasons.remove(seasonNumber);
+                    tmdbSeasonEpisodes.put(seasonNumber, episodes);
+                    tmdbSeasonCast.put(seasonNumber, cast);
+                    tmdbSeasonPhotos.put(seasonNumber, photos);
+                    if (seasonNumber == selectedSeasonNumber) renderEpisodes();
+                });
+            } catch (Throwable ignored) {
+                runOnAliveUi(() -> {
+                    loadingSeasons.remove(seasonNumber);
+                    updateEpisodeSkeleton();
+                });
+            }
+        });
+    }
+
+    private void updateEpisodeSkeleton() {
+        boolean loading = selectedSeasonNumber >= 0 && loadingSeasons.contains(selectedSeasonNumber);
+        binding.episodeSkeleton.setVisibility(loading ? View.VISIBLE : View.GONE);
+    }
+
+    private void bindSeasonTmdbMedia(int seasonNumber) {
+        castItems.clear();
+        List<TmdbPerson> seasonCast = tmdbSeasonCast.get(seasonNumber);
+        castItems.addAll(seasonCast == null || seasonCast.isEmpty() ? detailCastItems : seasonCast);
+
+        tmdbEpisodePhotos.clear();
+        List<String> seasonPhotos = tmdbSeasonPhotos.get(seasonNumber);
+        tmdbEpisodePhotos.addAll(seasonPhotos == null || seasonPhotos.isEmpty() ? detailTmdbPhotos : seasonPhotos);
+    }
+
+    private List<Episode> visibleEpisodes(List<Episode> episodes) {
+        if (episodes == null || episodes.isEmpty()) return List.of();
+        if (seasonNumbers.size() <= 1 || selectedSeasonNumber < 0) return episodes;
+        int start = 0;
+        for (int i = 0; i < seasonNumbers.size(); i++) {
+            Integer season = seasonNumbers.get(i);
+            int count = Math.max(0, seasonEpisodeCounts.getOrDefault(season, 0));
+            if (season == selectedSeasonNumber) {
+                if (count <= 0) return episodes;
+                int end = i == seasonNumbers.size() - 1 ? episodes.size() : Math.min(episodes.size(), start + count);
+                return start < end ? episodes.subList(start, end) : List.of();
+            }
+            start += count;
+            if (start >= episodes.size()) break;
+        }
+        return episodes;
+    }
+
+    private int seasonForEpisode(Episode episode, List<Episode> episodes) {
+        if (seasonNumbers.isEmpty()) return -1;
+        if (seasonNumbers.size() == 1) return seasonNumbers.get(0);
+        int index = episode == null ? -1 : episodes.indexOf(episode);
+        if (index < 0) return firstSeasonNumber(matchedTmdbDetail);
+        int start = 0;
+        for (int i = 0; i < seasonNumbers.size(); i++) {
+            Integer season = seasonNumbers.get(i);
+            int count = Math.max(0, seasonEpisodeCounts.getOrDefault(season, 0));
+            if (count <= 0) continue;
+            int end = i == seasonNumbers.size() - 1 ? episodes.size() : start + count;
+            if (index >= start && index < end) return season;
+            start += count;
+        }
+        return seasonNumbers.get(seasonNumbers.size() - 1);
+    }
+
+    private void bindTmdbSection() {
+        if (!isTmdbAllowedForCurrentSite()) {
+            binding.tmdbSection.setVisibility(View.GONE);
+            return;
+        }
+        boolean hasCast = !castItems.isEmpty();
+        boolean hasCreators = !creatorItems.isEmpty();
+        boolean hasPhotos = !tmdbEpisodePhotos.isEmpty();
+        boolean hasRelated = !relatedItems.isEmpty();
+        binding.tmdbSection.setVisibility(hasPhotos || hasCast || hasCreators || hasRelated || matchedTmdbDetail != null || canMatchTmdb() ? View.VISIBLE : View.GONE);
+
+        binding.episodePhotoTitle.setVisibility(hasPhotos ? View.VISIBLE : View.GONE);
+        binding.episodePhotoList.setVisibility(hasPhotos ? View.VISIBLE : View.GONE);
+        episodePhotoAdapter.setItems(tmdbEpisodePhotos);
+
+        setTopMargin(binding.castTitle, hasPhotos ? 20 : 0);
+        binding.castTitle.setVisibility(hasCast ? View.VISIBLE : View.GONE);
+        binding.castList.setVisibility(hasCast ? View.VISIBLE : View.GONE);
+        castAdapter.setItems(castItems);
+
+        setTopMargin(binding.creatorTitle, hasCast ? 20 : hasPhotos ? 20 : 0);
+        binding.creatorTitle.setVisibility(hasCreators ? View.VISIBLE : View.GONE);
+        binding.creatorList.setVisibility(hasCreators ? View.VISIBLE : View.GONE);
+        creatorAdapter.setItems(creatorItems);
+
+        binding.relatedTitle.setVisibility(hasRelated ? View.VISIBLE : View.GONE);
+        binding.relatedList.setVisibility(hasRelated ? View.VISIBLE : View.GONE);
+        relatedAdapter.setItems(relatedItems);
+
+        if (!tmdbConfig.isReady()) {
+            binding.tmdbStatus.setVisibility(View.VISIBLE);
+            binding.tmdbStatus.setText(R.string.detail_tmdb_need_key);
+        } else if (!isTmdbAllowedForCurrentSite()) {
+            binding.tmdbStatus.setVisibility(View.VISIBLE);
+            binding.tmdbStatus.setText(R.string.detail_tmdb_site_disabled);
+        } else if (!hasPhotos && !hasCast && !hasCreators && !hasRelated) {
+            binding.tmdbStatus.setVisibility(View.VISIBLE);
+            binding.tmdbStatus.setText(R.string.detail_tmdb_empty);
+        } else {
+            binding.tmdbStatus.setVisibility(View.GONE);
+        }
+    }
+
+    private void initHistory() {
+        history = History.find(getHistoryKey());
+        if (history == null) {
+            history = new History();
+            history.setKey(getHistoryKey());
+            history.setCid(VodConfig.getCid());
+            history.setVodName(vod.getName());
+            history.findEpisode(vod.getFlags());
+        }
+        if (!TextUtils.isEmpty(getMarkText())) history.setVodRemarks(getMarkText());
+        updatePlayLabel();
+    }
+
+    private void updatePlayLabel() {
+        if (selectedEpisode != null) {
+            boolean canResume = history != null && isHistoryEpisode(selectedEpisode, history) && history.getPosition() > 0;
+            binding.play.setText(canResume ? getString(R.string.detail_play_resume, historyEpisodeTitle(selectedEpisode)) : getString(R.string.detail_play_now));
+            return;
+        }
+        boolean hasResume = history != null && history.getPosition() > 0 && !TextUtils.isEmpty(history.getVodRemarks());
+        binding.play.setText(hasResume ? getString(R.string.detail_play_resume, history.getVodRemarks()) : getString(R.string.detail_play_now));
+    }
+
+    private void onPlay() {
+        if (vod == null) return;
+        persistSelection();
+        if (isFusionMode()) playInline();
+        else playDetailFullscreen();
+    }
+
+    private void setTopMargin(View view, int dp) {
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if (!(params instanceof ViewGroup.MarginLayoutParams marginParams)) return;
+        marginParams.topMargin = ResUtil.dp2px(dp);
+        view.setLayoutParams(marginParams);
+    }
+
+    private void showTmdbEpisodeDetail(Episode episode, int episodeNumber) {
+        if (matchedTmdbItem == null || !"tv".equalsIgnoreCase(matchedTmdbItem.getMediaType()) || selectedSeasonNumber < 0 || episodeNumber <= 0 || !canMatchTmdb()) {
+            Notify.show(R.string.detail_tmdb_empty);
+            return;
+        }
+        binding.loading.setVisibility(View.VISIBLE);
+        Task.execute(() -> {
+            try {
+                JsonObject detail = tmdbService.episode(matchedTmdbItem, selectedSeasonNumber, episodeNumber, tmdbConfig, matchedTmdbDetail);
+                List<String> photos = tmdbService.episodePhotos(detail, tmdbConfig);
+                List<TmdbPerson> guests = tmdbService.episodeGuests(detail, tmdbConfig);
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    showTmdbEpisodeDialog(episode, episodeNumber, detail, photos, guests);
+                });
+            } catch (Throwable e) {
+                runOnAliveUi(() -> {
+                    binding.loading.setVisibility(View.GONE);
+                    Notify.show(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.detail_tmdb_empty) : e.getMessage());
+                });
+            }
+        });
+    }
+
+    private void showTmdbEpisodeDialog(Episode episode, int episodeNumber, JsonObject detail, List<String> photos, List<TmdbPerson> guests) {
+        DialogTmdbEpisodeBinding dialogBinding = DialogTmdbEpisodeBinding.inflate(getLayoutInflater());
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this).setView(dialogBinding.getRoot()).create();
+        ThemeColors colors = lightTheme ? ThemeColors.light() : ThemeColors.dark();
+        dialogBinding.panel.setCardBackgroundColor(colors.panel);
+        dialogBinding.panel.setStrokeColor(colors.line);
+        tintTextTree(dialogBinding.getRoot(), colors);
+        dialogBinding.title.setText(episodeDetailTitle(episode, episodeNumber, detail));
+        dialogBinding.meta.setText(episodeMeta(detail));
+        dialogBinding.meta.setVisibility(TextUtils.isEmpty(dialogBinding.meta.getText()) ? View.GONE : View.VISIBLE);
+        String overview = string(detail, "overview");
+        if (TextUtils.isEmpty(overview)) overview = episode == null ? "" : episode.getDesc();
+        dialogBinding.overview.setText(TextUtils.isEmpty(overview) ? getString(R.string.detail_tmdb_empty) : overview);
+        String crew = episodeCrew(detail);
+        dialogBinding.crewTitle.setVisibility(TextUtils.isEmpty(crew) ? View.GONE : View.VISIBLE);
+        dialogBinding.crew.setText(crew);
+        dialogBinding.crew.setVisibility(TextUtils.isEmpty(crew) ? View.GONE : View.VISIBLE);
+        String still = photos.isEmpty() ? "" : photos.get(0);
+        dialogBinding.still.setVisibility(TextUtils.isEmpty(still) ? View.GONE : View.VISIBLE);
+        if (!TextUtils.isEmpty(still)) ImgUtil.load(episodeDetailTitle(episode, episodeNumber, detail), still, dialogBinding.still);
+
+        TmdbPhotoAdapter photoAdapter = new TmdbPhotoAdapter((position, url) -> showPhotoDialog(position, url, photos));
+        photoAdapter.setLight(lightTheme);
+        photoAdapter.setItems(photos);
+        dialogBinding.photoList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        dialogBinding.photoList.setNestedScrollingEnabled(false);
+        dialogBinding.photoList.setAdapter(photoAdapter);
+        dialogBinding.photoTitle.setVisibility(photos.isEmpty() ? View.GONE : View.VISIBLE);
+        dialogBinding.photoList.setVisibility(photos.isEmpty() ? View.GONE : View.VISIBLE);
+
+        TmdbPersonAdapter guestAdapter = new TmdbPersonAdapter(this::loadPersonDetail);
+        guestAdapter.setItems(guests);
+        dialogBinding.guestList.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        dialogBinding.guestList.setNestedScrollingEnabled(false);
+        dialogBinding.guestList.setAdapter(guestAdapter);
+        dialogBinding.guestTitle.setVisibility(guests.isEmpty() ? View.GONE : View.VISIBLE);
+        dialogBinding.guestList.setVisibility(guests.isEmpty() ? View.GONE : View.VISIBLE);
+        dialogBinding.close.setOnClickListener(view -> dialog.dismiss());
+        setButton(dialogBinding.close, colors.control, colors.line, colors.primary);
+
+        dialog.show();
+        dialogBinding.close.post(dialogBinding.close::requestFocus);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setDimAmount(0.56f);
+            int width = getResources().getDisplayMetrics().widthPixels;
+            window.setLayout((int) (width * (width >= 1200 ? 0.78f : 0.94f)), WindowManager.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void showPhotoDialog(int position, String url) {
+        if (TextUtils.isEmpty(url)) return;
+        showPhotoDialog(position, url, new ArrayList<>(tmdbEpisodePhotos));
+    }
+
+    private void showPhotoDialog(int position, String url, List<String> sourcePhotos) {
+        if (TextUtils.isEmpty(url)) return;
+        List<String> photos = new ArrayList<>(sourcePhotos);
+        if (photos.isEmpty()) photos.add(url);
+        int start = position >= 0 && position < photos.size() ? position : Math.max(0, photos.indexOf(url));
+        int[] current = new int[]{Math.max(0, start)};
+
+        ImageView image = new ImageView(this);
+        image.setFocusable(true);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        int[] size = photoDialogSize();
+        image.setLayoutParams(new FrameLayout.LayoutParams(size[0], size[1]));
+
+        ProgressBar progress = new ProgressBar(this);
+        progress.setIndeterminate(true);
+        progress.setVisibility(View.GONE);
+        FrameLayout.LayoutParams progressParams = new FrameLayout.LayoutParams(ResUtil.dp2px(38), ResUtil.dp2px(38), android.view.Gravity.CENTER);
+        progress.setLayoutParams(progressParams);
+
+        FrameLayout content = new FrameLayout(this);
+        content.setLayoutParams(new ViewGroup.LayoutParams(size[0], size[1]));
+        content.addView(image);
+        content.addView(progress);
+        int[] request = new int[]{0};
+
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(content);
+        GestureDetector photoGesture = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent event) {
+                return true;
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent event) {
+                if (photos.size() <= 1) {
+                    dialog.dismiss();
+                    return true;
+                }
+                float x = event.getX();
+                int width = image.getWidth();
+                if (x < width * 0.33f) {
+                    showPhotoAt(image, progress, photos, current, request, -1);
+                } else if (x > width * 0.67f) {
+                    showPhotoAt(image, progress, photos, current, request, 1);
+                } else {
+                    dialog.dismiss();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onFling(MotionEvent down, MotionEvent up, float velocityX, float velocityY) {
+                if (photos.size() <= 1 || down == null || up == null) return false;
+                float distanceX = up.getX() - down.getX();
+                if (Math.abs(distanceX) < ResUtil.dp2px(48) || Math.abs(velocityX) < 120f) return false;
+                showPhotoAt(image, progress, photos, current, request, distanceX < 0 ? 1 : -1);
+                return true;
+            }
+        });
+        image.setOnTouchListener((view, event) -> photoGesture.onTouchEvent(event));
+        dialog.setOnKeyListener((instance, keyCode, event) -> {
+            if (!KeyUtil.isActionUp(event)) return false;
+            if (KeyUtil.isLeftKey(event)) {
+                showPhotoAt(image, progress, photos, current, request, -1);
+                return true;
+            }
+            if (KeyUtil.isRightKey(event)) {
+                showPhotoAt(image, progress, photos, current, request, 1);
+                return true;
+            }
+            if (KeyUtil.isEnterKey(event)) {
+                dialog.dismiss();
+                return true;
+            }
+            return false;
+        });
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(size[0], size[1]);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        }
+        image.requestFocus();
+        loadPhotoImage(image, progress, photos.get(current[0]), request);
+        preloadPhotoNeighbors(photos, current[0]);
+    }
+
+    private void showPhotoAt(ImageView image, ProgressBar progress, List<String> photos, int[] current, int[] request, int direction) {
+        if (photos.isEmpty()) return;
+        int next = (current[0] + direction + photos.size()) % photos.size();
+        if (next == current[0]) return;
+        current[0] = next;
+        loadPhotoImage(image, progress, photos.get(current[0]), request);
+        preloadPhotoNeighbors(photos, current[0]);
+    }
+
+    private void loadPhotoImage(ImageView image, ProgressBar progress, String url, int[] request) {
+        int token = ++request[0];
+        progress.setVisibility(View.VISIBLE);
+        try {
+            Glide.with(image)
+                    .load(ImgUtil.getUrl(highResTmdbImage(url)))
+                    .fitCenter()
+                    .into(new CustomTarget<Drawable>() {
+                        @Override
+                        public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                            if (token != request[0]) return;
+                            image.setImageDrawable(resource);
+                            progress.setVisibility(View.GONE);
+                        }
+
+                        @Override
+                        public void onLoadFailed(@Nullable Drawable errorDrawable) {
+                            if (token != request[0]) return;
+                            if (image.getDrawable() == null && errorDrawable != null) image.setImageDrawable(errorDrawable);
+                            progress.setVisibility(View.GONE);
+                        }
+
+                        @Override
+                        public void onLoadCleared(@Nullable Drawable placeholder) {
+                        }
+                    });
+        } catch (Throwable e) {
+            progress.setVisibility(View.GONE);
+            Notify.show(R.string.detail_tmdb_empty);
+        }
+    }
+
+    private void preloadPhotoNeighbors(List<String> photos, int current) {
+        if (photos.size() <= 1) return;
+        List<Integer> positions = new ArrayList<>();
+        for (int offset = 1; offset <= PHOTO_PRELOAD_RADIUS && offset < photos.size(); offset++) {
+            int next = (current + offset) % photos.size();
+            int previous = (current - offset + photos.size()) % photos.size();
+            if (!positions.contains(next)) positions.add(next);
+            if (!positions.contains(previous)) positions.add(previous);
+        }
+        for (Integer position : positions) {
+            String url = photos.get(position);
+            if (TextUtils.isEmpty(url)) continue;
+            Glide.with(this).load(ImgUtil.getUrl(highResTmdbImage(url))).preload();
+        }
+    }
+
+    private int[] photoDialogSize() {
+        int maxWidth = (int) (ResUtil.getScreenWidth(this) * 0.92f);
+        int maxHeight = (int) (ResUtil.getScreenHeight(this) * 0.82f);
+        int width = maxWidth;
+        int height = Math.round(width * 9f / 16f);
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = Math.round(height * 16f / 9f);
+        }
+        return new int[]{width, height};
+    }
+
+    private String highResTmdbImage(String url) {
+        int marker = url.indexOf("/t/p/");
+        if (marker < 0) return url;
+        int sizeStart = marker + "/t/p/".length();
+        int sizeEnd = url.indexOf('/', sizeStart);
+        if (sizeEnd < 0) return url;
+        return url.substring(0, sizeStart) + "original" + url.substring(sizeEnd);
+    }
+
+    private String episodeDetailTitle(Episode episode, int episodeNumber, JsonObject detail) {
+        String name = string(detail, "name");
+        if (TextUtils.isEmpty(name)) {
+            TmdbEpisode tmdbEpisode = tmdbEpisodes.get(episodeNumber);
+            name = tmdbEpisode == null ? "" : tmdbEpisode.getTitle();
+        }
+        if (TextUtils.isEmpty(name) && episode != null) name = episode.getName();
+        return getString(R.string.detail_episode_detail_title, episodeNumber, name);
+    }
+
+    private String episodeMeta(JsonObject detail) {
+        List<String> parts = new ArrayList<>();
+        String date = string(detail, "air_date");
+        if (!TextUtils.isEmpty(date)) parts.add(date);
+        if (detail != null && detail.has("runtime") && !detail.get("runtime").isJsonNull()) {
+            int runtime = detail.get("runtime").getAsInt();
+            if (runtime > 0) parts.add(getString(R.string.detail_runtime_format, runtime));
+        }
+        if (detail != null && detail.has("vote_average") && !detail.get("vote_average").isJsonNull()) {
+            double vote = detail.get("vote_average").getAsDouble();
+            if (vote > 0) parts.add(getString(R.string.detail_score, String.format(Locale.US, "%.1f", vote)));
+        }
+        return TextUtils.join(" · ", parts);
+    }
+
+    private String episodeCrew(JsonObject detail) {
+        Map<String, List<String>> jobs = new LinkedHashMap<>();
+        for (JsonElement element : array(detail, "crew")) {
+            if (!element.isJsonObject()) continue;
+            JsonObject person = element.getAsJsonObject();
+            String job = string(person, "job", "department");
+            String name = string(person, "name");
+            if (TextUtils.isEmpty(job) || TextUtils.isEmpty(name)) continue;
+            List<String> names = jobs.computeIfAbsent(job, key -> new ArrayList<>());
+            if (!names.contains(name) && names.size() < 4) names.add(name);
+            if (jobs.size() >= 6) break;
+        }
+        List<String> lines = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : jobs.entrySet()) {
+            if (!entry.getValue().isEmpty()) lines.add(entry.getKey() + ": " + TextUtils.join(" / ", entry.getValue()));
+        }
+        return TextUtils.join("\n", lines);
+    }
+
+    private ArrayList<String> selectedTmdbEpisodeTitles() {
+        Map<Integer, String> titles = new LinkedHashMap<>();
+        for (Map.Entry<Integer, TmdbEpisode> entry : tmdbEpisodes.entrySet()) {
+            if (!TextUtils.isEmpty(entry.getValue().getTitle())) titles.put(entry.getKey(), entry.getValue().getTitle());
+        }
+        List<TmdbEpisode> episodes = tmdbSeasonEpisodes.get(selectedSeasonNumber);
+        if (episodes != null) {
+            for (TmdbEpisode episode : episodes) {
+                if (!TextUtils.isEmpty(episode.getTitle())) titles.put(episode.getNumber(), episode.getTitle());
+            }
+        }
+        ArrayList<String> result = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : titles.entrySet()) result.add(entry.getKey() + "\t" + entry.getValue());
+        return result;
+    }
+
+    private Episode findEpisodeByUrl(String url, List<Episode> episodes) {
+        if (TextUtils.isEmpty(url) || episodes == null) return null;
+        for (Episode episode : episodes) if (url.equals(episode.getUrl())) return episode;
+        return null;
+    }
+
+    private boolean isHistoryEpisode(Episode episode, History item) {
+        if (episode == null || item == null) return false;
+        if (!TextUtils.isEmpty(item.getEpisodeUrl()) && item.getEpisodeUrl().equals(episode.getUrl())) return true;
+        return episode.getName().equals(item.getVodRemarks()) || historyEpisodeTitle(episode).equals(item.getVodRemarks());
+    }
+
+    private String historyEpisodeTitle(Episode episode) {
+        int number = episodeNumberForHistory(episode);
+        String label = number > 0 ? String.valueOf(number) : episode.getDisplayName();
+        String title = tmdbEpisodeTitle(number);
+        if (TextUtils.isEmpty(title) || title.equals(label) || title.equals(episode.getName())) return label;
+        return label + ". " + title;
+    }
+
+    private String tmdbEpisodeTitle(int number) {
+        if (number <= 0) return "";
+        TmdbEpisode tmdbEpisode = tmdbEpisodes.get(number);
+        if (tmdbEpisode != null && !TextUtils.isEmpty(tmdbEpisode.getTitle())) return tmdbEpisode.getTitle();
+        List<TmdbEpisode> episodes = tmdbSeasonEpisodes.get(selectedSeasonNumber);
+        if (episodes == null) return "";
+        for (TmdbEpisode episode : episodes) {
+            if (episode.getNumber() == number && !TextUtils.isEmpty(episode.getTitle())) return episode.getTitle();
+        }
+        return "";
+    }
+
+    private void refreshCurrentHistoryEpisodeTitle() {
+        if (selectedEpisode == null || history == null || Setting.isIncognito()) return;
+        History saved = History.find(getHistoryKey());
+        if (saved == null || !isHistoryEpisode(selectedEpisode, saved)) return;
+        String title = historyEpisodeTitle(selectedEpisode);
+        if (TextUtils.isEmpty(title) || title.equals(saved.getVodRemarks())) return;
+        saved.setVodName(playbackHistoryName());
+        saved.setVodPic(playbackHistoryPic());
+        saved.setVodRemarks(title);
+        saved.setEpisodeUrl(selectedEpisode.getUrl());
+        saved.save();
+        history = saved;
+        RefreshEvent.history();
+    }
+
+    private int episodeNumberForHistory(Episode episode) {
+        if (episode == null || selectedFlag == null || selectedFlag.getEpisodes() == null) return -1;
+        List<Episode> visible = visibleEpisodes(selectedFlag.getEpisodes());
+        int index = visible.indexOf(episode);
+        return index < 0 ? -1 : index + 1;
+    }
+
+    private String playbackHistoryName() {
+        return coalesce(matchedTmdbItem == null ? "" : matchedTmdbItem.getTitle(), vod == null ? "" : vod.getName(), getNameText());
+    }
+
+    private String playbackHistoryPic() {
+        return coalesce(matchedTmdbItem == null ? "" : matchedTmdbItem.getPosterUrl(), matchedTmdbItem == null ? "" : matchedTmdbItem.getBackdropUrl(), vod == null ? "" : vod.getPic(), getPicText());
+    }
+
+    private boolean isFusionMode() {
+        return getIntent().getBooleanExtra("fusion", false);
+    }
+
+    private boolean isAutoPlayMode() {
+        return getIntent().getBooleanExtra("auto_play", false);
+    }
+
+    private boolean isInlinePlayerMode() {
+        return isFusionMode() || detailPlayerActive;
+    }
+
+    private void maybeAutoPlayInline() {
+        if ((!isFusionMode() && !isAutoPlayMode()) || autoPlayed) return;
+        autoPlayed = true;
+        binding.playerPanel.post(this::onPlay);
+    }
+
+    private void playDetailFullscreen() {
+        if (selectedFlag == null || selectedEpisode == null) return;
+        detailPlayerActive = true;
+        binding.playerError.setTextColor(0xFFFFFFFF);
+        binding.playerTitle.setTextColor(0xFFFFFFFF);
+        tintInlineControl(binding.playerControls);
+        setPlayerCard(lightTheme ? ThemeColors.light() : ThemeColors.dark());
+        ensureInlineDanmakuController();
+        binding.playerPanel.setVisibility(View.VISIBLE);
+        enterInlineFullscreen();
+        playInline();
+    }
+
+    private void playInline() {
+        if (selectedFlag == null || selectedEpisode == null) return;
+        saveInlineHistory();
+        binding.playerError.setVisibility(View.GONE);
+        binding.playerProgress.setVisibility(View.VISIBLE);
+        showInlineControls(true);
+        updateInlineTitle();
+        Task.execute(() -> {
+            try {
+                Result result = SiteApi.playerContent(getKeyText(), selectedFlag.getFlag(), selectedEpisode.getUrl());
+                runOnUiThread(() -> startInlinePlayer(result));
+            } catch (Throwable e) {
+                runOnUiThread(() -> showInlineError(TextUtils.isEmpty(e.getMessage()) ? getString(R.string.error_play_url) : e.getMessage()));
+            }
+        });
+    }
+
+    private void startInlinePlayer(Result result) {
+        currentInlineResult = result;
+        useParse = result.shouldUseParse();
+        if (result.hasPosition() && history != null) history.setPosition(result.getPosition());
+        if (result.hasDesc() && !hasTmdbOverview()) {
+            vod.setContent(result.getDesc());
+            bindOverview();
+        }
+        if (service() == null || controller() == null) {
+            pendingInlineResult = result;
+            return;
+        }
+        inlineStarted = true;
+        pendingInlineResult = null;
+        hideInlineControls();
+        updateInlineTitle();
+        updateInlineButtons(false);
+        player().stop();
+        player().clear();
+        Site site = getCurrentSite();
+        ensureInlineDanmakuController();
+        startPlayer(getHistoryKey(), result, useParse, site == null ? 0 : site.getTimeout(), buildMetadata());
+        binding.playerPanel.requestFocus();
+    }
+
+    private void showInlineError(String text) {
+        binding.playerProgress.setVisibility(View.GONE);
+        binding.playerError.setText(text);
+        binding.playerError.setVisibility(View.VISIBLE);
+    }
+
+    private void toggleInlinePlayback() {
+        if (!isInlinePlayerMode()) return;
+        if (controller() == null || service() == null || player().isEmpty()) {
+            onPlay();
+            return;
+        }
+        if (player().isPlaying()) controller().pause();
+        else controller().play();
+        setInlineHideCallback();
+    }
+
+    private void toggleInlineControls() {
+        if (!isInlinePlayerMode() || !inlineStarted) return;
+        if (binding.playerControls.getVisibility() == View.VISIBLE) hideInlineControls();
+        else showInlineControls(true, false);
+    }
+
+    private void showInlineControls(boolean show) {
+        showInlineControls(show, true);
+    }
+
+    private void showInlineControls(boolean show, boolean focus) {
+        if (!isInlinePlayerMode() || !inlineStarted) return;
+        if (!show) {
+            hideInlineControls();
+            return;
+        }
+        binding.playerControls.setVisibility(View.VISIBLE);
+        if (focus) focusInlineDefaultControl();
+        setInlineHideCallback();
+    }
+
+    private void hideInlineControls() {
+        if (binding == null) return;
+        boolean hadControlFocus = hasFocusedChild(binding.playerControls);
+        binding.playerControls.setVisibility(View.GONE);
+        App.removeCallbacks(inlineHideControls);
+        if (hadControlFocus) binding.playerPanel.requestFocus();
+    }
+
+    private void setInlineHideCallback() {
+        App.removeCallbacks(inlineHideControls);
+        App.post(inlineHideControls, Constant.INTERVAL_HIDE);
+    }
+
+    private void focusInlineDefaultControl() {
+        if (hasFocusedChild(binding.playerControls)) return;
+        binding.playerControls.post(() -> {
+            if (isInlineControlsVisible() && !hasFocusedChild(binding.playerControls)) getInlineControlFocus().requestFocus();
+        });
+    }
+
+    private void focusInlinePlaybackControl() {
+        binding.playerToggle.post(() -> {
+            if (isInlineControlsVisible()) binding.playerToggle.requestFocus();
+        });
+    }
+
+    private View getInlineControlFocus() {
+        if (inlineControlFocus != null && inlineControlFocus.getVisibility() == View.VISIBLE && inlineControlFocus.isEnabled()) return inlineControlFocus;
+        return binding.playerToggle;
+    }
+
+    private void rememberInlineControlFocus() {
+        View focus = getCurrentFocus();
+        if (focus != null && isDescendant(binding.playerControls, focus)) inlineControlFocus = focus;
+    }
+
+    private boolean isDescendant(ViewGroup parent, View child) {
+        if (parent == null || child == null) return false;
+        if (parent == child) return true;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View view = parent.getChildAt(i);
+            if (view == child) return true;
+            if (view instanceof ViewGroup group && isDescendant(group, child)) return true;
+        }
+        return false;
+    }
+
+    private boolean isInlineControlsVisible() {
+        return binding != null && binding.playerControls.getVisibility() == View.VISIBLE;
+    }
+
+    private void updateInlineButtons(boolean playing) {
+        if (!isInlinePlayerMode() || inlineControlController == null) return;
+        binding.playerToggle.setText(playing ? R.string.pause : R.string.play);
+        binding.playerSpeed.setText(service() == null || player().isEmpty() ? getString(R.string.play_speed) : player().getSpeedText());
+        binding.playerDecode.setText(service() == null ? getString(R.string.play_decode) : player().getDecodeText());
+        binding.playerScale.setText(scaleLabel());
+        binding.playerQuality.setText(qualityLabel());
+        binding.playerParse.setText(parseLabel());
+        boolean hasPlayer = service() != null && !player().isEmpty();
+        inlineControlController.updateSize(binding.playerSize, inlineFullscreen);
+        boolean hasPrev = hasAdjacentEpisode(-1);
+        boolean hasNext = hasAdjacentEpisode(1);
+        setButtonEnabled(binding.playerPrev, hasPrev);
+        setButtonEnabled(binding.playerNext, hasNext);
+        setButtonEnabled(binding.playerQuality, currentInlineResult != null && currentInlineResult.getUrl().isMulti());
+        setButtonEnabled(binding.playerParse, useParse && !VodConfig.get().getParses().isEmpty());
+        setButtonEnabled(binding.playerSpeed, hasPlayer);
+        setButtonEnabled(binding.playerScale, hasPlayer);
+        setButtonEnabled(binding.playerRefresh, hasPlayer);
+        setButtonEnabled(binding.playerDecode, hasPlayer);
+        setButtonEnabled(binding.playerTextTrack, hasPlayer);
+        setButtonEnabled(binding.playerAudioTrack, hasPlayer);
+        setButtonEnabled(binding.playerVideoTrack, hasPlayer);
+        setButtonEnabled(binding.playerDanmaku, hasPlayer && inlineControlController.hasDanmakuControl());
+        setButtonEnabled(binding.playerExternal, hasPlayer);
+        setButtonEnabled(binding.playerEpisodes, selectedFlag != null && selectedFlag.getEpisodes() != null && !selectedFlag.getEpisodes().isEmpty());
+        setButtonEnabled(binding.playerCast, hasPlayer && hasInlineCast());
+        setButtonEnabled(binding.playerInfo, hasPlayer && hasInlineInfo());
+        setButtonEnabled(binding.playerFullscreen, hasPlayer);
+        binding.playerCast.setVisibility(hasInlineCast() ? View.VISIBLE : View.GONE);
+        binding.playerInfo.setVisibility(hasInlineInfo() ? View.VISIBLE : View.GONE);
+        binding.playerActionRow.setVisibility(inlineFullscreen ? View.VISIBLE : View.GONE);
+        binding.playerQuality.setVisibility(currentInlineResult != null && currentInlineResult.getUrl().isMulti() ? View.VISIBLE : View.GONE);
+        binding.playerParse.setVisibility(useParse && !VodConfig.get().getParses().isEmpty() ? View.VISIBLE : View.GONE);
+        setInlineFullscreenIcon();
+    }
+
+    private void setButtonEnabled(View button, boolean enabled) {
+        button.setEnabled(enabled);
+        button.setAlpha(enabled ? 1f : 0.36f);
+    }
+
+    private void setInlineFullscreenIcon() {
+        binding.playerFullscreen.setImageResource(inlineFullscreen ? R.drawable.ic_control_fullscreen_exit : R.drawable.ic_control_fullscreen);
+    }
+
+    protected boolean hasInlineCast() {
+        return false;
+    }
+
+    protected boolean hasInlineInfo() {
+        return false;
+    }
+
+    protected void onInlineCast() {
+    }
+
+    protected void onInlineInfo() {
+    }
+
+    protected boolean showInlinePlayerInfo() {
+        return false;
+    }
+
+    protected CharSequence getInlinePlayerTitle() {
+        return binding.playerTitle.getText();
+    }
+
+    protected History getInlineHistory() {
+        return history;
+    }
+
+    private boolean hasAdjacentEpisode(int direction) {
+        if (selectedFlag == null || selectedEpisode == null || selectedFlag.getEpisodes() == null) return false;
+        int index = selectedFlag.getEpisodes().indexOf(selectedEpisode);
+        int next = index + direction;
+        return index >= 0 && next >= 0 && next < selectedFlag.getEpisodes().size();
+    }
+
+    private void updateInlineTitle() {
+        if (!isInlinePlayerMode()) return;
+        String title = vod != null ? vod.getName() : getNameText();
+        String episode = selectedEpisode != null ? selectedEpisode.getName() : "";
+        binding.playerTitle.setText(TextUtils.isEmpty(episode) || episode.equals(title) ? title : title + "  " + episode);
+    }
+
+    private String qualityLabel() {
+        if (currentInlineResult == null || !currentInlineResult.getUrl().isMulti()) return getString(R.string.detail_quality);
+        int position = currentInlineResult.getUrl().getPosition();
+        String name = currentInlineResult.getUrl().n(position);
+        return TextUtils.isEmpty(name) ? getString(R.string.detail_quality) + " " + (position + 1) : name;
+    }
+
+    private String parseLabel() {
+        String name = VodConfig.get().getParse().getName();
+        return TextUtils.isEmpty(name) ? getString(R.string.parse) : name;
+    }
+
+    private int getInlineScale() {
+        return history != null && history.getScale() != -1 ? history.getScale() : PlayerSetting.getScale();
+    }
+
+    private String scaleLabel() {
+        String[] array = ResUtil.getStringArray(R.array.select_scale);
+        int scale = Math.max(0, Math.min(getInlineScale(), array.length - 1));
+        return array.length == 0 ? getString(R.string.play_scale) : array[scale];
+    }
+
+    private void setInlineScale(int scale) {
+        if (history != null) history.setScale(scale);
+        binding.exo.setResizeMode(scale);
+        binding.playerScale.setText(scaleLabel());
+    }
+
+    private void cycleInlineQuality() {
+        if (currentInlineResult == null || !currentInlineResult.getUrl().isMulti()) return;
+        saveInlineHistory();
+        int count = currentInlineResult.getUrl().getValues().size();
+        currentInlineResult.getUrl().set((currentInlineResult.getUrl().getPosition() + 1) % count);
+        startInlinePlayer(currentInlineResult);
+    }
+
+    private void cycleInlineParse() {
+        List<Parse> parses = VodConfig.get().getParses();
+        if (!useParse || parses.isEmpty()) return;
+        Parse current = VodConfig.get().getParse();
+        int index = parses.indexOf(current);
+        Parse next = parses.get(index < 0 || index == parses.size() - 1 ? 0 : index + 1);
+        VodConfig.get().setParse(next);
+        Notify.show(getString(R.string.play_switch_parse, next.getName()));
+        playInline();
+    }
+
+    private void changeInlineSpeed() {
+        if (service() == null || player().isEmpty()) return;
+        binding.playerSpeed.setText(player().addSpeed());
+        if (history != null) history.setSpeed(player().getSpeed());
+    }
+
+    private boolean resetInlineSpeed() {
+        if (service() == null || player().isEmpty()) return false;
+        binding.playerSpeed.setText(player().toggleSpeed());
+        if (history != null) history.setSpeed(player().getSpeed());
+        return true;
+    }
+
+    private void refreshInlinePlayback() {
+        if (selectedFlag == null || selectedEpisode == null) return;
+        if (history != null) history.setPosition(C.TIME_UNSET);
+        playInline();
+    }
+
+    private void cycleInlineScale() {
+        if (service() == null || player().isEmpty()) return;
+        String[] array = ResUtil.getStringArray(R.array.select_scale);
+        if (array.length == 0) return;
+        int scale = getInlineScale();
+        setInlineScale(scale >= array.length - 1 ? 0 : scale + 1);
+    }
+
+    private void toggleInlineDecode() {
+        if (service() == null || player().isEmpty()) return;
+        player().toggleDecode();
+        binding.playerDecode.setText(player().getDecodeText());
+    }
+
+    private void showInlineTrack(View view) {
+        if (service() == null || player().isEmpty()) return;
+        TrackDialog.create().type(Integer.parseInt(view.getTag().toString())).player(player()).show(this);
+    }
+
+    private boolean showInlineSubtitle() {
+        if (service() == null || player().isEmpty() || !player().haveTrack(C.TRACK_TYPE_TEXT)) return false;
+        onSubtitleClick();
+        return true;
+    }
+
+    private void showInlineDanmaku() {
+        if (service() == null || player().isEmpty()) return;
+        DanmakuDialog.create().player(player()).show(this);
+    }
+
+    private void openInlineExternal() {
+        if (service() == null || player().isEmpty()) return;
+        PlayerHelper.choose(this, player().getUrl(), player().getHeaders(), player().isVod(), player().getPosition(), binding.playerTitle.getText());
+        setRedirect(true);
+    }
+
+    private void showInlineEpisodes() {
+        if (selectedFlag == null || selectedFlag.getEpisodes() == null || selectedFlag.getEpisodes().isEmpty()) return;
+        FrameLayout content = new FrameLayout(this);
+        content.setPadding(ResUtil.dp2px(12), ResUtil.dp2px(8), ResUtil.dp2px(12), ResUtil.dp2px(8));
+        RecyclerView recycler = new RecyclerView(this);
+        recycler.setClipToPadding(false);
+        recycler.setLayoutManager(new GridLayoutManager(this, inlineEpisodeSpanCount()));
+        int height = Math.min(ResUtil.dp2px(520), (int) (ResUtil.getScreenHeight(this) * 0.68f));
+        content.addView(recycler, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
+
+        AlertDialog[] holder = new AlertDialog[1];
+        InlineEpisodeAdapter adapter = new InlineEpisodeAdapter(episode -> {
+            if (holder[0] != null) holder[0].dismiss();
+            selectInlineEpisode(episode);
+        });
+        recycler.setAdapter(adapter);
+        adapter.setItems(selectedFlag.getEpisodes(), selectedEpisode);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.detail_episode)
+                .setView(content)
+                .create();
+        holder[0] = dialog;
+        dialog.setOnShowListener(value -> {
+            int position = selectedFlag.getEpisodes().indexOf(selectedEpisode);
+            if (position < 0) return;
+            recycler.scrollToPosition(position);
+            recycler.post(() -> {
+                RecyclerView.ViewHolder viewHolder = recycler.findViewHolderForAdapterPosition(position);
+                if (viewHolder != null) viewHolder.itemView.requestFocus();
+            });
+        });
+        if (!canTouchUi()) return;
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            int width = ResUtil.getScreenWidth(this);
+            window.setLayout(Math.min(ResUtil.dp2px(720), (int) (width * 0.92f)), WindowManager.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private int inlineEpisodeSpanCount() {
+        int width = ResUtil.getScreenWidth(this);
+        if (width >= ResUtil.dp2px(1200)) return 5;
+        if (width >= ResUtil.dp2px(720)) return 4;
+        return 3;
+    }
+
+    private void selectInlineEpisode(Episode episode) {
+        selectedEpisode = episode;
+        selectedSeasonNumber = seasonForEpisode(episode, selectedFlag.getEpisodes());
+        renderSeasonSelection();
+        fetchSeasonIfNeeded(selectedSeasonNumber);
+        renderEpisodes();
+        updatePlayLabel();
+        onPlay();
+    }
+
+    private void toggleInlineFullscreen() {
+        if (service() == null || player().isEmpty()) return;
+        if (inlineFullscreen) exitInlineFullscreen();
+        else enterInlineFullscreen();
+    }
+
+    private void enterInlineFullscreen() {
+        if (inlineFullscreen) return;
+        inlineFullscreen = true;
+        requestedOrientation = getRequestedOrientation();
+        playerParent = (ViewGroup) binding.playerPanel.getParent();
+        playerLayoutParams = binding.playerPanel.getLayoutParams();
+        playerIndex = playerParent.indexOfChild(binding.playerPanel);
+        playerParent.removeView(binding.playerPanel);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        binding.root.addView(binding.playerPanel, params);
+        binding.playerPanel.setTranslationZ(32f);
+        binding.playerPanel.setVisibility(View.VISIBLE);
+        binding.playerPanel.setRadius(0);
+        updatePlayerPanelFocus();
+        setInlineFullscreenIcon();
+        boolean playing = service() != null && !player().isEmpty() && player().isPlaying();
+        updateInlineButtons(playing);
+        hideInlineControls();
+        binding.playerPanel.requestFocus();
+        Util.toggleFullscreen(this, true);
+        boolean portrait = service() != null && !player().isEmpty() && player().isPortrait();
+        setRequestedOrientation(portrait ? ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT : ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+    }
+
+    private void exitInlineFullscreen() {
+        if (!inlineFullscreen) return;
+        boolean closeDetailPlayer = detailPlayerActive && !isFusionMode();
+        inlineFullscreen = false;
+        ((ViewGroup) binding.playerPanel.getParent()).removeView(binding.playerPanel);
+        if (playerParent != null && playerLayoutParams != null) {
+            int index = playerIndex < 0 || playerIndex > playerParent.getChildCount() ? playerParent.getChildCount() : playerIndex;
+            playerParent.addView(binding.playerPanel, index, playerLayoutParams);
+        }
+        binding.playerPanel.setTranslationZ(0f);
+        setPlayerCard(lightTheme ? ThemeColors.light() : ThemeColors.dark());
+        setInlineFullscreenIcon();
+        boolean playing = service() != null && !player().isEmpty() && player().isPlaying();
+        updateInlineButtons(playing);
+        Util.toggleFullscreen(this, false);
+        setRequestedOrientation(requestedOrientation);
+        if (closeDetailPlayer) closeDetailFullscreenPlayer();
+        else focusInlinePlayerPanel();
+        playerParent = null;
+        playerLayoutParams = null;
+        playerIndex = -1;
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+    }
+
+    private void closeDetailFullscreenPlayer() {
+        saveInlineHistory();
+        hideInlineControls();
+        if (service() != null) {
+            player().stop();
+            player().clear();
+        }
+        binding.playerProgress.setVisibility(View.GONE);
+        binding.playerError.setVisibility(View.GONE);
+        binding.playerPanel.setVisibility(View.GONE);
+        inlineStarted = false;
+        detailPlayerActive = false;
+        pendingInlineResult = null;
+        currentInlineResult = null;
+        useParse = false;
+        updatePlayLabel();
+    }
+
+    private void playAdjacentEpisode(int direction) {
+        if (selectedFlag == null || selectedEpisode == null || selectedFlag.getEpisodes() == null) return;
+        List<Episode> episodes = selectedFlag.getEpisodes();
+        int index = episodes.indexOf(selectedEpisode);
+        int next = index + direction;
+        if (index < 0 || next < 0 || next >= episodes.size()) {
+            Notify.show(direction > 0 ? R.string.error_play_next : R.string.error_play_prev);
+            return;
+        }
+        selectedEpisode = episodes.get(next);
+        selectedSeasonNumber = seasonForEpisode(selectedEpisode, episodes);
+        renderEpisodes();
+        onPlay();
+    }
+
+    private MediaMetadata buildMetadata() {
+        String title = playbackHistoryName();
+        String episode = selectedEpisode != null ? historyEpisodeTitle(selectedEpisode) : "";
+        String artist = TextUtils.isEmpty(episode) || title.equals(episode) ? "" : episode;
+        return new MediaMetadata.Builder().setTitle(title).setArtist(artist).setArtworkUri(android.net.Uri.parse(playbackHistoryPic())).build();
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (handleInlineKey(event)) return true;
+        return super.dispatchKeyEvent(event);
+    }
+
+    private boolean handleInlineKey(KeyEvent event) {
+        if (!isInlinePlayerMode() || !inlineStarted) return false;
+        if (KeyUtil.isEnterKey(event) && inlineWakeControlsByKey) {
+            if (KeyUtil.isActionUp(event)) {
+                inlineWakeControlsByKey = false;
+                showInlineControls(true, false);
+                focusInlinePlaybackControl();
+            }
+            return true;
+        }
+        if (isInlineControlsVisible()) {
+            rememberInlineControlFocus();
+            setInlineHideCallback();
+        }
+        if (!inlineFullscreen || isInlineControlsVisible() || service() == null) return false;
+        if (KeyUtil.isMenuKey(event)) {
+            showInlineControls(true);
+            return true;
+        }
+        if (KeyUtil.isEnterKey(event)) {
+            if (KeyUtil.isActionDown(event)) {
+                inlineWakeControlsByKey = true;
+            }
+            return true;
+        }
+        if (!KeyUtil.isActionUp(event)) return false;
+        if (KeyUtil.isUpKey(event) || KeyUtil.isDownKey(event)) {
+            showInlineControls(true);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void onPrepare() {
+        if (history == null) return;
+        long position = Math.max(history.getOpening(), history.getPosition());
+        if (position > 0) controller().seekTo(position);
+        setInlineScale(getInlineScale());
+        if (service() != null && !player().isEmpty()) binding.playerSpeed.setText(player().setSpeed(history.getSpeed()));
+    }
+
+    @Override
+    protected void onServiceConnected() {
+        ensureInlineDanmakuController();
+        if (pendingInlineResult != null) startInlinePlayer(pendingInlineResult);
+    }
+
+    private void ensureInlineDanmakuController() {
+        if (service() == null || inlineControlController == null) return;
+        player().setDanmakuController(binding.exo.getDanmakuController());
+        inlineControlController.applyDanmakuSetting();
+    }
+
+    @Override
+    protected void onPlayingChanged(boolean isPlaying) {
+        updateInlineButtons(isPlaying);
+    }
+
+    @Override
+    protected void onSizeChanged(VideoSize size) {
+        updateInlineButtons(service() != null && !player().isEmpty() && player().isPlaying());
+    }
+
+    @Override
+    protected void onStateChanged(int state) {
+        if (!isInlinePlayerMode()) return;
+        if (state == Player.STATE_BUFFERING) binding.playerProgress.setVisibility(View.VISIBLE);
+        if (state == Player.STATE_READY) {
+            binding.playerProgress.setVisibility(View.GONE);
+            hideInlineControls();
+            updateInlineButtons(player().isPlaying());
+        }
+    }
+
+    @Override
+    protected void onTracksChanged() {
+        updateInlineButtons(service() != null && !player().isEmpty() && player().isPlaying());
+    }
+
+    @Override
+    protected void onError(String msg) {
+        showInlineError(msg);
+    }
+
+    @Override
+    public void onSubtitleClick() {
+        SubtitleDialog.create().view(binding.exo.getSubtitleView()).show(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK && requestCode == 1001) PlayerHelper.onExternalResult(data, () -> playAdjacentEpisode(1), controller()::seekTo);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onRefreshEvent(RefreshEvent event) {
+        if (!inlineStarted || service() == null || player() == null || player().isEmpty() || !isOwner()) return;
+        if (event.getType() == RefreshEvent.Type.DANMAKU) player().setDanmaku(Danmaku.from(event.getPath()));
+        else if (event.getType() == RefreshEvent.Type.SUBTITLE) player().setSub(Sub.from(event.getPath()));
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (inlineFullscreen) exitInlineFullscreen();
+        App.removeCallbacks(inlineHideControls);
+        saveInlineHistory();
+        if (inlineClock != null) inlineClock.release();
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onBackInvoked() {
+        if (inlineFullscreen) {
+            exitInlineFullscreen();
+            return;
+        }
+        super.onBackInvoked();
+    }
+
+    private void saveInlineHistory() {
+        if (!isInlinePlayerMode() || history == null || service() == null || player() == null) return;
+        if (!player().isEmpty()) {
+            history.setCreateTime(System.currentTimeMillis());
+            history.setPosition(player().getPosition());
+            history.setDuration(player().getDuration());
+            if (history.canSave() && !Setting.isIncognito()) {
+                history.merge().save();
+                RefreshEvent.history();
+            }
+        }
+    }
+
+    private void syncInlineHistory() {
+        if (history != null && !Setting.isIncognito()) Task.execute(() -> history.save());
+    }
+
+    @Override
+    public void onTimeChanged(long time) {
+        if (!isInlinePlayerMode() || !isOwner() || history == null || service() == null || player() == null || player().isEmpty()) return;
+        history.setCreateTime(time);
+        history.setPosition(player().getPosition());
+        history.setDuration(player().getDuration());
+        if (history.canSave() && history.canSync()) syncInlineHistory();
+    }
+
+    private final PlaybackService.NavigationCallback mNavigationCallback = new PlaybackService.NavigationCallback() {
+        @Override
+        public void onNext() {
+            playAdjacentEpisode(1);
+        }
+
+        @Override
+        public void onPrev() {
+            playAdjacentEpisode(-1);
+        }
+
+        @Override
+        public void onStop() {
+            saveInlineHistory();
+        }
+
+        @Override
+        public void onReplay() {
+            if (history != null) history.setPosition(C.TIME_UNSET);
+            playInline();
+        }
+    };
+
+    private void persistSelection() {
+        if (selectedFlag == null || selectedEpisode == null) return;
+        History saved = History.find(getHistoryKey());
+        if (saved == null) {
+            saved = new History();
+            saved.setKey(getHistoryKey());
+            saved.setCid(VodConfig.getCid());
+        }
+        saved.setCid(VodConfig.getCid());
+        saved.setVodName(playbackHistoryName());
+        if (!isHistoryEpisode(selectedEpisode, saved)) saved.setPosition(androidx.media3.common.C.TIME_UNSET);
+        saved.setVodFlag(selectedFlag.getFlag());
+        saved.setVodRemarks(historyEpisodeTitle(selectedEpisode));
+        saved.setEpisodeUrl(selectedEpisode.getUrl());
+        saved.setVodPic(playbackHistoryPic());
+        saved.save();
+        history = saved;
+    }
+
+    private void onKeep() {
+        Keep keep = Keep.find(getHistoryKey());
+        if (keep != null) keep.delete();
+        else createKeep();
+        updateKeepState();
+    }
+
+    private void createKeep() {
+        Keep keep = new Keep();
+        keep.setKey(getHistoryKey());
+        keep.setCid(VodConfig.getCid());
+        keep.setVodPic(vod != null ? vod.getPic() : getPicText());
+        keep.setVodName(vod != null ? vod.getName() : getNameText());
+        keep.setSiteName(getSiteName());
+        keep.setCreateTime(System.currentTimeMillis());
+        keep.save();
+    }
+
+    private void updateKeepState() {
+        String text = Keep.find(getHistoryKey()) == null ? getString(R.string.keep) : getString(R.string.keep_del);
+        binding.keep.setText(text);
+        binding.keepTop.setText(text);
+        binding.keepFusion.setText(text);
+    }
+
+    private void changeSource() {
+        if (vod == null) return;
+        String keyword = getSourceSearchKeyword();
+        Notify.show(getString(R.string.detail_source_searching));
+        Task.execute(() -> {
+            SourceMatch match = searchChangeSource(keyword);
+            runOnAliveUi(() -> {
+                if (match == null) {
+                    Notify.show(R.string.detail_source_empty);
+                    return;
+                }
+                Notify.show(getString(R.string.play_switch_site, match.vod().getSiteName()));
+                switchSourceDetail(match.site(), match.vod(), matchedTmdbItem);
+            });
+        });
+    }
+
+    private boolean openGlobalSourceSearch() {
+        String keyword = getSourceSearchKeyword();
+        if (TextUtils.isEmpty(keyword)) return false;
+        SearchActivity.direct(this, keyword);
+        return true;
+    }
+
+    private String getSourceSearchKeyword() {
+        if (vod != null && !TextUtils.isEmpty(vod.getName())) return vod.getName();
+        String keyword = getTmdbSearchQuery();
+        return TextUtils.isEmpty(keyword) ? getNameText() : keyword;
+    }
+
+    private void loadPersonDetail(TmdbPerson person) {
+        if (!canMatchTmdb()) {
+            Notify.show(getString(R.string.detail_tmdb_need_key));
+            return;
+        }
+        TmdbPersonActivity.start(this, person, getKeyText());
+    }
+
+    private void openRelatedItem(TmdbItem item) {
+        Site site = getCurrentSite();
+        if (site == null || site.isEmpty() || !site.isSearchable()) {
+            Notify.show(R.string.detail_site_not_searchable);
+            return;
+        }
+        Notify.show(getString(R.string.detail_work_searching, item.getTitle()));
+        Task.execute(() -> {
+            Vod match = searchCurrentSite(item.getTitle(), site);
+            runOnAliveUi(() -> {
+                if (match == null) {
+                    Notify.show(getString(R.string.detail_work_global_searching, item.getTitle()));
+                    SearchActivity.direct(this, item.getTitle());
+                    return;
+                }
+                openMatchedDetail(site, match, item);
+            });
+        });
+    }
+
+    private void openMatchedDetail(Site site, Vod match, TmdbItem item) {
+        if (isFusionMode()) {
+            switchSourceDetail(site, match, item, "");
+            return;
+        }
+        Intent intent = new Intent(this, TmdbDetailActivity.class);
+        intent.putExtra("fusion", false);
+        intent.putExtra("key", site.getKey());
+        intent.putExtra("id", match.getId());
+        intent.putExtra("name", match.getName());
+        intent.putExtra("pic", match.getPic());
+        intent.putExtra("mark", "");
+        putTmdbItem(intent, item);
+        startActivity(intent);
+    }
+
+    private void switchSourceDetail(Site site, Vod match, TmdbItem item) {
+        switchSourceDetail(site, match, item, sourceSwitchMark());
+    }
+
+    private void switchSourceDetail(Site site, Vod match, TmdbItem item, String mark) {
+        TmdbBundle reusableBundle = canReuseTmdbBundle(item) ? activeTmdbBundle : null;
+        Intent intent = new Intent(getIntent());
+        intent.putExtra("fusion", isFusionMode());
+        intent.putExtra("key", site.getKey());
+        intent.putExtra("id", match.getId());
+        intent.putExtra("name", match.getName());
+        intent.putExtra("pic", match.getPic());
+        intent.putExtra("mark", mark);
+        putTmdbItem(intent, item);
+        setIntent(intent);
+        resetDetailState();
+        loadContent(reusableBundle);
+    }
+
+    private String sourceSwitchMark() {
+        if (selectedEpisode != null && !TextUtils.isEmpty(selectedEpisode.getName())) return selectedEpisode.getName();
+        return getMarkText();
+    }
+
+    private boolean canReuseTmdbBundle(@Nullable TmdbItem item) {
+        if (activeTmdbBundle == null) return false;
+        if (item == null || item.getTmdbId() <= 0 || TextUtils.isEmpty(item.getMediaType())) return true;
+        TmdbItem activeItem = activeTmdbBundle.item();
+        return activeItem != null && activeItem.getTmdbId() == item.getTmdbId() && item.getMediaType().equals(activeItem.getMediaType());
+    }
+
+    private Vod searchCurrentSite(String keyword, Site site) {
+        try {
+            Result result = SiteApi.searchContent(site, keyword, false, "1");
+            return bestVod(result != null ? result.getList() : List.of(), keyword);
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    private SourceMatch searchChangeSource(String keyword) {
+        ExecutorCompletionService<SourceMatch> completion = new ExecutorCompletionService<>(Task.searchExecutor());
+        List<Future<SourceMatch>> futures = new ArrayList<>();
+        for (Site site : VodConfig.get().getSites()) {
+            if (isChangeSourceCandidate(site)) futures.add(completion.submit(() -> searchChangeSource(site, keyword)));
+        }
+        SourceMatch best = null;
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Constant.TIMEOUT_SEARCH);
+        try {
+            for (int i = 0; i < futures.size(); i++) {
+                long timeout = deadline - System.nanoTime();
+                if (timeout <= 0) break;
+                Future<SourceMatch> future = completion.poll(timeout, TimeUnit.NANOSECONDS);
+                if (future == null) break;
+                SourceMatch match = future.get();
+                if (match == null) continue;
+                if (best == null || match.score() > best.score()) best = match;
+                if (match.score() >= 300) break;
+            }
+        } catch (Throwable ignored) {
+        } finally {
+            for (Future<SourceMatch> future : futures) future.cancel(true);
+        }
+        return best;
+    }
+
+    private SourceMatch searchChangeSource(Site site, String keyword) {
+        int bestScore = Integer.MIN_VALUE;
+        Vod best = null;
+        try {
+            Result result = SiteApi.searchContent(site, keyword, true, "1");
+            for (Vod item : result != null ? result.getList() : List.<Vod>of()) {
+                if (isSameSource(item, site)) continue;
+                int score = scoreVod(item, keyword);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = item;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return bestScore > 0 ? new SourceMatch(site, best, bestScore) : null;
+    }
+
+    private boolean isChangeSourceCandidate(Site site) {
+        if (site == null || site.isEmpty() || !site.isSearchable()) return false;
+        if (!site.isChangeable()) return false;
+        return !site.getKey().equals(getKeyText());
+    }
+
+    private boolean isSameSource(Vod item, Site site) {
+        if (item == null) return true;
+        if (getIdText().equals(item.getId()) && getKeyText().equals(site.getKey())) return true;
+        return false;
+    }
+
+    private Vod bestVod(List<Vod> items, String keyword) {
+        if (items == null || items.isEmpty()) return null;
+        Vod best = null;
+        int score = Integer.MIN_VALUE;
+        for (Vod item : items) {
+            int current = scoreVod(item, keyword);
+            if (current > score) {
+                score = current;
+                best = item;
+            }
+        }
+        return score > 0 ? best : null;
+    }
+
+    private int scoreVod(Vod item, String keyword) {
+        if (item == null) return Integer.MIN_VALUE;
+        String normalizedKeyword = normalize(keyword);
+        String name = normalize(item.getName());
+        if (name.isEmpty()) return Integer.MIN_VALUE;
+        if (name.equals(normalizedKeyword)) return 300;
+        if (name.contains(normalizedKeyword) || normalizedKeyword.contains(name)) return 220;
+        String remarks = normalize(item.getRemarks());
+        if (!remarks.isEmpty() && (remarks.contains(normalizedKeyword) || normalizedKeyword.contains(remarks))) return 120;
+        return 0;
+    }
+
+    private TmdbItem chooseTmdbMatch(List<TmdbItem> items, String keyword, @Nullable Vod sourceVod) {
+        // 自动匹配必须保持保守：这里只允许“标题归一化后完全一致”的候选进入评分。
+        // 如果站源详情或搜索词里能提取到年份，候选的 TMDB 年份也必须完全同年。
+        // 演员、导演、简介里的主创信息只用于同名候选之间消歧，不允许用来放宽标题或年份规则。
+        logTmdbMatch("开始自动匹配：关键词=%s，归一化=%s，站源年份=%d，是否有站源详情=%s，候选原始数量=%d",
+                keyword, normalize(keyword), sourceYear(keyword, sourceVod), sourceVod != null, items == null ? 0 : items.size());
+        List<TmdbCandidate> candidates = scoreTmdbCandidates(items, keyword, sourceVod);
+        if (candidates.isEmpty()) {
+            logTmdbMatch("自动匹配结束：没有严格标题/年份一致的候选，交给手动选择");
+            return null;
+        }
+        if (candidates.size() == 1 && candidates.get(0).titleScore >= 210) {
+            logTmdbMatch("自动匹配成功：只有一个严格候选，标题=%s，年份=%d，评分=%d",
+                    candidates.get(0).item.getTitle(), tmdbItemYear(candidates.get(0).item), candidates.get(0).score);
+            return candidates.get(0).item;
+        }
+        TmdbCandidate best = candidates.get(0);
+        TmdbCandidate second = candidates.size() > 1 ? candidates.get(1) : null;
+        int gap = second == null ? best.score : best.score - second.score;
+        boolean accepted = best.score >= 360 && gap >= 50;
+        logTmdbMatch("自动匹配判定：最佳=%s(%d年, 分=%d)，第二=%s，分差=%d，结果=%s",
+                best.item.getTitle(), tmdbItemYear(best.item), best.score, second == null ? "无" : second.item.getTitle() + "(" + second.score + ")", gap, accepted ? "通过" : "不通过");
+        return accepted ? best.item : null;
+    }
+
+    private TmdbBundle chooseTmdbBundle(List<TmdbItem> items, String keyword, Vod sourceVod) {
+        // 走到这里说明仅靠搜索结果列表还不能稳定选出一个条目。
+        // 此时只会对前几个“标题一致、年份一致”的候选拉取 TMDB 详情，
+        // 再用站源演员、导演、简介中出现的完整姓名去命中 TMDB 演员/主创。
+        // 这样可以解决同名剧缺少年份时的自动消歧，同时避免把《最佳女主角》误匹配成《主角》。
+        logTmdbMatch("进入详情消歧：关键词=%s，站源演员=%s，站源导演=%s", keyword, sourceVod.getActor(), sourceVod.getDirector());
+        List<TmdbCandidate> candidates = scoreTmdbCandidates(items, keyword, sourceVod);
+        if (candidates.isEmpty()) {
+            logTmdbMatch("详情消歧结束：没有可消歧候选");
+            return null;
+        }
+        TmdbItem quick = chooseTmdbMatch(items, keyword, sourceVod);
+        if (quick != null) {
+            try {
+                logTmdbMatch("详情消歧跳过：基础规则已经可确定，直接加载=%s(%d)", quick.getTitle(), tmdbItemYear(quick));
+                return loadTmdbBundle(quick);
+            } catch (Throwable ignored) {
+                logTmdbMatch("详情消歧加载失败：标题=%s，错误=%s", quick.getTitle(), ignored.getMessage());
+            }
+        }
+        if (!hasSourcePeople(sourceVod)) {
+            logTmdbMatch("详情消歧结束：站源没有演员/导演/简介，无法继续自动消歧");
+            return null;
+        }
+        TmdbCandidate best = null;
+        TmdbCandidate second = null;
+        int count = Math.min(6, candidates.size());
+        logTmdbMatch("详情消歧开始拉取候选详情：候选数量=%d，拉取上限=%d", candidates.size(), count);
+        for (int i = 0; i < count; i++) {
+            TmdbCandidate candidate = candidates.get(i);
+            try {
+                TmdbBundle bundle = loadTmdbBundle(candidate.item);
+                int peopleScore = scoreTmdbPeople(bundle.detail(), sourceVod);
+                int score = candidate.score + peopleScore;
+                logTmdbMatch("详情消歧候选：标题=%s，年份=%d，基础分=%d，演员主创分=%d，总分=%d",
+                        candidate.item.getTitle(), tmdbItemYear(candidate.item), candidate.score, peopleScore, score);
+                TmdbCandidate scored = new TmdbCandidate(candidate.item, candidate.titleScore, score, bundle);
+                if (best == null || scored.score > best.score) {
+                    second = best;
+                    best = scored;
+                } else if (second == null || scored.score > second.score) {
+                    second = scored;
+                }
+            } catch (Throwable ignored) {
+                logTmdbMatch("详情消歧候选加载失败：标题=%s，错误=%s", candidate.item.getTitle(), ignored.getMessage());
+            }
+        }
+        if (best == null || best.bundle == null) {
+            logTmdbMatch("详情消歧结束：没有成功加载的候选详情");
+            return null;
+        }
+        int gap = second == null ? best.score : best.score - second.score;
+        boolean accepted = best.score >= 420 && gap >= 50;
+        logTmdbMatch("详情消歧判定：最佳=%s(%d年, 分=%d)，第二=%s，分差=%d，结果=%s",
+                best.item.getTitle(), tmdbItemYear(best.item), best.score, second == null ? "无" : second.item.getTitle() + "(" + second.score + ")", gap, accepted ? "通过" : "不通过");
+        return accepted ? best.bundle : null;
+    }
+
+    private List<TmdbCandidate> scoreTmdbCandidates(List<TmdbItem> items, String keyword, @Nullable Vod sourceVod) {
+        List<TmdbCandidate> candidates = new ArrayList<>();
+        if (items == null || items.isEmpty()) return candidates;
+        String normalized = normalize(keyword);
+        int sourceYear = sourceYear(keyword, sourceVod);
+        for (TmdbItem item : items) {
+            // 第一层过滤只看标题是否完全一致，不做 contains、相似度、首尾包含等近似判断。
+            int titleScore = scoreTmdbTitle(item, normalized);
+            if (titleScore <= 0) {
+                logTmdbMatch("候选过滤：标题不一致，关键词=%s，候选=%s，候选年份=%d", keyword, item.getTitle(), tmdbItemYear(item));
+                continue;
+            }
+            // 第二层过滤看年份：只要站源侧有年份，TMDB 侧必须同年，差一年也不自动匹配。
+            if (sourceYear > 0 && tmdbItemYear(item) != sourceYear) {
+                logTmdbMatch("候选过滤：年份不一致，关键词=%s，候选=%s，站源年份=%d，TMDB年份=%d", keyword, item.getTitle(), sourceYear, tmdbItemYear(item));
+                continue;
+            }
+            int yearScore = scoreTmdbYear(item, sourceYear);
+            int typeScore = scoreTmdbMediaType(item, sourceVod);
+            int creditScore = scoreTmdbPeople(item, sourceVod);
+            int score = titleScore + yearScore + typeScore + creditScore;
+            logTmdbMatch("候选保留：标题=%s，媒体=%s，年份=%d，标题分=%d，年份分=%d，类型分=%d，已有职员分=%d，总分=%d",
+                    item.getTitle(), item.getMediaType(), tmdbItemYear(item), titleScore, yearScore, typeScore, creditScore, score);
+            candidates.add(new TmdbCandidate(item, titleScore, score, null));
+        }
+        candidates.sort((a, b) -> Integer.compare(b.score, a.score));
+        return candidates;
+    }
+
+    private int scoreTmdbTitle(TmdbItem item, String normalizedKeyword) {
+        // 标题分只给完全一致的结果。这里故意不支持“候选包含关键词”，防止短标题误吸附长标题。
+        String title = normalize(item.getTitle());
+        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(normalizedKeyword)) return 0;
+        if (title.equals(normalizedKeyword)) return 300;
+        return 0;
+    }
+
+    private int scoreTmdbYear(TmdbItem item, int sourceYear) {
+        // 年份只允许同年加分；不同年已经在候选过滤阶段剔除，不做近似年份匹配。
+        if (sourceYear <= 0) return 0;
+        return tmdbItemYear(item) == sourceYear ? 120 : 0;
+    }
+
+    private int tmdbItemYear(TmdbItem item) {
+        // 搜索结果里的年份通常在副标题中，例如“剧集 · 2026-05-10 · 评分 9.2”。
+        // 如果副标题没有年份，再从标题兜底提取，兼容站源或接口返回的特殊格式。
+        int year = firstYear(item.getSubtitle());
+        return year > 0 ? year : firstYear(item.getTitle());
+    }
+
+    private int scoreTmdbMediaType(TmdbItem item, @Nullable Vod sourceVod) {
+        // 类型只做轻量加减分，不作为放宽条件：标题/年份不一致的候选不会走到这里。
+        if (sourceVod == null) return 0;
+        String type = normalize(sourceVod.getTypeName() + " " + sourceVod.getRemarks());
+        if (TextUtils.isEmpty(type)) return 0;
+        boolean tv = type.contains("剧") || type.contains("集") || type.contains("连续") || type.contains("电视剧");
+        boolean movie = type.contains("电影") || type.contains("影片");
+        if (tv && "tv".equalsIgnoreCase(item.getMediaType())) return 20;
+        if (movie && "movie".equalsIgnoreCase(item.getMediaType())) return 20;
+        if ((tv && "movie".equalsIgnoreCase(item.getMediaType())) || (movie && "tv".equalsIgnoreCase(item.getMediaType()))) return -30;
+        return 0;
+    }
+
+    private int scoreTmdbPeople(TmdbItem item, @Nullable Vod sourceVod) {
+        // 部分入口会带有 credit 信息，此处只做低权重加分；主要的演员/主创消歧在详情拉取后完成。
+        if (sourceVod == null) return 0;
+        String text = normalize(sourceVod.getActor() + " " + sourceVod.getDirector() + " " + sourceVod.getContent());
+        String credit = normalize(item.getCredit());
+        if (TextUtils.isEmpty(text) || TextUtils.isEmpty(credit)) return 0;
+        return text.contains(credit) || credit.contains(text) ? 80 : 0;
+    }
+
+    private int scoreTmdbPeople(JsonObject detail, Vod sourceVod) {
+        // 用 TMDB 详情里的演员和主创完整姓名，去站源演员、导演、简介中查找。
+        // 命中越多，说明同名候选越可能是同一部作品；但它只负责同名候选排序，不负责扩大候选范围。
+        String source = normalize(sourceVod.getActor() + " " + sourceVod.getDirector() + " " + sourceVod.getContent());
+        if (TextUtils.isEmpty(source)) return 0;
+        int score = 0;
+        int hits = 0;
+        for (TmdbPerson person : tmdbService.cast(detail, tmdbConfig)) {
+            if (hits >= 3) break;
+            String name = normalize(person.getName());
+            if (name.length() < 2 || !source.contains(name)) continue;
+            logTmdbMatch("演员命中：%s，角色/说明=%s，加分=80", person.getName(), person.getSubtitle());
+            score += 80;
+            hits++;
+        }
+        for (TmdbPerson person : tmdbService.creators(detail, tmdbConfig)) {
+            if (hits >= 4) break;
+            String name = normalize(person.getName());
+            if (name.length() < 2 || !source.contains(name)) continue;
+            logTmdbMatch("主创命中：%s，职位=%s，加分=70", person.getName(), person.getSubtitle());
+            score += 70;
+            hits++;
+        }
+        return score;
+    }
+
+    private boolean hasSourcePeople(@Nullable Vod sourceVod) {
+        // 没有演员、导演、简介时，无法做可靠的人名消歧，继续弹出手动选择更稳妥。
+        if (sourceVod == null) return false;
+        return !TextUtils.isEmpty(sourceVod.getActor()) || !TextUtils.isEmpty(sourceVod.getDirector()) || !TextUtils.isEmpty(sourceVod.getContent());
+    }
+
+    private int sourceYear(String keyword, @Nullable Vod sourceVod) {
+        // 年份优先取站源详情字段；如果站源没有年份，再从标题或搜索词里提取。
+        // 这样网盘/站源标题里带“2026”的情况，也能参与严格同年判断。
+        int year = sourceVod == null ? 0 : firstYear(sourceVod.getYear());
+        if (year > 0) return year;
+        year = sourceVod == null ? 0 : firstYear(sourceVod.getName());
+        if (year > 0) return year;
+        year = firstYear(getNameText());
+        return year > 0 ? year : firstYear(keyword);
+    }
+
+    private int firstYear(String text) {
+        // 只识别 1900-2099 的四位年份，避免把集数、清晰度、评分等数字误当年份。
+        Matcher matcher = Pattern.compile("(19\\d{2}|20\\d{2})").matcher(Objects.toString(text, ""));
+        while (matcher.find()) {
+            int year = Integer.parseInt(matcher.group(1));
+            if (year >= 1900 && year <= 2099) return year;
+        }
+        return 0;
+    }
+
+    private void logTmdbMatch(String format, Object... args) {
+        SpiderDebug.log("tmdb-match", format, args);
+    }
+
+    private int firstSeasonNumber(JsonObject detail) {
+        JsonArray seasons = array(detail, "seasons");
+        int fallback = -1;
+        for (JsonElement element : seasons) {
+            if (!element.isJsonObject()) continue;
+            JsonObject object = element.getAsJsonObject();
+            if (!object.has("season_number") || object.get("season_number").isJsonNull()) continue;
+            int number = object.get("season_number").getAsInt();
+            if (number > 0) return number;
+            if (fallback == -1) fallback = number;
+        }
+        return fallback;
+    }
+
+    private Map<Integer, Integer> seasonEpisodeCounts(JsonObject detail) {
+        Map<Integer, Integer> counts = new LinkedHashMap<>();
+        JsonArray seasons = array(detail, "seasons");
+        for (JsonElement element : seasons) addSeasonCount(counts, element, true);
+        if (counts.isEmpty()) for (JsonElement element : seasons) addSeasonCount(counts, element, false);
+        return counts;
+    }
+
+    private void addSeasonCount(Map<Integer, Integer> counts, JsonElement element, boolean regularOnly) {
+        if (!element.isJsonObject()) return;
+        JsonObject object = element.getAsJsonObject();
+        if (!object.has("season_number") || object.get("season_number").isJsonNull()) return;
+        int number = object.get("season_number").getAsInt();
+        if (regularOnly && number <= 0) return;
+        int count = object.has("episode_count") && !object.get("episode_count").isJsonNull() ? object.get("episode_count").getAsInt() : 0;
+        counts.put(number, count);
+    }
+
+    private String normalize(String text) {
+        return Objects.toString(text, "").replaceAll("[\\s·•:：\\-_/\\\\|()（）\\[\\]【】]+", "").trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String cleanTmdbSearchQuery(String text) {
+        String raw = Objects.toString(text, "").trim();
+        if (TextUtils.isEmpty(raw)) return "";
+        String cleaned = raw;
+        // TMDB 搜索词清洗只负责去掉资源站常见附加信息，不改变后面的严格匹配规则。
+        // 例如“怪奇物语 第五季 [臻彩]”会搜“怪奇物语”，但候选标题仍必须等于“怪奇物语”。
+        cleaned = cleaned.replaceAll("(?i)\\.(mkv|mp4|avi|mov|wmv|flv|rmvb|ts|m2ts)$", "");
+        cleaned = removeNoiseBrackets(cleaned);
+        cleaned = cleaned.replaceAll("(?i)\\b(S\\d{1,2}|Season\\s*\\d{1,2})\\b", " ");
+        cleaned = cleaned.replaceAll("第\\s*[一二三四五六七八九十百零〇0-9]+\\s*[季部]", " ");
+        cleaned = cleaned.replaceAll("第\\s*[一二三四五六七八九十百零〇0-9]+\\s*[集话話]", " ");
+        cleaned = cleaned.replaceAll("(全|共|更新至|更至|连载至|連載至)\\s*[0-9一二三四五六七八九十百零〇]+\\s*[集话話]", " ");
+        cleaned = cleaned.replaceAll("(?i)\\b(4K|8K|1080P|2160P|720P|HDR|HDR10|DV|WEB[- ]?DL|BluRay|BDRip|Remux|HEVC|H\\.?265|H\\.?264|x265|x264|AAC|DTS|DDP?5?\\.?1|Atmos|NF|Netflix|AMZN|DSNP)\\b", " ");
+        cleaned = cleaned.replaceAll("(国语版|国配版|普通话版|粤语版|台语版|闽南语版|原声版|配音版|中字版|字幕版|台版|台灣版|台湾版|港版|港澳版|大陆版|內地版|内地版|中国版|中國版|泰版|泰国版|泰國版|韩版|韩国版|韓國版|日版|日本版|美版|美国版|美國版|英版|英国版|英國版)", " ");
+        cleaned = cleaned.replaceAll("(臻彩|高码|高码率|无水印|无台标|国语|国配|国粤|粤语|中字|字幕|内封|简繁|双语|官中|杜比|合集|全集|完结|未删减|加长版|修复版)", " ");
+        cleaned = cleaned.replaceAll("[._\\-+]+", " ");
+        cleaned = cleaned.replaceAll("\\s+", " ").trim();
+        cleaned = cleaned.replaceAll("^[\\s:：,，.。·|/\\\\]+|[\\s:：,，.。·|/\\\\]+$", "");
+        if (TextUtils.isEmpty(cleaned)) cleaned = raw;
+        if (!raw.equals(cleaned)) logTmdbMatch("搜索词清洗：原始=%s，清洗后=%s", raw, cleaned);
+        return cleaned;
+    }
+
+    private String removeNoiseBrackets(String text) {
+        Matcher matcher = Pattern.compile("[\\[【「『(（]([^\\]】」』)）]{1,40})[\\]】」』)）]").matcher(text);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String value = matcher.group(1);
+            matcher.appendReplacement(buffer, isTmdbNoiseTag(value) ? " " : Matcher.quoteReplacement(matcher.group()));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
+    }
+
+    private boolean isTmdbNoiseTag(String text) {
+        String value = normalize(text);
+        if (TextUtils.isEmpty(value)) return true;
+        return value.matches("(?i).*(4k|8k|1080p|2160p|720p|hdr|hdr10|dv|webdl|bluray|bdrip|remux|hevc|h265|h264|x265|x264|aac|dts|ddp|atmos|nf|netflix|amzn|dsnp).*")
+                || value.matches(".*(臻彩|高码|高码率|无水印|无台标|国语|国配|国粤|粤语|中字|字幕|内封|简繁|双语|官中|杜比|合集|全集|完结|未删减|加长版|修复版).*")
+                || value.matches(".*(国语版|国配版|普通话版|粤语版|台语版|闽南语版|原声版|配音版|中字版|字幕版|台版|台灣版|台湾版|港版|港澳版|大陆版|內地版|内地版|中国版|中國版|泰版|泰国版|泰國版|韩版|韩国版|韓國版|日版|日本版|美版|美国版|美國版|英版|英国版|英國版).*");
+    }
+
+    private Flag findInitialFlag(List<Flag> flags) {
+        String historyFlag = history != null ? history.getVodFlag() : "";
+        for (Flag flag : flags) {
+            if (!TextUtils.isEmpty(historyFlag) && historyFlag.equals(flag.getFlag())) return flag;
+        }
+        return flags.get(0);
+    }
+
+    private MaterialButton createChipButton(String text) {
+        MaterialButton button = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+        button.setText(text);
+        button.setCheckable(false);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setTextColor(getColor(android.R.color.white));
+        button.setPadding(24, 12, 24, 12);
+        FlexboxLayout.LayoutParams params = new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.WRAP_CONTENT, FlexboxLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 12, 12);
+        button.setLayoutParams(params);
+        return button;
+    }
+
+    private void setChipState(MaterialButton button, boolean selected) {
+        ThemeColors colors = lightTheme ? ThemeColors.light() : ThemeColors.dark();
+        button.setTextColor(colors.primary);
+        button.setBackgroundColor(selected ? colors.chipActive : colors.chip);
+        button.setOnFocusChangeListener(null);
+        applyChipFocus(button, selected, button.hasFocus(), colors);
+        button.setOnFocusChangeListener((view, focused) -> applyChipFocus(button, selected, focused, colors));
+    }
+
+    private void applyChipFocus(MaterialButton button, boolean selected, boolean focused, ThemeColors colors) {
+        button.setStrokeWidth(ResUtil.dp2px(focused ? FOCUS_STROKE_DP : (selected ? 2 : CHIP_STROKE_DP)));
+        button.setStrokeColor(ColorStateList.valueOf(focused ? FOCUS_STROKE : (selected ? colors.accent : colors.line)));
+    }
+
+    private void addMetaChip(String text) {
+        if (TextUtils.isEmpty(text)) return;
+        ThemeColors colors = lightTheme ? ThemeColors.light() : ThemeColors.dark();
+        TextView chip = new TextView(this);
+        chip.setText(text);
+        chip.setTextColor(colors.primary);
+        chip.setTextSize(11f);
+        chip.setPadding(16, 8, 16, 8);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(colors.chip);
+        background.setCornerRadius(999f);
+        background.setStroke(1, colors.line);
+        chip.setBackground(background);
+        FlexboxLayout.LayoutParams params = new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.WRAP_CONTENT, FlexboxLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, 10, 10);
+        chip.setLayoutParams(params);
+        binding.metaContainer.addView(chip);
+    }
+
+    private String buildSubtitle() {
+        List<String> parts = new ArrayList<>();
+        String date = releaseDate();
+        if (!TextUtils.isEmpty(date)) parts.add(date);
+        String rating = ratingLabel();
+        if (!TextUtils.isEmpty(rating)) parts.add(rating);
+        return TextUtils.join(" · ", parts);
+    }
+
+    private String releaseDate() {
+        if (matchedTmdbDetail == null) return hasTmdbOverview() ? tmdbItemYear() : vod.getYear();
+        return string(matchedTmdbDetail, "first_air_date", "release_date");
+    }
+
+    private TmdbItem playbackTmdbItem() {
+        if (matchedTmdbItem == null) return null;
+        return new TmdbItem(
+                matchedTmdbItem.getTmdbId(),
+                matchedTmdbItem.getMediaType(),
+                TextUtils.isEmpty(vod.getName()) ? matchedTmdbItem.getTitle() : vod.getName(),
+                buildSubtitle(),
+                displayOverview(),
+                TextUtils.isEmpty(matchedTmdbItem.getPosterUrl()) ? vod.getPic() : matchedTmdbItem.getPosterUrl(),
+                TextUtils.isEmpty(matchedTmdbItem.getBackdropUrl()) ? vod.getPic() : matchedTmdbItem.getBackdropUrl(),
+                matchedTmdbItem.getCredit());
+    }
+
+    private Vod playbackTmdbVod() {
+        if (vod == null) return null;
+        Vod item = new Vod();
+        item.setName(playbackHistoryName());
+        item.setContent(displayOverview());
+        item.setPic(playbackHistoryPic());
+        item.setYear(yearLabel());
+        item.setArea(coalesce(firstCountry(), vod.getArea()));
+        item.setTypeName(coalesce(firstGenre(), vod.getTypeName()));
+        item.setDirector(coalesce(firstCrew("Director"), vod.getDirector()));
+        item.setRemarks(coalesce(getMarkText(), vod.getRemarks()));
+        return item;
+    }
+
+    private String yearLabel() {
+        String date = releaseDate();
+        if (!TextUtils.isEmpty(date) && date.length() >= 4) return date.substring(0, 4);
+        return vod == null ? "" : vod.getYear();
+    }
+
+    private String metaYear() {
+        if (matchedTmdbDetail != null) return yearLabel();
+        if (hasTmdbOverview()) return tmdbItemYear();
+        return vod == null ? "" : vod.getYear();
+    }
+
+    private String ratingLabel() {
+        if (matchedTmdbDetail == null || !matchedTmdbDetail.has("vote_average") || matchedTmdbDetail.get("vote_average").isJsonNull()) return "";
+        return getString(R.string.detail_score, String.format(Locale.US, "%.1f", matchedTmdbDetail.get("vote_average").getAsDouble()));
+    }
+
+    private boolean hasTmdbOverview() {
+        return !TextUtils.isEmpty(tmdbOverview());
+    }
+
+    private String displayOverview() {
+        String overview = tmdbOverview();
+        if (TextUtils.isEmpty(overview) && vod != null) overview = vod.getContent();
+        return TextUtils.isEmpty(overview) ? "" : overview.trim();
+    }
+
+    private String tmdbOverview() {
+        String overview = matchedTmdbDetail == null ? "" : tmdbService.translatedOverview(matchedTmdbDetail, tmdbConfig);
+        if (TextUtils.isEmpty(overview) && matchedTmdbItem != null) overview = matchedTmdbItem.getOverview();
+        return TextUtils.isEmpty(overview) ? "" : overview.trim();
+    }
+
+    private String tmdbItemYear() {
+        if (matchedTmdbItem == null) return "";
+        String subtitle = matchedTmdbItem.getSubtitle();
+        return !TextUtils.isEmpty(subtitle) && subtitle.length() >= 4 ? subtitle.substring(0, 4) : "";
+    }
+
+    private String certificationLabel() {
+        if (matchedTmdbDetail == null) return "";
+        boolean tv = matchedTmdbItem != null && "tv".equalsIgnoreCase(matchedTmdbItem.getMediaType());
+        JsonArray results = tv ? array(matchedTmdbDetail, "content_ratings", "results") : array(matchedTmdbDetail, "release_dates", "results");
+        String region = regionFromLanguage(tmdbConfig == null ? "" : tmdbConfig.getLanguage());
+        String value = certificationForRegion(results, region, tv);
+        if (TextUtils.isEmpty(value)) value = certificationForRegion(results, "US", tv);
+        if (TextUtils.isEmpty(value)) value = firstCertification(results, tv);
+        return value;
+    }
+
+    private String certificationForRegion(JsonArray results, String region, boolean tv) {
+        if (TextUtils.isEmpty(region)) return "";
+        for (JsonElement element : results) {
+            if (!element.isJsonObject()) continue;
+            JsonObject object = element.getAsJsonObject();
+            if (!region.equalsIgnoreCase(string(object, "iso_3166_1"))) continue;
+            return tv ? string(object, "rating") : firstReleaseCertification(object);
+        }
+        return "";
+    }
+
+    private String firstCertification(JsonArray results, boolean tv) {
+        for (JsonElement element : results) {
+            if (!element.isJsonObject()) continue;
+            String value = tv ? string(element.getAsJsonObject(), "rating") : firstReleaseCertification(element.getAsJsonObject());
+            if (!TextUtils.isEmpty(value)) return value;
+        }
+        return "";
+    }
+
+    private String firstReleaseCertification(JsonObject object) {
+        for (JsonElement release : array(object, "release_dates")) {
+            if (!release.isJsonObject()) continue;
+            String value = string(release.getAsJsonObject(), "certification");
+            if (!TextUtils.isEmpty(value)) return value;
+        }
+        return "";
+    }
+
+    private String regionFromLanguage(String language) {
+        if (TextUtils.isEmpty(language)) return "";
+        int separator = language.indexOf('-');
+        return separator >= 0 && separator + 1 < language.length() ? language.substring(separator + 1).toUpperCase(Locale.ROOT) : "";
+    }
+
+    private String externalIdLabel() {
+        JsonObject ids = object(matchedTmdbDetail, "external_ids");
+        String imdb = string(ids, "imdb_id");
+        if (!TextUtils.isEmpty(imdb)) return "IMDb " + imdb;
+        String tvdb = string(ids, "tvdb_id");
+        return TextUtils.isEmpty(tvdb) ? "" : "TVDB " + tvdb;
+    }
+
+    private String getMediaTypeLabel() {
+        if (matchedTmdbItem == null) return getString(R.string.detail_media_unknown);
+        return "tv".equalsIgnoreCase(matchedTmdbItem.getMediaType()) ? getString(R.string.detail_media_tv) : getString(R.string.detail_media_movie);
+    }
+
+    private String firstGenre() {
+        JsonArray genres = array(matchedTmdbDetail, "genres");
+        for (JsonElement element : genres) {
+            if (element.isJsonObject()) return string(element.getAsJsonObject(), "name");
+        }
+        return "";
+    }
+
+    private String firstCountry() {
+        JsonArray countries = array(matchedTmdbDetail, "production_countries");
+        for (JsonElement element : countries) {
+            if (element.isJsonObject()) return string(element.getAsJsonObject(), "name");
+        }
+        JsonArray origins = array(matchedTmdbDetail, "origin_country");
+        for (JsonElement element : origins) {
+            if (element.isJsonPrimitive()) return element.getAsString();
+        }
+        return "";
+    }
+
+    private String firstCrew(String job) {
+        JsonArray crew = array(matchedTmdbDetail, "credits", "crew");
+        for (JsonElement element : crew) {
+            if (!element.isJsonObject()) continue;
+            JsonObject object = element.getAsJsonObject();
+            if (job.equalsIgnoreCase(string(object, "job"))) return string(object, "name");
+        }
+        return "";
+    }
+
+    private JsonArray array(JsonObject object, String... keys) {
+        JsonElement current = object;
+        for (String key : keys) {
+            if (current == null || !current.isJsonObject()) return new JsonArray();
+            JsonObject currentObject = current.getAsJsonObject();
+            if (!currentObject.has(key) || currentObject.get(key).isJsonNull()) return new JsonArray();
+            current = currentObject.get(key);
+        }
+        return current != null && current.isJsonArray() ? current.getAsJsonArray() : new JsonArray();
+    }
+
+    private JsonObject object(JsonObject object, String... keys) {
+        JsonElement current = object;
+        for (String key : keys) {
+            if (current == null || !current.isJsonObject()) return null;
+            JsonObject currentObject = current.getAsJsonObject();
+            if (!currentObject.has(key) || currentObject.get(key).isJsonNull()) return null;
+            current = currentObject.get(key);
+        }
+        return current != null && current.isJsonObject() ? current.getAsJsonObject() : null;
+    }
+
+    private String string(JsonObject object, String... keys) {
+        for (String key : keys) {
+            if (object != null && object.has(key) && !object.get(key).isJsonNull()) {
+                String value = object.get(key).getAsString();
+                if (!TextUtils.isEmpty(value)) return value.trim();
+            }
+        }
+        return "";
+    }
+
+    private String coalesce(String... values) {
+        for (String value : values) if (!TextUtils.isEmpty(value)) return value;
+        return "";
+    }
+
+    private Site getCurrentSite() {
+        Site site = vod != null ? vod.getSite() : null;
+        if (site != null && !site.isEmpty()) return site;
+        Site fallback = VodConfig.get().getSite(getKeyText());
+        return fallback.isEmpty() ? null : fallback;
+    }
+
+    private String getSiteName() {
+        Site site = getCurrentSite();
+        return site == null ? getKeyText() : site.getName();
+    }
+
+    private String getHistoryKey() {
+        return getKeyText() + AppDatabase.SYMBOL + getIdText() + AppDatabase.SYMBOL + VodConfig.getCid();
+    }
+
+    private String getKeyText() {
+        return Objects.toString(getIntent().getStringExtra("key"), "");
+    }
+
+    private String getIdText() {
+        return Objects.toString(getIntent().getStringExtra("id"), "");
+    }
+
+    private String getNameText() {
+        return Objects.toString(getIntent().getStringExtra("name"), "");
+    }
+
+    private String getPicText() {
+        return Objects.toString(getIntent().getStringExtra("pic"), "");
+    }
+
+    private String getMarkText() {
+        return Objects.toString(getIntent().getStringExtra("mark"), "");
+    }
+
+    private TmdbItem getIntentTmdbItem() {
+        int tmdbId = getIntent().getIntExtra("tmdb_id", 0);
+        String mediaType = Objects.toString(getIntent().getStringExtra("tmdb_media_type"), "");
+        if (tmdbId <= 0 || TextUtils.isEmpty(mediaType)) return null;
+        return new TmdbItem(
+                tmdbId,
+                mediaType,
+                Objects.toString(getIntent().getStringExtra("tmdb_title"), ""),
+                Objects.toString(getIntent().getStringExtra("tmdb_subtitle"), ""),
+                Objects.toString(getIntent().getStringExtra("tmdb_overview"), ""),
+                Objects.toString(getIntent().getStringExtra("tmdb_poster"), ""),
+                Objects.toString(getIntent().getStringExtra("tmdb_backdrop"), ""),
+                Objects.toString(getIntent().getStringExtra("tmdb_credit"), ""));
+    }
+
+    private record TmdbBundle(TmdbItem item, JsonObject detail, List<TmdbPerson> cast, List<TmdbPerson> creators, List<String> photos, List<TmdbItem> related, List<Integer> seasons, Map<Integer, Integer> seasonCounts, Map<Integer, List<TmdbEpisode>> seasonEpisodes, Map<Integer, List<TmdbPerson>> seasonCast, Map<Integer, List<String>> seasonPhotos) {
+    }
+
+    private record TmdbLoadResult(TmdbBundle bundle, List<TmdbItem> searchItems) {
+    }
+
+    private record SourceMatch(Site site, Vod vod, int score) {
+    }
+
+    private record TmdbCandidate(TmdbItem item, int titleScore, int score, @Nullable TmdbBundle bundle) {
+    }
+
+    private record ThemeColors(int background, int panel, int control, int chip, int chipActive, int line, int lineStrong, int primary, int secondary, int muted, int body, int accent, int play, int backdropShade) {
+
+        static ThemeColors dark() {
+            return new ThemeColors(
+                    0xFF0F141A,
+                    0xD9141B23,
+                    0xFF2B3743,
+                    0x332B3743,
+                    0x6630A86B,
+                    0x26FFFFFF,
+                    0x4DFFFFFF,
+                    0xFFFFFFFF,
+                    0xCCFFFFFF,
+                    0x99FFFFFF,
+                    0xE6FFFFFF,
+                    0xFF7EE7A2,
+                    0xFF2CC56F,
+                    0x7A0F141A
+            );
+        }
+
+        static ThemeColors light() {
+            return new ThemeColors(
+                    0xFFF3F6F9,
+                    0xCCFFFFFF,
+                    0xFFE7EDF3,
+                    0xFFEAF0F5,
+                    0xFFE5F7EC,
+                    0x33424B57,
+                    0x66424B57,
+                    0xFF12202D,
+                    0xCC12202D,
+                    0x9912202D,
+                    0xE612202D,
+                    0xFF1D8F5A,
+                    0xFF20B866,
+                    0x4DF7FAFC
+            );
+        }
+    }
+}

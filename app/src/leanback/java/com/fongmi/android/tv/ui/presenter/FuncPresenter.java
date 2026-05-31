@@ -20,7 +20,9 @@ public class FuncPresenter extends Presenter {
     public interface OnClickListener {
         void onItemClick(Func item);
 
-        boolean onLongClick(Func item);
+        default boolean onLongClick(Func item) {
+            return false;
+        }
     }
 
     @NonNull

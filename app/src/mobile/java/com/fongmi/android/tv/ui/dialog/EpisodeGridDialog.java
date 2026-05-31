@@ -25,6 +25,7 @@ public class EpisodeGridDialog extends BaseBottomSheetDialog {
     private final List<String> titles;
     private DialogEpisodeGridBinding binding;
     private List<Episode> episodes;
+    private Runnable reverseAction;
     private boolean reverse;
     private int spanCount;
     private int itemCount;
@@ -48,6 +49,11 @@ public class EpisodeGridDialog extends BaseBottomSheetDialog {
         return this;
     }
 
+    public EpisodeGridDialog reverseAction(Runnable reverseAction) {
+        this.reverseAction = reverseAction;
+        return this;
+    }
+
     public void show(FragmentActivity activity) {
         for (Fragment f : activity.getSupportFragmentManager().getFragments()) if (f instanceof EpisodeGridDialog) return;
         show(activity.getSupportFragmentManager(), null);
@@ -67,10 +73,19 @@ public class EpisodeGridDialog extends BaseBottomSheetDialog {
 
     @Override
     protected void initEvent() {
+        binding.reverse.setOnClickListener(view -> onReverse());
         getChildFragmentManager().setFragmentResultListener("result", this, (requestKey, bundle) -> {
             ((EpisodeAdapter.OnClickListener) requireActivity()).onItemClick(bundle.getParcelable("episode"));
             dismiss();
         });
+    }
+
+    private void onReverse() {
+        if (reverseAction != null) reverseAction.run();
+        reverse = !reverse;
+        titles.clear();
+        setTitles();
+        setPager();
     }
 
     private void setSpanCount() {

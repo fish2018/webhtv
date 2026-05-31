@@ -31,6 +31,8 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
         void onItemDelete(History item);
 
         boolean onLongClick();
+
+        boolean onItemLongClick(History item);
     }
 
     public void setSize(int[] size) {
@@ -67,10 +69,11 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         History item = getItem(position);
-        boolean same = item.getVodName().equals(item.getVodRemarks());
+        String remark = item.getDisplayVodRemarks();
+        boolean same = item.getVodName().equals(remark);
         holder.binding.name.setText(item.getVodName());
         holder.binding.site.setText(item.getSiteName());
-        holder.binding.remark.setText(item.getVodRemarks());
+        holder.binding.remark.setText(remark);
         holder.binding.site.setVisibility(item.getSiteVisible());
         holder.binding.progress.setMax((int) item.getDuration());
         holder.binding.progress.setProgress((int) item.getPosition(), animate);
@@ -81,7 +84,7 @@ public class HistoryAdapter extends BaseDiffAdapter<History, HistoryAdapter.View
     }
 
     private void setClickListener(View root, History item) {
-        root.setOnLongClickListener(view -> listener.onLongClick());
+        root.setOnLongClickListener(view -> isDelete() ? listener.onLongClick() : listener.onItemLongClick(item));
         root.setOnClickListener(view -> {
             if (isDelete()) listener.onItemDelete(item);
             else listener.onItemClick(item);

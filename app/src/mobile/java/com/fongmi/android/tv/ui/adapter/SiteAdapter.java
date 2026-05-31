@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.adapter;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,16 +15,19 @@ import com.fongmi.android.tv.databinding.AdapterSiteBinding;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
 
     private final OnClickListener listener;
+    private final List<Site> mAllItems;
     private final List<Site> mItems;
     private boolean search;
     private boolean change;
 
     public SiteAdapter(OnClickListener listener) {
         this.listener = listener;
+        this.mAllItems = new ArrayList<>();
         this.mItems = new ArrayList<>();
         this.addAll();
     }
@@ -52,11 +56,19 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
     }
 
     private void addAll() {
-        for (Site site : VodConfig.get().getSites()) if (!site.isHide()) mItems.add(site);
+        for (Site site : VodConfig.get().getSites()) if (!site.isHide()) mAllItems.add(site);
+        filter("");
     }
 
     public List<Site> getItems() {
-        return mItems;
+        return mAllItems;
+    }
+
+    public void filter(String keyword) {
+        mItems.clear();
+        String filter = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+        for (Site site : mAllItems) if (TextUtils.isEmpty(filter) || site.getName().toLowerCase(Locale.ROOT).contains(filter)) mItems.add(site);
+        notifyDataSetChanged();
     }
 
     @Override

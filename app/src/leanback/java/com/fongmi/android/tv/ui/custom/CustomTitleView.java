@@ -25,6 +25,7 @@ public class CustomTitleView extends MaterialTextView {
     private Listener listener;
     private Animation flicker;
     private boolean coolDown;
+    private boolean longPress;
 
     private Site getHome() {
         return VodConfig.get().getHome();
@@ -42,10 +43,14 @@ public class CustomTitleView extends MaterialTextView {
     public void setListener(Listener listener) {
         this.listener = listener;
         setOnClickListener(v -> listener.showDialog());
+        setOnLongClickListener(v -> {
+            listener.onReloadConfig();
+            return true;
+        });
     }
 
     private boolean hasEvent(KeyEvent event) {
-        return !getHome().isEmpty() && (KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event) || (KeyUtil.isUpKey(event) && !coolDown));
+        return !getHome().isEmpty() && (KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event) || KeyUtil.isEnterKey(event) || (KeyUtil.isUpKey(event) && !coolDown));
     }
 
     @Override
@@ -63,9 +68,20 @@ public class CustomTitleView extends MaterialTextView {
     }
 
     private void onKeyDown(KeyEvent event) {
-        if (KeyUtil.isActionDown(event) && KeyUtil.isUpKey(event)) onKeyUp();
+        if (KeyUtil.isEnterKey(event)) onEnter(event);
+        else if (KeyUtil.isActionDown(event) && KeyUtil.isUpKey(event)) onKeyUp();
         else if (KeyUtil.isActionDown(event) && KeyUtil.isLeftKey(event)) listener.setSite(getSite(false));
         else if (KeyUtil.isActionDown(event) && KeyUtil.isRightKey(event)) listener.setSite(getSite(true));
+    }
+
+    private void onEnter(KeyEvent event) {
+        if (KeyUtil.isActionDown(event) && (event.isLongPress() || event.getRepeatCount() > 0)) {
+            longPress = true;
+            listener.onReloadConfig();
+        } else if (KeyUtil.isActionUp(event)) {
+            if (!longPress) listener.showDialog();
+            longPress = false;
+        }
     }
 
     private void onKeyUp() {
@@ -93,5 +109,7 @@ public class CustomTitleView extends MaterialTextView {
         void showDialog();
 
         void onRefresh();
+
+        void onReloadConfig();
     }
 }

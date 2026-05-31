@@ -66,6 +66,10 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         return mItems.isEmpty() ? new Episode() : mItems.get(getPosition());
     }
 
+    public List<Episode> getItems() {
+        return mItems;
+    }
+
     public Episode getNext() {
         int current = getPosition();
         int max = getItemCount() - 1;
@@ -137,7 +141,7 @@ public class EpisodeAdapter extends RecyclerView.Adapter<EpisodeAdapter.ViewHold
         holder.binding.text.setNextFocusUpId(position < column && nextFocusUp != 0 ? nextFocusUp : View.NO_ID);
         holder.binding.text.setNextFocusDownId(position >= getItemCount() - column && nextFocusDown != 0 ? nextFocusDown : View.NO_ID);
         holder.binding.text.setSelected(item.isSelected());
-        holder.binding.text.setText(item.getDesc().concat(item.getName()));
+        holder.binding.text.setText(item.getDesc().concat(item.getDisplayName()));
         holder.binding.getRoot().setOnClickListener(v -> mListener.onItemClick(item));
     }
 

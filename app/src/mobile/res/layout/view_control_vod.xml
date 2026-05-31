@@ -29,30 +29,31 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/title"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="marquee"
                 android:singleLine="true"
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:visibility="invisible"
-                tools:text="慶餘年第一季：第一集" />
+                tools:text="Video title" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/size"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
-                android:textColor="@color/white_80"
-                android:textSize="11sp"
+                android:layout_marginTop="2dp"
+                android:background="@drawable/shape_widget"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/white"
+                android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="1920 x 1080"
+                tools:text="1920 x 818"
                 tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -187,20 +188,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="4dp">
+            android:orientation="horizontal">
 
             <com.fongmi.android.tv.ui.custom.CustomSeekView
                 android:id="@+id/seek"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp" />
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/fullscreen"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:scaleType="center"
                 android:src="@drawable/ic_control_fullscreen" />

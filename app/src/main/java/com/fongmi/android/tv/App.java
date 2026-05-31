@@ -102,7 +102,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
 
     @Override
     public PackageManager getPackageManager() {
-        return hook != null ? hook : getBaseContext().getPackageManager();
+        return getBaseContext().getPackageManager();
     }
 
     @Override

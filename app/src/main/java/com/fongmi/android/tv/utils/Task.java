@@ -3,6 +3,7 @@ package com.fongmi.android.tv.utils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.fongmi.android.tv.setting.Setting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -18,6 +19,9 @@ public class Task {
     private static final ListeningExecutorService executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
     private static final ListeningExecutorService largeExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(20));
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private static final Object searchLock = new Object();
+    private static ListeningExecutorService searchExecutor;
+    private static int searchThread;
 
     public static ListeningExecutorService executor() {
         return executor;
@@ -25,6 +29,18 @@ public class Task {
 
     public static ListeningExecutorService largeExecutor() {
         return largeExecutor;
+    }
+
+    public static ListeningExecutorService searchExecutor() {
+        int thread = Setting.getSearchThread();
+        ListeningExecutorService current = searchExecutor;
+        if (current != null && searchThread == thread) return current;
+        synchronized (searchLock) {
+            if (searchExecutor != null && searchThread == thread) return searchExecutor;
+            if (searchExecutor != null) searchExecutor.shutdownNow();
+            searchThread = thread;
+            return searchExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(thread));
+        }
     }
 
     public static ScheduledExecutorService scheduler() {

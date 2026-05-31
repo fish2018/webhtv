@@ -18,6 +18,7 @@ import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.databinding.ActivityVideoBinding;
 import com.fongmi.android.tv.databinding.DialogControlBinding;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.ui.adapter.ParseAdapter;
 import com.fongmi.android.tv.ui.base.ViewType;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
@@ -88,6 +89,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.timer.setSelected(Timer.get().isRunning());
         setTrackVisible();
         setTitleVisible();
+        setDisplay();
         setScaleText();
         setPlayer();
         setParse();
@@ -105,6 +107,12 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.player.setOnClickListener(v -> dismiss(parent.control.action.player));
         binding.danmaku.setOnClickListener(v -> dismiss(parent.control.action.danmaku));
         binding.repeat.setOnClickListener(v -> active(binding.repeat, parent.control.action.repeat));
+        binding.displayTime.setOnClickListener(v -> setDisplay(binding.displayTime, Display.TIME));
+        binding.displayTraffic.setOnClickListener(v -> setDisplay(binding.displayTraffic, Display.TRAFFIC));
+        binding.displaySize.setOnClickListener(v -> setDisplay(binding.displaySize, Display.SIZE));
+        binding.displayProgress.setOnClickListener(v -> setDisplay(binding.displayProgress, Display.PROGRESS));
+        binding.displayMini.setOnClickListener(v -> setDisplay(binding.displayMini, Display.MINI));
+        binding.displayTitle.setOnClickListener(v -> setDisplay(binding.displayTitle, Display.TITLE));
         binding.decode.setOnClickListener(v -> click(binding.decode, parent.control.action.decode));
         binding.ending.setOnClickListener(v -> click(binding.ending, parent.control.action.ending));
         binding.opening.setOnClickListener(v -> click(binding.opening, parent.control.action.opening));
@@ -136,6 +144,29 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.parse.setItemAnimator(null);
         binding.parse.addItemDecoration(new SpaceItemDecoration(8));
         binding.parse.setAdapter(new ParseAdapter(this, ViewType.LIGHT));
+    }
+
+    private void setDisplay() {
+        binding.displayTime.setSelected(PlayerSetting.isDisplayTime());
+        binding.displayTraffic.setSelected(PlayerSetting.isDisplayTraffic());
+        binding.displaySize.setSelected(PlayerSetting.isDisplaySize());
+        binding.displayProgress.setSelected(PlayerSetting.isDisplayProgress());
+        binding.displayMini.setSelected(PlayerSetting.isDisplayMini());
+        binding.displayTitle.setSelected(PlayerSetting.isDisplayTitle());
+    }
+
+    private void setDisplay(TextView view, Display display) {
+        boolean selected = !view.isSelected();
+        view.setSelected(selected);
+        switch (display) {
+            case TIME -> PlayerSetting.putDisplayTime(selected);
+            case TRAFFIC -> PlayerSetting.putDisplayTraffic(selected);
+            case SIZE -> PlayerSetting.putDisplaySize(selected);
+            case PROGRESS -> PlayerSetting.putDisplayProgress(selected);
+            case MINI -> PlayerSetting.putDisplayMini(selected);
+            case TITLE -> PlayerSetting.putDisplayTitle(selected);
+        }
+        ((Listener) requireActivity()).onDisplayChanged();
     }
 
     private void setScale(View view) {
@@ -199,5 +230,11 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         void onScale(int tag);
 
         void onParse(Parse item);
+
+        void onDisplayChanged();
+    }
+
+    private enum Display {
+        TIME, TRAFFIC, SIZE, PROGRESS, MINI, TITLE
     }
 }
