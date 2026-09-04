@@ -440,7 +440,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         VodConfig.get().clear();
         AppDatabase.backup();
         OkHttp.get().clear();
-        if (Setting.getAutoClearCache()) Path.clear(Path.cache());
+        if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();
         Server.get().stop();
         super.onDestroy();
