@@ -691,6 +691,7 @@
     <string name="dialog_close">Close</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">Auto‑clear on exit</string>
     <string name="setting_cache">Cache</string>
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
