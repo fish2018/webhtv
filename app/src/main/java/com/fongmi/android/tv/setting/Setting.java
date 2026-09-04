@@ -790,6 +790,14 @@ public class Setting {
         Prefers.put("zhuyin", zhuyin);
     }
 
+    public static boolean isAutoClearCache() {
+        return Prefers.getBoolean("auto_clear_cache");
+    }
+
+    public static void putAutoClearCache(boolean auto) {
+        Prefers.put("auto_clear_cache", auto);
+    }
+
     public static int getThemeColor() {
         return Prefers.getInt("theme_color", -1);
     }
