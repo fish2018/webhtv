@@ -93,6 +93,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     private void setOtherText() {
         mBinding.dohText.setText(getDohList()[getDohIndex()]);
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
+        mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
         mBinding.languageText.setText((language = ResUtil.getStringArray(R.array.select_language))[Setting.getLanguageIndex()]);
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
         mBinding.titleLinesText.setText((titleLines = ResUtil.getStringArray(R.array.select_title_lines))[Setting.getTitleLinesIndex()]);
@@ -116,6 +117,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         mBinding.size.setOnClickListener(this::setSize);
         mBinding.language.setOnClickListener(this::setLanguage);
         mBinding.titleLines.setOnClickListener(this::setTitleLines);
+        mBinding.autoClearCache.setOnClickListener(this::setAutoClearCache);
         mBinding.cache.setOnClickListener(this::onCache);
         mBinding.backup.setOnClickListener(this::onBackup);
         mBinding.enhance.setOnClickListener(this::onEnhance);
@@ -303,6 +305,11 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         OkHttp.dns().setDoh(doh);
         Setting.putDoh(doh.toString());
         mBinding.dohText.setText(doh.getName());
+    }
+
+    private void setAutoClearCache(View view) {
+        Setting.putAutoClearCache(!Setting.isAutoClearCache());
+        mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
     }
 
     private void onCache(View view) {
