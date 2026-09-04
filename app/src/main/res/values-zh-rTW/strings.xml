@@ -673,6 +673,7 @@
     <string name="dialog_close">關閉</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">退出自動清除快取</string>
     <string name="setting_cache">暫存</string>
     <string name="setting_backup">備份</string>
     <string name="setting_restore">還原</string>
