@@ -112,39 +112,6 @@ public final class MpvResourcePressurePolicy {
             return base.result(true, Level.CONSTRAINED, Reason.POWER_SAVE,
                     powerFact.sampledAtElapsedMs());
         }
-        if (networkSnapshotUsable && Boolean.FALSE.equals(network.available())) {
-            return base.result(true, Level.CONSTRAINED, Reason.NETWORK_UNAVAILABLE,
-                    networkSnapshotFact.sampledAtElapsedMs());
-        }
-        if (networkSnapshotUsable && Boolean.FALSE.equals(network.validated())) {
-            return base.result(true, Level.CONSTRAINED, Reason.NETWORK_UNVALIDATED,
-                    networkSnapshotFact.sampledAtElapsedMs());
-        }
-        if ((networkSnapshotUsable && Boolean.TRUE.equals(network.roaming()))
-                || (networkCostUsable
-                && networkCost == PlaybackAutoContext.NetworkCost.ROAMING)) {
-            return base.result(true, Level.CONSTRAINED, Reason.ROAMING,
-                    latestSample(networkSnapshotFact, networkSnapshotUsable,
-                            networkCostFact, networkCostUsable));
-        }
-        if (networkSnapshotUsable
-                && network.dataSaverState() == PlaybackAutoContext.DataSaverState.ENABLED) {
-            return base.result(true, Level.CONSTRAINED, Reason.DATA_SAVER,
-                    networkSnapshotFact.sampledAtElapsedMs());
-        }
-        if (networkSnapshotUsable
-                && network.dataSaverState() == PlaybackAutoContext.DataSaverState.WHITELISTED) {
-            return base.result(true, Level.CONSTRAINED, Reason.DATA_SAVER_WHITELISTED,
-                    networkSnapshotFact.sampledAtElapsedMs());
-        }
-        if ((networkSnapshotUsable && Boolean.TRUE.equals(network.metered()))
-                || (networkCostUsable
-                && networkCost == PlaybackAutoContext.NetworkCost.METERED)) {
-            return base.result(true, Level.CONSTRAINED, Reason.METERED,
-                    latestSample(networkSnapshotFact, networkSnapshotUsable,
-                            networkCostFact, networkCostUsable));
-        }
-
         if (!memoryUsable || memory != PlaybackAutoContext.MemoryPressure.NORMAL
                 || !memorySnapshotUsable) {
             return base.result(true, Level.UNKNOWN, Reason.MEMORY_UNKNOWN,
@@ -158,18 +125,8 @@ public final class MpvResourcePressurePolicy {
             return base.result(true, Level.UNKNOWN, Reason.POWER_UNKNOWN,
                     latestResourceSampleAtElapsedMs);
         }
-        if (!networkSnapshotUsable
-                || !Boolean.TRUE.equals(network.available())
-                || !Boolean.TRUE.equals(network.validated())
-                || !Boolean.FALSE.equals(network.metered())
-                || !Boolean.FALSE.equals(network.roaming())
-                || network.dataSaverState() != PlaybackAutoContext.DataSaverState.DISABLED
-                || !networkCostUsable
-                || networkCost != PlaybackAutoContext.NetworkCost.UNMETERED) {
-            return base.result(true, Level.UNKNOWN, Reason.NETWORK_UNKNOWN,
-                    latestResourceSampleAtElapsedMs);
-        }
-
+        // Network type/cost is handled exclusively by the pause preload setting.
+        // It is not memory/thermal/power pressure and must not stop disk preload.
         return base.result(true, Level.NORMAL, Reason.NORMAL,
                 latestResourceSampleAtElapsedMs);
     }

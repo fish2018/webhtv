@@ -48,6 +48,8 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
     private Player progressPlayer;
     private long lastPausedBufferLogAtMs;
     private long lastPausedBufferedPosition;
+    private long lastBufferReadLogAtMs;
+    private long lastBufferReadEffectiveMs = -1;
     private long pendingSeekPosition = C.TIME_UNSET;
     private long pendingSeekOrigin = C.TIME_UNSET;
     private long pendingSeekDeadlineMs;
@@ -159,7 +161,20 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
                 mediaKey, buffered, DISK_RANGE_GAP_TOLERANCE_MS);
         long effective = Math.max(buffered, diskBuffered);
         long duration = progress.getDuration();
-        return duration > 0 ? Math.min(effective, duration) : effective;
+        long bounded = duration > 0 ? Math.min(effective, duration) : effective;
+        long now = SystemClock.elapsedRealtime();
+        if (SpiderDebug.isEnabled()
+                && (bounded != lastBufferReadEffectiveMs
+                || now - lastBufferReadLogAtMs >= PAUSED_BUFFER_LOG_INTERVAL_MS)) {
+            lastBufferReadLogAtMs = now;
+            lastBufferReadEffectiveMs = bounded;
+            SpiderDebug.log("playback-progress",
+                    "action=buffer-read source=%s positionMs=%d nativeBufferedMs=%d diskBufferedMs=%d effectiveBufferedMs=%d key=%s",
+                    progress == player ? "controller" : "direct-engine",
+                    Math.max(0, progress.getCurrentPosition()), buffered, diskBuffered, bounded,
+                    Integer.toHexString(mediaKey == null ? 0 : mediaKey.hashCode()));
+        }
+        return bounded;
     }
 
     private void logPausedBufferProgress(Player progress, long position, long buffered) {

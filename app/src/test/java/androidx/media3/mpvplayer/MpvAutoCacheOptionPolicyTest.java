@@ -57,12 +57,27 @@ public class MpvAutoCacheOptionPolicyTest {
     }
 
     @Test
+    public void acceptsMixedAutomaticAndConfiguredTargets() {
+        Map<String, String> maximumForward =
+                MpvAutoCacheOptionPolicy.resolve(
+                        true, 256L * 1024 * 1024, 64L * 1024 * 1024);
+        assertEquals(String.valueOf(256L * 1024 * 1024),
+                maximumForward.get("demuxer-max-bytes"));
+
+        Map<String, String> proportionalBack =
+                MpvAutoCacheOptionPolicy.resolve(
+                        true, 24L * 1024 * 1024, 24L * 1024 * 1024);
+        assertEquals(String.valueOf(24L * 1024 * 1024),
+                proportionalBack.get("demuxer-max-back-bytes"));
+    }
+
+    @Test
     public void rejectsOutOfRangeOrInconsistentLimits() {
         assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 8L * 1024 * 1024, 0).isEmpty());
-        assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 256L * 1024 * 1024, 0).isEmpty());
+        assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 257L * 1024 * 1024, 0).isEmpty());
         assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 24L * 1024 * 1024, -1).isEmpty());
-        assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 64L * 1024 * 1024,
-                8L * 1024 * 1024).isEmpty());
+        assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 256L * 1024 * 1024,
+                257L * 1024 * 1024).isEmpty());
         assertTrue(MpvAutoCacheOptionPolicy.resolve(true, 24L * 1024 * 1024,
                 32L * 1024 * 1024).isEmpty());
     }

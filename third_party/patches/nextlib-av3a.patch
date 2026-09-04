@@ -1,0 +1,581 @@
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 18acf58..0366f56 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -11,7 +11,7 @@ subprojects {
+             coordinates(
+                 groupId = "io.github.anilbeesetti",
+                 artifactId = property("POM_ARTIFACT_ID") as String,
+-                version = "1.10.0-0.12.1-fongmi-softload"
++                version = "1.10.0-0.12.1-fongmi-softload-av3a-ffmpeg901-r1"
+             )
+ 
+             pom {
+diff --git a/ffmpeg/setup.sh b/ffmpeg/setup.sh
+index 09f6fcd..1c764ce 100755
+--- a/ffmpeg/setup.sh
++++ b/ffmpeg/setup.sh
+@@ -3,21 +3,22 @@
+ # Versions
+ VPX_VERSION=1.13.0
+ MBEDTLS_VERSION=3.4.1
+-FFMPEG_VERSION=6.0
++FFMPEG_VERSION=9.0.1-fongmi
++FFMPEG_COMMIT=177f090e0503b7e013922ca903bde14b1c375f18
+ 
+ # Directories
+ BASE_DIR=$(cd "$(dirname "$0")" && pwd)
+ BUILD_DIR=$BASE_DIR/build
+ OUTPUT_DIR=$BASE_DIR/output
+ SOURCES_DIR=$BASE_DIR/sources
+-FFMPEG_DIR=$SOURCES_DIR/ffmpeg-$FFMPEG_VERSION
++FFMPEG_DIR=$SOURCES_DIR/FFmpeg-$FFMPEG_COMMIT
+ VPX_DIR=$SOURCES_DIR/libvpx-$VPX_VERSION
+ MBEDTLS_DIR=$SOURCES_DIR/mbedtls-$MBEDTLS_VERSION
+ 
+ # Configuration
+-ANDROID_ABIS="x86 x86_64 armeabi-v7a arm64-v8a"
++ANDROID_ABIS="armeabi-v7a arm64-v8a"
+ ANDROID_PLATFORM=21
+-ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd h264 hevc mpeg2video mpegvideo libvpx_vp8 libvpx_vp9"
++ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd libarcdav3a h264 hevc mpeg2video mpegvideo libvpx_vp8 libvpx_vp9"
+ JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || sysctl -n hw.pysicalcpu || echo 4)
+ 
+ # Set up host platform variables
+@@ -37,8 +38,10 @@ esac
+ TOOLCHAIN_PREFIX="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/${HOST_PLATFORM}"
+ CMAKE_EXECUTABLE="${ANDROID_SDK_HOME}/cmake/${ANDROID_CMAKE_VERSION}/bin/cmake"
+ 
+-# Check if sdkmanager is in PATH
+-if command -v sdkmanager &> /dev/null; then
++# Install CMake only when the requested version is not already available.
++if [[ -x "$CMAKE_EXECUTABLE" ]]; then
++  echo "Using installed CMake ${ANDROID_CMAKE_VERSION}"
++elif command -v sdkmanager &> /dev/null; then
+   # Use sdkmanager from PATH
+   echo "Using sdkmanager from PATH"
+   echo y | sdkmanager --sdk_root="${ANDROID_SDK_HOME}" "cmake;${ANDROID_CMAKE_VERSION}"
+@@ -80,15 +83,42 @@ function downloadMbedTLS() {
+ 
+ function downloadFfmpeg() {
+   pushd $SOURCES_DIR
+-  echo "Downloading FFmpeg source code of version $FFMPEG_VERSION..."
+-  FFMPEG_FILE=ffmpeg-$FFMPEG_VERSION.tar.gz
+-  curl -L "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.gz" -o $FFMPEG_FILE
++  echo "Downloading FongMi FFmpeg source code at $FFMPEG_COMMIT..."
++  FFMPEG_FILE=ffmpeg-$FFMPEG_COMMIT.tar.gz
++  curl -L "https://github.com/FongMi/FFmpeg/archive/${FFMPEG_COMMIT}.tar.gz" -o $FFMPEG_FILE
+   [ -e $FFMPEG_FILE ] || { echo "$FFMPEG_FILE does not exist. Exiting..."; exit 1; }
+   tar -zxf $FFMPEG_FILE
+   rm $FFMPEG_FILE
+   popd
+ }
+ 
++function buildArcDav3a() {
++  pushd $FFMPEG_DIR
++
++  [ -f dependency/avs3a/CMakeLists.txt ] || {
++    echo "FongMi FFmpeg source does not contain dependency/avs3a. Exiting..."
++    exit 1
++  }
++
++  for ABI in $ANDROID_ABIS; do
++    CMAKE_BUILD_DIR=$FFMPEG_DIR/arcdav3a_build_${ABI}
++    rm -rf ${CMAKE_BUILD_DIR}
++
++    ${CMAKE_EXECUTABLE} -S dependency/avs3a -B ${CMAKE_BUILD_DIR} \
++      -DANDROID_PLATFORM=${ANDROID_PLATFORM} \
++      -DANDROID_ABI=$ABI \
++      -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake \
++      -DCMAKE_INSTALL_PREFIX=$BUILD_DIR/external/$ABI \
++      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
++      -DBUILD_SHARED_LIBS=OFF
++
++    ${CMAKE_EXECUTABLE} --build ${CMAKE_BUILD_DIR} --parallel $JOBS
++    ${CMAKE_EXECUTABLE} --install ${CMAKE_BUILD_DIR}
++  done
++
++  popd
++}
++
+ function buildLibVpx() {
+   pushd $VPX_DIR
+ 
+@@ -232,7 +262,7 @@ function buildFfmpeg() {
+     DEP_LD_FLAGS="-L$BUILD_DIR/external/$ABI/lib"
+ 
+     # Configure FFmpeg build
+-    ./configure \
++    PKG_CONFIG_PATH="$BUILD_DIR/external/$ABI/lib/pkgconfig" ./configure \
+       --prefix=$BUILD_DIR/$ABI \
+       --enable-cross-compile \
+       --arch=$ARCH \
+@@ -245,6 +275,7 @@ function buildFfmpeg() {
+       --extra-cflags="-O3 -fPIC $DEP_CFLAGS" \
+       --extra-ldflags="$DEP_LD_FLAGS -Wl,-z,max-page-size=16384" \
+       --pkg-config="$(which pkg-config)" \
++      --pkg-config-flags=--static \
+       --target-os=android \
+       --enable-shared \
+       --disable-static \
+@@ -254,7 +285,6 @@ function buildFfmpeg() {
+       --disable-vulkan \
+       --disable-avdevice \
+       --disable-avformat \
+-      --disable-postproc \
+       --disable-avfilter \
+       --disable-symver \
+       --enable-parsers \
+@@ -262,6 +292,7 @@ function buildFfmpeg() {
+       --enable-swresample \
+       --enable-avformat \
+       --enable-libvpx \
++      --enable-libarcdav3a \
+       --enable-protocol=file,http,https,mmsh,mmst,pipe,rtmp,rtmps,rtmpt,rtmpts,rtp,tls \
+       --enable-version3 \
+       --enable-mbedtls \
+@@ -288,6 +319,11 @@ function buildFfmpeg() {
+   popd
+ }
+ 
++if [[ "${1:-}" == "--ffmpeg-only" ]]; then
++  buildFfmpeg
++  exit $?
++fi
++
+ if [[ ! -d "$OUTPUT_DIR" && ! -d "$BUILD_DIR" ]]; then
+   # Download MbedTLS source code if it doesn't exist
+   if [[ ! -d "$MBEDTLS_DIR" ]]; then
+@@ -307,5 +343,6 @@ if [[ ! -d "$OUTPUT_DIR" && ! -d "$BUILD_DIR" ]]; then
+   # Building library
+   buildMbedTLS
+   buildLibVpx
++  buildArcDav3a
+   buildFfmpeg
+ fi
+diff --git a/media3ext/build.gradle.kts b/media3ext/build.gradle.kts
+index 3bb9d4f..fc17421 100644
+--- a/media3ext/build.gradle.kts
++++ b/media3ext/build.gradle.kts
+@@ -22,7 +22,7 @@ android {
+         }
+ 
+         ndk {
+-            abiFilters += listOf("x86", "x86_64", "armeabi-v7a", "arm64-v8a")
++            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+         }
+     }
+ 
+@@ -63,4 +63,4 @@ dependencies {
+     implementation(libs.androidx.annotation)
+     compileOnly(libs.checker.qual)
+     compileOnly(libs.kotlin.annotations.jvm)
+-}
+\ No newline at end of file
++}
+diff --git a/media3ext/src/main/cpp/ffaudio.cpp b/media3ext/src/main/cpp/ffaudio.cpp
+index 6d6169a..443faef 100644
+--- a/media3ext/src/main/cpp/ffaudio.cpp
++++ b/media3ext/src/main/cpp/ffaudio.cpp
+@@ -2,6 +2,7 @@
+ #include <android/log.h>
+ #include <jni.h>
+ #include <cstdlib>
++#include <cerrno>
+ #include <android/native_window_jni.h>
+ #include <algorithm>
+ #include "ffcommon.h"
+@@ -33,6 +34,7 @@ static const int AUDIO_DECODER_ERROR_OTHER = -2;
+ 
+ static jmethodID growOutputBufferMethod;
+ 
++struct GrowOutputBufferCallback;
+ 
+ /**
+  * Allocates and opens a new AVCodecContext for the specified codec, passing the
+@@ -49,7 +51,9 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
+  * error.
+  */
+ int decodePacket(AVCodecContext *context, AVPacket *packet,
+-                 uint8_t *outputBuffer, int outputSize);
++                 uint8_t *outputBuffer, int outputSize,
++                 int requestedOutputChannelCount,
++                 GrowOutputBufferCallback growBuffer);
+ 
+ /**
+  * Transforms ffmpeg AVERROR into a negative AUDIO_DECODER_ERROR constant value.
+@@ -113,7 +117,9 @@ AVCodecContext *createContext(JNIEnv *env, AVCodec *codec, jbyteArray extraData,
+ }
+ 
+ int decodePacket(AVCodecContext *context, AVPacket *packet,
+-                 uint8_t *outputBuffer, int outputSize, GrowOutputBufferCallback growBuffer) {
++                 uint8_t *outputBuffer, int outputSize,
++                 int requestedOutputChannelCount,
++                 GrowOutputBufferCallback growBuffer) {
+     int result = 0;
+     // Queue input data.
+     result = avcodec_send_packet(context, packet);
+@@ -140,45 +146,83 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
+             return transformError(result);
+         }
+ 
+-        // Resample output.
+-        AVSampleFormat sampleFormat = context->sample_fmt;
+-        int channelCount = context->ch_layout.nb_channels;
+-        AVChannelLayout channelLayout = context->ch_layout;
+-        int sampleRate = context->sample_rate;
++        // Resample output. AV3A commonly outputs more than eight planar channels, so use
++        // AVFrame.extended_data rather than the fixed-size AVFrame.data array.
++        AVSampleFormat sampleFormat = static_cast<AVSampleFormat>(frame->format);
++        int inputChannelCount = frame->ch_layout.nb_channels;
++        int sampleRate = frame->sample_rate > 0 ? frame->sample_rate : context->sample_rate;
+         int sampleCount = frame->nb_samples;
+-        int dataSize = av_samples_get_buffer_size(nullptr, channelCount, sampleCount,
+-                                                  sampleFormat, 1);
+-        SwrContext *resampleContext;
++        if (inputChannelCount <= 0 || sampleRate <= 0) {
++            LOGE("Invalid decoded audio format: channels=%d sampleRate=%d.",
++                 inputChannelCount, sampleRate);
++            av_frame_free(&frame);
++            return AUDIO_DECODER_ERROR_INVALID_DATA;
++        }
++        int outputChannelCount = requestedOutputChannelCount > 0
++                                 ? requestedOutputChannelCount : inputChannelCount;
++        SwrContext *resampleContext = nullptr;
+         if (context->opaque) {
+             resampleContext = (SwrContext *) context->opaque;
+         } else {
+-            resampleContext = swr_alloc();
+-            av_opt_set_chlayout(resampleContext, "in_chlayout", &channelLayout, 0);
+-            av_opt_set_chlayout(resampleContext, "out_chlayout", &channelLayout, 0);
+-            av_opt_set_int(resampleContext, "in_sample_rate", sampleRate, 0);
+-            av_opt_set_int(resampleContext, "out_sample_rate", sampleRate, 0);
+-            av_opt_set_int(resampleContext, "in_sample_fmt", sampleFormat, 0);
+-            // The output format is always the requested format.
+-            av_opt_set_int(resampleContext, "out_sample_fmt",
+-                           context->request_sample_fmt, 0);
+-            result = swr_init(resampleContext);
++            AVChannelLayout inputLayout{};
++            AVChannelLayout outputLayout{};
++            result = av_channel_layout_copy(&inputLayout, &frame->ch_layout);
++            if (result < 0) {
++                logError("av_channel_layout_copy", result);
++                av_frame_free(&frame);
++                return transformError(result);
++            }
++            if (outputChannelCount == inputChannelCount) {
++                result = av_channel_layout_copy(&outputLayout, &inputLayout);
++            } else {
++                av_channel_layout_default(&outputLayout, outputChannelCount);
++                result = av_channel_layout_check(&outputLayout) ? 0 : AVERROR(EINVAL);
++                LOGD("Downmixing FFmpeg audio from %d to %d channels.",
++                     inputChannelCount, outputChannelCount);
++            }
++            if (result >= 0) {
++                result = swr_alloc_set_opts2(
++                        &resampleContext,
++                        &outputLayout,
++                        context->request_sample_fmt,
++                        sampleRate,
++                        &inputLayout,
++                        sampleFormat,
++                        sampleRate,
++                        0,
++                        nullptr);
++            }
++            av_channel_layout_uninit(&inputLayout);
++            av_channel_layout_uninit(&outputLayout);
++            if (result >= 0) {
++                result = swr_init(resampleContext);
++            }
+             if (result < 0) {
+-                logError("swr_init", result);
++                logError("swr initialization", result);
++                swr_free(&resampleContext);
+                 av_frame_free(&frame);
+                 return transformError(result);
+             }
+             context->opaque = resampleContext;
+         }
+-        int inSampleSize = av_get_bytes_per_sample(sampleFormat);
+-        int outSampleSize = av_get_bytes_per_sample(context->request_sample_fmt);
+         int outSamples = swr_get_out_samples(resampleContext, sampleCount);
+-        int bufferOutSize = outSampleSize * channelCount * outSamples;
+-        if (outSize + bufferOutSize > outputSize) {
++        int requiredFrameSize = av_samples_get_buffer_size(
++                nullptr,
++                outputChannelCount,
++                outSamples,
++                context->request_sample_fmt,
++                1);
++        if (requiredFrameSize < 0) {
++            logError("av_samples_get_buffer_size", requiredFrameSize);
++            av_frame_free(&frame);
++            return transformError(requiredFrameSize);
++        }
++        if (outSize + requiredFrameSize > outputSize) {
+             LOGD(
+                     "Output buffer size (%d) too small for output data (%d), "
+                     "reallocating buffer.",
+-                    outputSize, outSize + bufferOutSize);
+-            outputSize = outSize + bufferOutSize;
++                    outputSize, outSize + requiredFrameSize);
++            outputSize = outSize + requiredFrameSize;
+             outputBuffer = growBuffer(outputSize);
+             if (!outputBuffer) {
+                 LOGE("Failed to reallocate output buffer.");
+@@ -186,21 +230,29 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
+                 return AUDIO_DECODER_ERROR_OTHER;
+             }
+         }
+-        result = swr_convert(resampleContext, &outputBuffer, bufferOutSize,
+-                             (const uint8_t **) frame->data, frame->nb_samples);
++        uint8_t *outputPlanes[] = {outputBuffer + outSize};
++        result = swr_convert(
++                resampleContext,
++                outputPlanes,
++                outSamples,
++                (const uint8_t **) frame->extended_data,
++                sampleCount);
+         av_frame_free(&frame);
+         if (result < 0) {
+             logError("swr_convert", result);
+             return AUDIO_DECODER_ERROR_INVALID_DATA;
+         }
+-        int available = swr_get_out_samples(resampleContext, 0);
+-        if (available != 0) {
+-            LOGE("Expected no samples remaining after resampling, but found %d.",
+-                 available);
+-            return AUDIO_DECODER_ERROR_INVALID_DATA;
++        int convertedSize = av_samples_get_buffer_size(
++                nullptr,
++                outputChannelCount,
++                result,
++                context->request_sample_fmt,
++                1);
++        if (convertedSize < 0) {
++            logError("av_samples_get_buffer_size", convertedSize);
++            return transformError(convertedSize);
+         }
+-        outputBuffer += bufferOutSize;
+-        outSize += bufferOutSize;
++        outSize += convertedSize;
+     }
+     return outSize;
+ }
+@@ -239,7 +291,8 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegAudioDecoder_ffmpe
+                                                                     jint input_size,
+                                                                     jobject decoderOutputBuffer,
+                                                                     jobject output_data,
+-                                                                    jint output_size) {
++                                                                    jint output_size,
++                                                                    jint output_channel_count) {
+     if (!context) {
+         LOGE("Context must be non-NULL.");
+         return -1;
+@@ -269,7 +322,8 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegAudioDecoder_ffmpe
+     packet->data = inputBuffer;
+     packet->size = input_size;
+     int decodedPacket = decodePacket((AVCodecContext *) context, packet, outputBuffer,
+-                                     output_size, GrowOutputBufferCallback{env, thiz, decoderOutputBuffer});
++                                     output_size, output_channel_count,
++                                     GrowOutputBufferCallback{env, thiz, decoderOutputBuffer});
+     av_packet_free(&packet);
+     return decodedPacket;
+ }
+@@ -338,4 +392,4 @@ Java_io_github_anilbeesetti_nextlib_media3ext_ffdecoder_FfmpegAudioDecoder_ffmpe
+     if (context) {
+         releaseContext((AVCodecContext *) context);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioDecoder.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioDecoder.java
+index 962a408..c9a1e4a 100644
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioDecoder.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioDecoder.java
+@@ -34,6 +34,7 @@ final class FfmpegAudioDecoder
+   private final String codecName;
+   @Nullable private final byte[] extraData;
+   private final @C.PcmEncoding int encoding;
++  private final int outputChannelCount;
+   private int outputBufferSize;
+ 
+   private long nativeContext; // May be reassigned on resetting the codec.
+@@ -48,6 +49,23 @@ final class FfmpegAudioDecoder
+       int initialInputBufferSize,
+       boolean outputFloat)
+       throws FfmpegDecoderException {
++    this(
++        format,
++        numInputBuffers,
++        numOutputBuffers,
++        initialInputBufferSize,
++        outputFloat,
++        Format.NO_VALUE);
++  }
++
++  public FfmpegAudioDecoder(
++      Format format,
++      int numInputBuffers,
++      int numOutputBuffers,
++      int initialInputBufferSize,
++      boolean outputFloat,
++      int outputChannelCount)
++      throws FfmpegDecoderException {
+     super(new DecoderInputBuffer[numInputBuffers], new SimpleDecoderOutputBuffer[numOutputBuffers]);
+     if (!FfmpegLibrary.isAvailable()) {
+       throw new FfmpegDecoderException("Failed to load decoder native libraries.");
+@@ -56,6 +74,7 @@ final class FfmpegAudioDecoder
+     codecName = checkNotNull(FfmpegLibrary.getCodecName(format.sampleMimeType));
+     extraData = getExtraData(format.sampleMimeType, format.initializationData);
+     encoding = outputFloat ? C.ENCODING_PCM_FLOAT : C.ENCODING_PCM_16BIT;
++    this.outputChannelCount = outputChannelCount;
+     outputBufferSize = outputFloat ? INITIAL_OUTPUT_BUFFER_SIZE_32BIT : INITIAL_OUTPUT_BUFFER_SIZE_16BIT;
+     nativeContext =
+         ffmpegInitialize(codecName, extraData, outputFloat, format.sampleRate, format.channelCount);
+@@ -100,7 +119,15 @@ final class FfmpegAudioDecoder
+     ByteBuffer inputData = Util.castNonNull(inputBuffer.data);
+     int inputSize = inputData.limit();
+     ByteBuffer outputData = outputBuffer.init(inputBuffer.timeUs, outputBufferSize);
+-    int result = ffmpegDecode(nativeContext, inputData, inputSize, outputBuffer, outputData, outputBufferSize);
++    int result =
++        ffmpegDecode(
++            nativeContext,
++            inputData,
++            inputSize,
++            outputBuffer,
++            outputData,
++            outputBufferSize,
++            outputChannelCount);
+     if (result == AUDIO_DECODER_ERROR_OTHER) {
+       return new FfmpegDecoderException("Error decoding (see logcat).");
+     } else if (result == AUDIO_DECODER_ERROR_INVALID_DATA) {
+@@ -115,7 +142,8 @@ final class FfmpegAudioDecoder
+       return null;
+     }
+     if (!hasOutputFormat) {
+-      channelCount = ffmpegGetChannelCount(nativeContext);
++      channelCount =
++          outputChannelCount > 0 ? outputChannelCount : ffmpegGetChannelCount(nativeContext);
+       sampleRate = ffmpegGetSampleRate(nativeContext);
+       if (sampleRate == 0 && "alac".equals(codecName)) {
+         checkNotNull(extraData);
+@@ -221,7 +249,13 @@ final class FfmpegAudioDecoder
+       int rawChannelCount);
+ 
+   private native int ffmpegDecode(
+-      long context, ByteBuffer inputData, int inputSize, SimpleDecoderOutputBuffer decoderOutputBuffer, ByteBuffer outputData, int outputSize);
++      long context,
++      ByteBuffer inputData,
++      int inputSize,
++      SimpleDecoderOutputBuffer decoderOutputBuffer,
++      ByteBuffer outputData,
++      int outputSize,
++      int outputChannelCount);
+ 
+   private native int ffmpegGetChannelCount(long context);
+ 
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioRenderer.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioRenderer.java
+index f6ce6c1..90a910d 100644
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioRenderer.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegAudioRenderer.java
+@@ -31,6 +31,8 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
+   private static final int NUM_BUFFERS = 16;
+   /** The default input buffer size. */
+   private static final int DEFAULT_INPUT_BUFFER_SIZE = 960 * 6;
++  private static final int STEREO_CHANNEL_COUNT = 2;
++  private static final String AUDIO_AV3A = "audio/av3a";
+ 
+   public FfmpegAudioRenderer() {
+     this(/* eventHandler= */ null, /* eventListener= */ null);
+@@ -80,8 +82,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
+     if (!FfmpegLibrary.isAvailable() || !MimeTypes.isAudio(mimeType)) {
+       return C.FORMAT_UNSUPPORTED_TYPE;
+     } else if (!FfmpegLibrary.supportsFormat(mimeType)
+-        || (!sinkSupportsFormat(format, C.ENCODING_PCM_16BIT)
+-            && !sinkSupportsFormat(format, C.ENCODING_PCM_FLOAT))) {
++        || getOutputChannelCount(format) == Format.NO_VALUE) {
+       return C.FORMAT_UNSUPPORTED_SUBTYPE;
+     } else if (format.cryptoType != C.CRYPTO_TYPE_NONE) {
+       return C.FORMAT_UNSUPPORTED_DRM;
+@@ -106,9 +107,15 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
+     TraceUtil.beginSection("createFfmpegAudioDecoder");
+     int initialInputBufferSize =
+         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
++    int outputChannelCount = getOutputChannelCount(format);
+     FfmpegAudioDecoder decoder =
+         new FfmpegAudioDecoder(
+-            format, NUM_BUFFERS, NUM_BUFFERS, initialInputBufferSize, shouldOutputFloat(format));
++            format,
++            NUM_BUFFERS,
++            NUM_BUFFERS,
++            initialInputBufferSize,
++            shouldOutputFloat(format, outputChannelCount),
++            outputChannelCount);
+     TraceUtil.endSection();
+     return decoder;
+   }
+@@ -133,13 +140,28 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
+    * Returns whether the renderer's {@link AudioSink} supports the PCM format that will be output
+    * from the decoder for the given input format and requested output encoding.
+    */
+-  private boolean sinkSupportsFormat(Format inputFormat, @C.PcmEncoding int pcmEncoding) {
++  private boolean sinkSupportsFormat(
++      Format inputFormat, @C.PcmEncoding int pcmEncoding, int channelCount) {
+     return sinkSupportsFormat(
+-        Util.getPcmFormat(pcmEncoding, inputFormat.channelCount, inputFormat.sampleRate));
++        Util.getPcmFormat(pcmEncoding, channelCount, inputFormat.sampleRate));
+   }
+ 
+-  private boolean shouldOutputFloat(Format inputFormat) {
+-    if (!sinkSupportsFormat(inputFormat, C.ENCODING_PCM_16BIT)) {
++  private int getOutputChannelCount(Format inputFormat) {
++    if (sinkSupportsFormat(inputFormat, C.ENCODING_PCM_16BIT, inputFormat.channelCount)
++        || sinkSupportsFormat(inputFormat, C.ENCODING_PCM_FLOAT, inputFormat.channelCount)) {
++      return inputFormat.channelCount;
++    }
++    if (AUDIO_AV3A.equals(inputFormat.sampleMimeType)
++        && inputFormat.channelCount > STEREO_CHANNEL_COUNT
++        && (sinkSupportsFormat(inputFormat, C.ENCODING_PCM_16BIT, STEREO_CHANNEL_COUNT)
++            || sinkSupportsFormat(inputFormat, C.ENCODING_PCM_FLOAT, STEREO_CHANNEL_COUNT))) {
++      return STEREO_CHANNEL_COUNT;
++    }
++    return Format.NO_VALUE;
++  }
++
++  private boolean shouldOutputFloat(Format inputFormat, int outputChannelCount) {
++    if (!sinkSupportsFormat(inputFormat, C.ENCODING_PCM_16BIT, outputChannelCount)) {
+       // We have no choice because the sink doesn't support 16-bit integer PCM.
+       return true;
+     }
+@@ -148,7 +170,7 @@ public final class FfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioD
+     int formatSupport =
+         getSinkFormatSupport(
+             Util.getPcmFormat(
+-                C.ENCODING_PCM_FLOAT, inputFormat.channelCount, inputFormat.sampleRate));
++                C.ENCODING_PCM_FLOAT, outputChannelCount, inputFormat.sampleRate));
+     switch (formatSupport) {
+       case SINK_FORMAT_SUPPORTED_DIRECTLY:
+         // AC-3 is always 16-bit, so there's no point using floating point. Assume that it's worth
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
+index ccaf284..11f225b 100644
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
+@@ -13,6 +13,8 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+ @UnstableApi
+ public final class FfmpegLibrary {
+ 
++  private static final String AUDIO_AV3A = "audio/av3a";
++
+   static {
+     MediaLibraryInfo.registerModule("media3.decoder.ffmpeg");
+   }
+@@ -116,6 +118,7 @@ public final class FfmpegLibrary {
+       case MimeTypes.AUDIO_ALAC -> "alac";
+       case MimeTypes.AUDIO_MLAW -> "pcm_mulaw";
+       case MimeTypes.AUDIO_ALAW -> "pcm_alaw";
++      case AUDIO_AV3A -> "libarcdav3a";
+ 
+       // Video codecs
+       case MimeTypes.VIDEO_H264 -> "h264";

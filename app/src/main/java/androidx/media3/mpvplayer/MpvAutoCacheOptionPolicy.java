@@ -8,10 +8,7 @@ import java.util.Map;
 final class MpvAutoCacheOptionPolicy {
 
     private static final long MIN_FORWARD_BYTES = 16L * 1024L * 1024L;
-    private static final long MAX_FORWARD_BYTES = 192L * 1024L * 1024L;
-    private static final long MIN_BACK_BYTES = 16L * 1024L * 1024L;
-    private static final long BALANCED_BACK_BYTES = 32L * 1024L * 1024L;
-    private static final long MAX_BACK_BYTES = 64L * 1024L * 1024L;
+    private static final long MAX_CONFIGURED_BYTES = 256L * 1024L * 1024L;
 
     private MpvAutoCacheOptionPolicy() {
     }
@@ -22,8 +19,9 @@ final class MpvAutoCacheOptionPolicy {
             long backBytes) {
         if (!performanceOptionsPriority
                 || forwardBytes < MIN_FORWARD_BYTES
-                || forwardBytes > MAX_FORWARD_BYTES
-                || !isSupportedBackTarget(backBytes)
+                || forwardBytes > MAX_CONFIGURED_BYTES
+                || backBytes < 0
+                || backBytes > MAX_CONFIGURED_BYTES
                 || backBytes > forwardBytes) {
             return Collections.emptyMap();
         }
@@ -31,12 +29,5 @@ final class MpvAutoCacheOptionPolicy {
         options.put("demuxer-max-back-bytes", String.valueOf(backBytes));
         options.put("demuxer-max-bytes", String.valueOf(forwardBytes));
         return Collections.unmodifiableMap(options);
-    }
-
-    private static boolean isSupportedBackTarget(long backBytes) {
-        return backBytes == 0
-                || backBytes == MIN_BACK_BYTES
-                || backBytes == BALANCED_BACK_BYTES
-                || backBytes == MAX_BACK_BYTES;
     }
 }

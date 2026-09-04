@@ -55,11 +55,31 @@ public class MpvResourcePressureControllerTest {
         assertEquals(96 * MIB, cost.forwardCeilingBytes());
         assertEquals(32 * MIB, cost.backCeilingBytes());
         assertFalse(cost.expansionAllowed());
+        assertTrue(cost.preloadAllowed());
         assertEquals(64 * MIB, missing.forwardCeilingBytes());
         assertEquals(16 * MIB, missing.backCeilingBytes());
         assertFalse(missing.expansionAllowed());
+        assertFalse(missing.preloadAllowed());
         assertEquals(MpvResourcePressureController.Reason.UNKNOWN_HOLD,
                 missing.reason());
+    }
+
+    @Test
+    public void costConstraintDoesNotBypassHardPressureRecovery() {
+        MpvResourcePressureController controller = controller("hard-cost", 11);
+        PlaybackAutoContext.SessionToken token = controller.snapshot().session();
+        controller.evaluate(token, token, hard(1, 0),
+                MpvResourcePressureController.Trigger.SYSTEM,
+                96 * MIB, 32 * MIB, 0);
+
+        MpvResourcePressureController.Decision metered = controller.evaluate(
+                token, token, constrained(2, 10),
+                MpvResourcePressureController.Trigger.SYSTEM,
+                24 * MIB, 0, 10);
+
+        assertFalse(metered.preloadAllowed());
+        assertEquals(MpvResourcePressureController.RecoveryClass.HARD,
+                metered.recoveryClass());
     }
 
     @Test

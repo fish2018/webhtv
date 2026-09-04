@@ -1,0 +1,158 @@
+diff --git a/libraries/container/src/main/java/androidx/media3/container/DolbyVisionConfig.java b/libraries/container/src/main/java/androidx/media3/container/DolbyVisionConfig.java
+index 7af4f691d8..f2f5e281ef 100644
+--- a/libraries/container/src/main/java/androidx/media3/container/DolbyVisionConfig.java
++++ b/libraries/container/src/main/java/androidx/media3/container/DolbyVisionConfig.java
+@@ -36 +36,8 @@ public final class DolbyVisionConfig {
+-    data.skipBytes(2); // dv_version_major, dv_version_minor
++    if (data.bytesLeft() < 4) {
++      return null;
++    }
++    int majorVersion = data.readUnsignedByte();
++    data.skipBytes(1); // dv_version_minor
++    if (majorVersion != 1) {
++      return null;
++    }
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java b/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
+index 5af42a7caa..a57a4415e0 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
+@@ -2604,0 +2605,2 @@ public class MatroskaExtractor implements Extractor {
++    // CTA-861.3 stores minimum mastering luminance in units of 0.0001 cd/m2.
++    private static final int MIN_MASTERING_LUMINANCE_SCALE = 10_000;
+@@ -3120 +3122,2 @@ public class MatroskaExtractor implements Extractor {
+-      hdrStaticInfo.putShort((short) (minMasteringLuminance + 0.5f));
++      hdrStaticInfo.putShort(
++          (short) ((minMasteringLuminance * MIN_MASTERING_LUMINANCE_SCALE) + 0.5f));
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java b/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
+index bd6740ea8c..e2db447e4b 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
+@@ -1706 +1706,7 @@ public final class BoxParser {
+-        dolbyVisionConfig = DolbyVisionConfig.parse(parent);
++        byte[] dolbyVisionConfigBytes =
++            parseDolbyVisionConfigBytes(
++                parent,
++                childStartPosition,
++                childAtomSize,
++                /* sampleEntryEndPosition= */ (long) position + size);
++        dolbyVisionConfig = DolbyVisionConfig.parse(new ParsableByteArray(dolbyVisionConfigBytes));
+@@ -1930,0 +1937,17 @@ public final class BoxParser {
++  /* package */ static byte[] parseDolbyVisionConfigBytes(
++      ParsableByteArray parent,
++      int childStartPosition,
++      int childAtomSize,
++      long sampleEntryEndPosition)
++      throws ParserException {
++    long configurationStartPosition = (long) childStartPosition + Mp4Box.HEADER_SIZE;
++    long configurationEndPosition = (long) childStartPosition + childAtomSize;
++    ExtractorUtil.checkContainerInput(
++        childAtomSize >= Mp4Box.HEADER_SIZE + 4
++            && configurationEndPosition <= sampleEntryEndPosition
++            && configurationEndPosition <= parent.limit(),
++        "Invalid Dolby Vision configuration");
++    return Arrays.copyOfRange(
++        parent.getData(), (int) configurationStartPosition, (int) configurationEndPosition);
++  }
++
+diff --git a/libraries/extractor/src/test/java/androidx/media3/extractor/mkv/MatroskaExtractorNonParameterizedTest.java b/libraries/extractor/src/test/java/androidx/media3/extractor/mkv/MatroskaExtractorNonParameterizedTest.java
+index 2c913b32ce..b3b3d5c3b3 100644
+--- a/libraries/extractor/src/test/java/androidx/media3/extractor/mkv/MatroskaExtractorNonParameterizedTest.java
++++ b/libraries/extractor/src/test/java/androidx/media3/extractor/mkv/MatroskaExtractorNonParameterizedTest.java
+@@ -18,0 +19 @@ import static androidx.media3.extractor.Extractor.RESULT_SEEK;
++import static com.google.common.base.Preconditions.checkNotNull;
+@@ -32,0 +34,2 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
++import java.nio.ByteBuffer;
++import java.nio.ByteOrder;
+@@ -39,0 +43,37 @@ public class MatroskaExtractorNonParameterizedTest {
++  @Test
++  public void initializeFormat_hdrStaticInfo_encodesMinimumLuminanceInCta861Units()
++      throws Exception {
++    assertMinimumMasteringLuminanceEncoded(/* minimumLuminance= */ 0.0001f, /* expected= */ 1);
++    assertMinimumMasteringLuminanceEncoded(/* minimumLuminance= */ 0.005f, /* expected= */ 50);
++  }
++
++  private static void assertMinimumMasteringLuminanceEncoded(
++      float minimumLuminance, int expected) throws Exception {
++    MatroskaExtractor.Track track = new MatroskaExtractor.Track();
++    track.codecId = "V_VP9";
++    track.width = 426;
++    track.height = 240;
++    track.primaryRChromaticityX = 0.708f;
++    track.primaryRChromaticityY = 0.292f;
++    track.primaryGChromaticityX = 0.170f;
++    track.primaryGChromaticityY = 0.797f;
++    track.primaryBChromaticityX = 0.131f;
++    track.primaryBChromaticityY = 0.046f;
++    track.whitePointChromaticityX = 0.3127f;
++    track.whitePointChromaticityY = 0.3290f;
++    track.maxMasteringLuminance = 1000f;
++    track.minMasteringLuminance = minimumLuminance;
++    track.maxContentLuminance = 1100;
++    track.maxFrameAverageLuminance = 180;
++
++    track.initializeFormat(/* trackId= */ 1);
++
++    byte[] hdrStaticInfo = checkNotNull(checkNotNull(track.format.colorInfo).hdrStaticInfo);
++    ByteBuffer hdrStaticInfoBuffer =
++        ByteBuffer.wrap(hdrStaticInfo).order(ByteOrder.LITTLE_ENDIAN);
++    assertThat(Short.toUnsignedInt(hdrStaticInfoBuffer.getShort(17))).isEqualTo(1000);
++    assertThat(Short.toUnsignedInt(hdrStaticInfoBuffer.getShort(19))).isEqualTo(expected);
++    assertThat(Short.toUnsignedInt(hdrStaticInfoBuffer.getShort(21))).isEqualTo(1100);
++    assertThat(Short.toUnsignedInt(hdrStaticInfoBuffer.getShort(23))).isEqualTo(180);
++  }
++
+diff --git a/libraries/extractor/src/test/java/androidx/media3/extractor/mp4/BoxParserTest.java b/libraries/extractor/src/test/java/androidx/media3/extractor/mp4/BoxParserTest.java
+index bb968cf088..c9cf7f9084 100644
+--- a/libraries/extractor/src/test/java/androidx/media3/extractor/mp4/BoxParserTest.java
++++ b/libraries/extractor/src/test/java/androidx/media3/extractor/mp4/BoxParserTest.java
+@@ -19,0 +20 @@ import static java.nio.charset.StandardCharsets.UTF_8;
++import static org.junit.Assert.assertThrows;
+@@ -44,0 +46,2 @@ public final class BoxParserTest {
++  private static final byte[] DOLBY_VISION_CONFIGURATION_BOX =
++      Util.getBytesFromHexString("0000000D647663430100100D10");
+@@ -259,0 +263,45 @@ public final class BoxParserTest {
++  @Test
++  public void parseDolbyVisionConfigBytes_withValidBox_returnsPayload() throws ParserException {
++    ParsableByteArray parent = new ParsableByteArray(DOLBY_VISION_CONFIGURATION_BOX);
++
++    byte[] configuration =
++        BoxParser.parseDolbyVisionConfigBytes(
++            parent,
++            /* childStartPosition= */ 0,
++            /* childAtomSize= */ DOLBY_VISION_CONFIGURATION_BOX.length,
++            /* sampleEntryEndPosition= */ DOLBY_VISION_CONFIGURATION_BOX.length);
++
++    assertThat(configuration).isEqualTo(Util.getBytesFromHexString("0100100D10"));
++  }
++
++  @Test
++  public void parseDolbyVisionConfigBytes_withBoxCrossingSampleEntry_throws() {
++    ParsableByteArray parent = new ParsableByteArray(DOLBY_VISION_CONFIGURATION_BOX);
++
++    assertThrows(
++        ParserException.class,
++        () ->
++            BoxParser.parseDolbyVisionConfigBytes(
++                parent,
++                /* childStartPosition= */ 0,
++                /* childAtomSize= */ DOLBY_VISION_CONFIGURATION_BOX.length,
++                /* sampleEntryEndPosition= */ DOLBY_VISION_CONFIGURATION_BOX.length - 1));
++  }
++
++  @Test
++  public void parseDolbyVisionConfigBytes_withTruncatedBox_throws() {
++    ParsableByteArray parent =
++        new ParsableByteArray(
++            DOLBY_VISION_CONFIGURATION_BOX,
++            /* limit= */ DOLBY_VISION_CONFIGURATION_BOX.length - 1);
++
++    assertThrows(
++        ParserException.class,
++        () ->
++            BoxParser.parseDolbyVisionConfigBytes(
++                parent,
++                /* childStartPosition= */ 0,
++                /* childAtomSize= */ DOLBY_VISION_CONFIGURATION_BOX.length,
++                /* sampleEntryEndPosition= */ DOLBY_VISION_CONFIGURATION_BOX.length));
++  }
++

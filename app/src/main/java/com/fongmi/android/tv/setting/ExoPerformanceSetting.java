@@ -44,8 +44,11 @@ public final class ExoPerformanceSetting {
     }
 
     public static void putCodecQueueMode(int value) {
-        Prefers.put(KEY_CODEC_QUEUE_MODE, clamp(value, CODEC_QUEUE_AUTO, CODEC_QUEUE_SYNC));
-        PlaybackPerformanceSetting.markCustom();
+        int mode = clamp(value, CODEC_QUEUE_AUTO, CODEC_QUEUE_SYNC);
+        Prefers.put(KEY_CODEC_QUEUE_MODE, mode);
+        PlaybackPerformanceSetting.setOverride(
+                PlaybackPerformanceCatalog.CODEC_ASYNC,
+                mode != CODEC_QUEUE_AUTO);
     }
 
     public static String getCodecQueueText() {
@@ -62,7 +65,7 @@ public final class ExoPerformanceSetting {
 
     public static void putFrameRateMode(int value) {
         Prefers.put(KEY_FRAME_RATE_MODE, clamp(value, FRAME_RATE_OFF, FRAME_RATE_RESOLUTION_AND_RATE));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.EXO_FRAME_RATE);
     }
 
     public static int getFrameRateStrategy() {
@@ -87,7 +90,7 @@ public final class ExoPerformanceSetting {
 
     public static void putStartBufferMs(int value) {
         Prefers.put(KEY_START_BUFFER_MS, normalizeStart(value));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.EXO_START_BUFFER);
     }
 
     public static int nextStartBufferMs() {
@@ -101,13 +104,17 @@ public final class ExoPerformanceSetting {
     }
 
     public static int getRebufferMs() {
-        if (PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)) return getAutoSessionRebufferMs();
+        if (PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)) {
+            return getAutoSessionRebufferMs();
+        }
         return normalizeRebuffer(Prefers.getInt(KEY_REBUFFER_MS, rebufferForPreset(PlaybackPerformanceSetting.PROFILE_RECOMMENDED)));
     }
 
     public static void putRebufferMs(int value) {
         Prefers.put(KEY_REBUFFER_MS, normalizeRebuffer(value));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.EXO_REBUFFER);
     }
 
     public static int nextRebufferMs() {
@@ -128,18 +135,23 @@ public final class ExoPerformanceSetting {
 
     public static void putPrioritizeTime(boolean value) {
         Prefers.put(KEY_PRIORITIZE_TIME, value);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.EXO_PRIORITIZE_TIME);
     }
 
     public static int getNetworkProtectionMode() {
-        int defaultMode = PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)
+        int defaultMode = PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_NETWORK_PROTECTION)
                 ? ExoNetworkProtectionPolicy.MODE_AUTO : ExoNetworkProtectionPolicy.MODE_OFF;
         return ExoNetworkProtectionPolicy.resolve(Prefers.getInt(KEY_NETWORK_PROTECTION_MODE, defaultMode)).mode();
     }
 
     public static void putNetworkProtectionMode(int value) {
-        Prefers.put(KEY_NETWORK_PROTECTION_MODE, ExoNetworkProtectionPolicy.resolve(value).mode());
-        PlaybackPerformanceSetting.markCustom();
+        int mode = ExoNetworkProtectionPolicy.resolve(value).mode();
+        Prefers.put(KEY_NETWORK_PROTECTION_MODE, mode);
+        PlaybackPerformanceSetting.setOverride(
+                PlaybackPerformanceCatalog.EXO_NETWORK_PROTECTION,
+                mode != ExoNetworkProtectionPolicy.MODE_AUTO);
     }
 
     public static int nextNetworkProtectionMode() {
@@ -184,7 +196,9 @@ public final class ExoPerformanceSetting {
             long positionMs,
             long mediaBitrate,
             long bandwidthEstimate) {
-        if (!PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)) {
+        if (!PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)) {
             REBUFFER_LEARNING.discard(traceId);
             return;
         }
@@ -216,7 +230,11 @@ public final class ExoPerformanceSetting {
             long positionMs,
             long mediaBitrate,
             long bandwidthEstimate) {
-        if (!PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)) return getAutoSessionRebufferMs();
+        if (!PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)) {
+            return getRebufferMs();
+        }
         return REBUFFER_LEARNING.update(
                 traceId,
                 rebufferCount,
@@ -228,7 +246,9 @@ public final class ExoPerformanceSetting {
 
     public static void beginAutoSession() {
         PlaybackAutoContext context = PlaybackAutoContextStore.process().snapshot();
-        if (!PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)) {
+        if (!PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)) {
             REBUFFER_LEARNING.discard(context.session().traceId());
             return;
         }
@@ -251,7 +271,9 @@ public final class ExoPerformanceSetting {
     }
 
     public static void refreshAutoSession(String traceId) {
-        if (!PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)
+        if (!PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)
                 || !REBUFFER_LEARNING.hasSession(traceId)) {
             return;
         }
@@ -290,6 +312,25 @@ public final class ExoPerformanceSetting {
 
     public static int getAutoSessionStartBufferMs() {
         return AutoRebufferPolicy.startBufferMs(getAutoSessionRebufferMs());
+    }
+
+    public static int getEffectiveStartBufferMs() {
+        if (!PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_START_BUFFER)) {
+            return getStartBufferMs();
+        }
+        return AutoRebufferPolicy.startBufferMs(getEffectiveRebufferMs());
+    }
+
+    public static int getEffectiveRebufferMs() {
+        return PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)
+                ? getAutoSessionRebufferMs()
+                : normalizeRebuffer(Prefers.getInt(
+                KEY_REBUFFER_MS,
+                rebufferForPreset(PlaybackPerformanceSetting.PROFILE_AUTO)));
     }
 
     public static int getAutoDefaultStartBufferMs() {

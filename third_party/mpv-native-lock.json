@@ -1,11 +1,11 @@
 {
   "builder": {
-    "repo": "https://github.com/marlboro-advance/mpv-android.git",
-    "commit": "f712d4dcf56c00d04e7dd05e157d953d665a6890"
+    "repo": "https://github.com/FongMi/mpv-android.git",
+    "commit": "99a60ad2141d5ace94453590903c2c6b9a0a2443"
   },
   "android": {
-    "ndk_version": "28.2.13676358",
-    "ndk_label": "r28c",
+    "ndk_version": "29.0.14206865",
+    "ndk_label": "r29",
     "api_level": 24
   },
   "python_tools": {
@@ -13,10 +13,35 @@
     "ninja": "1.11.1.1"
   },
   "sources": {
+    "libiconv": {
+      "url": "https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.19.tar.gz",
+      "sha256": "88dd96a8c0464eca144fc791ae60cd31cd8ee78321e67397e25fc095c4a19aa6",
+      "version": "1.19"
+    },
+    "uchardet": {
+      "url": "https://gitlab.freedesktop.org/uchardet/uchardet/-/archive/v0.0.8/uchardet-v0.0.8.tar.gz",
+      "sha256": "5aa402a1b5b1dbb8d81096f141ff1224e079f4d3a1db0f79ecca782756d3a416",
+      "version": "0.0.8"
+    },
+    "bzip2": {
+      "url": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
+      "sha256": "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269",
+      "version": "1.0.8"
+    },
+    "xz": {
+      "url": "https://github.com/tukaani-project/xz/releases/download/v5.8.1/xz-5.8.1.tar.xz",
+      "sha256": "0b54f79df85912504de0b14aec7971e3f964491af1812d83447005807513cd9e",
+      "version": "5.8.1"
+    },
+    "zstd": {
+      "url": "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz",
+      "sha256": "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+      "version": "1.5.7"
+    },
     "mbedtls": {
       "repo": "https://github.com/Mbed-TLS/mbedtls.git",
-      "commit": "e185d7fd85499c8ce5ca2a54f5cf8fe7dbe3f8df",
-      "version": "3.6.5",
+      "commit": "068ff080b369adfac81509f9b57b2afabaf82dc5",
+      "version": "3.6.7",
       "submodules": true
     },
     "dav1d": {
@@ -25,24 +50,30 @@
       "version": "1.5.4"
     },
     "ffmpeg": {
-      "repo": "https://github.com/FFmpeg/FFmpeg.git",
-      "commit": "8ae0b34901ba60a802f183ee75a250a9fc3e09a5",
-      "version": "8.0.3"
-    },
-    "expat": {
-      "repo": "https://github.com/libexpat/libexpat.git",
-      "commit": "f9a3eeb3e09fbea04b1c451ffc422ab2f1e45744",
-      "version": "2.7.1"
+      "repo": "https://github.com/FongMi/FFmpeg.git",
+      "commit": "177f090e0503b7e013922ca903bde14b1c375f18",
+      "version": "9.0.1-fongmi"
     },
     "freetype2": {
-      "repo": "https://github.com/freetype/freetype.git",
-      "commit": "f4205da14867c5387cd6a329b90ee10a6df6eeff",
-      "version": "2.14.2"
+      "repo": "https://gitlab.freedesktop.org/freetype/freetype.git",
+      "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+      "version": "2.14.3",
+      "submodules": true
+    },
+    "libxml2": {
+      "url": "https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.15.3/libxml2-v2.15.3.tar.gz",
+      "sha256": "0da50c1415f4ec0364569d2119b1436ba837b31df44af28569d234272c23cf1f",
+      "version": "2.15.3"
+    },
+    "libaribcaption": {
+      "url": "https://github.com/xqq/libaribcaption/archive/refs/tags/v1.1.1.tar.gz",
+      "sha256": "278d03a0a662d00a46178afc64f32535ede2d78c603842b6fd1c55fa9cd44683",
+      "version": "1.1.1"
     },
     "fontconfig": {
-      "repo": "https://github.com/fontconfig/fontconfig.git",
-      "commit": "6d0a98982ec351c165c9224c8b7dbdfca3010e47",
-      "version": "2.17.1"
+      "repo": "https://gitlab.freedesktop.org/fontconfig/fontconfig.git",
+      "commit": "a4e25ec391d417e4bca052fbfa5cd7ce5f7fd39e",
+      "version": "2.18.2"
     },
     "fribidi": {
       "repo": "https://github.com/fribidi/fribidi.git",
@@ -51,18 +82,18 @@
     },
     "harfbuzz": {
       "repo": "https://github.com/harfbuzz/harfbuzz.git",
-      "commit": "c298b921d63bd0fa5336dca1d57e2dbd3c25de21",
-      "version": "13.0.1"
+      "commit": "56feae4035bdd48f62ba2b8d8c16232d4d89b3a4",
+      "version": "14.2.1"
     },
     "unibreak": {
-      "url": "https://github.com/adah1972/libunibreak/releases/download/libunibreak_6_1/libunibreak-6.1.tar.gz",
-      "sha256": "cc4de0099cf7ff05005ceabff4afed4c582a736abc38033e70fdac86335ce93f",
-      "version": "6.1"
+      "url": "https://github.com/adah1972/libunibreak/releases/download/libunibreak_7_0/libunibreak-7.0.tar.gz",
+      "sha256": "8c9a6e121736cd0d5c890ae3ae96f3f4010a19aa040f1dbded833a62a87717d3",
+      "version": "7.0"
     },
     "libass": {
       "repo": "https://github.com/libass/libass.git",
-      "commit": "4a05d8127f525943ebf45fdc6497c9e665947f0d",
-      "version": "0.17.5"
+      "commit": "89cc0f4e450d64f74281a17d7f11ed05229665e8",
+      "version": "git-89cc0f4e"
     },
     "lua": {
       "url": "https://www.lua.org/ftp/lua-5.2.4.tar.gz",
@@ -70,9 +101,9 @@
       "version": "5.2.4"
     },
     "libplacebo": {
-      "repo": "https://github.com/haasn/libplacebo.git",
-      "commit": "a7a18af88ff0a17c04840dcb3246047bb6b46df3",
-      "version": "7.371.0",
+      "repo": "https://github.com/FongMi/libplacebo.git",
+      "commit": "b694a21bf2dc176c1e98b8a13c6421a0de5f3da5",
+      "version": "7.375.0",
       "submodules": true
     },
     "nghttp2": {
@@ -85,17 +116,38 @@
       "sha256": "d9b327997999045a24cda50f3983e69e51c516bd8be6ef9842fc7f99135e33bb",
       "version": "8.21.0"
     },
-    "mpv": {
-      "repo": "https://github.com/mpv-player/mpv.git",
-      "commit": "94335ab87ab225ca3e36e0faeac831639d3e1d4e",
-      "version": "0.41.0-878-g94335ab87",
-      "describe_tag": "v0.41.0",
-      "history_depth": 1200
+    "libbluray": {
+      "url": "https://downloads.videolan.org/pub/videolan/libbluray/1.4.1/libbluray-1.4.1.tar.xz",
+      "sha256": "76b5dc40097f28dca4ebb009c98ed51321b2927453f75cc72cf74acd09b9f449",
+      "version": "1.4.1"
     },
-    "mpv-vulkan-mediacodec": {
+    "libarchive": {
+      "url": "https://github.com/libarchive/libarchive/releases/download/v3.8.7/libarchive-3.8.7.tar.xz",
+      "sha256": "d3a8ba457ae25c27c84fd2830a2efdcc5b1d40bf585d4eb0d35f47e99e5d4774",
+      "version": "3.8.7"
+    },
+    "libdvdread": {
+      "url": "https://downloads.videolan.org/pub/videolan/libdvdread/7.0.1/libdvdread-7.0.1.tar.xz",
+      "sha256": "2e3e04a305c15c3963aa03ae1b9a83c1d239880003fcf3dde986d3943355d407",
+      "version": "7.0.1"
+    },
+    "libdvdnav": {
+      "url": "https://downloads.videolan.org/pub/videolan/libdvdnav/7.0.0/libdvdnav-7.0.0.tar.xz",
+      "sha256": "a2a18f5ad36d133c74bf9106b6445806fa253b09141a46392550394b647b221e",
+      "version": "7.0.0"
+    },
+    "rubberband": {
+      "url": "https://github.com/breakfastquay/rubberband/archive/refs/tags/v4.0.0.tar.gz",
+      "sha256": "24300f48a8014b7c863b573a9647e61b1b19b37875e2cdd92005e64c6424d266",
+      "version": "4.0.0"
+    },
+    "mpv": {
       "repo": "https://github.com/FongMi/mpv.git",
-      "commit": "fd679c812149fe1f3e246897b1015ae109da7c74",
-      "version": "Vulkan AHardwareBuffer MediaCodec interop"
+      "commit": "cca559b41ceb0bb7731cf6ef2e1f33276cd30c42",
+      "version": "0.41.0-940-gcca559b41",
+      "describe_tag": "v0.41.0",
+      "tag_repo": "https://github.com/mpv-player/mpv.git",
+      "history_depth": 1600
     }
   }
 }

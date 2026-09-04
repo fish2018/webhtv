@@ -46,23 +46,26 @@ public final class IjkPerformanceSetting {
     public static void putScene(int value) {
         int scene = clamp(value, SCENE_AUTO, SCENE_LIVE_LOW_LATENCY);
         Prefers.put(KEY_SCENE, scene);
-        if (scene == SCENE_LIVE_STABLE) {
+        boolean automaticProfile = PlaybackPerformanceSetting.isAuto(PlayerSetting.IJK);
+        if (!automaticProfile && scene == SCENE_LIVE_STABLE) {
             Prefers.put(KEY_PACKET_BUFFERING, true);
             Prefers.put(KEY_WATER, WATER_STABLE);
             Prefers.put(KEY_PICTURE_QUEUE, 5);
             Prefers.put(KEY_PROBE, PROBE_FULL);
-        } else if (scene == SCENE_LIVE_LOW_LATENCY) {
+        } else if (!automaticProfile && scene == SCENE_LIVE_LOW_LATENCY) {
             Prefers.put(KEY_PACKET_BUFFERING, false);
             Prefers.put(KEY_WATER, WATER_LOW);
             Prefers.put(KEY_PICTURE_QUEUE, 3);
             Prefers.put(KEY_PROBE, PROBE_FAST);
-        } else if (scene == SCENE_VOD) {
+        } else if (!automaticProfile && scene == SCENE_VOD) {
             Prefers.put(KEY_PACKET_BUFFERING, true);
             Prefers.put(KEY_WATER, WATER_STANDARD);
             Prefers.put(KEY_PICTURE_QUEUE, 3);
             Prefers.put(KEY_PROBE, PROBE_AUTO);
         }
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.setOverride(
+                PlaybackPerformanceCatalog.IJK_SCENE,
+                scene != SCENE_AUTO);
     }
 
     public static String getSceneText() {
@@ -81,7 +84,7 @@ public final class IjkPerformanceSetting {
 
     public static void putBufferMb(int value) {
         Prefers.put(KEY_BUFFER_MB, value <= 4 ? 4 : value <= 8 ? 8 : 15);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_BUFFER);
     }
 
     public static boolean isPacketBuffering() {
@@ -90,7 +93,7 @@ public final class IjkPerformanceSetting {
 
     public static void putPacketBuffering(boolean value) {
         Prefers.put(KEY_PACKET_BUFFERING, value);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_PACKET_BUFFERING);
     }
 
     public static int getWaterMode() {
@@ -99,7 +102,7 @@ public final class IjkPerformanceSetting {
 
     public static void putWaterMode(int value) {
         Prefers.put(KEY_WATER, clamp(value, WATER_LOW, WATER_STABLE));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_WATER);
     }
 
     public static String getWaterText() {
@@ -133,7 +136,7 @@ public final class IjkPerformanceSetting {
 
     public static void putPictureQueue(int value) {
         Prefers.put(KEY_PICTURE_QUEUE, value <= 3 ? 3 : value <= 5 ? 5 : 8);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_PICTURE_QUEUE);
     }
 
     public static int getDropMode() {
@@ -142,7 +145,7 @@ public final class IjkPerformanceSetting {
 
     public static void putDropMode(int value) {
         Prefers.put(KEY_DROP, clamp(value, DROP_OFF, DROP_AGGRESSIVE));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_FRAME_DROP);
     }
 
     public static int getFrameDropValue() {
@@ -167,7 +170,7 @@ public final class IjkPerformanceSetting {
 
     public static void putAccurateSeek(boolean value) {
         Prefers.put(KEY_ACCURATE_SEEK, value);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_ACCURATE_SEEK);
     }
 
     public static int getProbeMode() {
@@ -175,8 +178,11 @@ public final class IjkPerformanceSetting {
     }
 
     public static void putProbeMode(int value) {
-        Prefers.put(KEY_PROBE, clamp(value, PROBE_AUTO, PROBE_FULL));
-        PlaybackPerformanceSetting.markCustom();
+        int mode = clamp(value, PROBE_AUTO, PROBE_FULL);
+        Prefers.put(KEY_PROBE, mode);
+        PlaybackPerformanceSetting.setOverride(
+                PlaybackPerformanceCatalog.IJK_PROBE,
+                mode != PROBE_AUTO);
     }
 
     public static String getProbeText() {
@@ -193,7 +199,7 @@ public final class IjkPerformanceSetting {
 
     public static void putSoftTuneMode(int value) {
         Prefers.put(KEY_SOFT_TUNE, clamp(value, SOFT_TUNE_OFF, SOFT_TUNE_AGGRESSIVE));
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_SOFT_TUNE);
     }
 
     public static String getSoftTuneText() {
@@ -209,8 +215,11 @@ public final class IjkPerformanceSetting {
     }
 
     public static void putRtspTransport(int value) {
-        Prefers.put(KEY_RTSP_TRANSPORT, clamp(value, RTSP_AUTO, RTSP_UDP));
-        PlaybackPerformanceSetting.markCustom();
+        int transport = clamp(value, RTSP_AUTO, RTSP_UDP);
+        Prefers.put(KEY_RTSP_TRANSPORT, transport);
+        PlaybackPerformanceSetting.setOverride(
+                PlaybackPerformanceCatalog.IJK_RTSP_TRANSPORT,
+                transport != RTSP_AUTO);
     }
 
     public static String getRtspTransportText() {
@@ -227,7 +236,7 @@ public final class IjkPerformanceSetting {
 
     public static void putReconnect(boolean value) {
         Prefers.put(KEY_RECONNECT, value);
-        PlaybackPerformanceSetting.markCustom();
+        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.IJK_RECONNECT);
     }
 
     public static void applyRecommended() {

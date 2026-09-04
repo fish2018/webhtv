@@ -1,0 +1,203 @@
+diff --git a/video/out/hwdec/hwdec_aimagereader.comp b/video/out/hwdec/hwdec_aimagereader.comp
+index d87d33affb34587900b6fb54fffa5cf21e59aa66..1f3bbb1f6d850d71959da1e1cd4882b5cc9b149f 100644
+--- a/video/out/hwdec/hwdec_aimagereader.comp
++++ b/video/out/hwdec/hwdec_aimagereader.comp
+@@ -7,10 +7,9 @@ layout(set = 0, binding = 0) uniform sampler2D source_image;
+ layout(set = 0, binding = 1) writeonly uniform image2D target_image;
+ 
+ layout(push_constant) uniform PushConstants {
+-    ivec2 crop_offset;
+-    ivec2 crop_size;
++    vec2 uv_offset;
++    vec2 uv_scale;
+     ivec2 output_size;
+-    ivec2 source_size;
+ } params;
+ 
+ void main()
+@@ -19,10 +18,7 @@ void main()
+     if (any(greaterThanEqual(position, params.output_size)))
+         return;
+ 
+-    vec2 source_position =
+-        vec2(params.crop_offset) +
+-        (vec2(position) + vec2(0.5)) * vec2(params.crop_size) /
+-            vec2(params.output_size);
+-    vec2 uv = source_position / vec2(params.source_size);
++    vec2 uv = params.uv_offset +
++              (vec2(position) + vec2(0.5)) * params.uv_scale;
+     imageStore(target_image, position, textureLod(source_image, uv, 0.0));
+ }
+diff --git a/video/out/hwdec/hwdec_aimagereader.frag b/video/out/hwdec/hwdec_aimagereader.frag
+index 6f172c23bcf9188199fc554cd5f880cc5ee46968..c640e6e0e9258313ace5162cb3a92030cb9fb632 100644
+--- a/video/out/hwdec/hwdec_aimagereader.frag
++++ b/video/out/hwdec/hwdec_aimagereader.frag
+@@ -4,21 +4,17 @@ layout(set = 0, binding = 0) uniform sampler2D source_image;
+ layout(location = 0) out vec4 target_color;
+ 
+ layout(push_constant) uniform PushConstants {
+-    ivec2 crop_offset;
+-    ivec2 crop_size;
++    vec2 uv_offset;
++    vec2 uv_scale;
+     ivec2 output_size;
+-    ivec2 source_size;
+ } params;
+ 
+ void main()
+ {
+     ivec2 position = ivec2(gl_FragCoord.xy);
+-    vec2 source_position =
+-        vec2(params.crop_offset) +
+-        (vec2(position) + vec2(0.5)) * vec2(params.crop_size) /
+-            vec2(params.output_size);
+     // The imported AHardwareBuffer extent is authoritative for external-format
+     // images and avoids relying on driver image-size queries.
+-    vec2 uv = source_position / vec2(params.source_size);
++    vec2 uv = params.uv_offset +
++              (vec2(position) + vec2(0.5)) * params.uv_scale;
+     target_color = texture(source_image, uv);
+ }
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk_convert.c b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+index bfba275f4bfe45e717924e580215dbb888d5125f..c408d0a0e979aa07a6a987d95e949ce3ff8c4248 100644
+--- a/video/out/hwdec/hwdec_aimagereader_vk_convert.c
++++ b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+@@ -38,12 +38,21 @@
+ #define FALLBACK_EXTERNAL_DESCRIPTOR_COUNT 4
+ 
+ struct conversion_push_constants {
++    float uv_offset[2];
++    float uv_scale[2];
++    int32_t output_size[2];
++};
++
++struct conversion_geometry {
+     int32_t crop_offset[2];
+     int32_t crop_size[2];
+     int32_t output_size[2];
+     int32_t source_size[2];
+ };
+ 
++_Static_assert(sizeof(struct conversion_push_constants) == 24,
++               "generic Vulkan push constant layout changed");
++
+ enum output_precision {
+     OUTPUT_PRECISION_8_BIT,
+     OUTPUT_PRECISION_10_BIT,
+@@ -140,7 +149,7 @@ struct aimagereader_vk_convert {
+     uint64_t input_serial;
+     struct vk_output outputs[OUTPUT_COUNT];
+     bool conversion_geometry_valid;
+-    struct conversion_push_constants conversion_geometry;
++    struct conversion_geometry conversion_geometry;
+ };
+ 
+ static bool vk_success(struct aimagereader_vk_convert *p, VkResult result,
+@@ -1683,17 +1692,17 @@ static void release_reclaimed_output(struct aimagereader_vk_convert *p,
+ 
+ static void log_conversion_geometry(
+     struct aimagereader_vk_convert *p,
+-    const struct conversion_push_constants *push)
++    const struct conversion_geometry *geometry)
+ {
+     if (p->conversion_geometry_valid &&
+-        p->conversion_geometry.crop_offset[0] == push->crop_offset[0] &&
+-        p->conversion_geometry.crop_offset[1] == push->crop_offset[1] &&
+-        p->conversion_geometry.crop_size[0] == push->crop_size[0] &&
+-        p->conversion_geometry.crop_size[1] == push->crop_size[1] &&
+-        p->conversion_geometry.output_size[0] == push->output_size[0] &&
+-        p->conversion_geometry.output_size[1] == push->output_size[1] &&
+-        p->conversion_geometry.source_size[0] == push->source_size[0] &&
+-        p->conversion_geometry.source_size[1] == push->source_size[1])
++        p->conversion_geometry.crop_offset[0] == geometry->crop_offset[0] &&
++        p->conversion_geometry.crop_offset[1] == geometry->crop_offset[1] &&
++        p->conversion_geometry.crop_size[0] == geometry->crop_size[0] &&
++        p->conversion_geometry.crop_size[1] == geometry->crop_size[1] &&
++        p->conversion_geometry.output_size[0] == geometry->output_size[0] &&
++        p->conversion_geometry.output_size[1] == geometry->output_size[1] &&
++        p->conversion_geometry.source_size[0] == geometry->source_size[0] &&
++        p->conversion_geometry.source_size[1] == geometry->source_size[1])
+         return;
+ 
+     mp_info(p->log, "Vulkan conversion geometry: imported image %ux%u "
+@@ -1702,14 +1711,14 @@ static void log_conversion_geometry(
+                     "external format 0x%" PRIx64 ", output format %d\n",
+             p->source.desc.width, p->source.desc.height,
+             p->source.desc.stride, p->source.desc.format,
+-            push->crop_offset[0], push->crop_offset[1],
+-            push->crop_size[0], push->crop_size[1],
++            geometry->crop_offset[0], geometry->crop_offset[1],
++            geometry->crop_size[0], geometry->crop_size[1],
+             conversion_backend_name(p->backend),
+-            push->output_size[0], push->output_size[1],
++            geometry->output_size[0], geometry->output_size[1],
+             p->source.format_props.format,
+             p->source.format_props.externalFormat, p->output_format);
+     p->conversion_geometry_valid = true;
+-    p->conversion_geometry = *push;
++    p->conversion_geometry = *geometry;
+ }
+ 
+ static bool record_conversion(struct aimagereader_vk_convert *p,
+@@ -1778,7 +1787,6 @@ static bool record_conversion(struct aimagereader_vk_convert *p,
+                          conversion_stage, 0,
+                          0, NULL, 0, NULL, MP_ARRAY_SIZE(acquire), acquire);
+ 
+-    log_conversion_geometry(p, push);
+     if (use_compute) {
+         vkCmdBindPipeline(output->command, VK_PIPELINE_BIND_POINT_COMPUTE,
+                           p->pipeline);
+@@ -2039,6 +2047,8 @@ struct aimagereader_vk_convert *aimagereader_vk_convert_create(
+             p->required_backend == CONVERSION_BACKEND_NONE
+                 ? "auto (narrowest format, compute tie-break)"
+                 : conversion_backend_name(p->required_backend));
++    mp_verbose(p->log,
++               "Generic Vulkan conversion uses CPU-precomputed UV transform\n");
+ 
+     p->GetImageFormatProperties2 = get_image_format_properties2(p->vk);
+ 
+@@ -2223,18 +2233,30 @@ static int map_image(struct aimagereader_vk_convert *p, AImage *image,
+         release_reclaimed_output(p, output, needs_reclaim);
+         return -1;
+     }
+-    const struct conversion_push_constants push = {
++    const int32_t crop_width = crop->right - crop->left;
++    const int32_t crop_height = crop->bottom - crop->top;
++    const struct conversion_geometry geometry = {
+         .crop_offset = {crop->left, crop->top},
+-        .crop_size = {
+-            crop->right - crop->left,
+-            crop->bottom - crop->top,
+-        },
++        .crop_size = {crop_width, crop_height},
+         .output_size = {source.output_width, source.output_height},
+         .source_size = {
+             source.desc.width,
+             source.desc.height,
+         },
+     };
++    const struct conversion_push_constants push = {
++        .uv_offset = {
++            (float)((double)crop->left / source.desc.width),
++            (float)((double)crop->top / source.desc.height),
++        },
++        .uv_scale = {
++            (float)((double)crop_width /
++                    ((double)source.output_width * source.desc.width)),
++            (float)((double)crop_height /
++                    ((double)source.output_height * source.desc.height)),
++        },
++        .output_size = {source.output_width, source.output_height},
++    };
+     int release_fence = -1;
+     bool release_exported = false;
+     if (!record_conversion(p, output, input, &push)) {
+@@ -2242,6 +2264,7 @@ static int map_image(struct aimagereader_vk_convert *p, AImage *image,
+         release_reclaimed_output(p, output, needs_reclaim);
+         return -1;
+     }
++    log_conversion_geometry(p, &geometry);
+     bool submitted = submit_conversion(p, output, needs_reclaim,
+                                        acquire_fence, &release_fence,
+                                        &release_exported);
+

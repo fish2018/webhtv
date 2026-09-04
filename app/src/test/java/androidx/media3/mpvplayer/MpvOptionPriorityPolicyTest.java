@@ -16,14 +16,17 @@ public class MpvOptionPriorityPolicyTest {
         Map<String, String> candidates = new LinkedHashMap<>();
         candidates.put("cache-pause-wait", "2.000");
         candidates.put("video-sync", "audio");
+        candidates.put("android-vulkan-aimagereader-backend", "legacy");
         candidates.put("sub-font", "User Font");
         candidates.put("glsl-shaders", "/storage/user-shader.glsl");
 
         Map<String, String> overlay = MpvOptionPriorityPolicy.selectPerformanceOverlay(true, candidates);
 
-        assertEquals(2, overlay.size());
+        assertEquals(3, overlay.size());
         assertEquals("2.000", overlay.get("cache-pause-wait"));
         assertEquals("audio", overlay.get("video-sync"));
+        assertEquals("legacy", overlay.get(
+                "android-vulkan-aimagereader-backend"));
         assertFalse(overlay.containsKey("sub-font"));
         assertFalse(overlay.containsKey("glsl-shaders"));
     }
@@ -42,6 +45,8 @@ public class MpvOptionPriorityPolicyTest {
     @Test
     public void currentPerformanceCatalogIsExplicitlyManaged() {
         assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged("vo"));
+        assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged(
+                "android-vulkan-aimagereader-backend"));
         assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged("hwdec"));
         assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged("cache-pause-initial"));
         assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged("cache-pause-wait"));
@@ -68,5 +73,15 @@ public class MpvOptionPriorityPolicyTest {
         Map<String, String> overlay = MpvOptionPriorityPolicy.selectPerformanceOverlay(true, candidates);
 
         assertEquals(Map.of("cache", "yes"), overlay);
+    }
+
+    @Test
+    public void videoOutputFollowsSelectedPriority() {
+        assertEquals("gpu", MpvOptionPriorityPolicy.resolveVideoOutput(
+                true, "gpu", "gpu-next"));
+        assertEquals("gpu-next", MpvOptionPriorityPolicy.resolveVideoOutput(
+                false, "gpu", "gpu-next"));
+        assertEquals("gpu", MpvOptionPriorityPolicy.resolveVideoOutput(
+                false, "gpu", ""));
     }
 }

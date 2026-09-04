@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_shell_proxy_dialog"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="18dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="14dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/apk_push_method_title"
+        android:textColor="#202124"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/target"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="#5F6368"
+        android:textSize="14sp"
+        tools:text="Target: Living room TV" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/local"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="18dp"
+        android:gravity="start|center_vertical"
+        android:minHeight="52dp"
+        android:text="@string/apk_push_method_local"
+        android:textAllCaps="false"
+        android:textColor="#202124"
+        app:backgroundTint="@color/white"
+        app:cornerRadius="8dp"
+        app:icon="@drawable/ic_file"
+        app:iconGravity="textStart"
+        app:iconPadding="12dp"
+        app:iconTint="#1A73E8"
+        app:strokeColor="@color/dialog_outlined_button_stroke" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/link"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="10dp"
+        android:gravity="start|center_vertical"
+        android:minHeight="52dp"
+        android:text="@string/apk_push_method_link"
+        android:textAllCaps="false"
+        android:textColor="@color/dialog_primary_button_text"
+        app:backgroundTint="@color/dialog_primary_button_bg"
+        app:cornerRadius="8dp"
+        app:icon="@drawable/ic_fab_link"
+        app:iconGravity="textStart"
+        app:iconPadding="12dp"
+        app:iconTint="@color/dialog_primary_button_text" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cancel"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_gravity="end"
+        android:layout_marginTop="6dp"
+        android:minHeight="40dp"
+        android:text="@string/dialog_cancel"
+        android:textColor="@color/dialog_outlined_button_text" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

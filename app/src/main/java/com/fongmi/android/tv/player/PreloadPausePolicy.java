@@ -18,13 +18,13 @@ public final class PreloadPausePolicy {
         }
         PlaybackAutoContext.NetworkSnapshot snapshot = network == null
                 ? PlaybackAutoContext.NetworkSnapshot.unknown() : network;
-        if (!Boolean.TRUE.equals(snapshot.available())) {
+        if (Boolean.FALSE.equals(snapshot.available())) {
             return new Decision(false, Reason.NETWORK_UNAVAILABLE);
         }
-        if (!Boolean.TRUE.equals(snapshot.validated())) {
-            return new Decision(false, Reason.NETWORK_UNVALIDATED);
-        }
-        if (snapshot.transport() != PlaybackAutoContext.NetworkTransport.WIFI) {
+        // The setting intentionally has only two choices: cellular traffic or
+        // everything else. VPN, Ethernet and unavailable transport metadata are
+        // treated as Wi-Fi-like instead of creating a third "unknown" mode.
+        if (snapshot.transport() == PlaybackAutoContext.NetworkTransport.CELLULAR) {
             return new Decision(false, Reason.NOT_WIFI);
         }
         return new Decision(true, Reason.WIFI_ALLOWED);

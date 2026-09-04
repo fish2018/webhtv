@@ -24,6 +24,8 @@ final class AutoLoadControl implements LoadControl {
     private final AutoTargetLoadControl delegate;
     private final int fallbackStreamingStartBufferMs;
     private final ExoPlaybackThresholdCoordinator thresholdCoordinator;
+    private final boolean automaticStartBuffer;
+    private final boolean automaticRebuffer;
 
     AutoLoadControl(
             AutoTargetLoadControl delegate,
@@ -31,16 +33,42 @@ final class AutoLoadControl implements LoadControl {
         this(
                 delegate,
                 configuration,
-                ExoPlaybackThresholdCoordinator.process());
+                ExoPlaybackThresholdCoordinator.process(),
+                true,
+                true);
+    }
+
+    AutoLoadControl(
+            AutoTargetLoadControl delegate,
+            ExoLoadControlPolicy.AutomaticConfiguration configuration,
+            boolean automaticStartBuffer,
+            boolean automaticRebuffer) {
+        this(
+                delegate,
+                configuration,
+                ExoPlaybackThresholdCoordinator.process(),
+                automaticStartBuffer,
+                automaticRebuffer);
     }
 
     AutoLoadControl(
             AutoTargetLoadControl delegate,
             ExoLoadControlPolicy.AutomaticConfiguration configuration,
             ExoPlaybackThresholdCoordinator thresholdCoordinator) {
+        this(delegate, configuration, thresholdCoordinator, true, true);
+    }
+
+    AutoLoadControl(
+            AutoTargetLoadControl delegate,
+            ExoLoadControlPolicy.AutomaticConfiguration configuration,
+            ExoPlaybackThresholdCoordinator thresholdCoordinator,
+            boolean automaticStartBuffer,
+            boolean automaticRebuffer) {
         this.delegate = delegate;
         this.fallbackStreamingStartBufferMs = configuration.streamingStartBufferMs();
         this.thresholdCoordinator = thresholdCoordinator;
+        this.automaticStartBuffer = automaticStartBuffer;
+        this.automaticRebuffer = automaticRebuffer;
     }
 
     @Override
@@ -90,19 +118,22 @@ final class AutoLoadControl implements LoadControl {
     public boolean shouldStartPlayback(Parameters parameters) {
         boolean delegateReady = delegate.shouldStartPlayback(parameters);
         if (PlayerId.PRELOAD.equals(parameters.playerId)) return delegateReady;
+        if (parameters.rebuffering ? !automaticRebuffer : !automaticStartBuffer) {
+            return delegateReady;
+        }
         ExoLoadControlModePolicy.Decision mode = delegate.currentModeDecision(parameters.playerId);
         long now = SystemClock.elapsedRealtime();
         ExoPlaybackThresholdPolicy.Inputs inputs =
                 ExoPlaybackThresholdCoordinator.captureInputs(
-                        ExoPerformanceSetting.getAutoSessionStartBufferMs(),
-                        ExoPerformanceSetting.getAutoSessionRebufferMs(),
+                        ExoPerformanceSetting.getEffectiveStartBufferMs(),
+                        ExoPerformanceSetting.getEffectiveRebufferMs(),
                         mediaDurationMs(parameters.bufferedDurationUs),
                         mediaDurationMs(parameters.targetLiveOffsetUs),
                         parameters.rebuffering,
                         now);
-        ExoPlaybackThresholdCoordinator.Episode episode = parameters.rebuffering
-                ? ExoPlaybackThresholdCoordinator.Episode.REBUFFER
-                : ExoPlaybackThresholdCoordinator.Episode.STARTUP;
+        ExoPlaybackThresholdCoordinator.Episode episode = playbackEpisode(
+                parameters.rebuffering,
+                thresholdCoordinator.isSeekPending(inputs.session(), now));
         ExoPlaybackThresholdCoordinator.Selection selection =
                 thresholdCoordinator.lockEpisode(episode, inputs);
         if (!selection.session().active()) {
@@ -164,6 +195,14 @@ final class AutoLoadControl implements LoadControl {
         if (targetLiveOffsetUs != C.TIME_UNSET) requiredUs = Math.min(requiredUs, targetLiveOffsetUs / 2);
         long playoutBufferedUs = Util.getPlayoutDurationForMediaDuration(bufferedDurationUs, playbackSpeed);
         return playoutBufferedUs >= requiredUs;
+    }
+
+    static ExoPlaybackThresholdCoordinator.Episode playbackEpisode(
+            boolean rebuffering,
+            boolean seekPending) {
+        if (rebuffering) return ExoPlaybackThresholdCoordinator.Episode.REBUFFER;
+        if (seekPending) return ExoPlaybackThresholdCoordinator.Episode.SEEK;
+        return ExoPlaybackThresholdCoordinator.Episode.STARTUP;
     }
 
     static int controlledTimeThresholdMs(int configuredThresholdMs) {
@@ -232,7 +271,7 @@ final class AutoLoadControl implements LoadControl {
             ExoLoadControlModePolicy.Decision mode) {
         if (mode.mode().controlledTimePriority()) {
             int configuredThresholdMs = parameters.rebuffering
-                    ? ExoPerformanceSetting.getAutoSessionRebufferMs()
+                    ? ExoPerformanceSetting.getEffectiveRebufferMs()
                     : fallbackStreamingStartBufferMs;
             int controlledThresholdMs = controlledTimeThresholdMs(
                     configuredThresholdMs);
@@ -246,7 +285,7 @@ final class AutoLoadControl implements LoadControl {
                     parameters.bufferedDurationUs,
                     parameters.playbackSpeed,
                     parameters.targetLiveOffsetUs,
-                    ExoPerformanceSetting.getAutoSessionRebufferMs());
+                    ExoPerformanceSetting.getEffectiveRebufferMs());
             if (controlledReady
                     || delegate.canContinueControlledRescue(parameters.playerId)) {
                 return controlledReady;
@@ -259,7 +298,7 @@ final class AutoLoadControl implements LoadControl {
                 parameters.bufferedDurationUs,
                 parameters.playbackSpeed,
                 parameters.targetLiveOffsetUs,
-                ExoPerformanceSetting.getAutoSessionRebufferMs());
+                ExoPerformanceSetting.getEffectiveRebufferMs());
     }
 
     private static long mediaDurationMs(long durationUs) {
@@ -279,6 +318,8 @@ final class AutoLoadControl implements LoadControl {
                         PlaybackTelemetry.DecisionOutcome.APPLIED,
                         selection.episode() == ExoPlaybackThresholdCoordinator.Episode.REBUFFER
                                 ? Integer.toString(inputs.configuredRebufferMs())
+                                : selection.episode() == ExoPlaybackThresholdCoordinator.Episode.SEEK
+                                ? Integer.toString(ExoPlaybackThresholdCoordinator.SEEK_START_BUFFER_MS)
                                 : Integer.toString(inputs.configuredStartBufferMs()),
                         Integer.toString(selection.thresholdMs()),
                         Integer.toString(selection.thresholdMs()),

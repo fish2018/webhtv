@@ -146,15 +146,8 @@ public class LutQuickPanel extends FrameLayout {
         if (player == null) return;
         int seq = ++selectSeq;
         if (SpiderDebug.isEnabled()) SpiderDebug.log("lut-ui", "quick select preset=%s enabledBefore=%s current=%s", preset == null ? "original" : preset.getId(), LutSetting.isEnabled(), LutSetting.getPresetId());
-        if (preset == null) {
-            LutSetting.select(null);
-            player.applyLut(true);
-            notifyChanged();
-            return;
-        }
         if (seq != selectSeq) return;
-        LutSetting.select(preset);
-        player.applyLutPreview(true);
+        if (!player.selectLut(preset, preset != null)) return;
         notifyChanged();
     }
 

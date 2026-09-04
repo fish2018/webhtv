@@ -42,9 +42,10 @@ lottie = "6.7.1"
 material = "1.14.0"
 materialdesigncolors = "1.0.0"
 media3 = "1.11.0-alpha01-fongmi"
+exoplayerHdrUtils = "0.4.0"
 nanohttpd = "2.3.1"
 newpipeextractor = "v0.26.3"
-nextlib = "1.10.0-0.12.1-fongmi-softload"
+nextlib = "1.10.0-0.12.1-fongmi-softload-av3a-ffmpeg901-r1"
 okhttp = "5.4.0"
 permissionx = "1.8.1"
 quickjs = "3.2.3"
@@ -116,6 +117,7 @@ media3-extractor = { group = "androidx.media3", name = "media3-extractor", versi
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 media3-ui-danmaku = { group = "androidx.media3", name = "media3-ui-danmaku", version.ref = "media3" }
+exoplayer-hdr-utils = { group = "com.suyashbelekar", name = "exoplayerhdrutils", version.ref = "exoplayerHdrUtils" }
 nanohttpd = { group = "org.nanohttpd", name = "nanohttpd", version.ref = "nanohttpd" }
 newpipeextractor = { group = "com.github.TeamNewPipe", name = "NewPipeExtractor", version.ref = "newpipeextractor" }
 nextlib-media3ext = { group = "io.github.anilbeesetti", name = "nextlib-media3ext", version.ref = "nextlib" }

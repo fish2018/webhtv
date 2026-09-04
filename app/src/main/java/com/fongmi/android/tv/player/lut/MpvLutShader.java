@@ -4,6 +4,8 @@ import java.io.File;
 
 public class MpvLutShader {
 
+    public static final String PREVIEW_PROGRESS_PARAM = "WEBHTV_LUT_PROGRESS";
+
     private final File file;
     private final String presetName;
     private final int strength;
@@ -24,6 +26,24 @@ public class MpvLutShader {
 
     public String getPath() {
         return file.getAbsolutePath();
+    }
+
+    public String getShaderName() {
+        String name = file.getName();
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    public String getPreviewOptionKey() {
+        return getShaderName() + "/" + PREVIEW_PROGRESS_PARAM;
+    }
+
+    public static String getPreviewOptionKey(String path) {
+        if (path == null || path.isEmpty()) return "";
+        String name = new File(path).getName();
+        int dot = name.lastIndexOf('.');
+        String shader = dot > 0 ? name.substring(0, dot) : name;
+        return shader + "/" + PREVIEW_PROGRESS_PARAM;
     }
 
     public String getPresetName() {

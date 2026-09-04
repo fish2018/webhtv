@@ -1,0 +1,290 @@
+diff --git a/video/out/android_osd_overlay.c b/video/out/android_osd_overlay.c
+index 183f101..65f2c97 100644
+--- a/video/out/android_osd_overlay.c
++++ b/video/out/android_osd_overlay.c
+@@ -568,6 +568,11 @@ bool android_osd_overlay_present(struct android_osd_overlay *ctx)
+     return true;
+ }
+
++bool android_osd_overlay_has_pending(const struct android_osd_overlay *ctx)
++{
++    return ctx->pending;
++}
++
+ bool android_osd_overlay_get_size(struct android_osd_overlay *ctx,
+                                   int *w, int *h)
+ {
+diff --git a/video/out/android_osd_overlay.h b/video/out/android_osd_overlay.h
+index bc98101..cb8bfb3 100644
+--- a/video/out/android_osd_overlay.h
++++ b/video/out/android_osd_overlay.h
+@@ -28,6 +28,7 @@ bool android_osd_overlay_set_surface(struct android_osd_overlay *ctx,
+                                      int64_t wid);
+ void android_osd_overlay_invalidate_geometry(struct android_osd_overlay *ctx);
+ bool android_osd_overlay_render(struct android_osd_overlay *ctx, double pts);
++bool android_osd_overlay_has_pending(const struct android_osd_overlay *ctx);
+ bool android_osd_overlay_present(struct android_osd_overlay *ctx);
+ bool android_osd_overlay_get_size(struct android_osd_overlay *ctx,
+                                   int *w, int *h);
+diff --git a/video/out/vo_mediacodec_embed.c b/video/out/vo_mediacodec_embed.c
+index 3f527ff..7ae51f5 100644
+--- a/video/out/vo_mediacodec_embed.c
++++ b/video/out/vo_mediacodec_embed.c
+@@ -15,12 +15,15 @@
+  * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
+  */
+
++#include <time.h>
++
+ #include <libavcodec/mediacodec.h>
+ #include <libavutil/hwcontext.h>
+ #include <libavutil/hwcontext_mediacodec.h>
+
+ #include "common/common.h"
+ #include "android_osd_overlay.h"
++#include "osdep/timer.h"
+ #include "vo.h"
+ #include "video/mp_image.h"
+ #include "video/hwdec.h"
+@@ -31,12 +34,47 @@ struct priv {
+     struct android_osd_overlay *osd_overlay;
+     int64_t video_wid;
+     double last_pts;
++    int64_t next_pts;
++    int64_t next_duration;
++    int64_t last_submit_start;
++    int64_t timed_lead_total;
++    int64_t timed_lead_min;
++    int64_t timed_lead_max;
++    int64_t release_total;
++    int64_t release_max;
++    int64_t late_total;
++    int64_t late_max;
++    int64_t submit_gap_max;
++    uint64_t submitted_frames;
++    uint64_t timed_frames;
++    uint64_t timed_window_frames;
++    uint64_t immediate_frames;
++    uint64_t late_frames;
++    uint64_t late_window_frames;
++    uint64_t release_stalls;
++    uint64_t release_window_calls;
++    uint64_t submit_gap_stalls;
+     int osd_failures;
+     bool osd_render_ok;
+     bool backend_failed;
+ };
+
+ #define MAX_OSD_FAILURES 3
++#define MEDIACODEC_QUEUE_OFFSET_NS MP_TIME_MS_TO_NS(50)
++#define TIMING_LOG_INTERVAL 300
++
++static bool schedule_image(struct vo *vo, struct mp_image *image, int64_t pts,
++                           int64_t duration, bool allow_defer);
++
++static int64_t android_monotonic_time_ns(void)
++{
++    struct timespec time;
++    if (clock_gettime(CLOCK_MONOTONIC, &time) < 0 || time.tv_sec < 0 ||
++        time.tv_sec > INT64_MAX / MP_TIME_S_TO_NS(1))
++        return 0;
++
++    return (int64_t)time.tv_sec * MP_TIME_S_TO_NS(1) + time.tv_nsec;
++}
+
+ static void report_backend_error(struct vo *vo, const char *component)
+ {
+@@ -85,6 +123,9 @@ static int preinit(struct vo *vo)
+
+     p->video_wid = vo->opts->WinID;
+     p->last_pts = MP_NOPTS_VALUE;
++    p->next_pts = MP_NOPTS_VALUE;
++    p->next_duration = 0;
++    p->timed_lead_min = INT64_MAX;
+     p->osd_overlay = android_osd_overlay_create(vo);
+     if (!p->osd_overlay ||
+         !android_osd_overlay_set_surface(
+@@ -107,6 +148,9 @@ static int preinit(struct vo *vo)
+     }
+
+     hwdec_devices_add(vo->hwdec_devs, &p->hwctx);
++    vo_set_queue_params(vo, MEDIACODEC_QUEUE_OFFSET_NS, 1, 2);
++    MP_INFO(vo, "WebHTV timestamped MediaCodec output enabled: "
++                "early scheduling up to 50ms.\n");
+     return 0;
+
+ fail:
+@@ -123,13 +167,21 @@ fail:
+ static void flip_page(struct vo *vo)
+ {
+     struct priv *p = vo->priv;
++    // The video buffer can be queued early, but the independent OSD Surface
++    // must still be presented at the frame's normal flip time.
++    while (p->next_pts > 0) {
++        int64_t remaining = p->next_pts - mp_time_ns();
++        if (remaining <= 0)
++            break;
++        mp_sleep_ns(remaining);
++    }
+     if (p->next_image) {
+-        AVMediaCodecBuffer *buffer =
+-            (AVMediaCodecBuffer *)p->next_image->planes[3];
+-        if (av_mediacodec_release_buffer(buffer, 1) < 0)
+-            report_backend_error(vo, "video surface");
++        schedule_image(vo, p->next_image, p->next_pts,
++                       p->next_duration, false);
+         mp_image_unrefp(&p->next_image);
+     }
++    p->next_pts = MP_NOPTS_VALUE;
++    p->next_duration = 0;
+
+     bool osd_ok =
+         p->osd_render_ok &&
+@@ -141,6 +193,118 @@ static void flip_page(struct vo *vo)
+     }
+ }
+
++static bool schedule_image(struct vo *vo, struct mp_image *image, int64_t pts,
++                           int64_t duration, bool allow_defer)
++{
++    struct priv *p = vo->priv;
++    AVMediaCodecBuffer *buffer = (AVMediaCodecBuffer *)image->planes[3];
++    int64_t submit_start = mp_time_ns();
++    int64_t lead = pts > 0 ? pts - submit_start : 0;
++    int result;
++    bool timed = false;
++
++    if (allow_defer && lead > MEDIACODEC_QUEUE_OFFSET_NS)
++        return false;
++
++    if (lead > 0) {
++        // mpv may use CLOCK_MONOTONIC_RAW. Convert only the relative lead to
++        // the CLOCK_MONOTONIC epoch required by MediaCodec.
++        int64_t monotonic_now = android_monotonic_time_ns();
++        if (monotonic_now <= 0 || lead > INT64_MAX - monotonic_now) {
++            if (allow_defer)
++                return false;
++            result = av_mediacodec_release_buffer(buffer, 1);
++        } else {
++            result = av_mediacodec_render_buffer_at_time(buffer,
++                                                         monotonic_now + lead);
++            timed = true;
++        }
++    } else {
++        result = av_mediacodec_release_buffer(buffer, 1);
++    }
++
++    int64_t release_elapsed = MPMAX(mp_time_ns() - submit_start, 0);
++    int64_t frame_budget = duration > 0
++        ? duration : MP_TIME_US_TO_NS(16667);
++    if (frame_budget <= 0 || frame_budget > MP_TIME_S_TO_NS(10))
++        frame_budget = MP_TIME_US_TO_NS(16667);
++
++    int64_t submit_gap = p->last_submit_start > 0
++        ? submit_start - p->last_submit_start : 0;
++    p->last_submit_start = submit_start;
++    if (submit_gap > 0)
++        p->submit_gap_max = MPMAX(p->submit_gap_max, submit_gap);
++    if (submit_gap > frame_budget * 2)
++        p->submit_gap_stalls++;
++
++    p->submitted_frames++;
++    p->release_window_calls++;
++    p->release_total += release_elapsed;
++    p->release_max = MPMAX(p->release_max, release_elapsed);
++    if (release_elapsed > frame_budget)
++        p->release_stalls++;
++    if (timed) {
++        p->timed_frames++;
++        p->timed_window_frames++;
++        p->timed_lead_total += lead;
++        p->timed_lead_min = MPMIN(p->timed_lead_min, lead);
++        p->timed_lead_max = MPMAX(p->timed_lead_max, lead);
++    } else {
++        p->immediate_frames++;
++        if (pts > 0 && lead <= 0) {
++            p->late_frames++;
++            p->late_window_frames++;
++            p->late_total += -lead;
++            p->late_max = MPMAX(p->late_max, -lead);
++        }
++    }
++
++    if (result < 0)
++        report_backend_error(vo, "video surface");
++
++    if (p->submitted_frames % TIMING_LOG_INTERVAL == 0) {
++        int64_t average_lead = p->timed_window_frames > 0
++            ? p->timed_lead_total / p->timed_window_frames : 0;
++        int64_t minimum_lead = p->timed_window_frames > 0
++            ? p->timed_lead_min : 0;
++        MP_WARN(vo, "MediaCodec output scheduling: mode=early-timestamped "
++                    "submitted=%llu timed=%llu immediate=%llu late=%llu "
++                    "lead=%lld/%lld/%lld us late-by=%lld/%lld us "
++                    "release=%lld/%lld us gap-max=%lld us "
++                    "release-stalls=%llu gap-stalls=%llu.\n",
++                (unsigned long long)p->submitted_frames,
++                (unsigned long long)p->timed_frames,
++                (unsigned long long)p->immediate_frames,
++                (unsigned long long)p->late_frames,
++                (long long)(minimum_lead / 1000),
++                (long long)(average_lead / 1000),
++                (long long)(p->timed_lead_max / 1000),
++                (long long)(p->late_window_frames > 0
++                    ? p->late_total / p->late_window_frames : 0) / 1000,
++                (long long)(p->late_max / 1000),
++                (long long)(p->release_window_calls > 0
++                    ? p->release_total / p->release_window_calls : 0) / 1000,
++                (long long)(p->release_max / 1000),
++                (long long)(p->submit_gap_max / 1000),
++                (unsigned long long)p->release_stalls,
++                (unsigned long long)p->submit_gap_stalls);
++        p->timed_lead_total = 0;
++        p->timed_lead_min = INT64_MAX;
++        p->timed_lead_max = 0;
++        p->release_total = 0;
++        p->release_max = 0;
++        p->late_total = 0;
++        p->late_max = 0;
++        p->late_window_frames = 0;
++        p->submit_gap_max = 0;
++        p->release_stalls = 0;
++        p->submit_gap_stalls = 0;
++        p->timed_window_frames = 0;
++        p->release_window_calls = 0;
++    }
++    return true;
++}
++
+ static bool draw_frame(struct vo *vo, struct vo_frame *frame)
+ {
+     struct priv *p = vo->priv;
+@@ -148,14 +312,25 @@ static bool draw_frame(struct vo *vo, struct vo_frame *frame)
+     mp_image_t *mpi = NULL;
+     if (frame->current)
+         p->last_pts = frame->current->pts;
+-    if (!frame->redraw && !frame->repeat && frame->current)
++    p->next_pts = frame->pts;
++    p->next_duration = frame->duration > 0
++        ? frame->duration : frame->approx_duration;
++    p->osd_render_ok =
++        p->last_pts == MP_NOPTS_VALUE ||
++        android_osd_overlay_render(p->osd_overlay, p->last_pts);
++    // Keep video and OSD changes on the same flip. Unchanged OSD content does
++    // not need another Surface buffer and lets MediaCodec queue video early.
++    if (!frame->redraw && !frame->repeat && frame->current &&
++        (!p->osd_render_ok ||
++         android_osd_overlay_has_pending(p->osd_overlay) ||
++         !schedule_image(vo, frame->current, frame->pts,
++                         p->next_duration, true)))
++    {
+         mpi = mp_image_new_ref(frame->current);
++    }
+
+     mp_image_unrefp(&p->next_image);
+     p->next_image = mpi;
+-    p->osd_render_ok =
+-        p->last_pts == MP_NOPTS_VALUE ||
+-        android_osd_overlay_render(p->osd_overlay, p->last_pts);
+     return VO_TRUE;
+ }

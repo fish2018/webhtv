@@ -5,6 +5,9 @@
 build/
 dist/
 out/
+!third_party/mpv-native-overrides/aimagereader-stable/video/out/
+!third_party/mpv-native-overrides/aimagereader-stable/video/out/hwdec/
+!third_party/mpv-native-overrides/aimagereader-stable/video/out/hwdec/hwdec_aimagereader_vk_stable.c
 Release/
 *.apk
 *.aab
@@ -25,3 +28,5 @@ __pycache__/
 *.pyc
 third_party/sources/
 plans/
+/docs/
+.codex/task-state/

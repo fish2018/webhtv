@@ -1,0 +1,46 @@
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/DtsUtil.java b/libraries/extractor/src/main/java/androidx/media3/extractor/DtsUtil.java
+index e47deaeaab..81ce1b52d2 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/DtsUtil.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/DtsUtil.java
+@@ -466,2 +466,6 @@ public final class DtsUtil {
+-    // If the frame is stored in 14-bit mode, adjust the frame size to reflect the actual byte size.
+-    return uses14BitPerWord ? fsize * 16 / 14 : fsize;
++    if (!uses14BitPerWord) {
++      return fsize;
++    }
++    // A 14-bit stream stores each 14-bit word in a 16-bit container. Convert the unpacked byte
++    // size to a whole number of 14-bit words before converting those words to physical bytes.
++    return (fsize * C.BITS_PER_BYTE / 14) * 2;
+diff --git a/libraries/extractor/src/test/java/androidx/media3/extractor/DtsUtilTest.java b/libraries/extractor/src/test/java/androidx/media3/extractor/DtsUtilTest.java
+index 5bf7cc1006..c57dbb5fa9 100644
+--- a/libraries/extractor/src/test/java/androidx/media3/extractor/DtsUtilTest.java
++++ b/libraries/extractor/src/test/java/androidx/media3/extractor/DtsUtilTest.java
+@@ -41,0 +42,28 @@ public final class DtsUtilTest {
++
++  @Test
++  public void getDtsFrameSize_with14BitBigEndianFrameSize3585_returns4096Bytes() {
++    byte[] data = new byte[10];
++    data[0] = 0x1F;
++    data[7] = (byte) 0xE0;
++
++    assertThat(DtsUtil.getDtsFrameSize(data)).isEqualTo(4096);
++  }
++
++  @Test
++  public void getDtsFrameSize_with14BitLittleEndianFrameSize3585_returns4096Bytes() {
++    byte[] data = new byte[10];
++    data[0] = (byte) 0xFF;
++    data[6] = (byte) 0xE0;
++
++    assertThat(DtsUtil.getDtsFrameSize(data)).isEqualTo(4096);
++  }
++
++  @Test
++  public void getDtsFrameSize_with16BitBigEndianFrame_returnsEncodedSize() {
++    byte[] data = new byte[8];
++    data[0] = 0x7F;
++    data[6] = 0x06;
++    data[7] = 0x30;
++
++    assertThat(DtsUtil.getDtsFrameSize(data)).isEqualTo(100);
++  }

@@ -1,0 +1,211 @@
+diff --git a/meson.build b/meson.build
+index 433dea0..4cb7c86 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1416,6 +1416,7 @@ if features['android-media-ndk']
+ endif
+ if features['android-media-ndk'] and features['vulkan']
+     sources += files('video/out/hwdec/hwdec_aimagereader_vk.c',
++                     'video/out/hwdec/hwdec_aimagereader_vk_stable.c',
+                      'video/out/hwdec/hwdec_aimagereader_vk_convert.c',
+                      'video/out/hwdec/hwdec_aimagereader_vk_direct.c')
+ endif
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk.c b/video/out/hwdec/hwdec_aimagereader_vk.c
+index c06860c..0d47a11 100644
+--- a/video/out/hwdec/hwdec_aimagereader_vk.c
++++ b/video/out/hwdec/hwdec_aimagereader_vk.c
+@@ -1,8 +1,10 @@
+ /*
+  * Android AImageReader / Vulkan backend selection.
+  *
+- * Prefer direct libplacebo sampling and fall back to conversion when the
+- * Android hardware buffer cannot be sampled directly.
++ * Automatic mode uses WebHTV's queue-safe four-output conversion pool.
++ * The newer direct, compute and fragment implementations remain selectable,
++ * while the default path keeps the queue/fence ownership model that is stable
++ * across Qualcomm Android drivers.
+  */
+ 
+ #include "config.h"
+@@ -21,6 +23,7 @@ struct aimagereader_vk {
+     struct ra_hwdec_mapper *mapper;
+     struct aimagereader_vk_api api;
+     mp_mutex lock;
++    struct aimagereader_vk_stable *stable;
+     struct aimagereader_vk_direct *direct;
+     struct aimagereader_vk_convert *convert;
+     enum android_vulkan_aimagereader_backend backend;
+@@ -77,7 +80,8 @@ bool aimagereader_vk_available(struct ra_ctx *ra_ctx, struct mp_log *log,
+     if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE ||
+         backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_FRAGMENT)
+         return aimagereader_vk_convert_available(ra_ctx, log);
+-    return aimagereader_vk_direct_available(ra_ctx, log) ||
++    return aimagereader_vk_stable_available(ra_ctx, log) ||
++           aimagereader_vk_direct_available(ra_ctx, log) ||
+            aimagereader_vk_convert_available(ra_ctx, log);
+ }
+ 
+@@ -94,13 +98,36 @@ struct aimagereader_vk *aimagereader_vk_create(
+     mp_info(p->log, "Vulkan AImageReader backend: %s\n",
+             backend_name(backend));
+ 
+-    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_AUTO ||
+-        backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT) {
++    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_AUTO) {
++        mp_info(p->log,
++                "WebHTV Vulkan auto backend prefers stable GPU conversion\n");
++        reset_mapper_params(p);
++        p->stable = aimagereader_vk_stable_create(mapper, api);
++        if (p->stable)
++            return p;
++
++        mp_warn(p->log, "Stable Vulkan conversion initialization failed; "
++                        "trying the newer conversion backend\n");
++        reset_mapper_params(p);
++        p->convert = aimagereader_vk_convert_create(mapper, api, backend);
++        if (p->convert)
++            return p;
++
++        reset_mapper_params(p);
++        p->direct = aimagereader_vk_direct_create(mapper, api);
++        if (p->direct) {
++            mp_warn(p->log, "Vulkan GPU conversion initialization failed; "
++                            "falling back to direct AHardwareBuffer sampling\n");
++            return p;
++        }
++        goto error;
++    }
++
++    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT) {
+         p->direct = aimagereader_vk_direct_create(mapper, api);
+         if (p->direct)
+             return p;
+-        if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT)
+-            goto error;
++        goto error;
+     }
+ 
+     reset_mapper_params(p);
+@@ -121,6 +148,7 @@ void aimagereader_vk_destroy(struct aimagereader_vk **state)
+         return;
+ 
+     mp_mutex_lock(&p->lock);
++    aimagereader_vk_stable_destroy(&p->stable);
+     aimagereader_vk_direct_destroy(&p->direct);
+     aimagereader_vk_convert_destroy(&p->convert);
+     mp_mutex_unlock(&p->lock);
+@@ -133,6 +161,8 @@ void aimagereader_vk_buffer_removed(struct aimagereader_vk *p,
+                                     AHardwareBuffer *buffer)
+ {
+     mp_mutex_lock(&p->lock);
++    if (p->stable)
++        aimagereader_vk_stable_buffer_removed(p->stable, buffer);
+     if (p->direct)
+         aimagereader_vk_direct_buffer_removed(p->direct, buffer);
+     if (p->convert)
+@@ -144,9 +174,11 @@ bool aimagereader_vk_reuse(struct aimagereader_vk *p,
+                            struct mp_image *frame)
+ {
+     mp_mutex_lock(&p->lock);
+-    bool reused = p->convert
+-        ? aimagereader_vk_convert_reuse(p->convert, frame)
+-        : p->direct && aimagereader_vk_direct_reuse(p->direct, frame);
++    bool reused = p->stable
++        ? aimagereader_vk_stable_reuse(p->stable, frame)
++        : p->convert
++            ? aimagereader_vk_convert_reuse(p->convert, frame)
++            : p->direct && aimagereader_vk_direct_reuse(p->direct, frame);
+     mp_mutex_unlock(&p->lock);
+     return reused;
+ }
+@@ -155,10 +187,12 @@ bool aimagereader_vk_retain_last(struct aimagereader_vk *p,
+                                 struct mp_image *frame)
+ {
+     mp_mutex_lock(&p->lock);
+-    bool retained = p->convert
+-        ? aimagereader_vk_convert_retain_last(p->convert, frame)
+-        : p->direct &&
+-          aimagereader_vk_direct_retain_last(p->direct, frame);
++    bool retained = p->stable
++        ? aimagereader_vk_stable_retain_last(p->stable, frame)
++        : p->convert
++            ? aimagereader_vk_convert_retain_last(p->convert, frame)
++            : p->direct &&
++              aimagereader_vk_direct_retain_last(p->direct, frame);
+     mp_mutex_unlock(&p->lock);
+     return retained;
+ }
+@@ -170,6 +204,11 @@ int aimagereader_vk_map(struct aimagereader_vk *p, AImage *image,
+ {
+     mp_mutex_lock(&p->lock);
+     int result;
++    if (p->stable) {
++        result = aimagereader_vk_stable_map(
++            p->stable, image, buffer, crop, data_space, frame, acquire_fence);
++        goto done;
++    }
+     if (p->convert) {
+         result = aimagereader_vk_convert_map(
+             p->convert, image, buffer, crop, data_space, frame, acquire_fence);
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk_convert.c b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+index a100d40..f4ddaf0 100644
+--- a/video/out/hwdec/hwdec_aimagereader_vk_convert.c
++++ b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+@@ -2063,9 +2063,14 @@ struct aimagereader_vk_convert *aimagereader_vk_convert_create(
+     p->acquire_sync_fd =
+         p->ImportSemaphoreFd &&
+         (sync_fd_features & VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT);
+-    p->release_sync_fd =
+-        p->GetSemaphoreFd &&
+-        (sync_fd_features & VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT);
++    // Keep the AImage alive until the conversion submission fence completes.
++    // The previous WebHTV Vulkan path used this ownership model reliably.
++    // Exporting a release sync-fd and immediately handing it to
++    // AImage_deleteAsync can stall some Android/Adreno BufferQueues even when
++    // the driver advertises export support, eventually starving MediaCodec.
++    p->release_sync_fd = false;
++    mp_info(p->log,
++            "WebHTV Vulkan keeps AImage until the conversion fence completes\n");
+     mp_verbose(p->log, "Vulkan AImageReader sync-fd: acquire %s, release %s\n",
+                p->acquire_sync_fd ? "enabled" : "disabled",
+                p->release_sync_fd ? "enabled" : "disabled");
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk_private.h b/video/out/hwdec/hwdec_aimagereader_vk_private.h
+index 2808af0..2e60dce 100644
+--- a/video/out/hwdec/hwdec_aimagereader_vk_private.h
++++ b/video/out/hwdec/hwdec_aimagereader_vk_private.h
+@@ -8,6 +8,23 @@
+ 
+ struct aimagereader_vk_direct;
+ struct aimagereader_vk_convert;
++struct aimagereader_vk_stable;
++
++bool aimagereader_vk_stable_available(struct ra_ctx *ra_ctx,
++                                      struct mp_log *log);
++struct aimagereader_vk_stable *aimagereader_vk_stable_create(
++    struct ra_hwdec_mapper *mapper, const struct aimagereader_vk_api *api);
++void aimagereader_vk_stable_destroy(struct aimagereader_vk_stable **state);
++void aimagereader_vk_stable_buffer_removed(
++    struct aimagereader_vk_stable *state, AHardwareBuffer *buffer);
++bool aimagereader_vk_stable_reuse(struct aimagereader_vk_stable *state,
++                                  struct mp_image *frame);
++bool aimagereader_vk_stable_retain_last(struct aimagereader_vk_stable *state,
++                                        struct mp_image *frame);
++int aimagereader_vk_stable_map(
++    struct aimagereader_vk_stable *state, AImage *image,
++    AHardwareBuffer *buffer, const AImageCropRect *crop, int32_t data_space,
++    struct mp_image *frame, int *acquire_fence);
+ 
+ bool aimagereader_vk_direct_available(struct ra_ctx *ra_ctx,
+                                       struct mp_log *log);
+diff --git a/video/out/vulkan/context.c b/video/out/vulkan/context.c
+index 05efd82..6c0bb67 100644
+--- a/video/out/vulkan/context.c
++++ b/video/out/vulkan/context.c
+@@ -217,6 +217,7 @@ pl_vulkan mppl_create_vulkan(struct vulkan_opts *opts,
+ #if HAVE_ANDROID_MEDIA_NDK
+         "VK_ANDROID_external_memory_android_hardware_buffer",
+         "VK_EXT_queue_family_foreign",
++        "VK_KHR_external_semaphore_fd",
+ #endif
+ #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(60, 26, 0)
+         VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,

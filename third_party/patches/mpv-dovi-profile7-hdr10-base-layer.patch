@@ -1,0 +1,430 @@
+diff --git a/demux/demux.c b/demux/demux.c
+index dac126d..492be0d 100644
+--- a/demux/demux.c
++++ b/demux/demux.c
+@@ -133,6 +133,9 @@ const struct m_sub_options demux_conf = {
+         {"directory-filter-types", OPT_STRINGLIST(directory_filter)},
+         {"autocreate-playlist", OPT_CHOICE(autocreate_playlist,
+             {"no", 0}, {"filter", 1}, {"same", 2})},
++        {"demuxer-dovi-profile7", OPT_CHOICE(dovi_profile7_mode,
++            {"preserve", DEMUX_DOVI_PROFILE7_PRESERVE},
++            {"hdr10", DEMUX_DOVI_PROFILE7_HDR10})},
+         {0}
+     },
+     .size = sizeof(struct demux_opts),
+@@ -158,6 +161,7 @@ const struct m_sub_options demux_conf = {
+         .directory_filter = (char *[]){
+             "video", "audio", "image", "archive", "playlist", NULL
+         },
++        .dovi_profile7_mode = DEMUX_DOVI_PROFILE7_PRESERVE,
+     },
+     .get_sub_options = get_demux_sub_opts,
+ };
+diff --git a/demux/demux.h b/demux/demux.h
+index 1819e1e..f6a261b 100644
+--- a/demux/demux.h
++++ b/demux/demux.h
+@@ -89,6 +89,12 @@ struct demux_opts {
+     bool force_retry_eof;
+     char **directory_filter;
+     int autocreate_playlist;
++    int dovi_profile7_mode;
++};
++
++enum demux_dovi_profile7_mode {
++    DEMUX_DOVI_PROFILE7_PRESERVE = 0,
++    DEMUX_DOVI_PROFILE7_HDR10 = 1,
+ };
+ 
+ #define SEEK_FACTOR   (1 << 1)      // argument is in range [0,1]
+diff --git a/demux/demux_lavf.c b/demux/demux_lavf.c
+index ac2ca71..fd9c065 100644
+--- a/demux/demux_lavf.c
++++ b/demux/demux_lavf.c
+@@ -1454,8 +1454,7 @@ static void detect_dovi_split_streams(demuxer_t *demuxer)
+     for (int n = 0; n < snapshot_count; n++) {
+         struct stream_info *info = priv->streams[n];
+         struct sh_stream *sh = info ? info->sh : NULL;
+-        if (!sh || sh->type != STREAM_VIDEO || !sh->codec ||
+-            !sh->codec->dv_el_present || sh->group)
++        if (!sh || sh->type != STREAM_VIDEO || !sh->codec || sh->group)
+         {
+             continue;
+         }
+@@ -1867,6 +1867,12 @@ static bool demux_lavf_read_packet(struct demuxer *demux,
+ 
+     // Dispatch the EL view of this packet via the splitter.
+     if (info->dovi_split) {
++        if (!mp_dovi_split_filter_base(info->dovi_split, &dp)) {
++            talloc_free(dp);
++            return true;
++        }
++        if (!dp)
++            return true;
+         struct sh_stream *el = mp_dovi_split_el_stream(info->dovi_split);
+         if (el && demux_stream_is_selected(el))
+             priv->pending_pkt = mp_dovi_split_dispatch(info->dovi_split, dp);
+diff --git a/demux/demux_mkv.c b/demux/demux_mkv.c
+index e47af33..2e0b1f1 100644
+--- a/demux/demux_mkv.c
++++ b/demux/demux_mkv.c
+@@ -1831,9 +1831,8 @@ static int demux_mkv_open_video(demuxer_t *demuxer, mkv_track_t *track, int idx)
+ done:
+     demux_add_sh_stream(demuxer, sh);
+ 
+-    // Profile 7 NALU-interleaved
+-    if (sh_v->dv_el_present)
+-        track->dovi_split = mp_dovi_split_create(demuxer, sh);
++    // Profile 7 NALU-interleaved or explicit base-only HDR10 output.
++    track->dovi_split = mp_dovi_split_create(demuxer, sh);
+ 
+     return 0;
+ }
+@@ -2975,6 +2975,12 @@ static void mkv_parse_and_add_packet(demuxer_t *demuxer, mkv_track_t *track,
+         struct demux_packet *el_dp = NULL;
+         struct sh_stream *el_sh = NULL;
+         if (track->dovi_split) {
++            if (!mp_dovi_split_filter_base(track->dovi_split, &dp)) {
++                talloc_free(dp);
++                return;
++            }
++            if (!dp)
++                return;
+             el_sh = mp_dovi_split_el_stream(track->dovi_split);
+             if (el_sh && demux_stream_is_selected(el_sh))
+                 el_dp = mp_dovi_split_dispatch(track->dovi_split, dp);
+diff --git a/demux/dovi_split.c b/demux/dovi_split.c
+index 77f4644..99c3099 100644
+--- a/demux/dovi_split.c
++++ b/demux/dovi_split.c
+@@ -15,6 +15,7 @@
+  * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include <limits.h>
+ #include <string.h>
+ 
+ #include <libavcodec/avcodec.h>
+@@ -39,6 +39,7 @@ struct mp_dovi_split {
+     struct sh_stream *el;
+     AVBSFContext *bsf;
+     AVPacket *staging;
++    bool base_only;
+ };
+ 
+ static void mp_dovi_split_destructor(void *p)
+@@ -50,10 +51,15 @@ static void mp_dovi_split_destructor(void *p)
+ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+                                            struct sh_stream *bl)
+ {
++    bool base_only = bl && bl->codec && bl->codec->dv_profile == 7 &&
++                     demuxer->opts && demuxer->opts->dovi_profile7_mode ==
++                                          DEMUX_DOVI_PROFILE7_HDR10;
+     if (!bl || bl->type != STREAM_VIDEO || !bl->codec ||
+-        !bl->codec->codec || strcmp(bl->codec->codec, "hevc") != 0)
++        !bl->codec->codec || strcmp(bl->codec->codec, "hevc") != 0 ||
++        (!bl->codec->dv_el_present && !base_only))
+         return NULL;
+ 
+     const AVBitStreamFilter *def = av_bsf_get_by_name("dovi_split");
+@@ -61,30 +67,63 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+     if (!def) {
+-        MP_WARN(demuxer, "Dolby Vision EL: 'dovi_split' BSF not available in "
+-                         "libavcodec; rendering base layer only.\n");
++        MP_WARN(demuxer, "Dolby Vision: 'dovi_split' BSF not available in "
++                         "libavcodec; leaving the bitstream unchanged.\n");
+         return NULL;
+     }
+ 
+     struct mp_dovi_split *s = talloc_zero(demuxer, struct mp_dovi_split);
+     talloc_set_destructor(s, mp_dovi_split_destructor);
+     s->log = demuxer->log;
+     s->demuxer = demuxer;
+     s->bl = bl;
++    s->base_only = base_only;
+ 
++    int ret = AVERROR(ENOMEM);
+     s->staging = av_packet_alloc();
+     if (!s->staging)
+         goto fail;
+ 
+-    int ret = av_bsf_alloc(def, &s->bsf);
++    ret = av_bsf_alloc(def, &s->bsf);
+     if (ret < 0)
+         goto fail;
+ 
+     AVCodecParameters *par = mp_codec_params_to_av(bl->codec);
+-    if (par) {
+-        avcodec_parameters_copy(s->bsf->par_in, par);
+-        avcodec_parameters_free(&par);
+-    }
++    if (!par)
++        goto fail;
++    ret = avcodec_parameters_copy(s->bsf->par_in, par);
++    avcodec_parameters_free(&par);
++    if (ret < 0)
++        goto fail;
+     s->bsf->time_base_in = mp_get_codec_timebase(bl->codec);
+ 
+-    // The enhancement pairing filter inherits Dolby Vision metadata from the
+-    // decoded EL frame, so the companion stream must retain its RPU.
+-    if (av_opt_set(s->bsf, "mode", "el_rpu", AV_OPT_SEARCH_CHILDREN) < 0)
++    // Feed HDR10 fallback paths a clean HEVC base layer. Leaving EL/RPU NALs
++    // in the access unit can starve regular vendor HEVC decoders and can let
++    // the output representation change later in the same playback session.
++    const char *mode = s->base_only ? "bl" : "el_rpu";
++    ret = av_opt_set(s->bsf, "mode", mode, AV_OPT_SEARCH_CHILDREN);
++    if (ret < 0)
+         goto fail;
+-    if (av_bsf_init(s->bsf) < 0)
++    ret = av_bsf_init(s->bsf);
++    if (ret < 0)
+         goto fail;
+ 
++    if (s->base_only) {
++        if (bl->codec->lav_codecpar) {
++            AVCodecParameters *filtered = avcodec_parameters_alloc();
++            if (!filtered) {
++                ret = AVERROR(ENOMEM);
++                goto fail;
++            }
++            ret = avcodec_parameters_copy(filtered, s->bsf->par_out);
++            if (ret < 0) {
++                avcodec_parameters_free(&filtered);
++                goto fail;
++            }
++            MPSWAP(AVCodecParameters, *bl->codec->lav_codecpar, *filtered);
++            avcodec_parameters_free(&filtered);
++        }
++        bl->codec->dv_el_present = false;
++        MP_INFO(demuxer, "DV7 HDR10 fallback: stripping EL/RPU before decoder.\n");
++        MP_VERBOSE(demuxer, "DV7 HDR10 fallback: synchronized decoder "
++                            "parameters to the HDR10 base layer.\n");
++        return s;
++    }
++
+     const AVCodecParameters *par_out = s->bsf->par_out;
+ 
+     // Allocate the virtual EL sh_stream.
+@@ -135,6 +174,9 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+     return s;
+ 
+ fail:
++    MP_WARN(demuxer, "Dolby Vision: failed to initialize 'dovi_split': %s; "
++                     "leaving the bitstream unchanged.\n",
++            mp_strerror(AVUNERROR(ret)));
+     talloc_free(s);
+     return NULL;
+ }
+@@ -151,55 +161,101 @@ struct sh_stream *mp_dovi_split_el_stream(struct mp_dovi_split *s)
+     return s ? s->el : NULL;
+ }
+ 
+-struct demux_packet *mp_dovi_split_dispatch(struct mp_dovi_split *s,
+-                                            struct demux_packet *bl_dp)
++enum split_packet_result {
++    SPLIT_PACKET_ERROR = -1,
++    SPLIT_PACKET_EMPTY = 0,
++    SPLIT_PACKET_READY = 1,
++};
++
++static int filter_packet(struct mp_dovi_split *s,
++                         struct demux_packet *bl_dp,
++                         int stream_index,
++                         struct demux_packet **out)
+ {
++    *out = NULL;
+     if (!s || !s->bsf || !bl_dp || !bl_dp->buffer || bl_dp->len <= 0)
+-        return NULL;
++        return SPLIT_PACKET_ERROR;
++    if (bl_dp->len > INT_MAX)
++        return SPLIT_PACKET_ERROR;
+ 
+-    // av_bsf_send_packet takes ownership of the packet's buffer, so copy it,
+-    // to not steal it from caller.
++    // av_bsf_send_packet takes ownership of the packet reference. Reuse the
++    // demux packet's ref-counted AVBufferRef when available to avoid copying
++    // every 4K access unit; retain a padded-copy fallback for foreign packets.
+     AVPacket *copy = av_packet_alloc();
+     if (!copy)
+-        return NULL;
+-    int ret = av_new_packet(copy, bl_dp->len);
++        return SPLIT_PACKET_ERROR;
++    int ret;
++    if (bl_dp->avpacket && bl_dp->avpacket->data == bl_dp->buffer
++            && bl_dp->avpacket->size == bl_dp->len) {
++        ret = av_packet_ref(copy, bl_dp->avpacket);
++    } else {
++        ret = av_new_packet(copy, (int)bl_dp->len);
++        if (ret >= 0) memcpy(copy->data, bl_dp->buffer, bl_dp->len);
++        if (ret >= 0 && bl_dp->avpacket)
++            ret = av_packet_copy_props(copy, bl_dp->avpacket);
++        copy->flags = bl_dp->keyframe ? AV_PKT_FLAG_KEY : 0;
++    }
+     if (ret < 0) {
+         av_packet_free(&copy);
+-        return NULL;
++        return SPLIT_PACKET_ERROR;
+     }
+-    memcpy(copy->data, bl_dp->buffer, bl_dp->len);
+-    copy->flags = bl_dp->keyframe ? AV_PKT_FLAG_KEY : 0;
+ 
+     ret = av_bsf_send_packet(s->bsf, copy);
+     av_packet_free(&copy);
+     if (ret < 0) {
+         MP_VERBOSE(s->demuxer, "dovi_split: BSF send failed: %s\n",
+                    mp_strerror(AVUNERROR(ret)));
+-        return NULL;
++        return SPLIT_PACKET_ERROR;
+     }
+ 
+     ret = av_bsf_receive_packet(s->bsf, s->staging);
+     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+-        // No EL NALs in this AU, nothing to emit.
+-        return NULL;
++        // No selected NALs in this access unit, nothing to emit.
++        return SPLIT_PACKET_EMPTY;
+     }
+     if (ret < 0) {
+         MP_VERBOSE(s->demuxer, "dovi_split: BSF receive failed: %s; flushing.\n",
+                    mp_strerror(AVUNERROR(ret)));
+         av_bsf_flush(s->bsf);
+-        return NULL;
++        return SPLIT_PACKET_ERROR;
+     }
+ 
+     struct demux_packet *dp =
+         new_demux_packet_from_avpacket(s->demuxer->packet_pool, s->staging);
+-    if (dp) {
+-        // Mirror the BL packet's timing so the pairing filter can match by PTS.
+-        dp->pts = bl_dp->pts;
+-        dp->dts = bl_dp->dts;
+-        dp->duration = bl_dp->duration;
+-        dp->keyframe = bl_dp->keyframe;
+-        dp->stream = s->el->index;
+-    }
+     av_packet_unref(s->staging);
++    if (!dp)
++        return SPLIT_PACKET_ERROR;
++    demux_packet_copy_attribs(dp, bl_dp);
++    dp->stream = stream_index;
++    *out = dp;
++    return SPLIT_PACKET_READY;
++}
++
++bool mp_dovi_split_filter_base(struct mp_dovi_split *s,
++                               struct demux_packet **bl_dp)
++{
++    if (!s || !s->base_only)
++        return true;
++    if (!bl_dp || !*bl_dp)
++        return false;
++
++    struct demux_packet *filtered = NULL;
++    int ret = filter_packet(s, *bl_dp, s->bl->index, &filtered);
++    if (ret == SPLIT_PACKET_ERROR) {
++        MP_ERR(s->demuxer, "DV7 HDR10 fallback: failed to produce base-layer packet.\n");
++        return false;
++    }
++
++    talloc_free(*bl_dp);
++    *bl_dp = filtered;
++    return true;
++}
++
++struct demux_packet *mp_dovi_split_dispatch(struct mp_dovi_split *s,
++                                            struct demux_packet *bl_dp)
++{
++    if (!s || s->base_only || !s->el)
++        return NULL;
++    struct demux_packet *dp = NULL;
++    if (filter_packet(s, bl_dp, s->el->index, &dp) != SPLIT_PACKET_READY)
++        return NULL;
+     return dp;
+ }
+diff --git a/demux/dovi_split.h b/demux/dovi_split.h
+index cf22ded..55ed81e 100644
+--- a/demux/dovi_split.h
++++ b/demux/dovi_split.h
+@@ -17,6 +17,8 @@
+ 
+ #pragma once
+ 
++#include <stdbool.h>
++
+ struct demuxer;
+ struct sh_stream;
+ struct demux_packet;
+@@ -28,7 +30,8 @@ struct demux_packet;
+ // so downstream code can treat same as separate track BL+EL.
+ struct mp_dovi_split;
+ 
+-// Create a splitter on `bl`. Adds the virtual EL sh_stream to `demuxer`.
++// Create a splitter on `bl`. In preserve mode this adds the virtual EL
++// sh_stream; in HDR10 fallback mode it prepares a BL-only filter.
+ //
+ // Returns NULL if the BSF is unavailable or initialization fails. The
+ // returned context is talloc-attached to `demuxer`.
+@@ -41,6 +44,13 @@ void mp_dovi_split_reset(struct mp_dovi_split *s);
+ // returned pointer remains valid for the lifetime of the splitter.
+ struct sh_stream *mp_dovi_split_el_stream(struct mp_dovi_split *s);
+ 
++// Replace `*bl_dp` with a base-layer-only packet in HDR10 fallback mode.
++// The pointer becomes NULL when an access unit contains no base-layer NAL.
++// Returns false only for a filtering error; the caller owns the original
++// packet in that case.
++bool mp_dovi_split_filter_base(struct mp_dovi_split *s,
++                               struct demux_packet **bl_dp);
++
+ // Apply the BSF to `bl_dp` and produce a companion EL demux_packet, if any.
+ // Caller owns the returned packet. Returns NULL if the access unit contained
+ // no EL NALs or on any non-fatal BSF error.
+diff --git a/video/decode/vd_lavc.c b/video/decode/vd_lavc.c
+index 98f1bd6..5221461 100644
+--- a/video/decode/vd_lavc.c
++++ b/video/decode/vd_lavc.c
+@@ -556,13 +556,27 @@ static bool supports_gpu_dovi_mapping(vd_ffmpeg_ctx *ctx)
+     return hwctx && hwctx->supports_gpu_dovi_mapping;
+ }
+ 
++static int dovi_profile7_mode(struct mp_filter *vd)
++{
++    struct demux_opts *opts = mp_get_config_group(vd, vd->global, &demux_conf);
++    return opts ? opts->dovi_profile7_mode : DEMUX_DOVI_PROFILE7_PRESERVE;
++}
++
++static bool dovi_profile7_hdr10_fallback(struct mp_filter *vd,
++                                         const vd_ffmpeg_ctx *ctx)
++{
++    return ctx->codec && ctx->codec->dv_profile == 7 &&
++           dovi_profile7_mode(vd) == DEMUX_DOVI_PROFILE7_HDR10;
++}
++
+ // Select if and which hwdec to use. Also makes sure to get the decode device.
+ static void select_and_set_hwdec(struct mp_filter *vd)
+ {
+     vd_ffmpeg_ctx *ctx = vd->priv;
+     const char *codec = ctx->codec->codec;
+     bool native_dovi_sink =
+-        ctx->vo && (ctx->vo->driver->caps & VO_CAP_NATIVE_DOVI);
++        ctx->vo && (ctx->vo->driver->caps & VO_CAP_NATIVE_DOVI) &&
++        !dovi_profile7_hdr10_fallback(vd, ctx);
+ 
+     m_config_cache_update(ctx->hwdec_opts_cache);
+ 
+@@ -932,9 +945,14 @@ static void init_avctx(struct mp_filter *vd)
+ 
+     bool native_dovi_sink =
+         ctx->vo && (ctx->vo->driver->caps & VO_CAP_NATIVE_DOVI);
++    bool decoder_native_dovi_sink = native_dovi_sink &&
++                                    !dovi_profile7_hdr10_fallback(vd, ctx);
++    if (native_dovi_sink && !decoder_native_dovi_sink)
++        MP_INFO(vd, "DV7 HDR10 fallback: using MediaCodec base-layer decoder "
++                   "with direct Surface output.\n");
+     bool gpu_dovi_mapping = supports_gpu_dovi_mapping(ctx);
+     set_decoder_avopts(vd->log, avctx, lavc_param->avopts,
+-                       native_dovi_sink, gpu_dovi_mapping);
++                       decoder_native_dovi_sink, gpu_dovi_mapping);
+ 
+     // Do this after the above avopt handling in case it changes values
+     ctx->skip_frame = avctx->skip_frame;

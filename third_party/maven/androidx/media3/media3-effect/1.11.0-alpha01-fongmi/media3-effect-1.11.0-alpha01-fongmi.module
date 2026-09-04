@@ -42,11 +42,11 @@
         {
           "name": "media3-effect-1.11.0-alpha01-fongmi.aar",
           "url": "media3-effect-1.11.0-alpha01-fongmi.aar",
-          "size": 419212,
-          "sha512": "979b83c7674668e5fa41fed8e7190c55831e237567e9627d77a4fa33ff5609caf11fecef9e4b1a36a6cb3d6af0470e449f469a4b98949c0c7b70d12b030b8e5b",
-          "sha256": "41e33ce474b660d4ae18e8b3849da70e883c5b838bfdd061124e9c1e795e533b",
-          "sha1": "4f444fbe1f5b878e2f7d491fd41a4b6be5a5b7a3",
-          "md5": "a02c625030e54e9af4f3a7a8dd368872"
+          "size": 419856,
+          "sha512": "ddfcc4a4ede01a349aa04dc1f9a46f0d7d0ec765dd0ffc73d3fe95d5fdd243ae9983b6965d3db59db9933b0fb2ee0a6137f11bc0c39e273e38f01e36d53f2cf1",
+          "sha256": "2f2a482c13a5c43ecb112a617db32989f6d49f67b15d24cfeec792bb767fb92a",
+          "sha1": "a64dd9c02d11ec91c030aebe3c5ec63eb7a16e05",
+          "md5": "4271c7dfddd6ad3664804dc87b744a90"
         }
       ]
     },
@@ -106,11 +106,11 @@
         {
           "name": "media3-effect-1.11.0-alpha01-fongmi.aar",
           "url": "media3-effect-1.11.0-alpha01-fongmi.aar",
-          "size": 419212,
-          "sha512": "979b83c7674668e5fa41fed8e7190c55831e237567e9627d77a4fa33ff5609caf11fecef9e4b1a36a6cb3d6af0470e449f469a4b98949c0c7b70d12b030b8e5b",
-          "sha256": "41e33ce474b660d4ae18e8b3849da70e883c5b838bfdd061124e9c1e795e533b",
-          "sha1": "4f444fbe1f5b878e2f7d491fd41a4b6be5a5b7a3",
-          "md5": "a02c625030e54e9af4f3a7a8dd368872"
+          "size": 419856,
+          "sha512": "ddfcc4a4ede01a349aa04dc1f9a46f0d7d0ec765dd0ffc73d3fe95d5fdd243ae9983b6965d3db59db9933b0fb2ee0a6137f11bc0c39e273e38f01e36d53f2cf1",
+          "sha256": "2f2a482c13a5c43ecb112a617db32989f6d49f67b15d24cfeec792bb767fb92a",
+          "sha1": "a64dd9c02d11ec91c030aebe3c5ec63eb7a16e05",
+          "md5": "4271c7dfddd6ad3664804dc87b744a90"
         }
       ]
     },

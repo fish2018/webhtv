@@ -22,6 +22,7 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.DanmakuSearchListFocusFixer;
 import com.fongmi.android.tv.utils.NsdDeviceDiscovery;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.PreviousProcessExitLogger;
 import com.fongmi.hook.Hook;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.SpiderDebug;
@@ -96,7 +97,10 @@ public class App extends Application implements Application.ActivityLifecycleCal
         PlaybackSystemConditionMonitor.process().initialize(this);
         Setting.applyLanguage();
         DebugLogStore.restoreEnabled();
-        if (DebugLogStore.isEnabled()) Setting.logDebugEnvironment("restore");
+        if (DebugLogStore.isEnabled()) {
+            Setting.logDebugEnvironment("restore");
+            PreviousProcessExitLogger.log(this);
+        }
         Notify.createChannel();
         ProxySetting.apply();
         DanmakuSearchListFocusFixer.start();

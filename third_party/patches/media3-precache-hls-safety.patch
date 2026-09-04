@@ -1,0 +1,25 @@
+diff --git a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/preload/PreCacheHelper.java b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/preload/PreCacheHelper.java
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/preload/PreCacheHelper.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/preload/PreCacheHelper.java
+@@ -469,6 +469,19 @@ public final class PreCacheHelper {
+       checkState(helper == this.downloadHelper);
+       isPreparationOngoing = false;
+-      DownloadRequest downloadRequest =
+-          helper.getDownloadRequest(/* data= */ null, startPositionMs, durationMs);
++      DownloadRequest downloadRequest;
++      try {
++        downloadRequest =
++            helper.getDownloadRequest(/* data= */ null, startPositionMs, durationMs);
++      } catch (RuntimeException e) {
++        // HLS can report prepared tracks before its initial multivariant playlist is available.
++        // DownloadHelper.getDownloadRequest() must not let that asynchronous state race crash the
++        // application. Report the request-build failure through the existing prepare-error path.
++        downloadHelper.release();
++        notifyListeners(
++            listener ->
++                listener.onPrepareError(
++                    mediaItem, new IOException("Pre-cache download request unavailable", e)));
++        return;
++      }
+       downloadHelper.release();
+       MediaItem updatedMediaItem = downloadRequest.toMediaItem(mediaItem.buildUpon());

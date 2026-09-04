@@ -53,11 +53,6 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/fullscreen"
-                    style="@style/ControlSheetButton"
-                    android:text="@string/play_fullscreen" />
-
-                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/lut"
                     style="@style/ControlSheetButton"
                     android:text="@string/play_lut" />

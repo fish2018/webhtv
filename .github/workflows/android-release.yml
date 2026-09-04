@@ -30,6 +30,10 @@ on:
         required: false
         default: false
         type: boolean
+      publish_oci:
+        description: "Publish APKs as OCI artifacts when Registry variables and secrets are configured"
+        required: false
+        default: true
 
 permissions:
   contents: write
@@ -187,6 +191,32 @@ jobs:
           cp Release/apk/*.apk dist/
           ls -lh dist/
 
+      - name: Set up ORAS
+        id: oras
+        if: ${{ inputs.publish_oci }}
+        continue-on-error: true
+        uses: oras-project/setup-oras@v1
+        with:
+          url: https://github.com/oras-project/oras/releases/download/v1.3.4/oras_1.3.4_linux_amd64.tar.gz
+          checksum: f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
+
+      - name: Publish APKs to OCI Registry
+        id: oci
+        if: ${{ inputs.publish_oci && steps.oras.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DIST_DIR: dist
+          OCI_METADATA_FILE: build/oci-metadata.json
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          OCI_REPOSITORY: ${{ vars.OCI_REPOSITORY }}
+          OCI_USERNAME: ${{ secrets.OCI_USERNAME }}
+          OCI_TOKEN: ${{ secrets.OCI_TOKEN }}
+        run: bash .github/scripts/publish-oci-apks.sh
+
+      - name: Report OCI publish failure
+        if: ${{ inputs.publish_oci && (steps.oras.outcome == 'failure' || steps.oci.outcome == 'failure') }}
+        run: echo "::warning title=OCI publish unavailable::GitHub release will continue without OCI metadata."
+
       - name: Prepare release notes input
         id: release_notes
         env:
@@ -220,6 +250,7 @@ jobs:
         env:
           RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
           GITHUB_RELEASE_DOWNLOAD_BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}
+          OCI_PUBLISH_OUTCOME: ${{ steps.oci.outcome }}
         run: |
           python3 - <<'PY'
           import glob
@@ -230,19 +261,33 @@ jobs:
           tag = "${{ steps.meta.outputs.tag }}"
           notes = os.environ.get("RELEASE_NOTES", "").strip()
           release_download_base = os.environ["GITHUB_RELEASE_DOWNLOAD_BASE"]
+          oci = {}
+          oci_metadata = "build/oci-metadata.json"
+          if os.environ.get("OCI_PUBLISH_OUTCOME") == "success" and os.path.isfile(oci_metadata):
+              with open(oci_metadata, encoding="utf-8") as fh:
+                  oci = json.load(fh)
           for apk in glob.glob("dist/*.apk"):
               base = os.path.splitext(os.path.basename(apk))[0]
               with open(apk, "rb") as fh:
                   content = fh.read()
               data = {
                   "name": tag,
+                  "versionName": "${{ steps.meta.outputs.version_name }}",
                   "desc": f"{tag} - ${{ steps.meta.outputs.short_sha }}",
                   "channel": "${{ steps.meta.outputs.channel }}",
                   "code": int("${{ steps.meta.outputs.version_code }}"),
                   "apk": f"{release_download_base}/{base}.apk",
                   "size": len(content),
                   "sha256": hashlib.sha256(content).hexdigest(),
+                  "downloads": {
+                      "github": {"url": f"{release_download_base}/{base}.apk"},
+                  },
               }
+              if base in oci:
+                  descriptor = oci[base]
+                  if descriptor.get("size") != len(content) or descriptor.get("layerDigest") != "sha256:" + data["sha256"]:
+                      raise SystemExit(f"OCI descriptor does not match {base}.apk")
+                  data["downloads"]["oci"] = descriptor
               if notes:
                   data["notes"] = notes
               with open(f"dist/{base}.json", "w", encoding="utf-8") as fh:

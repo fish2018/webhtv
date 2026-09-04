@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.player.exo;
 
+import androidx.media3.common.Player;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -31,6 +33,21 @@ public class PreCachePolicyTest {
         assertFalse(PreCachePolicy.hasSafeBuffer(4_999, true, 5_000, false));
         assertTrue(PreCachePolicy.hasSafeBuffer(5_000, true, 5_000, false));
         assertFalse(PreCachePolicy.hasSafeBuffer(7_999, true, 8_000, true));
+    }
+
+    @Test
+    public void seekSuppressionRequiresReadyIdleAndSafeBuffer() {
+        assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_BUFFERING, true, false, true));
+        assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_READY, false, false, true));
+        assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_READY, true, true, true));
+        assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_READY, true, false, false));
+        assertTrue(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_READY, true, false, true));
+    }
+
+    @Test
+    public void repeatedPreloadFailuresOpenCircuitAtThreshold() {
+        assertFalse(PreCache.shouldOpenPreloadFailureCircuit(1));
+        assertTrue(PreCache.shouldOpenPreloadFailureCircuit(2));
     }
 
     @Test

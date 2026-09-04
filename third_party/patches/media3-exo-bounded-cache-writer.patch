@@ -1,0 +1,76 @@
+diff --git a/libraries/datasource/src/main/java/androidx/media3/datasource/cache/CacheWriter.java b/libraries/datasource/src/main/java/androidx/media3/datasource/cache/CacheWriter.java
+index 61a4aa3d99..2b31e216b4 100644
+--- a/libraries/datasource/src/main/java/androidx/media3/datasource/cache/CacheWriter.java
++++ b/libraries/datasource/src/main/java/androidx/media3/datasource/cache/CacheWriter.java
+@@ -181 +181 @@ public final class CacheWriter {
+-    int totalBytesRead = 0;
++    long totalBytesRead = 0;
+@@ -184 +184,3 @@ public final class CacheWriter {
+-        onRequestEndPosition(position + resolvedLength);
++        onRequestEndPosition(
++            position
++                + (length == C.LENGTH_UNSET ? resolvedLength : Math.min(resolvedLength, length)));
+@@ -187 +189,2 @@ public final class CacheWriter {
+-      while (bytesRead != C.RESULT_END_OF_INPUT) {
++      while (bytesRead != C.RESULT_END_OF_INPUT
++          && (length == C.LENGTH_UNSET || totalBytesRead < length)) {
+@@ -189 +192,5 @@ public final class CacheWriter {
+-        bytesRead = dataSource.read(temporaryBuffer, /* offset= */ 0, temporaryBuffer.length);
++        int bytesToRead =
++            length == C.LENGTH_UNSET
++                ? temporaryBuffer.length
++                : (int) Math.min((long) temporaryBuffer.length, length - totalBytesRead);
++        bytesRead = dataSource.read(temporaryBuffer, /* offset= */ 0, bytesToRead);
+diff --git a/libraries/datasource/src/test/java/androidx/media3/datasource/cache/CacheWriterTest.java b/libraries/datasource/src/test/java/androidx/media3/datasource/cache/CacheWriterTest.java
+index 2becd3c7bb..5408a9f4d7 100644
+--- a/libraries/datasource/src/test/java/androidx/media3/datasource/cache/CacheWriterTest.java
++++ b/libraries/datasource/src/test/java/androidx/media3/datasource/cache/CacheWriterTest.java
+@@ -104,0 +105,47 @@ public final class CacheWriterTest {
++  @Test
++  public void cache_dataSourceIgnoresBoundedLength_stopsAtRequestedLength() throws Exception {
++    FakeDataSet fakeDataSet = new FakeDataSet().setRandomData("test_data", 100);
++    FakeDataSource delegate = new FakeDataSource(fakeDataSet);
++    DataSource dataSource =
++        new DataSource() {
++          @Override
++          public void addTransferListener(TransferListener transferListener) {
++            delegate.addTransferListener(transferListener);
++          }
++
++          @Override
++          public long open(DataSpec dataSpec) throws IOException {
++            return delegate.open(dataSpec.buildUpon().setLength(C.LENGTH_UNSET).build());
++          }
++
++          @Override
++          public int read(byte[] buffer, int offset, int length) throws IOException {
++            return delegate.read(buffer, offset, length);
++          }
++
++          @Override
++          public Uri getUri() {
++            return delegate.getUri();
++          }
++
++          @Override
++          public void close() throws IOException {
++            delegate.close();
++          }
++        };
++    DataSpec dataSpec = new DataSpec(Uri.parse("test_data"), /* position= */ 10, /* length= */ 20);
++    CachingCounters counters = new CachingCounters();
++
++    CacheWriter cacheWriter =
++        new CacheWriter(
++            new CacheDataSource(cache, dataSource),
++            dataSpec,
++            /* temporaryBuffer= */ new byte[7],
++            counters);
++    cacheWriter.cache();
++
++    counters.assertValues(0, 20, 20);
++    assertThat(cache.getCachedBytes("test_data", /* position= */ 0, /* length= */ 100))
++        .isEqualTo(20);
++  }
++
+

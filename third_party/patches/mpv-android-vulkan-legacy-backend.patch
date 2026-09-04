@@ -1,0 +1,12 @@
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk_convert.c b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+--- a/video/out/hwdec/hwdec_aimagereader_vk_convert.c
++++ b/video/out/hwdec/hwdec_aimagereader_vk_convert.c
+@@ -2022,5 +2022,8 @@ struct aimagereader_vk_convert *aimagereader_vk_convert_create(
+     p->output_index = -1;
+     mapper->dst_params_ready = false;
+     switch (backend) {
++    case ANDROID_VULKAN_AIMAGEREADER_BACKEND_LEGACY:
++        p->required_backend = CONVERSION_BACKEND_COMPUTE;
++        break;
+     case ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE:
+         p->required_backend = CONVERSION_BACKEND_COMPUTE;

@@ -28,6 +28,7 @@ public final class PlaybackPerformanceCatalog {
     public static final String LATE_DROP = "late_drop";
     public static final String SURFACE_FIXED_SIZE = "surface_fixed_size";
     public static final String DECODER_FALLBACK = "decoder_fallback";
+    public static final String DV7_HDR10_FALLBACK = "dv7_hdr10_fallback";
     public static final String SOFT_VIDEO_TUNE = "soft_video_tune";
     public static final String AUDIO_PASSTHROUGH = "audio_passthrough";
     public static final String PREFER_AAC = "prefer_aac";
@@ -35,6 +36,7 @@ public final class PlaybackPerformanceCatalog {
     public static final String VIDEO_SOFT_PREFER = "video_soft_prefer";
     public static final String MPV_OUTPUT = "mpv_output";
     public static final String MPV_RENDER = "mpv_render";
+    public static final String MPV_VULKAN_BACKEND = "mpv_vulkan_backend";
     public static final String MPV_HWDEC = "mpv_hwdec";
     public static final String MPV_SYNC = "mpv_sync";
     public static final String MPV_FRAME_DROP = "mpv_frame_drop";
@@ -112,6 +114,7 @@ public final class PlaybackPerformanceCatalog {
         options.add(option(LATE_DROP, DECODE, "输入丢帧阈值", "作用：输入帧明显迟到时提前丢弃，优先保证“跟上进度”。CPU不足、4K掉帧时建议开启；希望保留每一帧可关闭。代价：画面可能跳帧，但通常比持续延迟更容易接受。"));
         options.add(option(SURFACE_FIXED_SIZE, DECODE, "Surface 固定尺寸", "作用：按视频尺寸创建 Surface，减少超高分辨率合成压力。电视4K建议开启（默认）；切清晰度/旋转出现画面尺寸异常时关闭。代价：少数设备切换分辨率需要重建 Surface。"));
         options.add(option(DECODER_FALLBACK, DECODE, "解码器兜底", "作用：首选硬解初始化失败时尝试其他解码器。兼容性优先建议开启（默认）；只想快速暴露硬件问题可关闭。代价：可能多等待一次初始化，且备用解码器性能可能较低。"));
+        options.add(option(DV7_HDR10_FALLBACK, DECODE, "DV7处理", "默认“升级P8.1”：设备不支持当前DV7硬解、但支持P8.1硬解时，使用libdovi mode 2实时改写RPU并丢弃增强层；原生DV7可硬解时保持原样。P8.1模式会锁定整次播放，不会自动降级HDR10；转换数据无效时会停止播放。选择“降级HDR10”会整次使用基底层，兼容性更高但失去Dolby Vision动态元数据。"));
         options.add(option(SOFT_VIDEO_TUNE, DECODE, "软解降负载", "作用：仅在 EXO 使用 FFmpeg 软解时降低滤波和解码负载。低性能设备/软解视频可开启；硬解4K基本不受影响。代价：积极降负载会牺牲细节，不能替代硬解。"));
         options.add(option(AUDIO_PASSTHROUGH, AUDIO, "音频直通", "作用：把 Dolby/DTS 等压缩音频交给电视或功放解码，保留多声道。设备明确支持且要环绕声才开启；出现无声立即关闭。代价：输出链不支持时不会自动变成可播放音频。"));
         options.add(option(PREFER_AAC, AUDIO, "AAC 优先", "作用：有多条音轨时优先选兼容性更高的 AAC。电视无声、切换音轨失败时建议开启；追求原始多声道/高码率时关闭。代价：可能放弃质量更高的音轨。"));
@@ -120,8 +123,9 @@ public final class PlaybackPerformanceCatalog {
     }
 
     private static void addMpv(List<PlaybackPerformanceOption> options) {
-        options.add(option(MPV_OUTPUT, BASIC, "输出模式", "怎么选：保持“自动”（默认）最省心；电视播放4K且不需要MPV字幕/LUT/shader/滤镜时会自动用“电视直出”，这是当前最低GPU开销、最优先保证流畅的路径。需要MPV完整图像处理选“GPU完整”；自动判断不正确时可手动选“电视直出”。代价：电视直出不经过OpenGL/Vulkan，MPV原生字幕和GPU滤镜不可用。"));
-        options.add(option(MPV_RENDER, BASIC, "渲染后端", "怎么选：GPU完整模式先选 OpenGL，兼容性最好；确认设备 Vulkan 驱动稳定且需要 gpu-next/libplacebo 时再选 Vulkan。电视直出时本参数不参与视频输出，切换也不会变快。代价：Vulkan可能更高效，也可能因驱动问题卡顿、黑屏并自动回退OpenGL。"));
+        options.add(option(MPV_OUTPUT, BASIC, "输出模式", "怎么选：保持“自动”（默认）最省心；电视播放4K且不需要MPV字幕/LUT/shader/滤镜时会在确认设备支持当前视频后自动用“电视直出”，这是当前最低GPU开销、最优先保证流畅的路径。需要MPV完整图像处理选“GPU渲染”；自动判断不正确时可手动选“电视直出”。代价：电视直出不经过OpenGL/Vulkan，MPV原生字幕和GPU滤镜不可用。"));
+        options.add(option(MPV_RENDER, BASIC, "渲染后端", "怎么选：GPU渲染模式先选 OpenGL，兼容性最好；确认设备 Vulkan 驱动稳定且需要 gpu-next/libplacebo 时再选 Vulkan。电视直出时本参数不参与视频输出，切换也不会变快。代价：Vulkan可能更高效，也可能因驱动问题卡顿、黑屏并自动回退OpenGL。"));
+        options.add(option(MPV_VULKAN_BACKEND, BASIC, "Vulkan 视频路径", "怎么选：仅在渲染后端为 Vulkan 且使用 MediaCodec 硬解时生效，默认 direct。direct 直接采样 AHardwareBuffer，转换步骤少；如果设备出现 GPU 负载逐渐升高、卡顿或驱动兼容问题，可改用 legacy。legacy 使用旧版三输出 compute conversion；stable 使用四输出有界 fence 池，适合 direct 不兼容且 legacy 存在同步问题时尝试。选择“播放性能优先”时本选项覆盖 mpv.conf；选择“mpv.conf优先”时，android-vulkan-aimagereader-backend 等同名配置覆盖本选项。切换后需要重新进入播放。"));
         options.add(option(MPV_HWDEC, BASIC, "硬解路径", "怎么选：保持“自动回退”（默认）；它先试 mediacodec 零拷贝，失败再试兼容复制。电视4K追求最高流畅可选“零拷贝优先”；只有零拷贝黑屏、崩溃或解码异常时选“兼容复制”。代价：兼容复制会复制每帧，4K 10bit内存带宽开销大，可能明显卡顿。"));
         options.add(option(MPV_FRAME_RATE, BASIC, "帧率匹配", "怎么选：电影、剧集在电视上保持“仅无缝”（默认），可减少24/25fps抖动；切换后黑屏、闪屏或电视刷新率异常时关闭。代价：仅无缝不会强制切换不兼容模式，旧Android自动忽略。"));
         options.add(option(MPV_OPTION_PRIORITY, BASIC, "参数优先级", "怎么选：普通用户选“播放性能优先”（默认），界面中的缓存、硬解、同步、丢帧和HLS设置才能可靠生效；只有明确维护了mpv.conf并希望同名配置覆盖界面时选“mpv.conf优先”。选错会出现“界面改了但实际被配置文件覆盖”。"));
@@ -131,9 +135,10 @@ public final class PlaybackPerformanceCatalog {
         addPreload(options, true);
         options.add(option(MPV_SYNC, DECODE, "同步模式", "怎么选：保持“音频同步”（默认），兼容性最好。只有屏幕刷新率与视频不匹配、能感到规律性微抖且未开启音频直通时，才试“显示重采样”。代价：显示重采样会轻微调整音频速度并增加处理，直通音频不适用。"));
         options.add(option(MPV_FRAME_DROP, DECODE, "丢帧策略", "怎么选：保持“输出丢帧”（默认），跟不上时优先丢渲染帧以维持音画进度；卡顿仍严重可试“解码丢帧”；不要为追求完整画面关闭丢帧，除非设备性能充足。代价：策略越积极，跳帧越明显。"));
-        options.add(option(MPV_INTERPOLATION, DECODE, "平滑运动", "怎么选：默认关闭。只有GPU余量充足、使用GPU完整＋显示重采样且想改善低帧率运动时才开启；电视4K、HDR、LUT或已经卡顿时必须关闭。代价：会明显增加GPU负载，电视直出时不生效。"));
+        options.add(option(MPV_INTERPOLATION, DECODE, "平滑运动", "怎么选：默认关闭。只有GPU余量充足、使用GPU渲染＋显示重采样且想改善低帧率运动时才开启；电视4K、HDR、LUT或已经卡顿时必须关闭。代价：会明显增加GPU负载，电视直出时不生效。"));
         options.add(option(MPV_SOFT_TUNE, DECODE, "软解降负载", "作用：仅软件解码时减少滤波和解码工作。默认“温和”；软解仍掉帧可选“积极”；硬解视频无需靠它提速。代价：模式越积极，细节和画面连续性损失越大。"));
         options.add(option(MPV_VERBOSE_LOG, DECODE, "详细日志", "怎么选：正常播放保持“正常”（默认）；只在排查崩溃、解码或缓冲问题时临时打开详细日志。代价：增加JNI、字符串处理和日志I/O，可能干扰低性能设备的流畅度。"));
+        options.add(option(DV7_HDR10_FALLBACK, DECODE, "DV7处理", "作用：设备能原生播放 Dolby Vision Profile 7 时始终保留原始 DV7；否则默认尝试“升级P8.1”保留动态元数据，也可选择直接“降级HDR10”。设备不支持P8.1或转换/解码失败时会自动回退HDR10。P8.1逐帧重写RPU，会比HDR10过滤增加少量CPU处理。"));
         options.add(option(AUDIO_PASSTHROUGH, AUDIO, "音频直通", "怎么选：电视/功放明确支持Dolby、DTS且需要多声道时开启；出现无声、杂音或同步异常立即关闭。代价：压缩音频交给外部设备后，MPV无法完成所有混音和重采样处理。"));
         options.add(option(PREFER_AAC, AUDIO, "AAC 优先", "怎么选：高级音轨无声或设备兼容性差时开启；功放支持原始多声道、希望保留最佳音轨时关闭。代价：可能从Dolby/DTS切到质量或声道较低的AAC。"));
     }
@@ -183,9 +188,9 @@ public final class PlaybackPerformanceCatalog {
             int kernel,
             boolean recommendedMerged) {
         return switch (kernel) {
-            case PlayerSetting.MPV -> "首选“自动”：电视4K硬解且不需要MPV字幕/LUT/shader/滤镜时自动使用低开销电视直出，并按可信吞吐和运行状态控制缓存、预载与HLS码率。“轻量”面向低端或问题设备，保留自动输出和硬解回退，关闭帧率切换、预载和回退缓存，限制HLS至8Mbps并使用64MB前向缓存；优先保证连续播放，最高画质和回看速度可能下降。手动改任一项后显示“自定义”。";
-            case PlayerSetting.IJK -> "首选“自动”：按协议、内存和运行反馈在4/8/15MB有限队列中有界调整。“轻量”固定8MB、稳定水位、3帧画面队列、标准丢帧和温和软解降负载，并关闭预载；它比旧4MB激进轻量档更能抵抗网络抖动，同时比旧兼容档的15MB和5帧更省内存。手动改任一项后显示“自定义”。";
-            default -> "首选“自动”（也是默认）：根据协议、分片、可信吞吐、缓冲趋势和内存状态动态控制加载、预载、起播与重缓冲门槛。“轻量”面向低端或问题设备，使用SurfaceView、64MB容量上限、15～30秒缓冲、1.5秒起播和3秒恢复，关闭预载、回退缓存及帧率切换，同时保留解码器兜底、轨道限制和带宽估算。手动改任一项后显示“自定义”。";
+            case PlayerSetting.MPV -> "首选“自动”：电视4K硬解且不需要MPV字幕/LUT/shader/滤镜时自动使用低开销电视直出，并按可信吞吐和运行状态控制缓存、预载与HLS码率。“轻量”面向低端或问题设备，保留自动输出和硬解回退，关闭帧率切换、预载和回退缓存，限制HLS至8Mbps并使用64MB前向缓存；优先保证连续播放，最高画质和回看速度可能下降。自动档内手动修改的项目会单独固定，其他项目继续自动；重新选择“自动”可清除全部覆盖。";
+            case PlayerSetting.IJK -> "首选“自动”：按协议、内存和运行反馈在4/8/15MB有限队列中有界调整。“轻量”固定8MB、稳定水位、3帧画面队列、标准丢帧和温和软解降负载，并关闭预载；它比旧4MB激进轻量档更能抵抗网络抖动，同时比旧兼容档的15MB和5帧更省内存。自动档内手动修改的项目会单独固定，其他项目继续自动；重新选择“自动”可清除全部覆盖。";
+            default -> "首选“自动”（也是默认）：根据协议、分片、可信吞吐、缓冲趋势和内存状态动态控制加载、预载、起播与重缓冲门槛。“轻量”面向低端或问题设备，使用SurfaceView、64MB容量上限、15～30秒缓冲、1.5秒起播和3秒恢复，关闭预载、回退缓存及帧率切换，同时保留解码器兜底、轨道限制和带宽估算。自动档内手动修改的项目会单独固定，其他项目继续自动；重新选择“自动”可清除全部覆盖。";
         };
     }
 

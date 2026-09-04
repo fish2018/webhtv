@@ -18,6 +18,7 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.Updater;
 import com.fongmi.android.tv.event.RefreshEvent;
+import com.fongmi.android.tv.server.process.ApkUrlPush;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
 import com.fongmi.android.tv.utils.Util;
@@ -158,6 +159,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Updater.create().resume(this);
+        ApkUrlPush.get().resume(this);
     }
 
     @Override

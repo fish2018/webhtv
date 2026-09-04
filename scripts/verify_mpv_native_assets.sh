@@ -33,6 +33,7 @@ done
 [ -f "$LOCK_FILE" ] || die "missing lock file: $LOCK_FILE"
 command -v python3 >/dev/null 2>&1 || die "missing command: python3"
 command -v file >/dev/null 2>&1 || die "missing command: file"
+python3 "$ROOT/scripts/verify_mpv_vulkan_shader_contract.py"
 
 eval "$(python3 - "$LOCK_FILE" <<'PY'
 import json
@@ -146,6 +147,14 @@ contains_string() {
   fi
 }
 
+reject_string() {
+  local file="$1"
+  local value="$2"
+  if strings "$file" | grep -Fq "$value"; then
+    die "obsolete string '$value' present in $file"
+  fi
+}
+
 verify_abi() {
   local abi="$1"
   local flavor="$2"
@@ -169,6 +178,7 @@ verify_abi() {
   [ ! -e "$directory/libnghttp2.so" ] || die "nghttp2 must remain static: $directory/libnghttp2.so"
   [ ! -e "$directory/libfontconfig.so" ] || die "fontconfig must remain static: $directory/libfontconfig.so"
   [ ! -e "$directory/libexpat.so" ] || die "Expat must remain static: $directory/libexpat.so"
+  [ ! -e "$directory/libxml2.so" ] || die "libxml2 must remain static: $directory/libxml2.so"
 
   file_info="$(file "$directory/libmpv.so")"
   printf '%s\n' "$file_info" | grep -E "$file_pattern" >/dev/null || die "unexpected $abi ELF type: $file_info"
@@ -176,12 +186,35 @@ verify_abi() {
   contains_string "$directory/libmpv.so" "mpv v$MPV_VERSION"
   contains_string "$directory/libmpv.so" "v$LIBPLACEBO_VERSION"
   contains_string "$directory/libmpv.so" "WebHTV stream_cb controls enabled"
-  contains_string "$directory/libmpv.so" "Using Vulkan AHardwareBuffer GPU conversion"
-  contains_string "$directory/libmpv.so" "AImageReader frame acquisition timed out"
-  contains_string "$directory/libmpv.so" "Holding last synchronized AImage frame"
-  contains_string "$directory/libmpv.so" "Using Vulkan sync_fd for AImage acquire fences"
+  contains_string "$directory/libmpv.so" "Vulkan AImageReader backend:"
+  contains_string "$directory/libmpv.so" "Using Vulkan YCbCr AHardwareBuffer sampling"
+  contains_string "$directory/libmpv.so" "Vulkan AImageReader sync-fd:"
+  contains_string "$directory/libmpv.so" "android-osd-wid"
+  contains_string "$directory/libmpv.so" "Direct Dolby Vision initialization failed"
+  contains_string "$directory/libmpv.so" "video output has no queue-safe EL decoder"
+  contains_string "$directory/libmpv.so" "DV7 HDR10 fallback: using MediaCodec base-layer decoder"
+  contains_string "$directory/libmpv.so" "DV7 HDR10 fallback: stripping EL/RPU before decoder."
+  contains_string "$directory/libmpv.so" "DV7 HDR10 fallback: synchronized decoder parameters to the HDR10 base layer."
+  contains_string "$directory/libmpv.so" "DV7 HDR10 fallback: failed to produce base-layer packet."
+  contains_string "$directory/libmpv.so" "DV7 P8.1 conversion: removed stale enhancement-layer configuration."
+  reject_string "$directory/libmpv.so" "DV7 HDR10 fallback: preserving decoder input and stripping Dolby Vision frame metadata."
+  reject_string "$directory/libmpv.so" "Using device native output sample rate for passthrough compatibility"
+  contains_string "$directory/libmpv.so" "Using 7.1 IEC61937 carrier mask for TrueHD"
+  contains_string "$directory/libmpv.so" "Using 7.1 IEC61937 carrier mask for Android 12+ 8-channel stream"
+  contains_string "$directory/libmpv.so" "WebHTV Vulkan auto backend prefers direct AHardwareBuffer sampling"
+  contains_string "$directory/libmpv.so" "WebHTV Vulkan auto uses a queue-safe four-output bounded-fence pool"
+  contains_string "$directory/libmpv.so" "CPU-precomputed UV transform"
+  contains_string "$directory/libmpv.so" "Generic Vulkan conversion uses CPU-precomputed UV transform"
+  contains_string "$directory/libmpv.so" "Stable Vulkan conversion preserves Dolby Vision raw YUV component mapping"
+  contains_string "$directory/libmpv.so" "WebHTV Vulkan keeps AImage until the conversion fence completes"
+  contains_string "$directory/libmpv.so" "WebHTV AImageReader uses stable release/acquire flow"
   contains_string "$directory/libmpv.so" "Using declared Matroska segment end for seek metadata."
+  contains_string "$directory/libmvcodec.so" "libarcdav3a AV3A"
+  contains_string "$directory/libmvcodec.so" "libaribcaption"
+  contains_string "$directory/libmvcodec.so" "Timed Text Markup Language subtitle"
+  contains_string "$directory/libmvformat.so" "MMT protocol over TLV packets"
   contains_string "$directory/libmvformat.so" "WebHTV proxy range offset accepted"
+  contains_string "$directory/libmvcodec.so" "failing hardware decode so the player can fall back"
   contains_string "$directory/libmpv.so" "No usable fontconfig configuration file found, using fallback."
   if [ -n "$CURL_VERSION" ]; then
     contains_string "$directory/libmpv.so" "libcurl/$CURL_VERSION"
@@ -197,7 +230,7 @@ verify_abi() {
       if printf '%s\n' "$dynamic" | grep -Eq 'Shared library: \[lib(curl|nghttp2|mbed[^]]*)\.so'; then
         die "network dependency must remain static in $file_path"
       fi
-      if printf '%s\n' "$dynamic" | grep -Eq 'Shared library: \[lib(fontconfig|expat)\.so'; then
+      if printf '%s\n' "$dynamic" | grep -Eq 'Shared library: \[lib(fontconfig|expat|xml2)\.so'; then
         die "font stack dependency must remain static in $file_path"
       fi
       name="$(basename "$file_path")"

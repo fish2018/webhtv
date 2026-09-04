@@ -3,6 +3,7 @@ package com.fongmi.android.tv.bean;
 import android.text.TextUtils;
 
 import com.fongmi.android.tv.BuildConfig;
+import com.fongmi.android.tv.update.OciArtifact;
 import com.fongmi.android.tv.utils.AppVersion;
 
 public class Update {
@@ -12,13 +13,15 @@ public class Update {
 
     public String channel;
     public String name;
+    public String versionName;
     public String desc;
     public String notes;
     public String apk;
     public String apkUrl;
-    public String fallbackApkUrl;
+    public String githubUrl;
     public String error;
     public String sha256;
+    public OciArtifact oci;
     public int code;
     public long size;
 
@@ -33,7 +36,7 @@ public class Update {
     }
 
     public boolean hasManifest() {
-        return !TextUtils.isEmpty(name) && !TextUtils.isEmpty(apkUrl);
+        return !TextUtils.isEmpty(name) && (!TextUtils.isEmpty(githubUrl) || oci != null && oci.isValid());
     }
 
     public boolean hasUpdate() {

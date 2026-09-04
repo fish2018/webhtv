@@ -1,0 +1,164 @@
+diff --git a/DOCS/man/options.rst b/DOCS/man/options.rst
+--- a/DOCS/man/options.rst
++++ b/DOCS/man/options.rst
+@@ -7184,12 +7184,13 @@
+-``--android-vulkan-aimagereader-backend=<auto|direct|compute|fragment>``
++``--android-vulkan-aimagereader-backend=<auto|direct|legacy|stable|compute|fragment>``
+     Select how Android MediaCodec ``AHardwareBuffer`` frames are imported for
+     Vulkan rendering:
+ 
+     :auto: Prefer direct YCbCr sampling. If direct sampling is unavailable,
+-           select compute or fragment conversion while preferring the
+-           narrowest suitable output format. Compute wins when both backends
+-           support the same format. This is the default.
++           use the queue-safe stable conversion pool, then the generic compute
++           or fragment converter. This is the default.
+     :direct: Require direct YCbCr sampling without conversion fallback.
++    :legacy: Require the pre-direct three-output compute conversion path.
++    :stable: Require WebHTV's bounded-fence conversion pool.
+     :compute: Require compute conversion without direct or fragment fallback.
+     :fragment: Require fragment conversion without direct or compute fallback.
+ 
+diff --git a/options/options.c b/options/options.c
+--- a/options/options.c
++++ b/options/options.c
+@@ -259,6 +259,8 @@ const struct m_sub_options vo_sub_opts = {
+         OPT_CHOICE(android_vulkan_aimagereader_backend,
+             {"auto", ANDROID_VULKAN_AIMAGEREADER_BACKEND_AUTO},
+             {"direct", ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT},
++            {"legacy", ANDROID_VULKAN_AIMAGEREADER_BACKEND_LEGACY},
++            {"stable", ANDROID_VULKAN_AIMAGEREADER_BACKEND_STABLE},
+             {"compute", ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE},
+             {"fragment", ANDROID_VULKAN_AIMAGEREADER_BACKEND_FRAGMENT}),
+         .flags = UPDATE_VO},
+diff --git a/options/options.h b/options/options.h
+--- a/options/options.h
++++ b/options/options.h
+@@ -14,5 +14,7 @@ enum android_vulkan_aimagereader_backend {
+     ANDROID_VULKAN_AIMAGEREADER_BACKEND_AUTO = 0,
+     ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT,
++    ANDROID_VULKAN_AIMAGEREADER_BACKEND_LEGACY,
++    ANDROID_VULKAN_AIMAGEREADER_BACKEND_STABLE,
+     ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE,
+     ANDROID_VULKAN_AIMAGEREADER_BACKEND_FRAGMENT,
+ };
+diff --git a/video/out/hwdec/hwdec_aimagereader_vk.c b/video/out/hwdec/hwdec_aimagereader_vk.c
+--- a/video/out/hwdec/hwdec_aimagereader_vk.c
++++ b/video/out/hwdec/hwdec_aimagereader_vk.c
+@@ -1,8 +1,6 @@
+ /*
+  * Android AImageReader / Vulkan backend selection.
+  *
+- * Automatic mode uses WebHTV's queue-safe four-output conversion pool.
+- * The newer direct, compute and fragment implementations remain selectable,
+- * while the default path keeps the queue/fence ownership model that is stable
+- * across Qualcomm Android drivers.
++ * Automatic mode prefers direct sampling for minimum bandwidth, then falls
++ * back to WebHTV's queue-safe conversion pool for incompatible drivers.
+  */
+@@ -35,5 +33,9 @@ static const char *backend_name(enum android_vulkan_aimagereader_backend backend)
+     switch (backend) {
+     case ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT:
+         return "direct";
++    case ANDROID_VULKAN_AIMAGEREADER_BACKEND_LEGACY:
++        return "legacy";
++    case ANDROID_VULKAN_AIMAGEREADER_BACKEND_STABLE:
++        return "stable";
+     case ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE:
+         return "compute";
+@@ -57,10 +59,17 @@ static void reset_mapper_params(struct aimagereader_vk *p)
+            sizeof(p->mapper->dst_component_mapping));
+ }
+ 
+-static bool switch_to_conversion(struct aimagereader_vk *p)
++static bool switch_from_direct(struct aimagereader_vk *p)
+ {
+-    mp_assert(p->direct && !p->convert && !p->direct_mapped);
++    mp_assert(p->direct && !p->stable && !p->convert && !p->direct_mapped);
+     aimagereader_vk_direct_destroy(&p->direct);
+     reset_mapper_params(p);
++    p->stable = aimagereader_vk_stable_create(p->mapper, &p->api);
++    if (p->stable) {
++        mp_warn(p->log, "Direct Vulkan sampling is unsupported for this "
++                        "buffer; using stable GPU conversion\n");
++        return true;
++    }
++    reset_mapper_params(p);
+     p->convert = aimagereader_vk_convert_create(p->mapper, &p->api,
+                                                 p->backend);
+@@ -78,10 +87,14 @@ bool aimagereader_vk_available(struct ra_ctx *ra_ctx, struct mp_log *log,
+ {
+     if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_DIRECT)
+         return aimagereader_vk_direct_available(ra_ctx, log);
++    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_LEGACY)
++        return aimagereader_vk_convert_available(ra_ctx, log);
++    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_STABLE)
++        return aimagereader_vk_stable_available(ra_ctx, log);
+     if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_COMPUTE ||
+         backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_FRAGMENT)
+         return aimagereader_vk_convert_available(ra_ctx, log);
+-    return aimagereader_vk_stable_available(ra_ctx, log) ||
+-           aimagereader_vk_direct_available(ra_ctx, log) ||
++    return aimagereader_vk_direct_available(ra_ctx, log) ||
++           aimagereader_vk_stable_available(ra_ctx, log) ||
+            aimagereader_vk_convert_available(ra_ctx, log);
+ }
+@@ -99,6 +112,12 @@ struct aimagereader_vk *aimagereader_vk_create(
+ 
+     if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_AUTO) {
+         mp_info(p->log,
+-                "WebHTV Vulkan auto backend prefers stable GPU conversion\n");
++                "WebHTV Vulkan auto backend prefers direct AHardwareBuffer sampling\n");
++        p->direct = aimagereader_vk_direct_create(mapper, api);
++        if (p->direct)
++            return p;
++
++        mp_warn(p->log, "Direct Vulkan sampling initialization failed; "
++                        "trying stable GPU conversion\n");
+         reset_mapper_params(p);
+         p->stable = aimagereader_vk_stable_create(mapper, api);
+@@ -115,12 +134,5 @@ struct aimagereader_vk *aimagereader_vk_create(
+         if (p->convert)
+             return p;
+ 
+-        reset_mapper_params(p);
+-        p->direct = aimagereader_vk_direct_create(mapper, api);
+-        if (p->direct) {
+-            mp_warn(p->log, "Vulkan GPU conversion initialization failed; "
+-                            "falling back to direct AHardwareBuffer sampling\n");
+-            return p;
+-        }
+         goto error;
+     }
+@@ -134,5 +145,13 @@ struct aimagereader_vk *aimagereader_vk_create(
+         goto error;
+     }
+ 
++    if (backend == ANDROID_VULKAN_AIMAGEREADER_BACKEND_STABLE) {
++        reset_mapper_params(p);
++        p->stable = aimagereader_vk_stable_create(mapper, api);
++        if (p->stable)
++            return p;
++        goto error;
++    }
++
+     reset_mapper_params(p);
+     p->convert = aimagereader_vk_convert_create(mapper, api, backend);
+@@ -240,11 +260,14 @@ int aimagereader_vk_map(struct aimagereader_vk *p, AImage *image,
+         goto done;
+     }
+ 
+-    if (!switch_to_conversion(p)) {
++    if (!switch_from_direct(p)) {
+         result = -1;
+         goto done;
+     }
+-    result = aimagereader_vk_convert_map(
+-        p->convert, image, buffer, crop, data_space, frame, acquire_fence);
++    result = p->stable
++        ? aimagereader_vk_stable_map(
++            p->stable, image, buffer, crop, data_space, frame, acquire_fence)
++        : aimagereader_vk_convert_map(
++            p->convert, image, buffer, crop, data_space, frame, acquire_fence);
+ 
+ done:

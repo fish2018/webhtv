@@ -817,6 +817,19 @@
     <string name="sync_select_device_first">请先选择设备</string>
     <string name="sync_failed_with_reason">同步失败：%1$s</string>
     <string name="sync_receive_success">已接收同步数据</string>
+    <string name="apk_push_url_busy">已有 APK 链接下载任务正在进行</string>
+    <string name="apk_push_url_schedule_failed">无法启动 APK 链接下载</string>
+    <string name="apk_push_url_downloading">已收到 APK 链接，正在本机下载…</string>
+    <string name="apk_push_url_install_ready">APK 已下载，请确认安装</string>
+    <string name="apk_push_url_download_failed">APK 链接下载失败：%1$s</string>
+    <string name="apk_push_url_progress_title">正在接收 APK</string>
+    <string name="apk_push_url_progress_hint">正在下载局域网设备推送的 APK，完成后仍需在 Android 系统界面确认安装。</string>
+    <string name="apk_push_url_progress_known">正在接收 %1$d%% · %2$s / %3$s</string>
+    <string name="apk_push_url_progress_unknown">已接收 %1$s</string>
+    <string name="apk_push_url_progress_detail_remaining">%1$s/s · 剩余 %2$s · 已用 %3$s</string>
+    <string name="apk_push_url_progress_detail">%1$s/s · 已用 %2$s</string>
+    <string name="apk_push_url_cancel">取消下载</string>
+    <string name="apk_push_url_canceled">已取消 APK 下载</string>
 
     <!-- Player -->
     <string name="player">播放核心</string>
@@ -1033,6 +1046,7 @@
     <string name="lut_empty_favorites">暂无收藏 LUT</string>
     <string name="lut_apply_failed">LUT 调色已临时关闭</string>
     <string name="lut_unavailable_player">当前播放器内核不支持 LUT 调色</string>
+    <string name="lut_unavailable_output_mode">当前输出模式不支持 LUT 调色，请切换为 GPU 输出模式后使用</string>
     <string name="lut_unavailable_drm">DRM 保护视频不支持 LUT 调色</string>
     <string name="lut_unavailable_tunnel">隧道模式不支持 LUT 调色</string>
     <string name="lut_unavailable_soft_decode">软解不支持 LUT 调色</string>
@@ -1094,6 +1108,8 @@
     <string name="error_play_stage_network">网络读取失败，请检查网络、请求头或更换线路</string>
     <string name="error_play_stage_media">媒体解析失败或没有有效音视频轨道，请更换线路或播放器</string>
     <string name="error_play_stage_decoder">音视频解码失败，请尝试切换软硬解或播放器</string>
+    <string name="error_play_stage_audio_output">音频输出失败，请重新进入播放或切换解码方式</string>
+    <string name="error_play_stage_video_output">视频输出失败，请重新进入播放或切换解码方式</string>
     <string name="error_play_stage_output">音视频输出失败，请重新进入播放或切换解码方式</string>
     <string name="error_play_stage_drm">DRM 鉴权或受保护媒体处理失败，请更换线路或播放器</string>
     <string name="error_play_stage_unknown">播放失败，请重试或切换播放器</string>
@@ -1118,6 +1134,8 @@
     <string name="update_download_incomplete">更新包下载不完整，请重试。</string>
     <string name="update_download_checksum">更新包校验失败，请重试。</string>
     <string name="update_download_invalid">更新包无效，请重试。</string>
+    <string name="update_download_identity">更新包的应用身份或签名与当前应用不一致。</string>
+    <string name="update_download_source_unavailable">当前版本不支持所选下载源。</string>
     <string name="update_confirm">更新</string>
     <string name="update_confirm_channel">更新%1$s</string>
     <string name="update_cancel">取消更新</string>
@@ -1132,6 +1150,23 @@
     <string name="update_status_unavailable">暂无</string>
     <string name="update_expand">展开</string>
     <string name="update_collapse">收起</string>
+    <string name="update_settings">更新设置</string>
+    <string name="update_settings_title">更新设置</string>
+    <string name="update_settings_source">更新方式</string>
+    <string name="update_source_github">GitHub</string>
+    <string name="update_source_oci">OCI</string>
+    <string name="update_github_proxy">GitHub 代理</string>
+    <string name="update_github_proxy_value">GitHub 代理 · %1$s</string>
+    <string name="update_oci_mirror">OCI 镜像代理</string>
+    <string name="update_oci_mirror_value">OCI 镜像 · %1$s</string>
+    <string name="update_custom_url">自定义 HTTPS 地址</string>
+    <string name="update_proxy_mode_full">完整 URL 前缀</string>
+    <string name="update_proxy_mode_strip">移除 https://</string>
+    <string name="update_proxy_direct">直连</string>
+    <string name="update_proxy_custom">自定义</string>
+    <string name="update_proxy_invalid">请输入不含账号、密码和路径的有效 HTTPS 地址。</string>
+    <string name="update_settings_save">保存</string>
+    <string name="update_settings_saved">更新设置已保存</string>
 
     <!-- Crash -->
     <string name="crash_info">发生意外错误\n抱歉给您带来不便</string>

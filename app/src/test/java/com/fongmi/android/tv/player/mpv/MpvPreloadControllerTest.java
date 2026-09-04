@@ -37,6 +37,18 @@ public class MpvPreloadControllerTest {
     }
 
     @Test
+    public void unknownThroughputAllowsSingleBootstrapWorker() {
+        MpvPreloadController controller = controller("bootstrap", 9);
+        PlaybackAutoContext.SessionToken token = controller.snapshot().session();
+        MpvPreloadController.Decision decision = controller.evaluate(
+                token, token,
+                requestUnknownThroughput(1, 0, 0, 20_000), 0);
+        assertEquals(MpvPreloadController.Action.BOOTSTRAP, decision.action());
+        assertEquals(MpvPreloadController.State.BOOTSTRAP, decision.state());
+        assertEquals(1, decision.concurrency());
+    }
+
+    @Test
     public void lowRatioImmediatelyCancelsAllowedPreload() {
         MpvPreloadController controller = allowedController("ratio", 2);
         PlaybackAutoContext.SessionToken token = controller.snapshot().session();
@@ -201,5 +213,25 @@ public class MpvPreloadControllerTest {
                 "p-" + Long.toString(seed + 1, 36)
                         + "-" + Long.toString(generation + 1, 36),
                 generation);
+    }
+
+    private static MpvPreloadPolicy.Request requestUnknownThroughput(
+            long revision, long throughputSample, long runtimeSample, long buffer) {
+        MpvPreloadPolicy.Request base = request(
+                revision, throughputSample, runtimeSample, 0, buffer, 0, 0);
+        return new MpvPreloadPolicy.Request(
+                base.automatic(), base.mpvKernel(), base.performanceOptionsPriority(),
+                base.preloadConfigured(), base.protocol(), base.protocolUsable(),
+                base.streamKind(), base.streamKindUsable(), base.playerPath(),
+                base.playerPathUsable(), base.upstreamPath(), base.upstreamPathUsable(),
+                base.upstreamState(), base.upstreamStateUsable(),
+                base.resourcePreloadAllowed(), base.cacheEnabled(),
+                base.cacheStorageKnown(), base.cacheBudgetAvailable(),
+                base.cacheCircuitOpen(), 0, false, false,
+                base.throughputSampleAtElapsedMs(), base.selectedBitsPerSecond(),
+                base.bufferUsable(), base.bufferedDurationMs(),
+                base.runtimeSampleAtElapsedMs(), base.rebufferCount(),
+                base.buffering(), base.bufferDeclining(), base.rebufferRisk(),
+                base.foregroundRequests(), base.contextRevision());
     }
 }

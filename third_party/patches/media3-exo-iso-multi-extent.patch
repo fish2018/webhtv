@@ -1,0 +1,1475 @@
+diff --git a/libraries/datasource/src/main/java/androidx/media3/datasource/IsoDataSource.java b/libraries/datasource/src/main/java/androidx/media3/datasource/IsoDataSource.java
+index 922c58d359..962b971f0d 100644
+--- a/libraries/datasource/src/main/java/androidx/media3/datasource/IsoDataSource.java
++++ b/libraries/datasource/src/main/java/androidx/media3/datasource/IsoDataSource.java
+@@ -20,6 +20,10 @@ import androidx.annotation.Nullable;
+ import androidx.media3.common.C;
+ import androidx.media3.common.PlaybackException;
+ import java.io.IOException;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.List;
++import java.util.Map;
+ 
+ public final class IsoDataSource extends BaseDataSource {
+ 
+@@ -30,27 +34,66 @@ public final class IsoDataSource extends BaseDataSource {
+   private static final int SACD_SECTOR_SIZE = 2048;
+   private static final int SACD_HEADER_SIZE = 4;
+   private static final int SACD_PAYLOAD_SIZE = SACD_SECTOR_SIZE - SACD_HEADER_SIZE;
++  private static final long ZERO_FILLED_EXTENT_OFFSET = -1;
+ 
+   private final byte[] m2tsBuf = new byte[M2TS_PACKET_SIZE];
+   private final byte[] sacdBuf = new byte[SACD_SECTOR_SIZE];
+   private final DataSource upstream;
+-  private final long clipByteOffset;
++  private final long[] extentByteOffsets;
++  private final long[] extentByteLengths;
++  private final long clipLogicalByteOffset;
+   private final long clipByteLength;
+   private final boolean stripM2tsHeaders;
+   private final boolean stripSacdHeaders;
+ 
+-  @Nullable
+-  private Uri uri;
++  @Nullable private Uri uri;
+   private long bytesRemaining;
+   private int m2tsBufPos;
+   private int m2tsBufLimit;
+   private int sacdBufPos;
+   private int sacdBufLimit;
++  private boolean upstreamOpened;
++  private boolean opened;
++  @Nullable private DataSpec openedDataSpec;
++  private long rawReadPosition;
++  private long rawReadEnd;
++  private long currentExtentBytesRemaining;
++  private boolean currentExtentIsZeroFilled;
+ 
+-  public IsoDataSource(DataSource upstream, long clipByteOffset, long clipByteLength, boolean stripM2tsHeaders, boolean stripSacdHeaders) {
++  public IsoDataSource(
++      DataSource upstream,
++      long[] extentByteOffsets,
++      long[] extentByteLengths,
++      long clipLogicalByteOffset,
++      long clipByteLength,
++      boolean stripM2tsHeaders,
++      boolean stripSacdHeaders) {
+     super(false);
++    if (extentByteOffsets.length == 0 || extentByteOffsets.length != extentByteLengths.length) {
++      throw new IllegalArgumentException("Invalid ISO extents");
++    }
+     this.upstream = upstream;
+-    this.clipByteOffset = clipByteOffset;
++    this.extentByteOffsets = Arrays.copyOf(extentByteOffsets, extentByteOffsets.length);
++    this.extentByteLengths = Arrays.copyOf(extentByteLengths, extentByteLengths.length);
++    long totalExtentLength = 0;
++    try {
++      for (int i = 0; i < extentByteOffsets.length; i++) {
++        if ((extentByteOffsets[i] < 0 && extentByteOffsets[i] != ZERO_FILLED_EXTENT_OFFSET)
++            || extentByteLengths[i] < 0) {
++          throw new IllegalArgumentException("Invalid ISO extent");
++        }
++        totalExtentLength = Math.addExact(totalExtentLength, extentByteLengths[i]);
++      }
++    } catch (ArithmeticException e) {
++      throw new IllegalArgumentException("ISO extent length overflow", e);
++    }
++    if (clipLogicalByteOffset < 0
++        || clipByteLength < 0
++        || clipLogicalByteOffset > totalExtentLength
++        || clipByteLength > totalExtentLength - clipLogicalByteOffset) {
++      throw new IllegalArgumentException("ISO clip is outside its extents");
++    }
++    this.clipLogicalByteOffset = clipLogicalByteOffset;
+     this.clipByteLength = clipByteLength;
+     this.stripM2tsHeaders = stripM2tsHeaders;
+     this.stripSacdHeaders = stripSacdHeaders;
+@@ -71,47 +114,65 @@ public final class IsoDataSource extends BaseDataSource {
+     if (clipPosition > clipVirtualLength) {
+       throw new DataSourceException(PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
+     }
+-    long isoOffset;
+-    long upstreamLength;
++    long rawClipPosition;
++    long rawLength;
+     long packetOffset = 0;
+     if (stripM2tsHeaders) {
+       long packetIndex = clipPosition / TS_PACKET_SIZE;
+       packetOffset = clipPosition % TS_PACKET_SIZE;
+-      isoOffset = clipByteOffset + packetIndex * M2TS_PACKET_SIZE;
++      rawClipPosition = packetIndex * M2TS_PACKET_SIZE;
+       long virtualRemaining = clipVirtualLength - clipPosition;
+-      bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? virtualRemaining : Math.min(dataSpec.length, virtualRemaining);
++      bytesRemaining =
++          dataSpec.length == C.LENGTH_UNSET
++              ? virtualRemaining
++              : Math.min(dataSpec.length, virtualRemaining);
+       long packetsNeeded = (bytesRemaining + packetOffset + TS_PACKET_SIZE - 1) / TS_PACKET_SIZE;
+-      upstreamLength = packetsNeeded * M2TS_PACKET_SIZE;
++      rawLength = packetsNeeded * M2TS_PACKET_SIZE;
+     } else if (stripSacdHeaders) {
+       long sectorIndex = clipPosition / SACD_PAYLOAD_SIZE;
+       packetOffset = clipPosition % SACD_PAYLOAD_SIZE;
+-      isoOffset = clipByteOffset + sectorIndex * SACD_SECTOR_SIZE;
++      rawClipPosition = sectorIndex * SACD_SECTOR_SIZE;
+       long virtualRemaining = clipVirtualLength - clipPosition;
+-      bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? virtualRemaining : Math.min(dataSpec.length, virtualRemaining);
+-      long sectorsNeeded = (bytesRemaining + packetOffset + SACD_PAYLOAD_SIZE - 1) / SACD_PAYLOAD_SIZE;
+-      upstreamLength = sectorsNeeded * SACD_SECTOR_SIZE;
++      bytesRemaining =
++          dataSpec.length == C.LENGTH_UNSET
++              ? virtualRemaining
++              : Math.min(dataSpec.length, virtualRemaining);
++      long sectorsNeeded =
++          (bytesRemaining + packetOffset + SACD_PAYLOAD_SIZE - 1) / SACD_PAYLOAD_SIZE;
++      rawLength = sectorsNeeded * SACD_SECTOR_SIZE;
+     } else {
+-      isoOffset = clipByteOffset + clipPosition;
++      rawClipPosition = clipPosition;
+       long rawRemaining = clipVirtualLength - clipPosition;
+-      bytesRemaining = dataSpec.length == C.LENGTH_UNSET ? rawRemaining : Math.min(dataSpec.length, rawRemaining);
+-      upstreamLength = bytesRemaining;
++      bytesRemaining =
++          dataSpec.length == C.LENGTH_UNSET
++              ? rawRemaining
++              : Math.min(dataSpec.length, rawRemaining);
++      rawLength = bytesRemaining;
+     }
+     m2tsBufPos = 0;
+     m2tsBufLimit = 0;
+     sacdBufPos = 0;
+     sacdBufLimit = 0;
+-    DataSpec upstreamSpec = new DataSpec.Builder().setUri(dataSpec.uri).setPosition(isoOffset).setLength(upstreamLength).setKey(dataSpec.key).build();
++    openedDataSpec = dataSpec;
++    rawReadPosition = clipLogicalByteOffset + rawClipPosition;
++    long rawAvailable = clipLogicalByteOffset + clipByteLength - rawReadPosition;
++    rawReadEnd = rawReadPosition + Math.min(rawLength, rawAvailable);
++    currentExtentBytesRemaining = 0;
++    currentExtentIsZeroFilled = false;
+     transferInitializing(dataSpec);
+-    upstream.open(upstreamSpec);
++    if (rawReadPosition < rawReadEnd) {
++      openExtentForCurrentPosition();
++    }
++    opened = true;
+     transferStarted(dataSpec);
+     if (stripM2tsHeaders && packetOffset > 0) {
+-      int got = readFully(m2tsBuf, 0, M2TS_PACKET_SIZE);
++      int got = readFully(m2tsBuf, M2TS_PACKET_SIZE);
+       if (got == M2TS_PACKET_SIZE) {
+         m2tsBufPos = M2TS_HEADER_SIZE + (int) packetOffset;
+         m2tsBufLimit = M2TS_PACKET_SIZE;
+       }
+     } else if (stripSacdHeaders && packetOffset > 0) {
+-      int got = readFully(sacdBuf, 0, SACD_SECTOR_SIZE);
++      int got = readFully(sacdBuf, SACD_SECTOR_SIZE);
+       if (got == SACD_SECTOR_SIZE) {
+         sacdBufPos = SACD_HEADER_SIZE + (int) packetOffset;
+         sacdBufLimit = SACD_SECTOR_SIZE;
+@@ -133,10 +194,11 @@ public final class IsoDataSource extends BaseDataSource {
+     if (stripM2tsHeaders) {
+       while (totalRead < toRead) {
+         if (m2tsBufPos >= m2tsBufLimit) {
+-          int got = readFully(m2tsBuf, 0, M2TS_PACKET_SIZE);
++          int got = readFully(m2tsBuf, M2TS_PACKET_SIZE);
+           if (got < M2TS_PACKET_SIZE) {
+             if (bytesRemaining > TS_PACKET_SIZE) {
+-              throw new IOException("Unexpected end of M2TS stream: " + bytesRemaining + " bytes remaining");
++              throw new IOException(
++                  "Unexpected end of M2TS stream: " + bytesRemaining + " bytes remaining");
+             }
+             break;
+           }
+@@ -152,7 +214,7 @@ public final class IsoDataSource extends BaseDataSource {
+     } else if (stripSacdHeaders) {
+       while (totalRead < toRead) {
+         if (sacdBufPos >= sacdBufLimit) {
+-          int got = readFully(sacdBuf, 0, SACD_SECTOR_SIZE);
++          int got = readFully(sacdBuf, SACD_SECTOR_SIZE);
+           if (got < SACD_SECTOR_SIZE) {
+             break;
+           }
+@@ -166,7 +228,7 @@ public final class IsoDataSource extends BaseDataSource {
+         totalRead += copy;
+       }
+     } else {
+-      totalRead = upstream.read(buffer, offset, toRead);
++      totalRead = readRaw(buffer, offset, toRead);
+       if (totalRead == C.RESULT_END_OF_INPUT) {
+         totalRead = 0;
+       }
+@@ -181,23 +243,41 @@ public final class IsoDataSource extends BaseDataSource {
+   @Nullable
+   @Override
+   public Uri getUri() {
++    if (upstreamOpened) {
++      @Nullable Uri upstreamUri = upstream.getUri();
++      if (upstreamUri != null) {
++        return upstreamUri;
++      }
++    }
+     return uri;
+   }
+ 
++  @Override
++  public Map<String, List<String>> getResponseHeaders() {
++    return upstreamOpened ? upstream.getResponseHeaders() : Collections.emptyMap();
++  }
++
+   @Override
+   public void close() throws IOException {
+     uri = null;
++    openedDataSpec = null;
+     try {
+-      upstream.close();
++      if (upstreamOpened) {
++        upstreamOpened = false;
++        upstream.close();
++      }
+     } finally {
+-      transferEnded();
++      if (opened) {
++        opened = false;
++        transferEnded();
++      }
+     }
+   }
+ 
+-  private int readFully(byte[] buf, int offset, int length) throws IOException {
++  private int readFully(byte[] buf, int length) throws IOException {
+     int total = 0;
+     while (total < length) {
+-      int read = upstream.read(buf, offset + total, length - total);
++      int read = readRaw(buf, total, length - total);
+       if (read == C.RESULT_END_OF_INPUT) {
+         break;
+       }
+@@ -206,29 +286,138 @@ public final class IsoDataSource extends BaseDataSource {
+     return total;
+   }
+ 
++  private int readRaw(byte[] buffer, int offset, int length) throws IOException {
++    int totalRead = 0;
++    while (totalRead < length && rawReadPosition < rawReadEnd) {
++      if (currentExtentBytesRemaining == 0) {
++        openExtentForCurrentPosition();
++      }
++      int toRead =
++          (int)
++              Math.min(
++                  Math.min((long) length - totalRead, currentExtentBytesRemaining),
++                  rawReadEnd - rawReadPosition);
++      int read;
++      if (currentExtentIsZeroFilled) {
++        Arrays.fill(buffer, offset + totalRead, offset + totalRead + toRead, (byte) 0);
++        read = toRead;
++      } else {
++        read = upstream.read(buffer, offset + totalRead, toRead);
++      }
++      if (read == C.RESULT_END_OF_INPUT) {
++        break;
++      }
++      if (read == 0) {
++        throw new IOException("ISO upstream made no read progress");
++      }
++      totalRead += read;
++      rawReadPosition += read;
++      currentExtentBytesRemaining -= read;
++    }
++    return totalRead == 0 ? C.RESULT_END_OF_INPUT : totalRead;
++  }
++
++  private void openExtentForCurrentPosition() throws IOException {
++    if (upstreamOpened) {
++      upstream.close();
++      upstreamOpened = false;
++    }
++    currentExtentIsZeroFilled = false;
++    long extentLogicalStart = 0;
++    for (int i = 0; i < extentByteOffsets.length; i++) {
++      long extentLength = extentByteLengths[i];
++      long extentLogicalEnd = extentLogicalStart + extentLength;
++      if (rawReadPosition >= extentLogicalStart && rawReadPosition < extentLogicalEnd) {
++        long offsetInExtent = rawReadPosition - extentLogicalStart;
++        currentExtentBytesRemaining =
++            Math.min(extentLength - offsetInExtent, rawReadEnd - rawReadPosition);
++        if (extentByteOffsets[i] == ZERO_FILLED_EXTENT_OFFSET) {
++          currentExtentIsZeroFilled = true;
++          return;
++        }
++        DataSpec dataSpec = openedDataSpec;
++        if (dataSpec == null) {
++          throw new IOException("ISO data source is not open");
++        }
++        DataSpec upstreamSpec =
++            dataSpec
++                .buildUpon()
++                .setPosition(extentByteOffsets[i] + offsetInExtent)
++                .setLength(currentExtentBytesRemaining)
++                .build();
++        upstreamOpened = true;
++        upstream.open(upstreamSpec);
++        return;
++      }
++      extentLogicalStart = extentLogicalEnd;
++    }
++    throw new DataSourceException(PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE);
++  }
++
+   public static final class Factory implements DataSource.Factory {
+ 
+     private final DataSource.Factory upstreamFactory;
+-    private final long byteOffset;
+-    private final long byteLength;
++    private final long[] extentByteOffsets;
++    private final long[] extentByteLengths;
++    private final long clipLogicalByteOffset;
++    private final long clipByteLength;
+     private final boolean stripM2tsHeaders;
+     private final boolean stripSacdHeaders;
+ 
+-    public Factory(DataSource.Factory upstreamFactory, long byteOffset, long byteLength, boolean stripM2tsHeaders) {
++    public Factory(
++        DataSource.Factory upstreamFactory,
++        long byteOffset,
++        long byteLength,
++        boolean stripM2tsHeaders) {
+       this(upstreamFactory, byteOffset, byteLength, stripM2tsHeaders, false);
+     }
+ 
+-    public Factory(DataSource.Factory upstreamFactory, long byteOffset, long byteLength, boolean stripM2tsHeaders, boolean stripSacdHeaders) {
++    public Factory(
++        DataSource.Factory upstreamFactory,
++        long byteOffset,
++        long byteLength,
++        boolean stripM2tsHeaders,
++        boolean stripSacdHeaders) {
++      this(
++          upstreamFactory,
++          new long[] {byteOffset},
++          new long[] {byteLength},
++          /* clipLogicalByteOffset= */ 0,
++          byteLength,
++          stripM2tsHeaders,
++          stripSacdHeaders);
++    }
++
++    public Factory(
++        DataSource.Factory upstreamFactory,
++        long[] extentByteOffsets,
++        long[] extentByteLengths,
++        long clipLogicalByteOffset,
++        long clipByteLength,
++        boolean stripM2tsHeaders,
++        boolean stripSacdHeaders) {
++      if (extentByteOffsets.length == 0 || extentByteOffsets.length != extentByteLengths.length) {
++        throw new IllegalArgumentException("Invalid ISO extents");
++      }
+       this.upstreamFactory = upstreamFactory;
+-      this.byteOffset = byteOffset;
+-      this.byteLength = byteLength;
++      this.extentByteOffsets = Arrays.copyOf(extentByteOffsets, extentByteOffsets.length);
++      this.extentByteLengths = Arrays.copyOf(extentByteLengths, extentByteLengths.length);
++      this.clipLogicalByteOffset = clipLogicalByteOffset;
++      this.clipByteLength = clipByteLength;
+       this.stripM2tsHeaders = stripM2tsHeaders;
+       this.stripSacdHeaders = stripSacdHeaders;
+     }
+ 
+     @Override
+     public DataSource createDataSource() {
+-      return new IsoDataSource(upstreamFactory.createDataSource(), byteOffset, byteLength, stripM2tsHeaders, stripSacdHeaders);
++      return new IsoDataSource(
++          upstreamFactory.createDataSource(),
++          extentByteOffsets,
++          extentByteLengths,
++          clipLogicalByteOffset,
++          clipByteLength,
++          stripM2tsHeaders,
++          stripSacdHeaders);
+     }
+   }
+ }
+diff --git a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/BdmvSourceHelper.java b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/BdmvSourceHelper.java
+index 19cebc3541..b6832ff7e7 100644
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/BdmvSourceHelper.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/BdmvSourceHelper.java
+@@ -99,9 +99,16 @@ final class BdmvSourceHelper {
+       }
+       startM2ts = (startM2ts / BdmvConstants.M2TS_PACKET_SIZE) * BdmvConstants.M2TS_PACKET_SIZE;
+       endM2ts = Math.min(m2tsEntry.length, Util.ceilDivide(endM2ts, BdmvConstants.M2TS_PACKET_SIZE) * BdmvConstants.M2TS_PACKET_SIZE);
+-      long clipByteOffset = m2tsEntry.byteOffset + startM2ts;
+       long clipByteLength = endM2ts - startM2ts;
+-      IsoDataSource.Factory clipFactory = new IsoDataSource.Factory(dataSourceFactory, clipByteOffset, clipByteLength, true);
++      IsoDataSource.Factory clipFactory =
++          new IsoDataSource.Factory(
++              dataSourceFactory,
++              m2tsEntry.extentOffsets,
++              m2tsEntry.extentLengths,
++              startM2ts,
++              clipByteLength,
++              /* stripM2tsHeaders= */ true,
++              /* stripSacdHeaders= */ false);
+       final long capturedStartM2ts = startM2ts;
+       final long capturedInTimeTicks = item.inTimeTicks;
+       final long capturedDurationUs = durationUs;
+@@ -335,12 +342,24 @@ final class BdmvSourceHelper {
+     int maxRead = (int) Math.min(entry.length, MAX_ENTRY_READ_BYTES);
+     byte[] data = new byte[maxRead];
+     int pos = 0;
+-    while (pos < maxRead) {
+-      int read = isoReader.read(entry.byteOffset + pos, data, pos, maxRead - pos);
+-      if (read <= 0) {
+-        break;
++    for (int i = 0; i < entry.extentOffsets.length && pos < maxRead; i++) {
++      int extentLength = (int) Math.min(entry.extentLengths[i], maxRead - pos);
++      if (entry.extentOffsets[i] == IsoFileEntry.UNRECORDED_EXTENT_OFFSET) {
++        Arrays.fill(data, pos, pos + extentLength, (byte) 0);
++        pos += extentLength;
++        continue;
++      }
++      int extentRead = 0;
++      while (extentRead < extentLength) {
++        int read =
++            isoReader.read(
++                entry.extentOffsets[i] + extentRead, data, pos, extentLength - extentRead);
++        if (read <= 0) {
++          return pos < data.length ? Arrays.copyOf(data, pos) : data;
++        }
++        pos += read;
++        extentRead += read;
+       }
+-      pos += read;
+     }
+     return pos < data.length ? Arrays.copyOf(data, pos) : data;
+   }
+@@ -371,20 +390,34 @@ final class BdmvSourceHelper {
+     long minOffset = Long.MAX_VALUE;
+     long maxEnd = 0;
+     for (IsoFileEntry e : entries) {
+-      if (e.byteOffset < minOffset) {
+-        minOffset = e.byteOffset;
+-      }
+-      long end = e.byteOffset + e.length;
+-      if (end > maxEnd) {
+-        maxEnd = end;
++      for (int i = 0; i < e.extentOffsets.length; i++) {
++        if (e.extentOffsets[i] == IsoFileEntry.UNRECORDED_EXTENT_OFFSET) {
++          continue;
++        }
++        minOffset = Math.min(minOffset, e.extentOffsets[i]);
++        long end = e.extentOffsets[i] + e.extentLengths[i];
++        if (end >= e.extentOffsets[i]) {
++          maxEnd = Math.max(maxEnd, end);
++        }
+       }
+     }
++    if (minOffset == Long.MAX_VALUE) {
++      return;
++    }
+     long span = maxEnd - minOffset;
+     if (span > 0 && span <= BATCH_PREFETCH_MAX_SPAN) {
+       isoReader.prefetchRange(minOffset, maxEnd);
+     } else {
+       for (IsoFileEntry e : entries) {
+-        isoReader.prefetchRange(e.byteOffset, e.byteOffset + e.length);
++        for (int i = 0; i < e.extentOffsets.length; i++) {
++          if (e.extentOffsets[i] == IsoFileEntry.UNRECORDED_EXTENT_OFFSET) {
++            continue;
++          }
++          long end = e.extentOffsets[i] + e.extentLengths[i];
++          if (end >= e.extentOffsets[i]) {
++            isoReader.prefetchRange(e.extentOffsets[i], end);
++          }
++        }
+       }
+     }
+   }
+diff --git a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/DvdSourceHelper.java b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/DvdSourceHelper.java
+index 2671617912..f3201bd83b 100644
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/DvdSourceHelper.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/iso/DvdSourceHelper.java
+@@ -66,7 +66,15 @@ final class DvdSourceHelper {
+         continue;
+       }
+       final IndexSeekMap seekMap = (cellIndex < cellSeekMaps.size()) ? cellSeekMaps.get(cellIndex) : null;
+-      IsoDataSource.Factory clipFactory = new IsoDataSource.Factory(dataSourceFactory, cell.byteOffset, cell.length, false);
++      IsoDataSource.Factory clipFactory =
++          new IsoDataSource.Factory(
++              dataSourceFactory,
++              cell.extentOffsets,
++              cell.extentLengths,
++              /* clipLogicalByteOffset= */ 0,
++              cell.length,
++              /* stripM2tsHeaders= */ false,
++              /* stripSacdHeaders= */ false);
+       final DvdPrivateStreamReader psr = privateStreamReader;
+       ProgressiveMediaSource.Factory psFactory = new ProgressiveMediaSource.Factory(clipFactory, () -> new Extractor[]{new PsExtractor(new TimestampAdjuster(0), psr, seekMap)});
+       MediaItem cellItem = new MediaItem.Builder().setUri(isoUri).setCustomCacheKey("cell_" + cell.byteOffset).build();
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/IsoFileEntry.java b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/IsoFileEntry.java
+index 100b9ad46b..33b06a41cd 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/IsoFileEntry.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/IsoFileEntry.java
+@@ -15,8 +15,13 @@
+  */
+ package androidx.media3.extractor.iso;
+ 
++import java.util.Arrays;
++
+ public final class IsoFileEntry {
+ 
++  /** Extent offset indicating that the logical extent contains zero-filled unrecorded data. */
++  public static final long UNRECORDED_EXTENT_OFFSET = -1;
++
+   // File name within the UDF directory.
+   public final String name;
+ 
+@@ -26,9 +31,43 @@ public final class IsoFileEntry {
+   // Length of the file's data in bytes.
+   public final long length;
+ 
++  // Physical byte offsets of the file's allocation extents within the ISO image, or
++  // {@link #UNRECORDED_EXTENT_OFFSET} for zero-filled unrecorded extents.
++  public final long[] extentOffsets;
++
++  // Logical byte lengths corresponding to {@link #extentOffsets}.
++  public final long[] extentLengths;
++
+   public IsoFileEntry(String name, long byteOffset, long length) {
++    this(name, new long[] {byteOffset}, new long[] {length}, length);
++  }
++
++  public IsoFileEntry(String name, long[] extentOffsets, long[] extentLengths, long length) {
++    if (extentOffsets.length == 0 || extentOffsets.length != extentLengths.length) {
++      throw new IllegalArgumentException("Invalid ISO file extents");
++    }
++    if (length < 0) {
++      throw new IllegalArgumentException("Invalid ISO file length");
++    }
++    long totalExtentLength = 0;
++    try {
++      for (int i = 0; i < extentOffsets.length; i++) {
++        if ((extentOffsets[i] < 0 && extentOffsets[i] != UNRECORDED_EXTENT_OFFSET)
++            || extentLengths[i] < 0) {
++          throw new IllegalArgumentException("Invalid ISO file extent");
++        }
++        totalExtentLength = Math.addExact(totalExtentLength, extentLengths[i]);
++      }
++    } catch (ArithmeticException e) {
++      throw new IllegalArgumentException("ISO file extent length overflow", e);
++    }
++    if (length > totalExtentLength) {
++      throw new IllegalArgumentException("ISO file length exceeds its extents");
++    }
+     this.name = name;
+-    this.byteOffset = byteOffset;
++    this.byteOffset = extentOffsets[0];
+     this.length = length;
++    this.extentOffsets = Arrays.copyOf(extentOffsets, extentOffsets.length);
++    this.extentLengths = Arrays.copyOf(extentLengths, extentLengths.length);
+   }
+ }
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdCell.java b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdCell.java
+index 5edb848604..2a3b87cfec 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdCell.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdCell.java
+@@ -15,6 +15,8 @@
+  */
+ package androidx.media3.extractor.iso.dvd;
+ 
++import java.util.Arrays;
++
+ public final class DvdCell {
+ 
+   /**
+@@ -27,6 +29,12 @@ public final class DvdCell {
+    */
+   public final long length;
+ 
++  /** Physical byte offsets containing this cell's data, in playback order. */
++  public final long[] extentOffsets;
++
++  /** Byte lengths corresponding to {@link #extentOffsets}. */
++  public final long[] extentLengths;
++
+   /**
+    * Duration of this cell in microseconds.
+    */
+@@ -45,8 +53,23 @@ public final class DvdCell {
+   public final long lastSector;
+ 
+   public DvdCell(long byteOffset, long length, long durationUs, long firstSector, long lastSector) {
+-    this.byteOffset = byteOffset;
++    this(new long[] {byteOffset}, new long[] {length}, length, durationUs, firstSector, lastSector);
++  }
++
++  public DvdCell(
++      long[] extentOffsets,
++      long[] extentLengths,
++      long length,
++      long durationUs,
++      long firstSector,
++      long lastSector) {
++    if (extentOffsets.length == 0 || extentOffsets.length != extentLengths.length) {
++      throw new IllegalArgumentException("Invalid DVD cell extents");
++    }
++    this.byteOffset = extentOffsets[0];
+     this.length = length;
++    this.extentOffsets = Arrays.copyOf(extentOffsets, extentOffsets.length);
++    this.extentLengths = Arrays.copyOf(extentLengths, extentLengths.length);
+     this.durationUs = durationUs;
+     this.firstSector = firstSector;
+     this.lastSector = lastSector;
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdIfoParser.java b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdIfoParser.java
+index 626ef26a6d..f0bc5ff46c 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdIfoParser.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/dvd/DvdIfoParser.java
+@@ -102,20 +102,29 @@ public final class DvdIfoParser {
+     this.udf = udf;
+   }
+ 
+-  private static long vobSectorToByteOffset(long[][] vobParts, long sector) {
++  static long[][] vobSectorRangeToExtents(long[][] vobParts, long firstSector, long lastSector) {
++    List<long[]> extents = new ArrayList<>();
++    long sector = firstSector;
+     for (long[] part : vobParts) {
+       long partStart = part[0];
+       long partByteOffset = part[1];
+       long partSectors = part[2];
+-      if (sector >= partStart && sector < partStart + partSectors) {
+-        return partByteOffset + (sector - partStart) * SECTOR_SIZE;
++      long partEnd = partStart + partSectors;
++      if (sector >= partStart && sector < partEnd) {
++        long extentEndSector = Math.min(lastSector + 1, partEnd);
++        extents.add(new long[] {
++            partByteOffset == IsoFileEntry.UNRECORDED_EXTENT_OFFSET
++                ? IsoFileEntry.UNRECORDED_EXTENT_OFFSET
++                : partByteOffset + (sector - partStart) * SECTOR_SIZE,
++            (extentEndSector - sector) * SECTOR_SIZE
++        });
++        sector = extentEndSector;
++        if (sector > lastSector) {
++          break;
++        }
+       }
+     }
+-    if (vobParts.length > 0) {
+-      long[] last = vobParts[vobParts.length - 1];
+-      return last[1] + (sector - last[0]) * SECTOR_SIZE;
+-    }
+-    return sector * SECTOR_SIZE;
++    return sector > lastSector ? extents.toArray(new long[0][]) : new long[0][];
+   }
+ 
+   private static int parseVtsNum(String ifoName) {
+@@ -294,9 +303,18 @@ public final class DvdIfoParser {
+       long durationUs = decodeDvdTime(pgcData, cpOffset + CELL_DURATION_OFFSET);
+       long firstSector = pgcBB.getInt(cpOffset + CELL_FIRST_SECTOR_OFFSET) & 0xFFFFFFFFL;
+       long lastSector = pgcBB.getInt(cpOffset + CELL_LAST_SECTOR_OFFSET) & 0xFFFFFFFFL;
+-      long byteOffset = vobSectorToByteOffset(vobParts, firstSector);
+       long length = (lastSector - firstSector + 1) * SECTOR_SIZE;
+-      cells.add(new DvdCell(byteOffset, length, durationUs, firstSector, lastSector));
++      long[][] cellExtents = vobSectorRangeToExtents(vobParts, firstSector, lastSector);
++      if (cellExtents.length == 0) {
++        continue;
++      }
++      long[] extentOffsets = new long[cellExtents.length];
++      long[] extentLengths = new long[cellExtents.length];
++      for (int i = 0; i < cellExtents.length; i++) {
++        extentOffsets[i] = cellExtents[i][0];
++        extentLengths[i] = cellExtents[i][1];
++      }
++      cells.add(new DvdCell(extentOffsets, extentLengths, length, durationUs, firstSector, lastSector));
+     }
+     String[] audioLanguages = new String[MAX_AUDIO_STREAMS];
+     int[] audioFormats = new int[MAX_AUDIO_STREAMS];
+@@ -388,8 +406,14 @@ public final class DvdIfoParser {
+           break;
+         }
+         long partSectors = entry.length / SECTOR_SIZE;
+-        parts.add(new long[]{cumSectors, entry.byteOffset, partSectors});
+-        cumSectors += partSectors;
++        for (int i = 0; i < entry.extentOffsets.length; i++) {
++          long extentSectors = entry.extentLengths[i] / SECTOR_SIZE;
++          if (extentSectors == 0) {
++            continue;
++          }
++          parts.add(new long[]{cumSectors, entry.extentOffsets[i], extentSectors});
++          cumSectors += extentSectors;
++        }
+       } catch (IOException e) {
+         break;
+       }
+@@ -452,7 +476,11 @@ public final class DvdIfoParser {
+       IsoFileEntry entry = udf.findFile(ifoPath);
+       if (entry != null) {
+         ifoCache.put(ifoPath, entry);
+-        offsets.add(entry.byteOffset);
++        for (long extentOffset : entry.extentOffsets) {
++          if (extentOffset != IsoFileEntry.UNRECORDED_EXTENT_OFFSET) {
++            offsets.add(extentOffset);
++          }
++        }
+       }
+     }
+     if (offsets.isEmpty()) {
+@@ -489,19 +517,39 @@ public final class DvdIfoParser {
+       }
+       ifoCache.put(ifoPath, entry);
+     }
+-    return readAbsolute(entry.byteOffset + sectorOffset * SECTOR_SIZE, numSectors * SECTOR_SIZE);
++    return readLogical(entry, sectorOffset * SECTOR_SIZE, numSectors * SECTOR_SIZE);
+   }
+ 
+-  private byte[] readAbsolute(long byteOffset, int length) throws IOException {
++  private byte[] readLogical(IsoFileEntry entry, long logicalOffset, int length) throws IOException {
++    if (logicalOffset < 0 || length < 0 || logicalOffset > entry.length - length) {
++      throw new IOException("DVD: IFO read out of range: " + entry.name);
++    }
+     byte[] data = new byte[length];
+     int pos = 0;
+-    while (pos < length) {
+-      int n = reader.read(byteOffset + pos, data, pos, length - pos);
+-      if (n == -1) {
+-        break;
++    long extentLogicalStart = 0;
++    for (int i = 0; i < entry.extentOffsets.length && pos < length; i++) {
++      long extentLength = entry.extentLengths[i];
++      long extentLogicalEnd = extentLogicalStart + extentLength;
++      if (logicalOffset < extentLogicalEnd) {
++        long offsetInExtent = Math.max(0, logicalOffset - extentLogicalStart);
++        int extentReadLength = (int) Math.min(extentLength - offsetInExtent, length - pos);
++        if (entry.extentOffsets[i] == IsoFileEntry.UNRECORDED_EXTENT_OFFSET) {
++          Arrays.fill(data, pos, pos + extentReadLength, (byte) 0);
++          pos += extentReadLength;
++        } else {
++          int extentRead = 0;
++          while (extentRead < extentReadLength) {
++            int n = reader.read(entry.extentOffsets[i] + offsetInExtent + extentRead, data, pos, extentReadLength - extentRead);
++            if (n <= 0) throw new IOException("DVD: short IFO read: " + entry.name);
++            extentRead += n;
++            pos += n;
++          }
++        }
++        logicalOffset += extentReadLength;
+       }
+-      pos += n;
++      extentLogicalStart = extentLogicalEnd;
+     }
++    if (pos != length) throw new IOException("DVD: short IFO read: " + entry.name);
+     return data;
+   }
+ }
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/udf/UdfFileSystem.java b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/udf/UdfFileSystem.java
+index 0cacd9c459..1ac200bf83 100644
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/iso/udf/UdfFileSystem.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/iso/udf/UdfFileSystem.java
+@@ -27,9 +27,11 @@ import java.nio.charset.StandardCharsets;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.HashMap;
++import java.util.HashSet;
+ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
++import java.util.Set;
+ 
+ public final class UdfFileSystem {
+ 
+@@ -50,7 +52,6 @@ public final class UdfFileSystem {
+ 
+   private static final int LVD_NUM_PARTITION_MAPS_OFFSET = 268;
+   private static final int LVD_PARTITION_MAPS_START = 440;
+-  private static final int PM_TYPE2_MIN_SIZE = 40;
+   private static final int PM_TYPE2_ID_OFFSET = 5;
+   private static final int PM_TYPE2_ID_LENGTH = 8;
+   private static final int PM_META_FILOC_OFFSET = 40;
+@@ -68,6 +69,7 @@ public final class UdfFileSystem {
+ 
+   private static final int TAG_FSD = 256;
+   private static final int TAG_FID = 257;
++  private static final int TAG_AED = 258;
+   private static final int TAG_FE = 261;
+   private static final int TAG_EFE = 266;
+   private static final int TAG_AVDP = 2;
+@@ -75,6 +77,7 @@ public final class UdfFileSystem {
+   private static final int TAG_LVD = 6;
+   private static final int TAG_TD = 8;
+ 
++  private static final int AD_SHORT = 0;
+   private static final int AD_LONG = 1;
+   private static final int AD_EXTENDED = 2;
+   private static final int AD_EMBEDDED = 3;
+@@ -82,10 +85,10 @@ public final class UdfFileSystem {
+   private static final int AD_SHORT_SIZE = 8;
+   private static final int AD_LONG_SIZE = 16;
+   private static final int AD_EXTENDED_SIZE = 20;
+-
+-  private static final int ENTRY_OFFSET = 0;
+-  private static final int ENTRY_SIZE = 1;
+-  private static final int ENTRY_IS_DIR = 2;
++  private static final int AED_AD_LENGTH_OFFSET = 20;
++  private static final int AED_AD_START_OFFSET = 24;
++  private static final int MAX_ALLOCATION_DESCRIPTOR_BYTES = 1024 * 1024;
++  private static final int MAX_ALLOCATION_DESCRIPTOR_CONTINUATIONS = 64;
+ 
+   private static final int FID_MIN_SIZE = 38;
+   private static final int FID_FILE_CHARS_OFFSET = 18;
+@@ -125,15 +128,15 @@ public final class UdfFileSystem {
+         return null;
+       }
+     }
+-    Map<String, long[]> entries = readDirectoryEntries(dirLbn);
++    Map<String, DirectoryEntry> entries = readDirectoryEntries(dirLbn);
+     String nameLower = fileName.toLowerCase(Locale.US);
+-    for (Map.Entry<String, long[]> e : entries.entrySet()) {
++    for (Map.Entry<String, DirectoryEntry> e : entries.entrySet()) {
+       if (e.getKey().toLowerCase(Locale.US).equals(nameLower)) {
+-        long[] v = e.getValue();
+-        if (v[ENTRY_IS_DIR] != 0) {
++        DirectoryEntry entry = e.getValue();
++        if (entry.isDirectory || entry.extentOffsets.length == 0) {
+           return null;
+         }
+-        return v[ENTRY_OFFSET] >= 0 ? new IsoFileEntry(e.getKey(), v[ENTRY_OFFSET], v[ENTRY_SIZE]) : null;
++        return new IsoFileEntry(e.getKey(), entry.extentOffsets, entry.extentLengths, entry.length);
+       }
+     }
+     return null;
+@@ -160,7 +163,10 @@ public final class UdfFileSystem {
+     long mvdsLengthBytes = (long) VDS_DEFAULT_SECTORS * SECTOR_SIZE;
+     long rvdsLocation = -1;
+     long rvdsLengthBytes = 0;
+-    long[] avdpCandidates = totalSectors > AVDP_SECTOR_MAIN ? new long[]{AVDP_SECTOR_MAIN, AVDP_SECTOR_RESERVE, totalSectors - AVDP_SECTOR_MAIN} : new long[]{AVDP_SECTOR_MAIN, AVDP_SECTOR_RESERVE};
++    long[] avdpCandidates =
++        totalSectors > AVDP_SECTOR_MAIN
++            ? new long[] {AVDP_SECTOR_MAIN, AVDP_SECTOR_RESERVE, totalSectors - AVDP_SECTOR_MAIN}
++            : new long[] {AVDP_SECTOR_MAIN, AVDP_SECTOR_RESERVE};
+     for (long avdpSector : avdpCandidates) {
+       if (!tryReadSector(avdpSector)) {
+         continue;
+@@ -176,12 +182,12 @@ public final class UdfFileSystem {
+     if (mvdsLocation < 0) {
+       mvdsLocation = VDS_DEFAULT_SECTORS;
+     }
+-    long[] vdsResult = scanVds(mvdsLocation, mvdsLengthBytes);
+-    if (vdsResult[0] == 0 && rvdsLocation > 0) {
++    VdsResult vdsResult = scanVds(mvdsLocation, mvdsLengthBytes);
++    if (vdsResult.partitionStart == 0 && rvdsLocation > 0) {
+       vdsResult = scanVds(rvdsLocation, rvdsLengthBytes);
+     }
+-    long partitionStart = vdsResult[0];
+-    long metaFileLoc = vdsResult[1];
++    long partitionStart = vdsResult.partitionStart;
++    long metaFileLoc = vdsResult.metadataFileLocation;
+     if (partitionStart == 0) {
+       throw new IOException("UDF: PartitionDescriptor not found in VDS at sector " + mvdsLocation);
+     }
+@@ -204,7 +210,7 @@ public final class UdfFileSystem {
+     rootIcbLbn = sectorBB.getInt(FSD_ROOT_ICB_OFFSET) & 0xFFFFFFFFL;
+   }
+ 
+-  private long[] scanVds(long location, long lengthBytes) {
++  private VdsResult scanVds(long location, long lengthBytes) {
+     long sectors = Math.max(1, Util.ceilDivide(lengthBytes, SECTOR_SIZE));
+     reader.prefetchRange(location * SECTOR_SIZE, (location + sectors) * SECTOR_SIZE);
+     long partitionStart = 0;
+@@ -225,7 +231,7 @@ public final class UdfFileSystem {
+         break;
+       }
+     }
+-    return new long[]{partitionStart, metaFileLoc};
++    return new VdsResult(partitionStart, metaFileLoc);
+   }
+ 
+   private long scanForTag(long start, int count) {
+@@ -254,8 +260,14 @@ public final class UdfFileSystem {
+       if (pmLen == 0) {
+         break;
+       }
+-      if (pmType == 2 && pos + PM_TYPE2_MIN_SIZE < SECTOR_SIZE) {
+-        String id8 = new String(sectorBuf, pos + PM_TYPE2_ID_OFFSET, PM_TYPE2_ID_LENGTH, StandardCharsets.ISO_8859_1);
++      int requiredMapLength = PM_META_FILOC_OFFSET + 4;
++      if (pmType == 2 && pmLen >= requiredMapLength && pos <= SECTOR_SIZE - pmLen) {
++        String id8 =
++            new String(
++                sectorBuf,
++                pos + PM_TYPE2_ID_OFFSET,
++                PM_TYPE2_ID_LENGTH,
++                StandardCharsets.ISO_8859_1);
+         if (id8.equals("*UDF Met")) {
+           return sectorBB.getInt(pos + PM_META_FILOC_OFFSET) & 0xFFFFFFFFL;
+         }
+@@ -272,19 +284,19 @@ public final class UdfFileSystem {
+       if (part.isEmpty()) {
+         continue;
+       }
+-      Map<String, long[]> entries = readDirectoryEntries(dirLbn);
++      Map<String, DirectoryEntry> entries = readDirectoryEntries(dirLbn);
+       String nameLower = part.toLowerCase(Locale.US);
+-      long[] found = null;
+-      for (Map.Entry<String, long[]> e : entries.entrySet()) {
++      @Nullable DirectoryEntry found = null;
++      for (Map.Entry<String, DirectoryEntry> e : entries.entrySet()) {
+         if (e.getKey().toLowerCase(Locale.US).equals(nameLower)) {
+           found = e.getValue();
+           break;
+         }
+       }
+-      if (found == null || found[ENTRY_IS_DIR] == 0) {
++      if (found == null || !found.isDirectory) {
+         return -1;
+       }
+-      dirLbn = found[ENTRY_OFFSET];
++      dirLbn = found.logicalBlockNumber;
+     }
+     return dirLbn;
+   }
+@@ -293,55 +305,90 @@ public final class UdfFileSystem {
+     return new ArrayList<>(readDirectoryEntries(dirLbn).keySet());
+   }
+ 
+-  private Map<String, long[]> readDirectoryEntries(long dirLbn) throws IOException {
++  private Map<String, DirectoryEntry> readDirectoryEntries(long dirLbn) throws IOException {
+     readSector(fsdPhysicalSector + dirLbn);
+     int tagId = readTag();
+     if (tagId != TAG_FE && tagId != TAG_EFE) {
+       throw new IOException("UDF: expected FE/EFE at lbn=" + dirLbn + ", got tag=" + tagId);
+     }
+-    long[] layout = readFileEntryLayout(tagId);
+-    int adOffset = (int) layout[0];
+-    int adLength = (int) layout[1];
+-    int adType = (int) layout[2];
+-    long infoLength = layout[3];
++    FileEntryLayout layout = readFileEntryLayout(tagId);
+     byte[] feSector = sectorBuf.clone();
+-    Map<String, long[]> result = new HashMap<>();
+-    if (adType == AD_EMBEDDED) {
+-      parseDirectoryData(feSector, adOffset, adLength, result);
++    Map<String, DirectoryEntry> result = new HashMap<>();
++    if (layout.allocationDescriptorType == AD_EMBEDDED) {
++      parseDirectoryData(
++          feSector, layout.allocationDescriptorOffset, layout.allocationDescriptorLength, result);
+     } else {
+-      byte[] dirData = readAllocDesc(feSector, adOffset, adLength, adType, (int) infoLength);
++      if (layout.informationLength > Integer.MAX_VALUE) {
++        throw new IOException("UDF: directory is too large");
++      }
++      byte[] dirData =
++          readAllocDesc(
++              feSector,
++              layout.allocationDescriptorOffset,
++              layout.allocationDescriptorLength,
++              layout.allocationDescriptorType,
++              (int) layout.informationLength);
+       parseDirectoryData(dirData, 0, dirData.length, result);
+     }
+     return result;
+   }
+ 
+-  private byte[] readAllocDesc(byte[] feSector, int adOffset, int adLength, int adType, int totalLength) throws IOException {
++  private byte[] readAllocDesc(
++      byte[] feSector, int adOffset, int adLength, int adType, int totalLength) throws IOException {
+     byte[] data = new byte[totalLength];
+     int dataPos = 0;
+-    int pos = adOffset;
+-    int end = adOffset + adLength;
+-    ByteBuffer feBB = ByteBuffer.wrap(feSector).order(ByteOrder.LITTLE_ENDIAN);
+-    while (pos < end && dataPos < totalLength) {
+-      long[] ad = readExtentAd(feBB, pos, adType, false);
+-      long lbn = ad[0];
+-      long base = ad[1];
+-      int extentLength = (int) ad[2];
+-      pos = (int) ad[3];
+-      if (extentLength == 0) {
++    List<AllocationDescriptor> allocationDescriptors =
++        readExtentAds(feSector, adOffset, adLength, adType, /* resolvePartRef= */ false);
++    for (AllocationDescriptor descriptor : allocationDescriptors) {
++      if (dataPos >= totalLength) {
++        break;
++      }
++      if (descriptor.allocationLength == 0) {
++        continue;
++      }
++      if (descriptor.extentType == 1 || descriptor.extentType == 2) {
++        int zeroLength = (int) Math.min(descriptor.informationLength, totalLength - dataPos);
++        Arrays.fill(data, dataPos, dataPos + zeroLength, (byte) 0);
++        dataPos += zeroLength;
+         continue;
+       }
+-      int numSectors = Util.ceilDivide(extentLength, SECTOR_SIZE);
+-      for (int s = 0; s < numSectors && dataPos < totalLength; s++) {
+-        readSector(base + lbn + s);
+-        int toCopy = Math.min(SECTOR_SIZE, totalLength - dataPos);
++      if (descriptor.extentType != 0) {
++        throw new IOException("UDF: unsupported directory extent type " + descriptor.extentType);
++      }
++      if (descriptor.recordedLength != descriptor.informationLength
++          || descriptor.recordedLength > descriptor.allocationLength) {
++        throw new IOException("UDF: unsupported directory extent lengths");
++      }
++      if (descriptor.informationLength == 0) {
++        continue;
++      }
++      if (descriptor.informationLength > Integer.MAX_VALUE) {
++        throw new IOException("UDF: directory extent is too large");
++      }
++      int extentInformationLength = (int) descriptor.informationLength;
++      int numSectors = Util.ceilDivide(extentInformationLength, SECTOR_SIZE);
++      int extentBytesRead = 0;
++      for (int s = 0;
++          s < numSectors && dataPos < totalLength && extentBytesRead < extentInformationLength;
++          s++) {
++        readSector(descriptor.partitionStart + descriptor.logicalBlockNumber + s);
++        int toCopy =
++            Math.min(
++                Math.min(SECTOR_SIZE, extentInformationLength - extentBytesRead),
++                totalLength - dataPos);
+         System.arraycopy(sectorBuf, 0, data, dataPos, toCopy);
+         dataPos += toCopy;
++        extentBytesRead += toCopy;
+       }
+     }
+     return data;
+   }
+ 
+-  private void parseDirectoryData(byte[] data, int offset, int length, Map<String, long[]> out) {
++  private void parseDirectoryData(
++      byte[] data, int offset, int length, Map<String, DirectoryEntry> out) throws IOException {
++    if (offset < 0 || length < 0 || offset > data.length - length) {
++      throw new IOException("UDF: invalid directory data range");
++    }
+     ByteBuffer bb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+     int pos = offset;
+     int end = offset + length;
+@@ -354,17 +401,22 @@ public final class UdfFileSystem {
+       int fiLength = data[pos + FID_FI_LENGTH_OFFSET] & 0xFF;
+       long icbLbn = bb.getInt(pos + FID_ICB_LBN_OFFSET) & 0xFFFFFFFFL;
+       int implUseLength = bb.getShort(pos + FID_IMPL_USE_LEN_OFFSET) & 0xFFFF;
++      if (implUseLength > end - pos - FID_MIN_SIZE) {
++        throw new IOException("UDF: truncated file identifier implementation data");
++      }
+       int nameOffset = pos + FID_MIN_SIZE + implUseLength;
++      if (fiLength > end - nameOffset) {
++        throw new IOException("UDF: truncated file identifier name");
++      }
+       boolean isDir = (fileChars & 0x02) != 0;
+       boolean isParent = (fileChars & 0x08) != 0;
+       if (!isParent && fiLength > 0) {
+         String name = decodeOsta(data, nameOffset, fiLength);
+         if (isDir) {
+-          out.put(name, new long[]{icbLbn, 0, 1});
++          out.put(name, DirectoryEntry.forDirectory(icbLbn));
+         } else {
+           try {
+-            long[] fileInfo = resolveFileEntry(icbLbn);
+-            out.put(name, new long[]{fileInfo[ENTRY_OFFSET], fileInfo[ENTRY_SIZE], 0});
++            out.put(name, resolveFileEntry(icbLbn));
+           } catch (IOException ignored) {
+           }
+         }
+@@ -375,65 +427,207 @@ public final class UdfFileSystem {
+     }
+   }
+ 
+-  private long[] resolveFileEntry(long icbLbn) throws IOException {
++  private DirectoryEntry resolveFileEntry(long icbLbn) throws IOException {
+     readSector(fsdPhysicalSector + icbLbn);
+     int tagId = readTag();
+     if (tagId != TAG_FE && tagId != TAG_EFE) {
+       throw new IOException("UDF: expected FE/EFE at icbLbn=" + icbLbn + ", got tag=" + tagId);
+     }
+-    long[] layout = readFileEntryLayout(tagId);
+-    int adOffset = (int) layout[0];
+-    int adLength = (int) layout[1];
+-    int adType = (int) layout[2];
+-    long infoLength = layout[3];
+-    if (adType == AD_EMBEDDED || adLength == 0) {
+-      return new long[]{-1, infoLength};
++    FileEntryLayout layout = readFileEntryLayout(tagId);
++    if (layout.allocationDescriptorType == AD_EMBEDDED || layout.allocationDescriptorLength == 0) {
++      return DirectoryEntry.forUnresolvedFile(layout.informationLength);
+     }
+     byte[] feSector = sectorBuf.clone();
+-    ByteBuffer feBB = ByteBuffer.wrap(feSector).order(ByteOrder.LITTLE_ENDIAN);
+-    int pos = adOffset;
+-    int end = adOffset + adLength;
+-    long firstByteOffset = -1;
+-    long nextExpectedSector = -1;
+-    while (pos < end) {
+-      long[] ad = readExtentAd(feBB, pos, adType, true);
+-      long lbn = ad[0];
+-      long base = ad[1];
+-      int extentLength = (int) ad[2];
+-      pos = (int) ad[3];
+-      if (extentLength == 0) {
++    List<Long> extentOffsets = new ArrayList<>();
++    List<Long> extentLengths = new ArrayList<>();
++    long remainingLength = layout.informationLength;
++    List<AllocationDescriptor> allocationDescriptors =
++        readExtentAds(
++            feSector,
++            layout.allocationDescriptorOffset,
++            layout.allocationDescriptorLength,
++            layout.allocationDescriptorType,
++            /* resolvePartRef= */ true);
++    for (AllocationDescriptor descriptor : allocationDescriptors) {
++      if (remainingLength <= 0) {
++        break;
++      }
++      if (descriptor.allocationLength == 0) {
+         continue;
+       }
+-      long physicalSector = base + lbn;
+-      if (firstByteOffset < 0) {
+-        firstByteOffset = physicalSector * SECTOR_SIZE;
+-      } else if (physicalSector != nextExpectedSector) {
++      if (descriptor.extentType == 1 || descriptor.extentType == 2) {
++        long logicalExtentLength = Math.min(descriptor.informationLength, remainingLength);
++        if (logicalExtentLength > 0) {
++          extentOffsets.add(IsoFileEntry.UNRECORDED_EXTENT_OFFSET);
++          extentLengths.add(logicalExtentLength);
++          remainingLength -= logicalExtentLength;
++        }
++        continue;
++      }
++      if (descriptor.extentType != 0
++          || descriptor.recordedLength != descriptor.informationLength
++          || descriptor.recordedLength > descriptor.allocationLength) {
++        return DirectoryEntry.forUnresolvedFile(layout.informationLength);
++      }
++      if (descriptor.informationLength == 0) {
++        continue;
++      }
++      long physicalSector;
++      long physicalByteOffset;
++      try {
++        physicalSector = Math.addExact(descriptor.partitionStart, descriptor.logicalBlockNumber);
++        physicalByteOffset = Math.multiplyExact(physicalSector, (long) SECTOR_SIZE);
++      } catch (ArithmeticException e) {
++        return DirectoryEntry.forUnresolvedFile(layout.informationLength);
++      }
++      long logicalExtentLength = Math.min(descriptor.informationLength, remainingLength);
++      extentOffsets.add(physicalByteOffset);
++      extentLengths.add(logicalExtentLength);
++      remainingLength -= logicalExtentLength;
++    }
++    if (extentOffsets.isEmpty() || remainingLength > 0) {
++      return DirectoryEntry.forUnresolvedFile(layout.informationLength);
++    }
++    long[] offsetArray = new long[extentOffsets.size()];
++    long[] lengthArray = new long[extentLengths.size()];
++    for (int i = 0; i < extentOffsets.size(); i++) {
++      offsetArray[i] = extentOffsets.get(i);
++      lengthArray[i] = extentLengths.get(i);
++    }
++    return DirectoryEntry.forFile(layout.informationLength, offsetArray, lengthArray);
++  }
++
++  List<AllocationDescriptor> readExtentAds(
++      byte[] initialData, int initialOffset, int initialLength, int adType, boolean resolvePartRef)
++      throws IOException {
++    if (initialOffset < 0
++        || initialLength < 0
++        || initialOffset > initialData.length - initialLength) {
++      throw new IOException("UDF: invalid allocation descriptor range");
++    }
++    List<AllocationDescriptor> allocationDescriptors = new ArrayList<>();
++    Set<Long> continuationOffsets = new HashSet<>();
++    byte[] descriptorData = initialData;
++    int position = initialOffset;
++    int end = initialOffset + initialLength;
++    int descriptorSize = getAllocationDescriptorSize(adType);
++    int continuationCount = 0;
++    while (true) {
++      ByteBuffer descriptorBuffer = ByteBuffer.wrap(descriptorData).order(ByteOrder.LITTLE_ENDIAN);
++      boolean hasContinuation = false;
++      while (position < end) {
++        if (position + descriptorSize > end) {
++          throw new IOException("UDF: truncated allocation descriptor");
++        }
++        AllocationDescriptor allocationDescriptor =
++            readExtentAd(descriptorBuffer, position, adType, resolvePartRef);
++        position = allocationDescriptor.nextPosition;
++        if (allocationDescriptor.allocationLength == 0) {
++          return allocationDescriptors;
++        }
++        if (allocationDescriptor.extentType != 3) {
++          allocationDescriptors.add(allocationDescriptor);
++          continue;
++        }
++        if (++continuationCount > MAX_ALLOCATION_DESCRIPTOR_CONTINUATIONS) {
++          throw new IOException("UDF: too many allocation descriptor continuations");
++        }
++        long continuationOffset;
++        try {
++          continuationOffset =
++              Math.multiplyExact(
++                  Math.addExact(
++                      allocationDescriptor.partitionStart, allocationDescriptor.logicalBlockNumber),
++                  SECTOR_SIZE);
++        } catch (ArithmeticException e) {
++          throw new IOException("UDF: allocation descriptor continuation overflow", e);
++        }
++        if (!continuationOffsets.add(continuationOffset)) {
++          throw new IOException("UDF: cyclic allocation descriptor continuation");
++        }
++        if (allocationDescriptor.allocationLength < AED_AD_START_OFFSET
++            || allocationDescriptor.allocationLength > MAX_ALLOCATION_DESCRIPTOR_BYTES) {
++          throw new IOException(
++              "UDF: invalid allocation descriptor continuation length: "
++                  + allocationDescriptor.allocationLength);
++        }
++        descriptorData = readBytes(continuationOffset, allocationDescriptor.allocationLength);
++        descriptorBuffer = ByteBuffer.wrap(descriptorData).order(ByteOrder.LITTLE_ENDIAN);
++        if ((descriptorBuffer.getShort(0) & 0xFFFF) != TAG_AED) {
++          throw new IOException("UDF: expected allocation extent descriptor");
++        }
++        int continuationAdLength = descriptorBuffer.getInt(AED_AD_LENGTH_OFFSET);
++        if (continuationAdLength < 0
++            || continuationAdLength > descriptorData.length - AED_AD_START_OFFSET) {
++          throw new IOException("UDF: invalid continued allocation descriptor length");
++        }
++        position = AED_AD_START_OFFSET;
++        end = AED_AD_START_OFFSET + continuationAdLength;
++        hasContinuation = true;
+         break;
+       }
+-      nextExpectedSector = physicalSector + Util.ceilDivide(extentLength, SECTOR_SIZE);
++      if (!hasContinuation) {
++        return allocationDescriptors;
++      }
+     }
+-    return new long[]{firstByteOffset < 0 ? -1 : firstByteOffset, infoLength};
+   }
+ 
+-  private long[] readFileEntryLayout(int tagId) {
++  private static int getAllocationDescriptorSize(int adType) throws IOException {
++    switch (adType) {
++      case AD_LONG:
++        return AD_LONG_SIZE;
++      case AD_EXTENDED:
++        return AD_EXTENDED_SIZE;
++      case AD_SHORT:
++        return AD_SHORT_SIZE;
++      default:
++        throw new IOException("UDF: unsupported allocation descriptor type " + adType);
++    }
++  }
++
++  private byte[] readBytes(long byteOffset, int length) throws IOException {
++    byte[] data = new byte[length];
++    int totalRead = 0;
++    while (totalRead < length) {
++      int bytesRead = reader.read(byteOffset + totalRead, data, totalRead, length - totalRead);
++      if (bytesRead <= 0) {
++        throw new IOException("UDF: short allocation descriptor continuation read");
++      }
++      totalRead += bytesRead;
++    }
++    return data;
++  }
++
++  private FileEntryLayout readFileEntryLayout(int tagId) throws IOException {
+     long infoLength = sectorBB.getLong(FE_INFO_LENGTH_OFFSET);
+     int icbTagFlags = sectorBB.getShort(FE_ICB_TAG_FLAGS_OFFSET) & 0xFFFF;
+     int adType = icbTagFlags & 0x7;
+-    int eaLength, adLength, adOffset;
++    int eaLength, adLength, adStart;
+     if (tagId == TAG_FE) {
+       eaLength = sectorBB.getInt(FE_EA_LENGTH_OFFSET);
+       adLength = sectorBB.getInt(FE_AD_LENGTH_OFFSET);
+-      adOffset = FE_AD_START_OFFSET + eaLength;
++      adStart = FE_AD_START_OFFSET;
+     } else {
+       eaLength = sectorBB.getInt(EFE_EA_LENGTH_OFFSET);
+       adLength = sectorBB.getInt(EFE_AD_LENGTH_OFFSET);
+-      adOffset = EFE_AD_START_OFFSET + eaLength;
++      adStart = EFE_AD_START_OFFSET;
++    }
++    if (infoLength < 0
++        || eaLength < 0
++        || adLength < 0
++        || eaLength > SECTOR_SIZE - adStart
++        || adLength > SECTOR_SIZE - adStart - eaLength) {
++      throw new IOException("UDF: invalid file entry layout");
+     }
+-    return new long[]{adOffset, adLength, adType, infoLength};
++    return new FileEntryLayout(adStart + eaLength, adLength, adType, infoLength);
+   }
+ 
+-  private long[] readExtentAd(ByteBuffer bb, int pos, int adType, boolean resolvePartRef) {
+-    int extentLength = bb.getInt(pos) & 0x3FFFFFFF;
++  AllocationDescriptor readExtentAd(ByteBuffer bb, int pos, int adType, boolean resolvePartRef) {
++    int rawExtentLength = bb.getInt(pos);
++    int extentType = rawExtentLength >>> 30;
++    int allocationLength = rawExtentLength & 0x3FFFFFFF;
++    long recordedLength = allocationLength;
++    long informationLength = allocationLength;
+     long lbn;
+     long base = fsdPhysicalSector;
+     int nextPos;
+@@ -447,6 +641,8 @@ public final class UdfFileSystem {
+         nextPos = pos + AD_LONG_SIZE;
+         break;
+       case AD_EXTENDED:
++        recordedLength = bb.getInt(pos + 4) & 0x3FFFFFFFL;
++        informationLength = bb.getInt(pos + 8) & 0xFFFFFFFFL;
+         lbn = bb.getInt(pos + 12) & 0xFFFFFFFFL;
+         if (resolvePartRef) {
+           int partRef = bb.getShort(pos + 16) & 0xFFFF;
+@@ -454,7 +650,7 @@ public final class UdfFileSystem {
+         }
+         nextPos = pos + AD_EXTENDED_SIZE;
+         break;
+-      default:
++      case AD_SHORT:
+         lbn = bb.getInt(pos + 4) & 0xFFFFFFFFL;
+         if (metadataPartitionSectors > 0 && lbn < metadataPartitionSectors) {
+           base = fsdPhysicalSector;
+@@ -463,8 +659,109 @@ public final class UdfFileSystem {
+         }
+         nextPos = pos + AD_SHORT_SIZE;
+         break;
++      default:
++        throw new IllegalArgumentException("Unsupported allocation descriptor type " + adType);
++    }
++    return new AllocationDescriptor(
++        lbn, base, informationLength, nextPos, extentType, recordedLength, allocationLength);
++  }
++
++  static final class AllocationDescriptor {
++
++    final long logicalBlockNumber;
++    final long partitionStart;
++    final long informationLength;
++    final int nextPosition;
++    final int extentType;
++    final long recordedLength;
++    final int allocationLength;
++
++    private AllocationDescriptor(
++        long logicalBlockNumber,
++        long partitionStart,
++        long informationLength,
++        int nextPosition,
++        int extentType,
++        long recordedLength,
++        int allocationLength) {
++      this.logicalBlockNumber = logicalBlockNumber;
++      this.partitionStart = partitionStart;
++      this.informationLength = informationLength;
++      this.nextPosition = nextPosition;
++      this.extentType = extentType;
++      this.recordedLength = recordedLength;
++      this.allocationLength = allocationLength;
++    }
++  }
++
++  private static final class FileEntryLayout {
++
++    final int allocationDescriptorOffset;
++    final int allocationDescriptorLength;
++    final int allocationDescriptorType;
++    final long informationLength;
++
++    FileEntryLayout(
++        int allocationDescriptorOffset,
++        int allocationDescriptorLength,
++        int allocationDescriptorType,
++        long informationLength) {
++      this.allocationDescriptorOffset = allocationDescriptorOffset;
++      this.allocationDescriptorLength = allocationDescriptorLength;
++      this.allocationDescriptorType = allocationDescriptorType;
++      this.informationLength = informationLength;
++    }
++  }
++
++  private static final class VdsResult {
++
++    final long partitionStart;
++    final long metadataFileLocation;
++
++    VdsResult(long partitionStart, long metadataFileLocation) {
++      this.partitionStart = partitionStart;
++      this.metadataFileLocation = metadataFileLocation;
++    }
++  }
++
++  private static final class DirectoryEntry {
++
++    final long logicalBlockNumber;
++    final long length;
++    final boolean isDirectory;
++    final long[] extentOffsets;
++    final long[] extentLengths;
++
++    static DirectoryEntry forDirectory(long logicalBlockNumber) {
++      return new DirectoryEntry(
++          logicalBlockNumber, /* length= */ 0, /* isDirectory= */ true, new long[0], new long[0]);
++    }
++
++    static DirectoryEntry forUnresolvedFile(long length) {
++      return forFile(length, new long[0], new long[0]);
++    }
++
++    static DirectoryEntry forFile(long length, long[] extentOffsets, long[] extentLengths) {
++      return new DirectoryEntry(
++          /* logicalBlockNumber= */ 0,
++          length,
++          /* isDirectory= */ false,
++          extentOffsets,
++          extentLengths);
++    }
++
++    private DirectoryEntry(
++        long logicalBlockNumber,
++        long length,
++        boolean isDirectory,
++        long[] extentOffsets,
++        long[] extentLengths) {
++      this.logicalBlockNumber = logicalBlockNumber;
++      this.length = length;
++      this.isDirectory = isDirectory;
++      this.extentOffsets = extentOffsets;
++      this.extentLengths = extentLengths;
+     }
+-    return new long[]{lbn, base, extentLength, nextPos};
+   }
+ 
+   private String decodeOsta(byte[] data, int offset, int length) {
+@@ -483,13 +780,24 @@ public final class UdfFileSystem {
+   }
+ 
+   private void readSector(long sectorNumber) throws IOException {
+-    long byteOffset = sectorNumber * SECTOR_SIZE;
++    if (sectorNumber < 0) {
++      throw new IOException("UDF: invalid negative sector");
++    }
++    long byteOffset;
++    try {
++      byteOffset = Math.multiplyExact(sectorNumber, (long) SECTOR_SIZE);
++    } catch (ArithmeticException e) {
++      throw new IOException("UDF: sector offset overflow", e);
++    }
+     int total = 0;
+     while (total < SECTOR_SIZE) {
+       int n = reader.read(byteOffset + total, sectorBuf, total, SECTOR_SIZE - total);
+       if (n == -1) {
+         break;
+       }
++      if (n == 0) {
++        throw new IOException("UDF: reader made no progress");
++      }
+       total += n;
+     }
+     if (total < SECTOR_SIZE) {
+@@ -506,4 +814,4 @@ public final class UdfFileSystem {
+       return false;
+     }
+   }
+-}
+\ No newline at end of file
++}
+

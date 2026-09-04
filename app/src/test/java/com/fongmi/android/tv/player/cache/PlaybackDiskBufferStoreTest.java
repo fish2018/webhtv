@@ -48,6 +48,14 @@ public class PlaybackDiskBufferStoreTest {
     }
 
     @Test
+    public void effectiveEndUsesDiskRangeAndHonorsDuration() {
+        store.recordCompleted("movie", 10_000, 30_000);
+
+        assertEquals(30_000, store.effectiveEnd("movie", 15_000, 60_000, 0));
+        assertEquals(20_000, store.effectiveEnd("movie", 15_000, 20_000, 0));
+    }
+
+    @Test
     public void resetDropsStaleSessionRanges() {
         store.recordCompleted("movie", 10_000, 30_000);
         store.reset("movie");

@@ -29,6 +29,8 @@ public class ErrorMsgProvider {
             case PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES -> "Decoding Format Exceeds Capabilities";
             case PlaybackException.ERROR_CODE_AUDIO_TRACK_INIT_FAILED -> "Audio Track Init Failed";
             case PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED -> "Audio Track Write Failed";
+            case PlaybackException.ERROR_CODE_VIDEO_FRAME_PROCESSOR_INIT_FAILED -> "Video Output Init Failed";
+            case PlaybackException.ERROR_CODE_VIDEO_FRAME_PROCESSING_FAILED -> "Video Output Failed";
             case PlaybackException.ERROR_CODE_DRM_UNSPECIFIED -> "DRM Unspecified";
             case PlaybackException.ERROR_CODE_DRM_SYSTEM_ERROR -> "DRM System Error";
             case PlaybackException.ERROR_CODE_DRM_CONTENT_ERROR -> "DRM Content Error";

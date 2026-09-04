@@ -16,6 +16,7 @@
     <string name="menu_site">Site</string>
     <string name="menu_reset">Reset</string>
     <string name="menu_push_apk">Push APK</string>
+    <string name="menu_push_play">Push playback</string>
     <string name="menu_download_config">Download Config</string>
     <string name="config_download_start">Downloading config…</string>
     <string name="config_download_success">Config downloaded to tvbox/api/%1$s/</string>
@@ -30,6 +31,25 @@
     <string name="apk_push_read_failed">Unable to read the selected APK</string>
     <string name="apk_push_no_space">Not enough storage to prepare the APK</string>
     <string name="apk_push_receiver_unsupported">The receiving device does not support APK push. Update WebHTV first.</string>
+    <string name="apk_push_method_title">Push APK</string>
+    <string name="apk_push_method_target">Target: %1$s</string>
+    <string name="apk_push_method_local">Choose local APK</string>
+    <string name="apk_push_method_link">Push by link</string>
+    <string name="apk_push_url_target">Push APK link · %1$s</string>
+    <string name="apk_push_url_hint">HTTPS APK link</string>
+    <string name="apk_push_url_send">Send link</string>
+    <string name="apk_push_url_required">Enter an HTTPS APK link</string>
+    <string name="apk_push_url_invalid">Enter a valid HTTPS APK link without credentials</string>
+    <string name="apk_push_url_sent">Link sent. The TV is downloading the APK.</string>
+    <string name="apk_push_url_unsupported">The receiving device does not support APK link push. Update WebHTV first.</string>
+    <string name="apk_push_url_failed">APK link push failed</string>
+    <string name="apk_push_url_failed_reason">APK link push failed: %1$s</string>
+    <string name="push_play_select_device">Push playback · Select receiving device</string>
+    <string name="push_play_target">Push playback · %1$s</string>
+    <string name="push_play_url_required">Enter a playback URL</string>
+    <string name="push_play_success">Playback URL sent</string>
+    <string name="push_play_failed">Playback push failed</string>
+    <string name="push_play_failed_reason">Playback push failed: %1$s</string>
 
     <!-- Vod -->
     <string name="vod_home">Home</string>

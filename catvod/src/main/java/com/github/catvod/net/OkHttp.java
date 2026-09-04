@@ -104,7 +104,10 @@ public class OkHttp {
 
     public static synchronized OkHttpClient player() {
         if (get().player != null) return get().player;
-        return get().player = getBuilder().eventListenerFactory(call -> SpiderDebug.isEnabled() ? new DebugEventListener() : EventListener.NONE).build();
+        return get().player = getBuilder()
+                .addInterceptor(new KuaishouMediaFallbackInterceptor())
+                .eventListenerFactory(call -> SpiderDebug.isEnabled() ? new DebugEventListener() : EventListener.NONE)
+                .build();
     }
 
     public static OkHttpClient client(long timeout) {

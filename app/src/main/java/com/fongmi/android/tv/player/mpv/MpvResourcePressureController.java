@@ -145,7 +145,13 @@ public final class MpvResourcePressureController {
                 lastPressureAtElapsedMs = Math.max(lastPressureAtElapsedMs, pressureAt);
             }
             expansionAllowed = false;
-            preloadAllowed = false;
+            // Metered/roaming links are cost constraints, not device resource
+            // pressure. Keep one preload worker running so pause-preload can
+            // continue; only cache expansion remains restricted. Unknown
+            // state and actual memory/thermal/power pressure still stop it.
+            preloadAllowed = recoveryClass != RecoveryClass.HARD
+                    && current.level() == MpvResourcePressurePolicy.Level.CONSTRAINED
+                    && allowsCostConstrainedPreload(current.reason());
             clearRecoverySamples();
             state = State.RESTRICTED;
             boolean changed = changed(oldForward, oldBack, oldExpansionAllowed,
@@ -207,6 +213,13 @@ public final class MpvResourcePressureController {
         }
         return remember(source, Action.RECOVERY_STEP, Reason.RECOVERY_STEP,
                 true, false, now);
+    }
+
+    private static boolean allowsCostConstrainedPreload(
+            MpvResourcePressurePolicy.Reason reason) {
+        return reason == MpvResourcePressurePolicy.Reason.METERED
+                || reason == MpvResourcePressurePolicy.Reason.ROAMING
+                || reason == MpvResourcePressurePolicy.Reason.DATA_SAVER_WHITELISTED;
     }
 
     public synchronized Snapshot snapshot() {

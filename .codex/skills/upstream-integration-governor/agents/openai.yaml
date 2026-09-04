@@ -1,0 +1,4 @@
+interface:
+  display_name: "Upstream Integration Governor"
+  short_description: "Evaluate and merge upstream dependencies safely"
+  default_prompt: "Use $upstream-integration-governor to assess upstream commits and produce a staged, reversible WebHTV integration plan."

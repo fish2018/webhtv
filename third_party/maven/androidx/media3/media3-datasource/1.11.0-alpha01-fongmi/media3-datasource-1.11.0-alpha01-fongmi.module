@@ -42,11 +42,11 @@
         {
           "name": "media3-datasource-1.11.0-alpha01-fongmi.aar",
           "url": "media3-datasource-1.11.0-alpha01-fongmi.aar",
-          "size": 180010,
-          "sha512": "195db6c7627f4d14a62fae3a528671bbd93016052f949ca76dc24314bc75b6abc9697625512b393d72d00fbd43fe7eca6bcc25d79ce45855164638335333ac19",
-          "sha256": "d495d3be801ebd0c135d66cb273b69d8a4a03c7b7c092e1c2382eecb257b74b8",
-          "sha1": "ccea563381cbd275f85ad4189829d9ecae7952a4",
-          "md5": "49204cb7a2d95584e41c942c360c907b"
+          "size": 182221,
+          "sha512": "b3d71d1e91ca066717a5b54d047597b2ab909b091a112a0cf454dd889459bb769d63b1df5f2c3f544a5620315205811051a5b62d5dbe610dcc19d55df3357cfc",
+          "sha256": "1b6b51e921577cb955db2ce05106a44001ad126b8f4cc67f997d1f3404ec3598",
+          "sha1": "aa934f24f1d53999e0e44efee739b4bd43ab69d7",
+          "md5": "612a2e8966d8724acbe3cd5e0d933c16"
         }
       ]
     },
@@ -99,11 +99,11 @@
         {
           "name": "media3-datasource-1.11.0-alpha01-fongmi.aar",
           "url": "media3-datasource-1.11.0-alpha01-fongmi.aar",
-          "size": 180010,
-          "sha512": "195db6c7627f4d14a62fae3a528671bbd93016052f949ca76dc24314bc75b6abc9697625512b393d72d00fbd43fe7eca6bcc25d79ce45855164638335333ac19",
-          "sha256": "d495d3be801ebd0c135d66cb273b69d8a4a03c7b7c092e1c2382eecb257b74b8",
-          "sha1": "ccea563381cbd275f85ad4189829d9ecae7952a4",
-          "md5": "49204cb7a2d95584e41c942c360c907b"
+          "size": 182221,
+          "sha512": "b3d71d1e91ca066717a5b54d047597b2ab909b091a112a0cf454dd889459bb769d63b1df5f2c3f544a5620315205811051a5b62d5dbe610dcc19d55df3357cfc",
+          "sha256": "1b6b51e921577cb955db2ce05106a44001ad126b8f4cc67f997d1f3404ec3598",
+          "sha1": "aa934f24f1d53999e0e44efee739b4bd43ab69d7",
+          "md5": "612a2e8966d8724acbe3cd5e0d933c16"
         }
       ]
     },
@@ -119,11 +119,11 @@
         {
           "name": "media3-datasource-1.11.0-alpha01-fongmi-sources.jar",
           "url": "media3-datasource-1.11.0-alpha01-fongmi-sources.jar",
-          "size": 145178,
-          "sha512": "86dbf27ac4d83af9c45a741816b038cd5d66fb96dc6e1b1e05ed928ec8dd3ca908984140d7e37b7ac9b7d5fa30a2ce73b595fb0057a3c16dc757949f52403aaf",
-          "sha256": "de3b25ebf4d775e73a4f8636bddbd88753ae791f70cecb2a20e721344782ebf8",
-          "sha1": "9622b0a1ea08906a84bebe36199b02504e693bdb",
-          "md5": "9b66b7690d0cd32177be3e9b7d3540e2"
+          "size": 146418,
+          "sha512": "63424b3dc6e211aa24da7d3b092a0bea99a3d785348dbbc092593e577da0aa5c812408107a8e10fe777ab45fd33a0496be4ccf38fa9b5b50361df0b1cd20f338",
+          "sha256": "26306314752ff1b4297aea2f25e6ff0213497404564f23af95ec4bb5c25ada62",
+          "sha1": "fb7ea599304e4c380f574595e1e4845d001ab6d9",
+          "md5": "577becc3a04bd5fb1824c58a2018b5ed"
         }
       ]
     }

@@ -16,9 +16,9 @@ public class MpvDiagnosticsPolicyTest {
     }
 
     @Test
-    public void visiblePanelMayCollectDetailsWithoutDebugLogging() {
-        assertTrue(MpvDiagnosticsPolicy.allowsSynchronousProperties(MpvDiagnosticsPolicy.Request.PANEL, false));
-        assertTrue(MpvDiagnosticsPolicy.allowsSynchronousProperties(MpvDiagnosticsPolicy.Request.PANEL, true));
+    public void visiblePanelUsesObservedPropertiesOnly() {
+        assertFalse(MpvDiagnosticsPolicy.allowsSynchronousProperties(MpvDiagnosticsPolicy.Request.PANEL, false));
+        assertFalse(MpvDiagnosticsPolicy.allowsSynchronousProperties(MpvDiagnosticsPolicy.Request.PANEL, true));
     }
 
     @Test

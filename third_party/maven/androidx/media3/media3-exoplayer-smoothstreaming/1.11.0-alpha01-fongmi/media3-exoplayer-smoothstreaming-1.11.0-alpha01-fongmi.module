@@ -35,11 +35,11 @@
         {
           "name": "media3-exoplayer-smoothstreaming-1.11.0-alpha01-fongmi.aar",
           "url": "media3-exoplayer-smoothstreaming-1.11.0-alpha01-fongmi.aar",
-          "size": 53450,
-          "sha512": "b0bb6aac9fafdc6cfa5348ca38c15e1211596bf2562580135bf68987c306af37955d79fbc5f91a38db133764feb4a2cb5a3680a887eda8c175e3ca38e7c54ee5",
-          "sha256": "b9a57780cbeb0304099eaff89c8437c1400531edf69e20d4e04c8c34126a8091",
-          "sha1": "32352a2861d40228306371386b93149f33ae3f5b",
-          "md5": "0c4c0fa798673497c0e9140dbf0c22e6"
+          "size": 53599,
+          "sha512": "2fccd46f1653d57d9203edeb775f229a6ae93a2393d1bc9a2045712ea77a19cda31a5498145aaf73734da190669b67ff399b100e4aabb8dc52b13c1f3ea1907f",
+          "sha256": "5e57c7f9fa83259f1b2ff6e7a761d9580e730b5da5d9b6c17479e32926730dd2",
+          "sha1": "5b695a1f291dcc2cb7daab4e653242a0f8a498ce",
+          "md5": "41a6e377464a250a3c7fbba4cd5a8e46"
         }
       ]
     },
@@ -71,11 +71,11 @@
         {
           "name": "media3-exoplayer-smoothstreaming-1.11.0-alpha01-fongmi.aar",
           "url": "media3-exoplayer-smoothstreaming-1.11.0-alpha01-fongmi.aar",
-          "size": 53450,
-          "sha512": "b0bb6aac9fafdc6cfa5348ca38c15e1211596bf2562580135bf68987c306af37955d79fbc5f91a38db133764feb4a2cb5a3680a887eda8c175e3ca38e7c54ee5",
-          "sha256": "b9a57780cbeb0304099eaff89c8437c1400531edf69e20d4e04c8c34126a8091",
-          "sha1": "32352a2861d40228306371386b93149f33ae3f5b",
-          "md5": "0c4c0fa798673497c0e9140dbf0c22e6"
+          "size": 53599,
+          "sha512": "2fccd46f1653d57d9203edeb775f229a6ae93a2393d1bc9a2045712ea77a19cda31a5498145aaf73734da190669b67ff399b100e4aabb8dc52b13c1f3ea1907f",
+          "sha256": "5e57c7f9fa83259f1b2ff6e7a761d9580e730b5da5d9b6c17479e32926730dd2",
+          "sha1": "5b695a1f291dcc2cb7daab4e653242a0f8a498ce",
+          "md5": "41a6e377464a250a3c7fbba4cd5a8e46"
         }
       ]
     },

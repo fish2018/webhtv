@@ -119,6 +119,14 @@ public final class MpvPreloadController {
                     oldConcurrency > 0, assessment, now);
         }
 
+        if (assessment.signal() == MpvPreloadPolicy.Signal.BOOTSTRAP) {
+            ready = true;
+            clearRecovery();
+            state = State.BOOTSTRAP;
+            return remember(Action.BOOTSTRAP, Reason.THROUGHPUT_BOOTSTRAP,
+                    changed(oldReady, oldState), false, assessment, now);
+        }
+
         if (assessment.signal() == MpvPreloadPolicy.Signal.HOLD) {
             if (!ready) clearRecovery();
             state = ready ? State.ALLOWED : State.BLOCKED;
@@ -352,6 +360,7 @@ public final class MpvPreloadController {
         SUPPRESSED("suppressed"),
         BLOCKED("blocked"),
         SUSPENDED("suspended"),
+        BOOTSTRAP("bootstrap"),
         RECOVERY_WAIT("recovery-wait"),
         ALLOWED("allowed");
 
@@ -370,6 +379,7 @@ public final class MpvPreloadController {
         INACTIVE("inactive"),
         BLOCK("block"),
         SUSPEND("suspend"),
+        BOOTSTRAP("bootstrap"),
         RECOVERY_WAIT("recovery-wait"),
         ALLOW("allow"),
         HOLD("hold");
@@ -389,6 +399,7 @@ public final class MpvPreloadController {
         POLICY_INACTIVE("policy-inactive"),
         POLICY_BLOCK("policy-block"),
         FOREGROUND_SUSPEND("foreground-suspend"),
+        THROUGHPUT_BOOTSTRAP("throughput-bootstrap"),
         RECOVERY_WAIT("recovery-wait"),
         RECOVERY_COMPLETE("recovery-complete"),
         STABLE("stable"),

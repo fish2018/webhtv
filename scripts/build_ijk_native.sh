@@ -36,8 +36,8 @@ Environment:
   IJK_BUILD_DIR                    Optional source/build directory
 
 Recommended NDK:
-  arm64-v8a     28.2.13676358 (shared with MPV/JNI/DVD)
-  armeabi-v7a   28.2.13676358 (shared with MPV/JNI/DVD)
+  arm64-v8a     28.2.13676358 (shared with DVD; MPV/JNI use r29)
+  armeabi-v7a   28.2.13676358 (shared with DVD; MPV/JNI use r29)
 USAGE
 }
 

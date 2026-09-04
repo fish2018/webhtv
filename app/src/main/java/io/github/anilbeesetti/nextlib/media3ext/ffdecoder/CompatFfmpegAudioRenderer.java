@@ -1,5 +1,7 @@
 package io.github.anilbeesetti.nextlib.media3ext.ffdecoder;
 
+import static androidx.media3.exoplayer.audio.AudioSink.SINK_FORMAT_SUPPORTED_DIRECTLY;
+
 import android.content.Context;
 import android.os.Handler;
 
@@ -17,10 +19,13 @@ import androidx.media3.exoplayer.audio.DecoderAudioRenderer;
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil;
 
+import com.github.catvod.crawler.SpiderDebug;
+
 public final class CompatFfmpegAudioRenderer extends DecoderAudioRenderer<FfmpegAudioDecoder> {
 
     private static final int NUM_BUFFERS = 16;
     private static final int DEFAULT_INPUT_BUFFER_SIZE = 5760;
+    private static final int STEREO_CHANNEL_COUNT = 2;
     private final Context context;
     private final boolean systemDecoderFallbackOnly;
 
@@ -47,7 +52,7 @@ public final class CompatFfmpegAudioRenderer extends DecoderAudioRenderer<Ffmpeg
         if (!FfmpegLibrary.isAvailable() || !MimeTypes.isAudio(sampleMimeType)) return C.FORMAT_UNSUPPORTED_TYPE;
         if (systemDecoderFallbackOnly && isSystemDecoderSupported(decodeFormat)) return C.FORMAT_UNSUPPORTED_SUBTYPE;
         if (!FfmpegLibrary.supportsFormat(sampleMimeType)) return C.FORMAT_UNSUPPORTED_SUBTYPE;
-        if (!sinkSupportsFormat(decodeFormat, C.ENCODING_PCM_16BIT) && !sinkSupportsFormat(decodeFormat, C.ENCODING_PCM_FLOAT)) return C.FORMAT_UNSUPPORTED_SUBTYPE;
+        if (getOutputChannelCount(decodeFormat) == Format.NO_VALUE) return C.FORMAT_UNSUPPORTED_SUBTYPE;
         return decodeFormat.cryptoType == C.CRYPTO_TYPE_NONE ? C.FORMAT_HANDLED : C.FORMAT_UNSUPPORTED_DRM;
     }
 
@@ -56,7 +61,13 @@ public final class CompatFfmpegAudioRenderer extends DecoderAudioRenderer<Ffmpeg
         TraceUtil.beginSection("createCompatFfmpegAudioDecoder");
         Format decodeFormat = normalizeDecodeFormat(format);
         int initialInputBufferSize = decodeFormat.maxInputSize != Format.NO_VALUE ? decodeFormat.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
-        FfmpegAudioDecoder decoder = new FfmpegAudioDecoder(decodeFormat, NUM_BUFFERS, NUM_BUFFERS, initialInputBufferSize, shouldOutputFloat(decodeFormat));
+        int outputChannelCount = getOutputChannelCount(decodeFormat);
+        if (SpiderDebug.isEnabled()) {
+            SpiderDebug.log("exo-audio", "ffmpeg output mime=%s sourceChannels=%d outputChannels=%d downmix=%s",
+                    decodeFormat.sampleMimeType, decodeFormat.channelCount, outputChannelCount,
+                    outputChannelCount == STEREO_CHANNEL_COUNT && decodeFormat.channelCount > STEREO_CHANNEL_COUNT);
+        }
+        FfmpegAudioDecoder decoder = new FfmpegAudioDecoder(decodeFormat, NUM_BUFFERS, NUM_BUFFERS, initialInputBufferSize, shouldOutputFloat(decodeFormat, outputChannelCount), outputChannelCount);
         TraceUtil.endSection();
         return decoder;
     }
@@ -97,13 +108,27 @@ public final class CompatFfmpegAudioRenderer extends DecoderAudioRenderer<Ffmpeg
         }
     }
 
-    private boolean sinkSupportsFormat(Format format, int pcmEncoding) {
-        return sinkSupportsFormat(Util.getPcmFormat(pcmEncoding, format.channelCount, format.sampleRate));
+    private boolean sinkSupportsFormat(Format format, int pcmEncoding, int channelCount) {
+        return sinkSupportsFormat(Util.getPcmFormat(pcmEncoding, channelCount, format.sampleRate));
     }
 
-    private boolean shouldOutputFloat(Format format) {
-        if (!sinkSupportsFormat(format, C.ENCODING_PCM_16BIT)) return true;
-        int floatSupport = getSinkFormatSupport(Util.getPcmFormat(C.ENCODING_PCM_FLOAT, format.channelCount, format.sampleRate));
-        return floatSupport == C.FORMAT_HANDLED && !MimeTypes.AUDIO_AC3.equals(format.sampleMimeType);
+    private int getOutputChannelCount(Format format) {
+        boolean sourceSupported = sinkSupportsFormat(format, C.ENCODING_PCM_16BIT, format.channelCount)
+                || sinkSupportsFormat(format, C.ENCODING_PCM_FLOAT, format.channelCount);
+        boolean stereoSupported = sinkSupportsFormat(format, C.ENCODING_PCM_16BIT, STEREO_CHANNEL_COUNT)
+                || sinkSupportsFormat(format, C.ENCODING_PCM_FLOAT, STEREO_CHANNEL_COUNT);
+        return resolveOutputChannelCount(format.channelCount, sourceSupported, stereoSupported);
+    }
+
+    static int resolveOutputChannelCount(int sourceChannelCount, boolean sourceSupported, boolean stereoSupported) {
+        if (sourceSupported) return sourceChannelCount;
+        if (sourceChannelCount > STEREO_CHANNEL_COUNT && stereoSupported) return STEREO_CHANNEL_COUNT;
+        return Format.NO_VALUE;
+    }
+
+    private boolean shouldOutputFloat(Format format, int outputChannelCount) {
+        if (!sinkSupportsFormat(format, C.ENCODING_PCM_16BIT, outputChannelCount)) return true;
+        int floatSupport = getSinkFormatSupport(Util.getPcmFormat(C.ENCODING_PCM_FLOAT, outputChannelCount, format.sampleRate));
+        return floatSupport == SINK_FORMAT_SUPPORTED_DIRECTLY && !MimeTypes.AUDIO_AC3.equals(format.sampleMimeType);
     }
 }

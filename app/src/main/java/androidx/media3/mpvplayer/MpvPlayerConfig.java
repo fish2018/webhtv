@@ -40,6 +40,7 @@ public final class MpvPlayerConfig {
     private final boolean performanceOptionsPriority;
     private final boolean automaticCacheTime;
     private final boolean automaticHlsVariant;
+    private final boolean deferStartupTrackRefresh;
     private final Map<String, String> extraOptions;
 
     private MpvPlayerConfig(Builder builder) {
@@ -67,6 +68,7 @@ public final class MpvPlayerConfig {
         performanceOptionsPriority = builder.performanceOptionsPriority;
         automaticCacheTime = builder.automaticCacheTime;
         automaticHlsVariant = builder.automaticHlsVariant;
+        deferStartupTrackRefresh = builder.deferStartupTrackRefresh;
         extraOptions = Collections.unmodifiableMap(new LinkedHashMap<>(builder.extraOptions));
     }
 
@@ -172,6 +174,10 @@ public final class MpvPlayerConfig {
         return automaticHlsVariant;
     }
 
+    public boolean deferStartupTrackRefresh() {
+        return deferStartupTrackRefresh;
+    }
+
     public Map<String, String> extraOptions() {
         return extraOptions;
     }
@@ -203,6 +209,7 @@ public final class MpvPlayerConfig {
         private boolean performanceOptionsPriority = true;
         private boolean automaticCacheTime;
         private boolean automaticHlsVariant;
+        private boolean deferStartupTrackRefresh;
 
         private Builder(Context context) {
             Context app = context.getApplicationContext();
@@ -328,6 +335,11 @@ public final class MpvPlayerConfig {
 
         public Builder automaticHlsVariant(boolean automaticHlsVariant) {
             this.automaticHlsVariant = automaticHlsVariant;
+            return this;
+        }
+
+        public Builder deferStartupTrackRefresh(boolean deferStartupTrackRefresh) {
+            this.deferStartupTrackRefresh = deferStartupTrackRefresh;
             return this;
         }
 

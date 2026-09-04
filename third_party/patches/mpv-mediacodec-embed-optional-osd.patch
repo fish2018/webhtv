@@ -1,0 +1,18 @@
+diff --git a/video/out/vo_mediacodec_embed.c b/video/out/vo_mediacodec_embed.c
+index ee696bbcb..2d0f16c73 100644
+--- a/video/out/vo_mediacodec_embed.c
++++ b/video/out/vo_mediacodec_embed.c
+@@ -75,11 +75,10 @@ static int preinit(struct vo *vo)
+ {
+     struct priv *p = vo->priv;
+     if (vo->opts->android_osd_wid == 0 ||
+         vo->opts->android_osd_wid == -1)
+     {
+-        MP_ERR(vo, "No Android OSD Surface is attached for direct "
+-                   "MediaCodec output.\n");
+-        return -1;
++        MP_VERBOSE(vo, "WebHTV direct output accepts an optional Android "
++                       "OSD Surface.\n");
+     }
+ 
+     p->video_wid = vo->opts->WinID;

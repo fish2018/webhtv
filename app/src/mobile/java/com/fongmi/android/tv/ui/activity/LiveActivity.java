@@ -1292,7 +1292,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void onLiveBackgroundPanel() {
         dismissLiveControlDialog();
-        moveTaskToBack(true);
+        Util.moveToBackground(this);
         setAudioOnly(true);
     }
 
@@ -1333,7 +1333,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
         @Override
         public void onAudio() {
-            moveTaskToBack(true);
+            Util.moveToBackground(LiveActivity.this);
             setAudioOnly(true);
         }
     };
@@ -1391,6 +1391,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
                 break;
             case Player.STATE_ENDED:
                 checkEnded();
+                updatePlayControl(false);
                 break;
         }
     }
@@ -1412,13 +1413,12 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     @Override
     protected void onPlayingChanged(boolean isPlaying) {
-        if (isPlaying) {
-            mPiP.update(this, true);
-            mBinding.control.play.setImageResource(androidx.media3.ui.R.drawable.exo_icon_pause);
-        } else if (isPaused()) {
-            mPiP.update(this, false);
-            mBinding.control.play.setImageResource(androidx.media3.ui.R.drawable.exo_icon_play);
-        }
+        if (isPlaying || isPaused()) updatePlayControl(isPlaying);
+    }
+
+    private void updatePlayControl(boolean isPlaying) {
+        mPiP.update(this, isPlaying);
+        mBinding.control.play.setImageResource(isPlaying ? androidx.media3.ui.R.drawable.exo_icon_pause : androidx.media3.ui.R.drawable.exo_icon_play);
     }
 
     @Override

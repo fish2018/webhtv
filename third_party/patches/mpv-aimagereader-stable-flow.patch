@@ -1,0 +1,163 @@
+diff --git a/video/out/hwdec/hwdec_aimagereader.c b/video/out/hwdec/hwdec_aimagereader.c
+index 93e06dfc..4952b4fb 100644
+--- a/video/out/hwdec/hwdec_aimagereader.c
++++ b/video/out/hwdec/hwdec_aimagereader.c
+@@ -45,6 +45,8 @@
+ #endif
+ 
+ #define IMAGE_TIMESTAMP_TOLERANCE_NS 100000.0
++#define IMAGE_ACQUIRE_TIMEOUT_NS MP_TIME_MS_TO_NS(100)
++#define TRANSIENT_LOG_INTERVAL 120
+ 
+ typedef void *GLeglImageOES;
+ typedef void *EGLImageKHR;
+@@ -61,7 +63,7 @@ struct priv_owner {
+     // AImageReader callbacks are queued and can outlive individual mappers.
+     mp_mutex image_lock;
+     mp_cond image_cond;
+-    bool image_available;
++    uint64_t image_sequence;
+ 
+ #if HAVE_VULKAN
+     mp_mutex vk_lock;
+@@ -114,6 +116,7 @@ enum aimage_color_standard {
+ struct aimage_stats {
+     uint64_t render_requests;
+     uint64_t unavailable_outputs;
++    uint64_t no_buffer_polls;
+     uint64_t pending_replacements;
+     uint64_t acquire_timeouts;
+     uint64_t stale_images;
+@@ -389,11 +392,33 @@ static void image_callback(void *context, AImageReader *reader)
+     struct priv_owner *p = context;
+ 
+     mp_mutex_lock(&p->image_lock);
+-    p->image_available = true;
++    p->image_sequence++;
+     mp_cond_signal(&p->image_cond);
+     mp_mutex_unlock(&p->image_lock);
+ }
+ 
++static uint64_t get_image_sequence(struct priv_owner *p)
++{
++    mp_mutex_lock(&p->image_lock);
++    uint64_t sequence = p->image_sequence;
++    mp_mutex_unlock(&p->image_lock);
++    return sequence;
++}
++
++static bool wait_for_image_signal(struct priv_owner *p, uint64_t *sequence,
++                                  int64_t deadline)
++{
++    mp_mutex_lock(&p->image_lock);
++    while (p->image_sequence == *sequence && mp_time_ns() < deadline) {
++        if (mp_cond_timedwait_until(&p->image_cond, &p->image_lock, deadline))
++            break;
++    }
++    bool changed = p->image_sequence != *sequence;
++    *sequence = p->image_sequence;
++    mp_mutex_unlock(&p->image_lock);
++    return changed;
++}
++
+ static int init(struct ra_hwdec *hw)
+ {
+     struct priv_owner *p = hw->priv;
+@@ -585,6 +610,8 @@ static int mapper_init(struct ra_hwdec_mapper *mapper)
+     bool raw_dovi = mapper->src_params.repr.dovi != NULL;
+ 
+     p->log = mapper->log;
++    MP_INFO(mapper,
++            "WebHTV AImageReader uses stable release/acquire flow\n");
+ 
+     mapper->dst_params = mapper->src_params;
+     mapper->dst_params.imgfmt = IMGFMT_RGB0;
+@@ -704,9 +731,10 @@ static void mapper_uninit(struct ra_hwdec_mapper *mapper)
+ 
+     MP_VERBOSE(mapper, "AImageReader stats: render requests %" PRIu64
+                        ", unavailable outputs %" PRIu64
+-                       ", pending replacements %" PRIu64 "\n",
++                       ", pending replacements %" PRIu64
++                       ", no-buffer polls %" PRIu64 "\n",
+                p->stats.render_requests, p->stats.unavailable_outputs,
+-               p->stats.pending_replacements);
++               p->stats.pending_replacements, p->stats.no_buffer_polls);
+     MP_VERBOSE(mapper, "AImageReader stats: acquired %" PRIu64
+                        ", mapped %" PRIu64 ", timeouts %" PRIu64
+                        ", stale %" PRIu64 ", newer %" PRIu64
+@@ -755,11 +783,12 @@ static media_status_t acquire_latest_image(struct ra_hwdec_mapper *mapper,
+                                            AImage **image,
+                                            int *acquire_fence,
+                                            int64_t expected_timestamp_ns,
+-                                           bool check_timestamp)
++                                           bool check_timestamp,
++                                           uint64_t *image_sequence)
+ {
+     struct priv *p = mapper->priv;
+     struct priv_owner *o = mapper->owner->priv;
+-    int64_t deadline = mp_time_ns() + MP_TIME_MS_TO_NS(100);
++    int64_t deadline = mp_time_ns() + IMAGE_ACQUIRE_TIMEOUT_NS;
+ 
+     while (true) {
+         *image = NULL;
+@@ -816,23 +845,22 @@ static media_status_t acquire_latest_image(struct ra_hwdec_mapper *mapper,
+             *acquire_fence = -1;
+             return AMEDIA_ERROR_UNKNOWN;
+         }
++        if (ret == AMEDIA_OK)
++            return ret;
+         if (ret != AMEDIA_IMGREADER_NO_BUFFER_AVAILABLE)
+             return ret;
+ 
+-        int64_t remaining = deadline - mp_time_ns();
+-        if (remaining <= 0) {
++        p->stats.no_buffer_polls++;
++        if (p->stats.no_buffer_polls % TRANSIENT_LOG_INTERVAL == 1) {
++            MP_VERBOSE(mapper, "AImageReader has no buffer yet "
++                               "(count=%" PRIu64 ")\n",
++                       p->stats.no_buffer_polls);
++        }
++        if (mp_time_ns() >= deadline ||
++            !wait_for_image_signal(o, image_sequence, deadline)) {
+             p->stats.acquire_timeouts++;
+             return ret;
+         }
+-
+-        // acquireLatestImage() is allowed to consume all images covered by
+-        // already queued callbacks. Treat the listener as a wakeup hint and
+-        // retry until the shared deadline rather than failing on a stale one.
+-        mp_mutex_lock(&o->image_lock);
+-        if (!o->image_available)
+-            mp_cond_timedwait(&o->image_cond, &o->image_lock, remaining);
+-        o->image_available = false;
+-        mp_mutex_unlock(&o->image_lock);
+     }
+ }
+ 
+@@ -863,6 +891,7 @@ static int mapper_map(struct ra_hwdec_mapper *mapper)
+ {
+     struct priv *p = mapper->priv;
+     struct priv_owner *o = mapper->owner->priv;
++    uint64_t image_sequence = get_image_sequence(o);
+ 
+     if (mapper->src->imgfmt != IMGFMT_MEDIACODEC)
+         return -1;
+@@ -929,9 +958,16 @@ static int mapper_map(struct ra_hwdec_mapper *mapper)
+     int acquire_fence = -1;
+     media_status_t ret =
+         acquire_latest_image(mapper, &image, &acquire_fence,
+-                             expected_timestamp_ns, check_timestamp);
++                             expected_timestamp_ns, check_timestamp,
++                             &image_sequence);
+     if (ret == AMEDIA_IMGREADER_NO_BUFFER_AVAILABLE) {
+-        MP_VERBOSE(mapper, "Waiting for frame timed out\n");
++        if (p->stats.acquire_timeouts % TRANSIENT_LOG_INTERVAL == 1) {
++            MP_WARN(mapper, "AImageReader frame acquisition timed out "
++                            "(timeouts=%" PRIu64 ", no-buffer=%" PRIu64
++                            ")\n",
++                    p->stats.acquire_timeouts,
++                    p->stats.no_buffer_polls);
++        }
+         return RA_HWDEC_MAP_RETRY;
+     }
+     mp_image_unrefp(&p->pending_frame);

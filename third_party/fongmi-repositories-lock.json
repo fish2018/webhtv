@@ -1,0 +1,91 @@
+{
+  "audited_at": "2026-08-10T09:24:20+08:00",
+  "audit_in_progress": {
+    "observed_at": "2026-08-21T00:32:00+08:00",
+    "status": "in_progress",
+    "report": "docs/upstream-player-dependency-merge-assessment-2026-08-20.md",
+    "note": "Observed heads are audit candidates only. selected_branch/selected_commit remain the versions currently adopted by the project until a merge decision is made.",
+    "repositories": {
+      "ffmpeg": {
+        "observed_branch": "release-9.0-fongmi",
+        "observed_commit": "177f090e0503b7e013922ca903bde14b1c375f18"
+      },
+      "mpv_android": {
+        "observed_branch": "fongmi",
+        "observed_commit": "7523b5c5199c84da4092787b7bf5d72452d61780"
+      },
+      "media": {
+        "observed_branch": "release-1.11.0-fongmi",
+        "observed_commit": "3c2cbe8ac742c2fe15eff52f03eeb3b1b648848d"
+      },
+      "mpv": {
+        "observed_branch": "fongmi",
+        "observed_commit": "44755d7eaa0f186e4052ffc99c4f0b500a05a2ba",
+        "history_note": "Remote force-pushed the final Vulkan/Dolby Vision series; old observed head 17a39163dc879cc71e43f29d121477e56114be is retained in the report for patch-id/tree comparison."
+      },
+      "libplacebo": {
+        "observed_branch": "fongmi",
+        "observed_commit": "2301953d9faf0f5e112ff337f79cec64eab2f4f1"
+      }
+    }
+  },
+  "repositories": {
+    "tv": {
+      "repo": "https://github.com/FongMi/TV.git",
+      "selected_branch": "fongmi",
+      "selected_commit": "1a19fee278fa2234da725d61a53bf59b69fe9127",
+      "version_code": 560,
+      "version_name": "5.6.0",
+      "usage": "App upstream audit baseline"
+    },
+    "ffmpeg": {
+      "repo": "https://github.com/FongMi/FFmpeg.git",
+      "selected_branch": "release-9.0-fongmi",
+      "selected_commit": "177f090e0503b7e013922ca903bde14b1c375f18",
+      "default_branch": "master",
+      "default_commit": "f947bc9c1532e7bcc95da11d9574cac3543490b3",
+      "usage": "MPV native stack; mirrored by third_party/mpv-native-lock.json"
+    },
+    "mpv_android": {
+      "repo": "https://github.com/FongMi/mpv-android.git",
+      "selected_branch": "fongmi",
+      "selected_commit": "99a60ad2141d5ace94453590903c2c6b9a0a2443",
+      "default_branch": "master",
+      "default_commit": "4c57302c655b2973c8112941e6a9d3ff571fab8e",
+      "usage": "Native build framework and JNI reference; mirrored by third_party/mpv-native-lock.json"
+    },
+    "media": {
+      "repo": "https://github.com/FongMi/media.git",
+      "selected_branch": "release",
+      "selected_commit": "2bc207851df311340767e913931ca7b28cab1794",
+      "app_fork_repo": "https://github.com/fish2018/webhtv",
+      "app_fork_branch": "media/release-1.11.0-alpha01-fongmi",
+      "app_fork_commit": "e3e922d5c01bc0b564849940fe589daf37360d15",
+      "usage": "Selectively ported Media3 fixes; exact picks are recorded in third_party/media-lock.json"
+    },
+    "mpv": {
+      "repo": "https://github.com/FongMi/mpv.git",
+      "selected_branch": "fongmi",
+      "selected_commit": "cca559b41ceb0bb7731cf6ef2e1f33276cd30c42",
+      "default_branch": "master",
+      "default_commit": "1d15686142fd5d53c954aab7526cedab05ef9dc3",
+      "version": "0.41.0-940-gcca559b41",
+      "usage": "MPV native stack; mirrored by third_party/mpv-native-lock.json"
+    },
+    "libplacebo": {
+      "repo": "https://github.com/FongMi/libplacebo.git",
+      "selected_branch": "fongmi",
+      "selected_commit": "b694a21bf2dc176c1e98b8a13c6421a0de5f3da5",
+      "default_branch": "master",
+      "default_commit": "4d82c6898551068d4ae6a6b5538efcddc2c7cf64",
+      "version": "7.375.0",
+      "usage": "MPV native stack; mirrored by third_party/mpv-native-lock.json"
+    },
+    "catvod_spider": {
+      "repo": "https://github.com/FongMi/CatVodSpider.git",
+      "selected_branch": "main",
+      "selected_commit": "a511a606a287089dffdd8374db75d95ec5f372b6",
+      "usage": "Audited external Spider JAR source; not bundled into the App"
+    }
+  }
+}

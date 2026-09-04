@@ -1,0 +1,56 @@
+diff --git a/audio/out/ao_audiotrack.c b/audio/out/ao_audiotrack.c
+--- a/audio/out/ao_audiotrack.c
++++ b/audio/out/ao_audiotrack.c
+@@ -34,3 +34,6 @@
+ static int jni_static_use_count = 0;
+-
++enum {
++    ANDROID_API_LEVEL_S = 31,
++};
++
+ struct priv {
+@@ -234,3 +237,14 @@ static const struct MPJniField AudioFormatBuilder_mapping[] = {
+ #undef OFFSET
+-
++static struct JNIBuildVersion {
++    jclass clazz;
++    jint SDK_INT;
++} BuildVersion;
++#define OFFSET(member) offsetof(struct JNIBuildVersion, member)
++static const struct MPJniField BuildVersion_mapping[] = {
++    {"android/os/Build$VERSION", NULL, MP_JNI_CLASS, OFFSET(clazz), 1},
++    {"SDK_INT", "I", MP_JNI_STATIC_FIELD_AS_INT, OFFSET(SDK_INT), 1},
++    {0}
++};
++#undef OFFSET
++
+ static struct JNIAudioManager {
+@@ -274,6 +288,7 @@ static const struct {
+     ENTRY(AudioAttributesBuilder),
+     ENTRY(AudioFormat),
+     ENTRY(AudioFormatBuilder),
++    ENTRY(BuildVersion),
+     ENTRY(AudioManager),
+     ENTRY(AudioTimestamp),
+ };
+@@ -714,6 +729,19 @@ static int init(struct ao *ao)
+     };
+     static_assert(MP_ARRAY_SIZE(layout_map) == MP_ARRAY_SIZE(layouts), "");
+     if (p->format == AudioFormat.ENCODING_IEC61937) {
+-        p->channel_config = AudioFormat.CHANNEL_OUT_STEREO;
++        // Android documents a stereo channel mask for IEC61937, but the
++        // mature VLC AudioTrack backend uses 7.1 for TrueHD because several
++        // Android TV firmwares reject or down-route its 8-channel carrier
++        // when it is declared as stereo.
++        if (ao->format == AF_FORMAT_S_TRUEHD) {
++            MP_VERBOSE(ao, "Using 7.1 IEC61937 carrier mask for TrueHD\n");
++            p->channel_config = AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
++        } else if (BuildVersion.SDK_INT >= ANDROID_API_LEVEL_S &&
++                   ao->channels.num == 8) {
++            MP_VERBOSE(ao, "Using 7.1 IEC61937 carrier mask for Android 12+ 8-channel stream\n");
++            p->channel_config = AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
++        } else {
++            p->channel_config = AudioFormat.CHANNEL_OUT_STEREO;
++        }
+     } else {
+         struct mp_chmap_sel sel = {0};

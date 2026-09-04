@@ -31,6 +31,8 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
     private final ExoTargetBufferCoordinator coordinator;
     private final ExoMemoryPressureCoordinator memoryPressureCoordinator;
     private final ExoPreloadTrafficCoordinator preloadTrafficCoordinator;
+    private final boolean automaticTargetBytes;
+    private final boolean automaticBackBuffer;
     private final ConcurrentHashMap<PlayerId, TargetState> targetStates;
     private final ConcurrentHashMap<PlayerId, ModeState> modeStates;
     private final ConcurrentHashMap<PlayerId, ExoPreloadTrafficCoordinator.Registration>
@@ -51,7 +53,29 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
                 fallbackBudget,
                 ExoTargetBufferCoordinator.process(),
                 ExoMemoryPressureCoordinator.process(),
-                ExoPreloadTrafficCoordinator.process());
+                ExoPreloadTrafficCoordinator.process(),
+                true,
+                true);
+    }
+
+    AutoTargetLoadControl(
+            ExoLoadControlPolicy.AutomaticConfiguration configuration,
+            int backBufferMs,
+            int configuredTargetBytes,
+            ExoBufferBudget.Budget fallbackBudget,
+            boolean automaticTargetBytes,
+            boolean automaticBackBuffer) {
+        this(
+                new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE),
+                configuration,
+                backBufferMs,
+                configuredTargetBytes,
+                fallbackBudget,
+                ExoTargetBufferCoordinator.process(),
+                ExoMemoryPressureCoordinator.process(),
+                ExoPreloadTrafficCoordinator.process(),
+                automaticTargetBytes,
+                automaticBackBuffer);
     }
 
     AutoTargetLoadControl(
@@ -69,7 +93,9 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
                 fallbackBudget,
                 coordinator,
                 ExoMemoryPressureCoordinator.process(),
-                ExoPreloadTrafficCoordinator.process());
+                ExoPreloadTrafficCoordinator.process(),
+                true,
+                true);
     }
 
     AutoTargetLoadControl(
@@ -88,7 +114,9 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
                 fallbackBudget,
                 coordinator,
                 memoryPressureCoordinator,
-                ExoPreloadTrafficCoordinator.process());
+                ExoPreloadTrafficCoordinator.process(),
+                true,
+                true);
     }
 
     AutoTargetLoadControl(
@@ -100,6 +128,30 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
             ExoTargetBufferCoordinator coordinator,
             ExoMemoryPressureCoordinator memoryPressureCoordinator,
             ExoPreloadTrafficCoordinator preloadTrafficCoordinator) {
+        this(
+                allocator,
+                configuration,
+                backBufferMs,
+                configuredTargetBytes,
+                fallbackBudget,
+                coordinator,
+                memoryPressureCoordinator,
+                preloadTrafficCoordinator,
+                true,
+                true);
+    }
+
+    AutoTargetLoadControl(
+            DefaultAllocator allocator,
+            ExoLoadControlPolicy.AutomaticConfiguration configuration,
+            int backBufferMs,
+            int configuredTargetBytes,
+            ExoBufferBudget.Budget fallbackBudget,
+            ExoTargetBufferCoordinator coordinator,
+            ExoMemoryPressureCoordinator memoryPressureCoordinator,
+            ExoPreloadTrafficCoordinator preloadTrafficCoordinator,
+            boolean automaticTargetBytes,
+            boolean automaticBackBuffer) {
         super(
                 allocator,
                 configuration.streaming().minBufferMs(),
@@ -110,7 +162,8 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
                 configuration.localStartBufferMs(),
                 configuration.streamingRebufferMs(),
                 configuration.localRebufferMs(),
-                C.LENGTH_UNSET,
+                automaticTargetBytes
+                        ? C.LENGTH_UNSET : fallbackBudget.effectiveTargetBytes(),
                 configuration.streamingPrioritizeTime(),
                 configuration.localPrioritizeTime(),
                 backBufferMs,
@@ -122,6 +175,8 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
         this.coordinator = coordinator;
         this.memoryPressureCoordinator = memoryPressureCoordinator;
         this.preloadTrafficCoordinator = preloadTrafficCoordinator;
+        this.automaticTargetBytes = automaticTargetBytes;
+        this.automaticBackBuffer = automaticBackBuffer;
         this.targetStates = new ConcurrentHashMap<>();
         this.modeStates = new ConcurrentHashMap<>();
         this.media3PreloadTraffic = new ConcurrentHashMap<>();
@@ -209,7 +264,7 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
         refreshTargetForActualFormats(parameters.playerId);
         applyAllocatorTarget();
         ExoMemoryPressurePolicy.Decision memory = currentMemoryDecision(parameters.playerId);
-        if (memory != null && memory.degraded()) {
+        if (automaticTargetBytes && memory != null && memory.degraded()) {
             Allocator playerAllocator = getAllocator(parameters.playerId);
             if (!ExoLoadControlModePolicy.canAllocate(
                     playerAllocator.getTotalBytesAllocated(),
@@ -244,6 +299,7 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
     }
 
     boolean isBackBufferSuppressed(PlayerId playerId) {
+        if (!automaticBackBuffer) return false;
         ExoMemoryPressurePolicy.Decision decision = currentMemoryDecision(playerId);
         return decision != null && decision.backBufferSuppressed();
     }
@@ -362,7 +418,9 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
         if (published) {
             publishTelemetry(session, previousObserved, observed, context, now);
         }
-        return baseline.targetBytes();
+        return automaticTargetBytes
+                ? baseline.targetBytes()
+                : fallbackBudget.effectiveTargetBytes();
     }
 
     private void refreshTargetForActualFormats(PlayerId playerId) {
@@ -469,7 +527,8 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
     }
 
     private boolean canContinueControlledRescue(ExoLoadControlModePolicy.Decision mode) {
-        return mode.mode().controlledTimePriority()
+        return automaticTargetBytes
+                && mode.mode().controlledTimePriority()
                 && heapGuardAllows()
                 && ExoLoadControlModePolicy.canAllocate(
                         allocator.getTotalBytesAllocated(),
@@ -506,11 +565,13 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
             }
         }
         if (!relevant) return;
-        coordinator.publishEffectiveTarget(
-                update.session(),
-                update.decision().effectiveTargetBytes(),
-                update.decision().degraded(),
-                update.publishedAtElapsedMs());
+        if (automaticTargetBytes) {
+            coordinator.publishEffectiveTarget(
+                    update.session(),
+                    update.decision().effectiveTargetBytes(),
+                    update.decision().degraded(),
+                    update.publishedAtElapsedMs());
+        }
         applyAllocatorTarget();
         ExoPlaybackDiagnostics.logMemoryPressureDecision(
                 update.decision(),
@@ -532,11 +593,12 @@ final class AutoTargetLoadControl extends DefaultLoadControl {
         for (TargetState targetState : targetStates.values()) {
             ExoMemoryPressurePolicy.Decision memory =
                     memoryPressureCoordinator.currentDecision(targetState.session());
-            int effective = memory == null
+            int baseline = automaticTargetBytes
                     ? targetState.decision().targetBytes()
-                    : Math.min(
-                            targetState.decision().targetBytes(),
-                            memory.effectiveTargetBytes());
+                    : fallbackBudget.effectiveTargetBytes();
+            int effective = !automaticTargetBytes || memory == null
+                    ? baseline
+                    : Math.min(baseline, memory.effectiveTargetBytes());
             targetBytes = saturatedAdd(targetBytes, effective);
             preloadPaused |= memory != null && memory.preloadPaused();
         }

@@ -142,18 +142,8 @@ final class AutoPreloadPolicy {
         if (system.networkUsable()) {
             if (Boolean.FALSE.equals(system.available())) return Reason.NETWORK_UNAVAILABLE;
             if (Boolean.FALSE.equals(system.validated())) return Reason.NETWORK_UNVALIDATED;
-            if (Boolean.TRUE.equals(system.roaming())) return Reason.ROAMING;
-            if (Boolean.TRUE.equals(system.metered())) return Reason.METERED;
             if (system.dataSaver() == PlaybackAutoContext.DataSaverState.ENABLED) {
                 return Reason.DATA_SAVER;
-            }
-        }
-        if (system.networkCostUsable()) {
-            if (system.networkCost() == PlaybackAutoContext.NetworkCost.ROAMING) {
-                return Reason.ROAMING;
-            }
-            if (system.networkCost() == PlaybackAutoContext.NetworkCost.METERED) {
-                return Reason.METERED;
             }
         }
         if (system.powerUsable()
@@ -233,6 +223,18 @@ final class AutoPreloadPolicy {
 
     private Reason cautionReason(Inputs input, boolean holdingFast) {
         SystemEvidence system = input.system();
+        if (system.networkUsable()) {
+            if (Boolean.TRUE.equals(system.roaming())) return Reason.ROAMING;
+            if (Boolean.TRUE.equals(system.metered())) return Reason.METERED;
+        }
+        if (system.networkCostUsable()) {
+            if (system.networkCost() == PlaybackAutoContext.NetworkCost.ROAMING) {
+                return Reason.ROAMING;
+            }
+            if (system.networkCost() == PlaybackAutoContext.NetworkCost.METERED) {
+                return Reason.METERED;
+            }
+        }
         if (system.thermalUsable()
                 && system.thermal() == PlaybackAutoContext.ThermalState.MODERATE) {
             return Reason.THERMAL_MODERATE;

@@ -37,6 +37,7 @@ import com.fongmi.android.tv.player.ijk.IjkBufferPolicy;
 import com.fongmi.android.tv.player.ijk.IjkDecodePressurePolicy;
 import com.fongmi.android.tv.player.ijk.IjkRealtimeRecoveryPolicy;
 import com.fongmi.android.tv.setting.IjkPerformanceSetting;
+import com.fongmi.android.tv.setting.PlaybackPerformanceCatalog;
 import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.utils.Task;
@@ -901,10 +902,13 @@ class IjkSimplePlayer extends SimpleBasePlayer implements IMediaPlayer.Listener 
 
     private void configureOptions(Uri uri, boolean dash) {
         String url = uri.toString();
-        boolean automatic = PlaybackPerformanceSetting.isAuto(PlayerSetting.IJK);
+        boolean automaticBuffer = PlaybackPerformanceSetting.hasAutomaticOptions(
+                PlayerSetting.IJK,
+                PlaybackPerformanceCatalog.IJK_BUFFER,
+                PlaybackPerformanceCatalog.IJK_WATER);
         IjkBufferOptionPolicy.Decision inputBuffer =
                 IjkBufferOptionPolicy.resolve(
-                        automatic,
+                        automaticBuffer,
                         automaticInputBufferConfig,
                         url,
                         IjkPerformanceSetting.getScene(),
@@ -914,15 +918,56 @@ class IjkSimplePlayer extends SimpleBasePlayer implements IMediaPlayer.Listener 
                         IjkPerformanceSetting.getNextWaterMs(),
                         IjkPerformanceSetting.getLastWaterMs());
         appliedInputBufferConfig = inputBuffer.config();
+        if (PlaybackPerformanceSetting.isOverridden(
+                PlayerSetting.IJK,
+                PlaybackPerformanceCatalog.IJK_BUFFER)) {
+            appliedInputBufferConfig = new IjkBufferPolicy.Config(
+                    IjkPerformanceSetting.getBufferMb(),
+                    appliedInputBufferConfig.firstWaterMs(),
+                    appliedInputBufferConfig.nextWaterMs(),
+                    appliedInputBufferConfig.lastWaterMs());
+            inputBuffer = IjkBufferOptionPolicy.withConfig(
+                    inputBuffer,
+                    appliedInputBufferConfig,
+                    PlayerSetting.getBufferBytes(PlayerSetting.IJK));
+        }
+        if (PlaybackPerformanceSetting.isOverridden(
+                PlayerSetting.IJK,
+                PlaybackPerformanceCatalog.IJK_WATER)) {
+            appliedInputBufferConfig = new IjkBufferPolicy.Config(
+                    appliedInputBufferConfig.bufferMb(),
+                    IjkPerformanceSetting.getFirstWaterMs(),
+                    IjkPerformanceSetting.getNextWaterMs(),
+                    IjkPerformanceSetting.getLastWaterMs());
+            inputBuffer = IjkBufferOptionPolicy.withConfig(
+                    inputBuffer,
+                    appliedInputBufferConfig,
+                    PlayerSetting.getBufferBytes(PlayerSetting.IJK));
+        }
+        boolean automaticPictureQueue = PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.IJK,
+                PlaybackPerformanceCatalog.IJK_PICTURE_QUEUE);
+        boolean automaticSoftTune = PlaybackPerformanceSetting.isAuto(
+                PlayerSetting.IJK,
+                PlaybackPerformanceCatalog.IJK_SOFT_TUNE);
         appliedDecodeControlConfig = IjkDecodePressurePolicy.prepareConfig(
-                automatic,
+                automaticPictureQueue || automaticSoftTune,
                 automaticDecodeControlConfig,
                 decode == PlayerEngine.SOFT,
                 IjkPerformanceSetting.getPictureQueue(),
                 configuredSoftTuneMode());
+        appliedDecodeControlConfig = new IjkDecodePressurePolicy.Config(
+                automaticPictureQueue
+                        ? appliedDecodeControlConfig.pictureQueue()
+                        : IjkPerformanceSetting.getPictureQueue(),
+                automaticSoftTune
+                        ? appliedDecodeControlConfig.tuneMode()
+                        : decode == PlayerEngine.SOFT
+                        ? configuredSoftTuneMode()
+                        : IjkDecodePressurePolicy.TuneMode.OFF);
         SpiderDebug.log("ijk-buffer",
                 "action=prepare mode=%s bufferMb=%d maxBufferBytes=%d firstMs=%d nextMs=%d lastMs=%d realtime=%s infbuf=%s",
-                automatic ? "automatic" : "fixed",
+                automaticBuffer ? "automatic" : "fixed",
                 appliedInputBufferConfig.bufferMb(),
                 inputBuffer.maxBufferBytes(),
                 appliedInputBufferConfig.firstWaterMs(),
@@ -957,7 +1002,8 @@ class IjkSimplePlayer extends SimpleBasePlayer implements IMediaPlayer.Listener 
         ijk.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "video-pictq-size", appliedDecodeControlConfig.pictureQueue());
         SpiderDebug.log("ijk-decode",
                 "action=prepare mode=%s requestedDecode=%s pictureQueue=%d tune=%s",
-                automatic ? "automatic" : "fixed",
+                automaticPictureQueue || automaticSoftTune
+                        ? "automatic" : "fixed",
                 decode == PlayerEngine.SOFT ? "software" : "hardware",
                 appliedDecodeControlConfig.pictureQueue(),
                 appliedDecodeControlConfig.tuneMode().label());

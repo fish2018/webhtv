@@ -99,10 +99,11 @@ therefore falls back to OpenGL and logs native/device Vulkan availability.
 
 ## Current HLS limitation
 
-The existing Exo/Media3 stack in this repo is patched for HLS edge cases, notably:
-
-- `third_party/patches/media3-sample-aes-identity.patch`
-- `third_party/patches/media3-hls-pes-synthesized-pusi-quiet.patch`
+The existing Exo/Media3 stack in this repo includes the SAMPLE-AES identity and
+synthesized-PUSI fixes in the locked Media3 source commit recorded by
+`third_party/media-lock.json`. They are no longer reapplied as standalone patch
+files, because doing so would apply the same changes twice and break a clean
+Media3 rebuild.
 
 Some sources rely on these patches. In logs they can appear to libmpv/FFmpeg as
 HLS streams whose media samples are detected as `Video: png`, followed by:

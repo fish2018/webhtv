@@ -56,15 +56,15 @@ public class ExoPreloadSystemConditionBridgeTest {
     }
 
     @Test
-    public void networkAndPressureCallbacksRequestImmediateDisruption() {
+    public void onlyHardNetworkAndPressureStatesRequestImmediateDisruption() {
         PlaybackAutoContext.SessionToken session =
                 new PlaybackAutoContext.SessionToken("p-disrupt-1", 1);
-        PlaybackSystemConditionCoordinator.Update network = update(
+        PlaybackSystemConditionCoordinator.Update usableMeteredNetwork = update(
                 session,
                 PlaybackAutoContext.SystemConditionTrigger.NETWORK_CALLBACK,
                 PlaybackAutoContext.Fact.withTtl(
                         new PlaybackAutoContext.NetworkSnapshot(
-                                true, true, false, false,
+                                true, true, true, false,
                                 PlaybackAutoContext.NetworkTransport.WIFI,
                                 PlaybackAutoContext.DataSaverState.DISABLED),
                         PlaybackAutoContext.ValueSource.SYSTEM_CALLBACK,
@@ -73,7 +73,21 @@ public class ExoPreloadSystemConditionBridgeTest {
                         100),
                 null,
                 null);
-        PlaybackSystemConditionCoordinator.Update thermal = update(
+        PlaybackSystemConditionCoordinator.Update unavailableNetwork = update(
+                session,
+                PlaybackAutoContext.SystemConditionTrigger.NETWORK_CALLBACK,
+                PlaybackAutoContext.Fact.withTtl(
+                        new PlaybackAutoContext.NetworkSnapshot(
+                                false, false, false, false,
+                                PlaybackAutoContext.NetworkTransport.UNKNOWN,
+                                PlaybackAutoContext.DataSaverState.DISABLED),
+                        PlaybackAutoContext.ValueSource.SYSTEM_CALLBACK,
+                        PlaybackAutoContext.Confidence.HIGH,
+                        0,
+                        100),
+                null,
+                null);
+        PlaybackSystemConditionCoordinator.Update moderateThermal = update(
                 session,
                 PlaybackAutoContext.SystemConditionTrigger.THERMAL_CALLBACK,
                 null,
@@ -84,14 +98,27 @@ public class ExoPreloadSystemConditionBridgeTest {
                         PlaybackAutoContext.Confidence.HIGH,
                         0,
                         100));
+        PlaybackSystemConditionCoordinator.Update severeThermal = update(
+                session,
+                PlaybackAutoContext.SystemConditionTrigger.THERMAL_CALLBACK,
+                null,
+                null,
+                PlaybackAutoContext.Fact.withTtl(
+                        PlaybackAutoContext.ThermalState.SEVERE,
+                        PlaybackAutoContext.ValueSource.SYSTEM_CALLBACK,
+                        PlaybackAutoContext.Confidence.HIGH,
+                        0,
+                        100));
 
+        assertNull(ExoPreloadSystemConditionBridge.disruption(usableMeteredNetwork, 1));
         assertEquals(
-                AutoPreloadPolicy.Reason.NETWORK_CHANGED,
-                ExoPreloadSystemConditionBridge.disruption(network, 1));
+                AutoPreloadPolicy.Reason.NETWORK_UNAVAILABLE,
+                ExoPreloadSystemConditionBridge.disruption(unavailableNetwork, 1));
+        assertNull(ExoPreloadSystemConditionBridge.disruption(moderateThermal, 1));
         assertEquals(
-                AutoPreloadPolicy.Reason.THERMAL_MODERATE,
-                ExoPreloadSystemConditionBridge.disruption(thermal, 1));
-        assertNull(ExoPreloadSystemConditionBridge.disruption(thermal, 100));
+                AutoPreloadPolicy.Reason.THERMAL_PRESSURE,
+                ExoPreloadSystemConditionBridge.disruption(severeThermal, 1));
+        assertNull(ExoPreloadSystemConditionBridge.disruption(severeThermal, 100));
     }
 
     private static PlaybackSystemConditionCoordinator.Update update(

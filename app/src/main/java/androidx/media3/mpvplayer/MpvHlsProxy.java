@@ -14,6 +14,8 @@ import com.fongmi.android.tv.player.PreloadPausePolicy;
 import com.fongmi.android.tv.player.cache.PlaybackDiskBufferStore;
 import com.fongmi.android.tv.player.mpv.MpvPreloadPolicy;
 import com.fongmi.android.tv.setting.PlayerSetting;
+import com.fongmi.android.tv.setting.PlaybackPerformanceCatalog;
+import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
 import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.github.catvod.crawler.SpiderDebug;
@@ -991,7 +993,9 @@ public final class MpvHlsProxy extends NanoHTTPD {
 
     private synchronized ExecutorService getPreloadExecutor() {
         int threads = MpvPreloadPolicy.resolveExecutorThreads(
-                automaticPreloadMode,
+                PlaybackPerformanceSetting.isAuto(
+                        kernel,
+                        PlaybackPerformanceCatalog.PRELOAD_THREADS),
                 PreloadSetting.getPreloadThreads(kernel));
         if (preloadExecutor != null && preloadThreads == threads) return preloadExecutor;
         releasePreloadExecutor();
@@ -2222,7 +2226,10 @@ public final class MpvHlsProxy extends NanoHTTPD {
                 ? List.of() : directSegments;
         long selected = Math.max(0, selectedBitsPerSecond);
         if (!variants.isEmpty()) {
-            if (selected <= 0) return List.of();
+            if (selected <= 0) {
+                if (variants.size() != 1) return List.of();
+                return List.copyOf(variants.values().iterator().next());
+            }
             List<HlsPlaylistRewriter.Segment> exact = variants.get(selected);
             if (exact != null) return List.copyOf(exact);
             return List.of();

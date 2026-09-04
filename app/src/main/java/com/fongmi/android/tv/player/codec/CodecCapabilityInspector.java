@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.util.Range;
 
 import androidx.media3.common.C;
+import androidx.media3.common.ColorInfo;
 import androidx.media3.common.Format;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.Tracks;
@@ -16,6 +17,8 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
 import androidx.media3.exoplayer.mediacodec.MediaCodecUtil;
 
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.player.engine.PlayerEngine;
+import com.fongmi.android.tv.player.mpv.MpvAutoOutputPolicy;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -72,12 +75,20 @@ public final class CodecCapabilityInspector {
         int matched = 0;
         int videoIndex = 0;
         int audioIndex = 0;
+        PlayerEngine.VideoPlaybackDetails videoDetails =
+                player.getVideoPlaybackDetails();
         for (Tracks.Group group : tracks.getGroups()) {
             int type = group.getType();
             if (type != C.TRACK_TYPE_VIDEO && type != C.TRACK_TYPE_AUDIO) continue;
             for (int i = 0; i < group.length; i++) {
                 Format format = group.getTrackFormat(i);
-                String text = formatTrack(context, type, type == C.TRACK_TYPE_VIDEO ? ++videoIndex : ++audioIndex, format, group.getTrackSupport(i), group.isTrackSelected(i));
+                boolean selected = group.isTrackSelected(i);
+                String text = formatTrack(context, type,
+                        type == C.TRACK_TYPE_VIDEO ? ++videoIndex : ++audioIndex,
+                        format, group.getTrackSupport(i), selected,
+                        type == C.TRACK_TYPE_VIDEO && selected
+                                ? videoDetails
+                                : PlayerEngine.VideoPlaybackDetails.empty());
                 total++;
                 if (!TextUtils.isEmpty(query) && !normalize(text).contains(query)) continue;
                 if (matched++ > 0) builder.append("\n\n");
@@ -89,6 +100,78 @@ public final class CodecCapabilityInspector {
             return "当前媒体轨道没有匹配关键词";
         }
         return "当前媒体轨道 " + matched + "/" + total + "\n\n" + builder;
+    }
+
+    /**
+     * Checks the actual hardware Dolby Vision decoder for the source profile and level.
+     *
+     * <p>Do not use an HEVC decoder returned by a soft MIME match here. A plain Main10
+     * decoder is not evidence that the device can accept and output the requested DV
+     * profile on a direct surface.</p>
+     */
+    public static MpvAutoOutputPolicy.DolbyVisionSupport dolbyVisionSupport(
+            Context context,
+            PlayerEngine.VideoPlaybackDetails details,
+            Format current,
+            int width,
+            int height) {
+        if (context == null || details == null || details.dolbyVisionProfile() <= 0) {
+            return MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN;
+        }
+        return dolbyVisionProfileSupport(context, details.dolbyVisionProfile(),
+                details.dolbyVisionLevel(), details.sourceCodecs(), current,
+                width, height);
+    }
+
+    public static MpvAutoOutputPolicy.DolbyVisionSupport dolbyVisionProfileSupport(
+            Context context,
+            int profile,
+            int level,
+            String sourceCodecs,
+            Format current,
+            int width,
+            int height) {
+        if (context == null || profile <= 0) {
+            return MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN;
+        }
+        String codecs = sourceCodecs;
+        if (TextUtils.isEmpty(codecs) || !codecMatchesProfile(codecs, profile)) {
+            codecs = level > 0
+                    ? String.format(Locale.US, "dvhe.%02d.%02d", profile, level)
+                    : String.format(Locale.US, "dvhe.%02d", profile);
+        }
+        Format.Builder builder = new Format.Builder()
+                .setSampleMimeType(MimeTypes.VIDEO_DOLBY_VISION)
+                .setCodecs(codecs);
+        if (current != null) {
+            if (current.frameRate > 0) builder.setFrameRate(current.frameRate);
+            if (current.averageBitrate > 0) builder.setAverageBitrate(current.averageBitrate);
+            if (current.peakBitrate > 0) builder.setPeakBitrate(current.peakBitrate);
+        }
+        if (width > 0) builder.setWidth(width);
+        if (height > 0) builder.setHeight(height);
+        Format format = builder.build();
+        try {
+            for (androidx.media3.exoplayer.mediacodec.MediaCodecInfo info
+                    : MediaCodecSelector.DEFAULT.getDecoderInfos(
+                    MimeTypes.VIDEO_DOLBY_VISION, false, false)) {
+                if (!info.hardwareAccelerated) continue;
+                if (info.isFormatSupported(context, format)) {
+                    return MpvAutoOutputPolicy.DolbyVisionSupport.SUPPORTED;
+                }
+            }
+            return MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED;
+        } catch (Throwable ignored) {
+            return MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN;
+        }
+    }
+
+    private static boolean codecMatchesProfile(String codecs, int profile) {
+        if (TextUtils.isEmpty(codecs)) return false;
+        String expected = String.format(Locale.US, ".%02d.", profile);
+        String first = codecs.split(",", 2)[0].trim().toLowerCase(Locale.US);
+        return (first.startsWith("dvhe.") || first.startsWith("dvh1."))
+                && first.contains(expected);
     }
 
     public static List<CodecEntry> getHardwareDecoders() {
@@ -164,14 +247,107 @@ public final class CodecCapabilityInspector {
         return builder.toString();
     }
 
-    private static String formatTrack(Context context, int type, int index, Format format, int support, boolean selected) {
+    private static String formatTrack(Context context, int type, int index,
+                                      Format format, int support,
+                                      boolean selected,
+                                      PlayerEngine.VideoPlaybackDetails details) {
         StringBuilder builder = new StringBuilder();
         builder.append(type == C.TRACK_TYPE_VIDEO ? "视频轨 " : "音频轨 ").append(index);
         builder.append(selected ? " / 已选中" : " / 未选中").append("\n");
         builder.append("格式 ").append(type == C.TRACK_TYPE_VIDEO ? videoFormat(format) : audioFormat(format)).append("\n");
+        if (type == C.TRACK_TYPE_VIDEO && details != null && details.hasEvidence()) {
+            String actual = actualVideoDecodeText(details, format);
+            if (!TextUtils.isEmpty(actual)) builder.append("当前解码 ").append(actual).append("\n");
+            if (details.hasDolbyVisionSource()) {
+                Format source = dolbyVisionSourceFormat(format, details);
+                builder.append(details.dolbyVisionHdr10Fallback()
+                        ? "源格式 / 未选中（未使用 Dolby Vision 硬解，当前已回退）\n"
+                        : "Dolby Vision 路径 / 原生播放\n");
+                builder.append("源参数 ").append(dolbyVisionSourceText(details)).append("\n");
+                builder.append("源格式硬解查询 ").append(formatSupport(context, source)).append("\n");
+            }
+        }
         builder.append("Media3轨道状态 ").append(supportText(support)).append("\n");
         builder.append(type == C.TRACK_TYPE_VIDEO ? "硬解查询 " : "音频解码 ").append(formatSupport(context, format));
         return builder.toString();
+    }
+
+    private static Format dolbyVisionSourceFormat(
+            Format current, PlayerEngine.VideoPlaybackDetails details) {
+        Format.Builder builder = new Format.Builder()
+                .setSampleMimeType(MimeTypes.VIDEO_DOLBY_VISION)
+                .setCodecs(details.sourceCodecs());
+        if (current == null) return builder.build();
+        if (current.width > 0) builder.setWidth(current.width);
+        if (current.height > 0) builder.setHeight(current.height);
+        if (current.frameRate > 0) builder.setFrameRate(current.frameRate);
+        if (current.averageBitrate > 0) builder.setAverageBitrate(current.averageBitrate);
+        if (current.peakBitrate > 0) builder.setPeakBitrate(current.peakBitrate);
+        return builder.build();
+    }
+
+    static String dolbyVisionSourceText(
+            PlayerEngine.VideoPlaybackDetails details) {
+        if (details == null || !details.hasDolbyVisionSource()) return "";
+        String profile = String.format(Locale.US, "%02d",
+                details.dolbyVisionProfile());
+        String codecs = TextUtils.isEmpty(details.sourceCodecs())
+                ? "dvhe." + profile : details.sourceCodecs();
+        return "Dolby Vision Profile " + details.dolbyVisionProfile()
+                + "（DV." + profile + "） / " + codecs;
+    }
+
+    static String actualVideoDecodeText(
+            PlayerEngine.VideoPlaybackDetails details, Format format) {
+        if (details == null) return "";
+        List<String> parts = new ArrayList<>();
+        String codec = videoCodecName(details.decodedCodec());
+        if (TextUtils.isEmpty(codec) && format != null) {
+            codec = videoCodecName(!TextUtils.isEmpty(format.codecs)
+                    ? format.codecs : format.sampleMimeType);
+        }
+        if (!TextUtils.isEmpty(codec)) parts.add(codec);
+        String hdr = outputHdrName(details.outputColorInfo() != null
+                ? details.outputColorInfo()
+                : format == null ? null : format.colorInfo);
+        if (!TextUtils.isEmpty(hdr)) parts.add(hdr);
+        String result = TextUtils.join(" ", parts);
+        if (!TextUtils.isEmpty(details.hwdecCurrent())) {
+            result += (TextUtils.isEmpty(result) ? "" : " / ")
+                    + details.hwdecCurrent();
+        }
+        if (!TextUtils.isEmpty(details.decoderName())
+                && !normalize(details.decoderName()).equals(
+                normalize(details.decodedCodec()))) {
+            result += (TextUtils.isEmpty(result) ? "" : " / ")
+                    + "decoder " + details.decoderName();
+        }
+        return result;
+    }
+
+    private static String videoCodecName(String value) {
+        String codec = normalize(value);
+        if (codec.contains("dolby-vision") || codec.startsWith("dvhe")
+                || codec.startsWith("dvh1")) return "Dolby Vision";
+        if (codec.contains("hevc") || codec.contains("h265")
+                || codec.startsWith("hvc1") || codec.startsWith("hev1")) return "HEVC";
+        if (codec.contains("h264") || codec.contains("avc")
+                || codec.startsWith("avc1") || codec.startsWith("avc3")) return "H.264";
+        if (codec.contains("av1") || codec.startsWith("av01")) return "AV1";
+        if (codec.contains("vp9") || codec.startsWith("vp09")) return "VP9";
+        if (codec.contains("vp8") || codec.startsWith("vp08")) return "VP8";
+        return value == null ? "" : value.trim().toUpperCase(Locale.US);
+    }
+
+    private static String outputHdrName(ColorInfo colorInfo) {
+        if (colorInfo == null) return "";
+        if (colorInfo.colorTransfer == C.COLOR_TRANSFER_ST2084) return "HDR10";
+        if (colorInfo.colorTransfer == C.COLOR_TRANSFER_HLG) return "HLG";
+        if (ColorInfo.isTransferHdr(colorInfo)) return "HDR";
+        if (colorInfo.colorTransfer == C.COLOR_TRANSFER_SDR
+                || colorInfo.colorTransfer == C.COLOR_TRANSFER_SRGB
+                || colorInfo.colorTransfer == C.COLOR_TRANSFER_LINEAR) return "SDR";
+        return "";
     }
 
     private static List<TrackRef> getTrackRefs(Context context, PlayerManager player) {

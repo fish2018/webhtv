@@ -112,4 +112,18 @@ public class BackupPreferenceFilterTest {
         assertFalse(Backup.include(
                 "perf_exo_single_rate_rescue_enabled_v1", everything));
     }
+
+    @Test
+    public void updateDownloadSettingsFollowAppSettingsSync() {
+        SyncOptions settings = new SyncOptions().config(false).spider(false).settings(true);
+
+        assertTrue(Backup.include("update_source", settings));
+        assertTrue(Backup.include("update_github_proxy", settings));
+        assertTrue(Backup.include("update_github_proxy_url", settings));
+        assertTrue(Backup.include("update_github_proxy_mode", settings));
+        assertTrue(Backup.include("update_oci_mirror", settings));
+        assertTrue(Backup.include("update_oci_mirror_url", settings));
+        assertFalse(Backup.include("update_channel", settings));
+        assertFalse(Backup.include("update_fallback", settings));
+    }
 }

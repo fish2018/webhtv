@@ -49,11 +49,11 @@
         {
           "name": "media3-ui-1.11.0-alpha01-fongmi.aar",
           "url": "media3-ui-1.11.0-alpha01-fongmi.aar",
-          "size": 436101,
-          "sha512": "e96fd8d4530b8c7cfcb8fb3e91e7aaf681285b49fe222e9dd5896509a641c57b102122df1aa77a48c31239d36a63194a438be232b38217628cf4d31ebd9114f4",
-          "sha256": "4f16fa9b572dc229dfcb6e68daa98964e32b588f651d6c7475aaaa029cdc1bfa",
-          "sha1": "0e3ba00f2af988e468392e266788eb02b6f9527c",
-          "md5": "2cef8ee4251190f8aecb122cb1db8395"
+          "size": 436614,
+          "sha512": "9e285a516fcdf7383e0e9204b4c44e943c21fb2cd1eb013427e49f0ea46ce2ae3bacd6d9dc636f3a30ce9be79ac68e9fe3ccfc76eed13dfd45e147ca41cf615e",
+          "sha256": "1091bb833e29ce3fcc55dfd2d6c30ad4cd18c68414f0957a4e3b0e695db2a088",
+          "sha1": "b8fe9b30c794af077cf62a858f40234f07dd5bae",
+          "md5": "0196c912f3e5263cf09c71e960afc25a"
         }
       ]
     },
@@ -106,11 +106,11 @@
         {
           "name": "media3-ui-1.11.0-alpha01-fongmi.aar",
           "url": "media3-ui-1.11.0-alpha01-fongmi.aar",
-          "size": 436101,
-          "sha512": "e96fd8d4530b8c7cfcb8fb3e91e7aaf681285b49fe222e9dd5896509a641c57b102122df1aa77a48c31239d36a63194a438be232b38217628cf4d31ebd9114f4",
-          "sha256": "4f16fa9b572dc229dfcb6e68daa98964e32b588f651d6c7475aaaa029cdc1bfa",
-          "sha1": "0e3ba00f2af988e468392e266788eb02b6f9527c",
-          "md5": "2cef8ee4251190f8aecb122cb1db8395"
+          "size": 436614,
+          "sha512": "9e285a516fcdf7383e0e9204b4c44e943c21fb2cd1eb013427e49f0ea46ce2ae3bacd6d9dc636f3a30ce9be79ac68e9fe3ccfc76eed13dfd45e147ca41cf615e",
+          "sha256": "1091bb833e29ce3fcc55dfd2d6c30ad4cd18c68414f0957a4e3b0e695db2a088",
+          "sha1": "b8fe9b30c794af077cf62a858f40234f07dd5bae",
+          "md5": "0196c912f3e5263cf09c71e960afc25a"
         }
       ]
     },

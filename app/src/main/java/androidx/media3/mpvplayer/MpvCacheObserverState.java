@@ -61,8 +61,12 @@ final class MpvCacheObserverState {
         }
     }
 
-    boolean shouldQueryFallback(boolean fileLoaded, boolean cacheActive, long nowMs) {
-        if (!fileLoaded) return false;
+    boolean shouldQueryFallback(
+            boolean fileLoaded,
+            boolean cacheActive,
+            boolean playbackActive,
+            long nowMs) {
+        if (!fileLoaded || playbackActive) return false;
         if (fileLoadedAtMs < 0) {
             onFileLoaded(nowMs);
             return false;

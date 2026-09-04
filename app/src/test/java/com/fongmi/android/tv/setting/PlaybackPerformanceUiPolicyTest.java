@@ -50,6 +50,7 @@ public class PlaybackPerformanceUiPolicyTest {
         assertEquals(Set.of(
                         PlaybackPerformanceCatalog.MPV_OUTPUT,
                         PlaybackPerformanceCatalog.MPV_RENDER,
+                        PlaybackPerformanceCatalog.MPV_VULKAN_BACKEND,
                         PlaybackPerformanceCatalog.MPV_HWDEC,
                         PlaybackPerformanceCatalog.MPV_FRAME_RATE,
                         PlaybackPerformanceCatalog.MPV_OPTION_PRIORITY,
@@ -67,6 +68,16 @@ public class PlaybackPerformanceUiPolicyTest {
     }
 
     @Test
+    public void vulkanBackendRowOnlyAppearsAfterAppSelectsVulkan() {
+        assertFalse(ids(PlaybackPerformanceUiPolicy.splitForKernel(
+                PlayerSetting.MPV, false, false).common()).contains(
+                PlaybackPerformanceCatalog.MPV_VULKAN_BACKEND));
+        assertTrue(ids(PlaybackPerformanceUiPolicy.splitForKernel(
+                PlayerSetting.MPV, false, true).common()).contains(
+                PlaybackPerformanceCatalog.MPV_VULKAN_BACKEND));
+    }
+
+    @Test
     public void helpDescriptionsCoverEveryParameter() {
         for (int kernel : new int[]{
                 PlayerSetting.EXO, PlayerSetting.MPV, PlayerSetting.IJK}) {
@@ -77,6 +88,19 @@ public class PlaybackPerformanceUiPolicyTest {
                 assertTrue(option.description().length() >= 40);
             }
         }
+    }
+
+    @Test
+    public void dv7FallbackControlIsAvailableForExoAndMpv() {
+        assertTrue(ids(PlaybackPerformanceCatalog.forKernel(
+                PlayerSetting.EXO, false)).contains(
+                PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK));
+        assertTrue(ids(PlaybackPerformanceCatalog.forKernel(
+                PlayerSetting.MPV, false)).contains(
+                PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK));
+        assertFalse(ids(PlaybackPerformanceCatalog.forKernel(
+                PlayerSetting.IJK, false)).contains(
+                PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK));
     }
 
     private static Set<String> ids(

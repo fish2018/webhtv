@@ -22,9 +22,8 @@ final class MpvDiagnosticsPolicy {
     static boolean allowsSynchronousProperties(Request request, boolean debugLogEnabled) {
         if (request == null) return false;
         return switch (request) {
-            case PANEL -> true;
+            case PANEL, PLAYBACK, ERROR_MINIMAL -> false;
             case DEBUG_LOG, ERROR_DETAILED -> debugLogEnabled;
-            case PLAYBACK, ERROR_MINIMAL -> false;
         };
     }
 

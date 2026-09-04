@@ -7,7 +7,8 @@ Source baseline:
 
 - `FongMi/mpv-android`
 - Local reference directory: `/Users/macbookpro/Desktop/github/mpv-android-reference`
-- Observed reference commit: `4c57302c655b2973c8112941e6a9d3ff571fab8e`
+- Upstream master observed commit: `4c57302c655b2973c8112941e6a9d3ff571fab8e`
+- FongMi native branch commit: `99a60ad2141d5ace94453590903c2c6b9a0a2443`
 - Source license: see `LICENSE`
 
 Project-specific changes:

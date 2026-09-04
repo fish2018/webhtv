@@ -34,6 +34,24 @@ final class IjkBufferOptionPolicy {
                 finite.infiniteBuffer());
     }
 
+    static Decision withConfig(
+            Decision decision,
+            IjkBufferPolicy.Config config,
+            long configuredMaxBufferBytes) {
+        Decision safe = decision == null
+                ? resolve(false, null, "", 0, config.bufferMb(),
+                configuredMaxBufferBytes, config.firstWaterMs(),
+                config.nextWaterMs(), config.lastWaterMs())
+                : decision;
+        long maxBufferBytes = configuredMaxBufferBytes > 0
+                ? configuredMaxBufferBytes : config.maxBufferBytes();
+        return new Decision(
+                config,
+                maxBufferBytes,
+                safe.realtime(),
+                safe.infiniteBuffer());
+    }
+
     record Decision(
             IjkBufferPolicy.Config config,
             long maxBufferBytes,

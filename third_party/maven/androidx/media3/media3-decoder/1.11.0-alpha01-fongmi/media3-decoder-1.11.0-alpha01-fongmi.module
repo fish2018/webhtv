@@ -35,11 +35,11 @@
         {
           "name": "media3-decoder-1.11.0-alpha01-fongmi.aar",
           "url": "media3-decoder-1.11.0-alpha01-fongmi.aar",
-          "size": 19383,
-          "sha512": "8a5551e3ef590744e712d1dc539d0396a31e00ca9f93c08e41f1e256f81936abdbd977a328adc48c4dc09f9ab340dbcb2590b9b331163424f30f8ae7185a43a0",
-          "sha256": "f4cb0b52774e0c8c85675586c6af4a1331ea959acf379a4170eb5c5f29b237b2",
-          "sha1": "95656dc4a3cb859a64af8dfd22fae0787a4613e9",
-          "md5": "a13064c2dd5abdd82c391391f464e4c8"
+          "size": 19422,
+          "sha512": "bb20f19c3d606beaf50eb862aa1ae41804571a33a51c80e911f16f2e6dafd9b77a284932d8604e05774e7b95cd7810725474c72ec27ce2475d1cbb5433e55254",
+          "sha256": "c3bcd704959026e0d644b0260f9e682a2e26e7357c2cf82d990bcb323f800d49",
+          "sha1": "33b482428b9c56e7b764590cfed58bfe9dfd2acf",
+          "md5": "2d7a3846da49aa8f9ae9481b0cc31353"
         }
       ]
     },
@@ -71,11 +71,11 @@
         {
           "name": "media3-decoder-1.11.0-alpha01-fongmi.aar",
           "url": "media3-decoder-1.11.0-alpha01-fongmi.aar",
-          "size": 19383,
-          "sha512": "8a5551e3ef590744e712d1dc539d0396a31e00ca9f93c08e41f1e256f81936abdbd977a328adc48c4dc09f9ab340dbcb2590b9b331163424f30f8ae7185a43a0",
-          "sha256": "f4cb0b52774e0c8c85675586c6af4a1331ea959acf379a4170eb5c5f29b237b2",
-          "sha1": "95656dc4a3cb859a64af8dfd22fae0787a4613e9",
-          "md5": "a13064c2dd5abdd82c391391f464e4c8"
+          "size": 19422,
+          "sha512": "bb20f19c3d606beaf50eb862aa1ae41804571a33a51c80e911f16f2e6dafd9b77a284932d8604e05774e7b95cd7810725474c72ec27ce2475d1cbb5433e55254",
+          "sha256": "c3bcd704959026e0d644b0260f9e682a2e26e7357c2cf82d990bcb323f800d49",
+          "sha1": "33b482428b9c56e7b764590cfed58bfe9dfd2acf",
+          "md5": "2d7a3846da49aa8f9ae9481b0cc31353"
         }
       ]
     },

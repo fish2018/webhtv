@@ -18,6 +18,9 @@ import androidx.core.content.ContextCompat;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.bean.Update;
+import com.fongmi.android.tv.update.GithubProxy;
+import com.fongmi.android.tv.update.OciMirror;
+import com.fongmi.android.tv.update.UpdateSource;
 import com.fongmi.android.tv.utils.WebViewUtil;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.SpiderDebug;
@@ -723,13 +726,52 @@ public class Setting {
         Prefers.put("update", update);
     }
 
-    public static String getUpdateChannel() {
-        String channel = Prefers.getString("update_channel", Update.CHANNEL_STABLE);
-        return Update.CHANNEL_BETA.equals(channel) ? Update.CHANNEL_BETA : Update.CHANNEL_STABLE;
+    public static String getUpdateSource() {
+        return UpdateSource.normalize(Prefers.getString("update_source", UpdateSource.OCI));
     }
 
-    public static void putUpdateChannel(String channel) {
-        Prefers.put("update_channel", Update.CHANNEL_BETA.equals(channel) ? Update.CHANNEL_BETA : Update.CHANNEL_STABLE);
+    public static void putUpdateSource(String source) {
+        Prefers.put("update_source", UpdateSource.normalize(source));
+    }
+
+    public static String getUpdateGithubProxy() {
+        return GithubProxy.find(Prefers.getString("update_github_proxy", GithubProxy.DIRECT)).id;
+    }
+
+    public static void putUpdateGithubProxy(String proxy) {
+        Prefers.put("update_github_proxy", GithubProxy.find(proxy).id);
+    }
+
+    public static String getUpdateGithubProxyUrl() {
+        return Prefers.getString("update_github_proxy_url");
+    }
+
+    public static void putUpdateGithubProxyUrl(String url) {
+        Prefers.put("update_github_proxy_url", url == null ? "" : url.trim());
+    }
+
+    public static String getUpdateGithubProxyMode() {
+        return GithubProxy.normalizeMode(Prefers.getString("update_github_proxy_mode", GithubProxy.MODE_FULL_URL));
+    }
+
+    public static void putUpdateGithubProxyMode(String mode) {
+        Prefers.put("update_github_proxy_mode", GithubProxy.normalizeMode(mode));
+    }
+
+    public static String getUpdateOciMirror() {
+        return OciMirror.find(Prefers.getString("update_oci_mirror", OciMirror.DEFAULT)).id;
+    }
+
+    public static void putUpdateOciMirror(String mirror) {
+        Prefers.put("update_oci_mirror", OciMirror.find(mirror).id);
+    }
+
+    public static String getUpdateOciMirrorUrl() {
+        return Prefers.getString("update_oci_mirror_url");
+    }
+
+    public static void putUpdateOciMirrorUrl(String url) {
+        Prefers.put("update_oci_mirror_url", url == null ? "" : url.trim());
     }
 
     public static boolean isAdblock() {

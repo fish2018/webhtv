@@ -3,12 +3,140 @@
     "repo": "https://github.com/fish2018/webhtv",
     "branch": "media/release-1.11.0-alpha01-fongmi",
     "commit": "e3e922d5c01bc0b564849940fe589daf37360d15",
-    "version": "1.11.0-alpha01-fongmi"
+    "version": "1.11.0-alpha01-fongmi",
+    "patches": [
+      {
+        "path": "third_party/patches/media3-danmaku-live.patch",
+        "sha256": "c7d3405851c975a7256e363047405e652ec24ffcba39181b5be410b6907db3a5"
+      },
+      {
+        "path": "third_party/patches/media3-dolby-vision-matroska.patch",
+        "sha256": "dda4ab64ac9982377545d23fbcf864d9e9d9308d5be09f86d94efde43a994cce"
+      },
+      {
+        "path": "third_party/patches/media3-upstream-playback-fixes-2026-08.patch",
+        "sha256": "1e09ef63b481af8b69b78c44fc6beea50fd0ae340d149ccf2028dc7804f684b5"
+      },
+      {
+        "path": "third_party/patches/media3-deferred-cues.patch",
+        "sha256": "ebbfbe0bcd1f002780b2db300bdcf42d9c3309c0738b43212ffa224eedcba8dd"
+      },
+      {
+        "path": "third_party/patches/media3-exo-hdr-parser-safety.patch",
+        "sha256": "a6a8bbf95630e70938dacde7e36c97ed330c5c426644893090cfc3280dc6ed20"
+      },
+      {
+        "path": "third_party/patches/media3-exo-pixel-eac3-joc-guard.patch",
+        "sha256": "3c5b6ca8294603a1dfa12404a236513497afd0a78cef938360304c8484f28791"
+      },
+      {
+        "path": "third_party/patches/media3-exo-dts-14bit-frame-size.patch",
+        "sha256": "328fe823b824fd36e359ea16eea4c77334ea707676e9a2803258f29b661e3d77"
+      },
+      {
+        "path": "third_party/patches/media3-exo-subtitle-byte-safety.patch",
+        "sha256": "8ed566a26b70609262d6c49ada2e8912997f36d75a166825e368182b5b7f35bf"
+      },
+      {
+        "path": "third_party/patches/media3-exo-cue-data-contract.patch",
+        "sha256": "a6389e0c34a9a3e895072f84c9ffd13d0c883c5909d8887873717c337066eb61"
+      },
+      {
+        "path": "third_party/patches/media3-exo-bounded-cache-writer.patch",
+        "sha256": "1b591c618fdbba91b0880284126ac8bd5c55f6fe6532187d891b4225a87cc200"
+      },
+      {
+        "path": "third_party/patches/media3-exo-iso-reader-safety.patch",
+        "sha256": "d042b6c177910604f7f251571909d018d0227abc4af7846b15a0b5d499be5893"
+      },
+      {
+        "path": "third_party/patches/media3-exo-iso-multi-extent.patch",
+        "sha256": "b4954d32f5c98dc5caf2a3cbc8cd72f72d24f4fdeec9425e5061a252d1ccaf68"
+      },
+      {
+        "path": "third_party/patches/media3-precache-hls-safety.patch",
+        "sha256": "9b48e895bd3923159f880152a54160e7c937b2b0369d717da559a7ad98fd14f7"
+      }
+    ],
+    "artifact_overrides": [
+      {
+        "coordinate": "androidx.media3:media3-common:1.11.0-alpha01-fongmi",
+        "aar_sha256": "5a4815ab415c0650bc8adaa60e518f32df548ddcfafb43e02381281a96dac6e5",
+        "sources_sha256": "31c38835a729f422ba25835733aa94ac23d8fe6445df2d725a71e46a11d86bfc",
+        "reason": "E4-J1 adds Cue collision/region fields and LetterSpacingSpan data contracts"
+      },
+      {
+        "coordinate": "androidx.media3:media3-container:1.11.0-alpha01-fongmi",
+        "aar_sha256": "32c54bcb6113499267fadd75385d1a69a04eec3fcc34edf11e9bf6012d81ed91",
+        "sources_sha256": "9aee6336465f59a29efcadd5c72b26fd8cdaa3ee4ee88a74ad99de003ddc43b6",
+        "reason": "E2-1 adds Dolby Vision parser version/length safety"
+      },
+      {
+        "coordinate": "androidx.media3:media3-extractor:1.11.0-alpha01-fongmi",
+        "aar_sha256": "59a090bad8efc32552cf5a7ec1d2fb66444168bfbc97bd45e50764527f80c768",
+        "sources_sha256": "9314a303f402e903dd075db5e9babf9be6474da539a4b76bb1ed765b95b6ef4e",
+        "reason": "E-SP2 chained SeekHead/deferred Cues plus E2-1/E3-1b/E4-1/E7-2 extractor behavior"
+      },
+      {
+        "coordinate": "androidx.media3:media3-exoplayer:1.11.0-alpha01-fongmi",
+        "aar_sha256": "cfea29681799509923174cac7ce31b7e944e542db9df58fd56b7a86499a5c07e",
+        "sources_sha256": "83f4f83b4f44e621d52002c161f63fbcb77be6856af4b1e4a4cb0982b04549e1",
+        "reason": "E3-1a/E4-1 baseline plus E7-2 Blu-ray/DVD logical multi-extent routing and E-SP3-B HLS pre-cache request safety"
+      },
+      {
+        "coordinate": "androidx.media3:media3-datasource:1.11.0-alpha01-fongmi",
+        "aar_sha256": "1b6b51e921577cb955db2ce05106a44001ad126b8f4cc67f997d1f3404ec3598",
+        "sources_sha256": "26306314752ff1b4297aea2f25e6ff0213497404564f23af95ec4bb5c25ada62",
+        "reason": "E6-1/E7-1 baseline plus E7-2 multi-extent ISO/UDF virtual data source"
+      }
+    ],
+    "upstream_repo": "https://github.com/FongMi/media.git",
+    "upstream_cherry_picks": [
+      "d1bf079238ae4a36d64f0f3b2129b1944a824317",
+      "8103b046bcc0d7e7b8972e709a8ec1002700c96c",
+      "8465e107ece2bb26d5fb45d8d302559fc8783fd8",
+      "6f542f2fa4ac8bd76b376da79dc84f0f98fff2e3",
+      "7745e47713505609a594d5355426b84d0f679c69",
+      "dad705254f16b5b276bf56929736f461359ca1ee",
+      "b33316303d3ef5ad0ede57cbc9dab6d8ab1e63a6",
+      "bb3d9921f14d900a2e76528f2d97cf82e925a499",
+      "fc38c2cda8789db646ae6a01e06494de059a2495"
+    ],
+    "upstream_partial_dependencies": [
+      {
+        "commit": "2fcf67cc83b295f389c0c9c4c5b5c40615781dcf",
+        "scope": "libraries/common Util.getSystemProperty public API hunk only",
+        "reason": "Required by bb3d9921; the unrelated HE-AAC offload behavior is intentionally excluded"
+      },
+      {
+        "commit": "dd00f94b58b7324ab29febb0b50f3a190d544a3b",
+        "scope": "libraries/datasource CacheWriter bounded read/count/end-position hunks and focused test only",
+        "reason": "E6-1 fixes bounded cache writes; progressive parallel download, DiskPreloadManager, priority setter, and factory/cancel changes are intentionally excluded"
+      },
+      {
+        "commit": "990abc2368fd74779f525ee345734470659f3d53",
+        "scope": "libraries/datasource IsoDataReader zero-length, prefetch bound, open/close, and EOF hunks plus focused tests only",
+        "reason": "E7-1 hardens the existing single-extent ISO reader; multi-extent UDF, virtual data source, and App resolver changes remain isolated to E7-2"
+      }
+    ]
   },
-  "fongmi_nextlib": {
-    "repo": "https://github.com/FongMi/nextlib.git",
-    "branch": "fongmi",
+  "nextlib": {
+    "repo": "https://github.com/anilbeesetti/nextlib.git",
+    "branch": "release/1.10.0-0.12.1",
     "commit": "6ff6cf9d0820382b3c233d018c52e4163b09d345",
-    "version": "1.10.0-0.12.1"
+    "version": "1.10.0-0.12.1-fongmi-softload-av3a-ffmpeg901-r1",
+    "upstream_version": "1.10.0-0.12.1",
+    "patches": [
+      "third_party/patches/nextlib-ffmpeg-soft-load-shedding.patch",
+      "third_party/patches/nextlib-av3a.patch"
+    ],
+    "ffmpeg_repo": "https://github.com/FongMi/FFmpeg.git",
+    "ffmpeg_commit": "177f090e0503b7e013922ca903bde14b1c375f18",
+    "ndk": "28.2.13676358",
+    "cmake": "3.22.1",
+    "abis": [
+      "arm64-v8a",
+      "armeabi-v7a"
+    ]
   }
 }

@@ -1,0 +1,27 @@
+#version 450
+
+// Vulkan core guarantees at least 128 compute invocations per workgroup.
+layout(local_size_x = 16, local_size_y = 8) in;
+
+layout(set = 0, binding = 0) uniform sampler2D source_image;
+layout(set = 0, binding = 1) writeonly uniform image2D target_image;
+
+layout(push_constant) uniform PushConstants {
+    vec2 uv_offset;
+    vec2 uv_scale;
+    ivec2 output_size;
+} params;
+
+void main()
+{
+    ivec2 position = ivec2(gl_GlobalInvocationID.xy);
+    if (any(greaterThanEqual(position, params.output_size)))
+        return;
+
+    // Crop and normalization divisions are precomputed once per frame on the
+    // CPU. Keep the 4K per-pixel path to one multiply and two additions before
+    // the YCbCr sample/store operation.
+    vec2 uv = params.uv_offset +
+              (vec2(position) + vec2(0.5)) * params.uv_scale;
+    imageStore(target_image, position, textureLod(source_image, uv, 0.0));
+}

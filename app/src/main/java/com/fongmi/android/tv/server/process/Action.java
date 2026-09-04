@@ -83,6 +83,7 @@ public class Action implements Process {
             }
             case "sync" -> onSync(params, files);
             case "apk" -> onApk(params, files);
+            case "apk_url" -> onApkUrl(params);
             case "search" -> {
                 onSearch(params);
                 yield Nano.ok();
@@ -240,6 +241,21 @@ public class Action implements Process {
             if (target != null) Path.clear(target);
             SpiderDebug.log("apk-push", e);
             return Nano.error(fi.iki.elonen.NanoHTTPD.Response.Status.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    private Response onApkUrl(Map<String, String> params) {
+        try {
+            Device senderDevice = Device.objectFrom(params.get("device"));
+            String sender = senderDevice == null ? "" : senderDevice.getName();
+            ApkUrlPush.StartResult result = ApkUrlPush.get().start(params.get("url"), sender);
+            if (result == ApkUrlPush.StartResult.BUSY) return Nano.error(Response.Status.CONFLICT, ResUtil.getString(R.string.apk_push_url_busy));
+            return Nano.ok("APK URL accepted");
+        } catch (IllegalArgumentException e) {
+            return Nano.error(Response.Status.BAD_REQUEST, e.getMessage());
+        } catch (Exception e) {
+            SpiderDebug.log("apk-push-url", e);
+            return Nano.error(ResUtil.getString(R.string.apk_push_url_schedule_failed));
         }
     }
 

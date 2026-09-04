@@ -8,6 +8,8 @@ final class ExoPlaybackThresholdCoordinator {
 
     static final long RECOVERY_STABLE_MS = 30_000L;
     static final long RECOVERY_STEP_MS = 15_000L;
+    static final long SEEK_RECOVERY_TIMEOUT_MS = 30_000L;
+    static final int SEEK_START_BUFFER_MS = 1_000;
 
     private static final ExoPlaybackThresholdCoordinator PROCESS =
             new ExoPlaybackThresholdCoordinator();
@@ -103,6 +105,7 @@ final class ExoPlaybackThresholdCoordinator {
                 lastRebufferAtMs,
                 observedRebufferCount,
                 raw.currentlyRebuffering(),
+                state.seekPendingAtMs(),
                 state.lock(),
                 policy);
         return new Update(
@@ -178,7 +181,30 @@ final class ExoPlaybackThresholdCoordinator {
 
     synchronized void endEpisode(PlaybackAutoContext.SessionToken session) {
         if (session == null || !session.equals(state.session())) return;
-        state = state.withLock(null);
+        state = state.withLock(null).withSeekPendingAtMs(0);
+    }
+
+    synchronized void markSeek(
+            PlaybackAutoContext.SessionToken session,
+            long nowElapsedMs) {
+        if (session == null || !session.active()) return;
+        if (!session.equals(state.session())) state = State.begin(session);
+        state = state.withLock(null).withSeekPendingAtMs(
+                Math.max(1, nowElapsedMs));
+    }
+
+    synchronized boolean isSeekPending(
+            PlaybackAutoContext.SessionToken session,
+            long nowElapsedMs) {
+        boolean pending = session != null
+                && session.active()
+                && session.equals(state.session())
+                && state.seekPendingAtMs() > 0;
+        if (!pending) return false;
+        if (Math.max(0, nowElapsedMs) - state.seekPendingAtMs()
+                <= SEEK_RECOVERY_TIMEOUT_MS) return true;
+        state = state.withSeekPendingAtMs(0);
+        return false;
     }
 
     synchronized void disrupt(PlaybackAutoContext.SessionToken session) {
@@ -337,6 +363,7 @@ final class ExoPlaybackThresholdCoordinator {
     }
 
     enum Episode {
+        SEEK("seek"),
         STARTUP("startup"),
         REBUFFER("rebuffer");
 
@@ -417,6 +444,9 @@ final class ExoPlaybackThresholdCoordinator {
         }
 
         int thresholdMs() {
+            if (episode == Episode.SEEK) {
+                return Math.min(SEEK_START_BUFFER_MS, startBufferMs);
+            }
             return episode == Episode.REBUFFER ? rebufferMs : startBufferMs;
         }
     }
@@ -440,6 +470,7 @@ final class ExoPlaybackThresholdCoordinator {
             long lastRebufferAtMs,
             int maxRebufferCount,
             boolean currentlyRebuffering,
+            long seekPendingAtMs,
             EpisodeLock lock,
             ExoPlaybackThresholdPolicy.Decision policy) {
 
@@ -458,6 +489,7 @@ final class ExoPlaybackThresholdCoordinator {
                     -1,
                     0,
                     false,
+                    0,
                     null,
                     null);
         }
@@ -472,7 +504,23 @@ final class ExoPlaybackThresholdCoordinator {
                     lastRebufferAtMs,
                     maxRebufferCount,
                     currentlyRebuffering,
+                    seekPendingAtMs,
                     episodeLock,
+                    policy);
+        }
+
+        State withSeekPendingAtMs(long pendingAtMs) {
+            return new State(
+                    session,
+                    startBufferMs,
+                    rebufferMs,
+                    stableSinceMs,
+                    lastLowerAtMs,
+                    lastRebufferAtMs,
+                    maxRebufferCount,
+                    currentlyRebuffering,
+                    Math.max(0, pendingAtMs),
+                    lock,
                     policy);
         }
 
@@ -486,6 +534,7 @@ final class ExoPlaybackThresholdCoordinator {
                     lastRebufferAtMs,
                     maxRebufferCount,
                     false,
+                    0,
                     null,
                     policy);
         }

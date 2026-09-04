@@ -16,6 +16,7 @@
     <string name="menu_site">站点</string>
     <string name="menu_reset">重置</string>
     <string name="menu_push_apk">推送apk</string>
+    <string name="menu_push_play">推送播放</string>
     <string name="menu_download_config">接口下载</string>
     <string name="config_download_start">开始下载接口…</string>
     <string name="config_download_success">接口已下载到 tvbox/api/%1$s/</string>
@@ -30,6 +31,25 @@
     <string name="apk_push_read_failed">无法读取所选APK</string>
     <string name="apk_push_no_space">存储空间不足，无法准备APK</string>
     <string name="apk_push_receiver_unsupported">接收设备不支持APK推送，请先更新WebHTV</string>
+    <string name="apk_push_method_title">推送 APK</string>
+    <string name="apk_push_method_target">接收设备：%1$s</string>
+    <string name="apk_push_method_local">选择本地 APK</string>
+    <string name="apk_push_method_link">通过链接推送</string>
+    <string name="apk_push_url_target">链接推送 APK · %1$s</string>
+    <string name="apk_push_url_hint">HTTPS APK 链接</string>
+    <string name="apk_push_url_send">发送链接</string>
+    <string name="apk_push_url_required">请输入 HTTPS APK 链接</string>
+    <string name="apk_push_url_invalid">请输入不含账号密码的有效 HTTPS APK 链接</string>
+    <string name="apk_push_url_sent">链接已发送，电视正在下载 APK</string>
+    <string name="apk_push_url_unsupported">接收设备不支持链接推送 APK，请先更新 WebHTV</string>
+    <string name="apk_push_url_failed">APK 链接推送失败</string>
+    <string name="apk_push_url_failed_reason">APK 链接推送失败：%1$s</string>
+    <string name="push_play_select_device">推送播放 · 选择接收设备</string>
+    <string name="push_play_target">推送播放 · %1$s</string>
+    <string name="push_play_url_required">请输入播放地址</string>
+    <string name="push_play_success">播放地址已推送</string>
+    <string name="push_play_failed">播放推送失败</string>
+    <string name="push_play_failed_reason">播放推送失败：%1$s</string>
 
     <!-- Vod -->
     <string name="vod_home">推荐</string>

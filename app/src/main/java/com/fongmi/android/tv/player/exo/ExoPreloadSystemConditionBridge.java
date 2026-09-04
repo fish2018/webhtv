@@ -36,11 +36,6 @@ final class ExoPreloadSystemConditionBridge implements AutoCloseable {
             PlaybackSystemConditionCoordinator.Update update,
             long nowElapsedMs) {
         if (update == null) return null;
-        PlaybackAutoContext.SystemConditionTrigger trigger = update.trigger() == null
-                ? PlaybackAutoContext.SystemConditionTrigger.UNKNOWN : update.trigger();
-        if (trigger == PlaybackAutoContext.SystemConditionTrigger.NETWORK_CALLBACK) {
-            return AutoPreloadPolicy.Reason.NETWORK_CHANGED;
-        }
         PlaybackAutoContext.Fact<PlaybackAutoContext.NetworkSnapshot> networkFact =
                 update.networkSnapshot();
         if (networkFact != null && networkFact.isUsable(nowElapsedMs)) {
@@ -51,18 +46,8 @@ final class ExoPreloadSystemConditionBridge implements AutoCloseable {
             if (Boolean.FALSE.equals(network.validated())) {
                 return AutoPreloadPolicy.Reason.NETWORK_UNVALIDATED;
             }
-            if (Boolean.TRUE.equals(network.roaming())) {
-                return AutoPreloadPolicy.Reason.ROAMING;
-            }
-            if (Boolean.TRUE.equals(network.metered())) {
-                return AutoPreloadPolicy.Reason.METERED;
-            }
             if (network.dataSaverState() == PlaybackAutoContext.DataSaverState.ENABLED) {
                 return AutoPreloadPolicy.Reason.DATA_SAVER;
-            }
-            if (network.dataSaverState()
-                    == PlaybackAutoContext.DataSaverState.WHITELISTED) {
-                return AutoPreloadPolicy.Reason.DATA_SAVER_WHITELISTED;
             }
         }
         PlaybackAutoContext.Fact<PlaybackAutoContext.PowerState> power = update.power();
@@ -72,9 +57,6 @@ final class ExoPreloadSystemConditionBridge implements AutoCloseable {
         }
         PlaybackAutoContext.Fact<PlaybackAutoContext.ThermalState> thermal = update.thermal();
         if (thermal != null && thermal.isUsable(nowElapsedMs)) {
-            if (thermal.value() == PlaybackAutoContext.ThermalState.MODERATE) {
-                return AutoPreloadPolicy.Reason.THERMAL_MODERATE;
-            }
             if (thermal.value() == PlaybackAutoContext.ThermalState.SEVERE
                     || thermal.value() == PlaybackAutoContext.ThermalState.CRITICAL) {
                 return AutoPreloadPolicy.Reason.THERMAL_PRESSURE;

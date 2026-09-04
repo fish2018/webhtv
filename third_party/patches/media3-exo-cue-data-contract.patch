@@ -1,0 +1,594 @@
+diff --git a/libraries/common/src/main/java/androidx/media3/common/text/Cue.java b/libraries/common/src/main/java/androidx/media3/common/text/Cue.java
+index 475eeefe38..74e808c45f 100644
+--- a/libraries/common/src/main/java/androidx/media3/common/text/Cue.java
++++ b/libraries/common/src/main/java/androidx/media3/common/text/Cue.java
+@@ -164,6 +164,23 @@ public final class Cue {
+   /** Vertical left-to-right (e.g. for Mongolian). */
+   public static final int VERTICAL_TYPE_LR = 2;
+ 
++  /** The collision avoidance behavior for this cue. */
++  @Documented
++  @Retention(RetentionPolicy.SOURCE)
++  @Target({FIELD, METHOD, PARAMETER, LOCAL_VARIABLE, TYPE_USE})
++  @IntDef({COLLISION_AVOIDANCE_NONE, COLLISION_AVOIDANCE_UP, COLLISION_AVOIDANCE_DOWN})
++  @UnstableApi
++  public @interface CollisionAvoidance {}
++
++  /** Do not move this cue to avoid collisions. */
++  @UnstableApi public static final int COLLISION_AVOIDANCE_NONE = 0;
++
++  /** Move this cue upward by the minimum distance needed to avoid collisions. */
++  @UnstableApi public static final int COLLISION_AVOIDANCE_UP = 1;
++
++  /** Move this cue downward by the minimum distance needed to avoid collisions. */
++  @UnstableApi public static final int COLLISION_AVOIDANCE_DOWN = 2;
++
+   /**
+    * The cue text, or null if this is an image cue. Note the {@link CharSequence} may be decorated
+    * with styling spans.
+@@ -280,6 +297,15 @@ public final class Cue {
+    */
+   public final float bitmapHeight;
+ 
++  /**
++   * The height of the text region as a fraction of the viewport size, or {@link #DIMEN_UNSET} if
++   * unavailable.
++   *
++   * <p>This describes authored layout metadata. Renderers may still size the cue box to its text
++   * content.
++   */
++  @UnstableApi public final float textRegionHeight;
++
+   /** Specifies whether or not the {@link #windowColor} property is set. */
+   public final boolean windowColorSet;
+ 
+@@ -313,6 +339,9 @@ public final class Cue {
+   /** The Z index for cue, the larger index will render above the smaller index. May be negative. */
+   @UnstableApi public final int zIndex;
+ 
++  /** The collision avoidance behavior for this cue. */
++  @UnstableApi public final @CollisionAvoidance int collisionAvoidance;
++
+   private Cue(
+       @Nullable CharSequence text,
+       @Nullable Alignment textAlignment,
+@@ -327,11 +356,13 @@ public final class Cue {
+       float textSize,
+       float size,
+       float bitmapHeight,
++      float textRegionHeight,
+       boolean windowColorSet,
+       int windowColor,
+       @VerticalType int verticalType,
+       float shearDegrees,
+-      int zIndex) {
++      int zIndex,
++      @CollisionAvoidance int collisionAvoidance) {
+     // Exactly one of text or bitmap should be set.
+     if (text == null) {
+       checkNotNull(bitmap);
+@@ -355,6 +386,7 @@ public final class Cue {
+     this.positionAnchor = positionAnchor;
+     this.size = size;
+     this.bitmapHeight = bitmapHeight;
++    this.textRegionHeight = textRegionHeight;
+     this.windowColorSet = windowColorSet;
+     this.windowColor = windowColor;
+     this.textSizeType = textSizeType;
+@@ -362,6 +394,7 @@ public final class Cue {
+     this.verticalType = verticalType;
+     this.shearDegrees = shearDegrees;
+     this.zIndex = zIndex;
++    this.collisionAvoidance = collisionAvoidance;
+   }
+ 
+   /** Returns a new {@link Cue.Builder} initialized with the same values as this Cue. */
+@@ -392,13 +425,15 @@ public final class Cue {
+         && positionAnchor == that.positionAnchor
+         && size == that.size
+         && bitmapHeight == that.bitmapHeight
++        && textRegionHeight == that.textRegionHeight
+         && windowColorSet == that.windowColorSet
+         && windowColor == that.windowColor
+         && textSizeType == that.textSizeType
+         && textSize == that.textSize
+         && verticalType == that.verticalType
+         && shearDegrees == that.shearDegrees
+-        && zIndex == that.zIndex;
++        && zIndex == that.zIndex
++        && collisionAvoidance == that.collisionAvoidance;
+   }
+ 
+   @Override
+@@ -415,13 +450,15 @@ public final class Cue {
+         positionAnchor,
+         size,
+         bitmapHeight,
++        textRegionHeight,
+         windowColorSet,
+         windowColor,
+         textSizeType,
+         textSize,
+         verticalType,
+         shearDegrees,
+-        zIndex);
++        zIndex,
++        collisionAvoidance);
+   }
+ 
+   /** A builder for {@link Cue} objects. */
+@@ -440,11 +477,13 @@ public final class Cue {
+     private float textSize;
+     private float size;
+     private float bitmapHeight;
++    private float textRegionHeight;
+     private boolean windowColorSet;
+     @ColorInt private int windowColor;
+     private @VerticalType int verticalType;
+     private float shearDegrees;
+     private int zIndex;
++    private @CollisionAvoidance int collisionAvoidance;
+ 
+     public Builder() {
+       text = null;
+@@ -460,9 +499,11 @@ public final class Cue {
+       textSize = DIMEN_UNSET;
+       size = DIMEN_UNSET;
+       bitmapHeight = DIMEN_UNSET;
++      textRegionHeight = DIMEN_UNSET;
+       windowColorSet = false;
+       windowColor = Color.BLACK;
+       verticalType = TYPE_UNSET;
++      collisionAvoidance = COLLISION_AVOIDANCE_NONE;
+     }
+ 
+     private Builder(Cue cue) {
+@@ -479,11 +520,13 @@ public final class Cue {
+       textSize = cue.textSize;
+       size = cue.size;
+       bitmapHeight = cue.bitmapHeight;
++      textRegionHeight = cue.textRegionHeight;
+       windowColorSet = cue.windowColorSet;
+       windowColor = cue.windowColor;
+       verticalType = cue.verticalType;
+       shearDegrees = cue.shearDegrees;
+       zIndex = cue.zIndex;
++      collisionAvoidance = cue.collisionAvoidance;
+     }
+ 
+     /**
+@@ -752,6 +795,27 @@ public final class Cue {
+       return bitmapHeight;
+     }
+ 
++    /**
++     * Sets the height of the text region as a fraction of the viewport size.
++     *
++     * @see Cue#textRegionHeight
++     */
++    @CanIgnoreReturnValue
++    public Builder setTextRegionHeight(float textRegionHeight) {
++      this.textRegionHeight = textRegionHeight;
++      return this;
++    }
++
++    /**
++     * Gets the height of the text region as a fraction of the viewport size.
++     *
++     * @see Cue#textRegionHeight
++     */
++    @Pure
++    public float getTextRegionHeight() {
++      return textRegionHeight;
++    }
++
+     /**
+      * Sets the fill color of the window.
+      *
+@@ -835,6 +899,19 @@ public final class Cue {
+       return zIndex;
+     }
+ 
++    /** Sets the collision avoidance behavior for this Cue. */
++    @CanIgnoreReturnValue
++    public Builder setCollisionAvoidance(@CollisionAvoidance int collisionAvoidance) {
++      this.collisionAvoidance = collisionAvoidance;
++      return this;
++    }
++
++    /** Gets the collision avoidance behavior for this Cue. */
++    @Pure
++    public @CollisionAvoidance int getCollisionAvoidance() {
++      return collisionAvoidance;
++    }
++
+     /** Build the cue. */
+     public Cue build() {
+       return new Cue(
+@@ -851,11 +928,13 @@ public final class Cue {
+           textSize,
+           size,
+           bitmapHeight,
++          textRegionHeight,
+           windowColorSet,
+           windowColor,
+           verticalType,
+           shearDegrees,
+-          zIndex);
++          zIndex,
++          collisionAvoidance);
+     }
+   }
+ 
+@@ -879,6 +958,8 @@ public final class Cue {
+   private static final String FIELD_VERTICAL_TYPE = Util.intToStringMaxRadix(15);
+   private static final String FIELD_SHEAR_DEGREES = Util.intToStringMaxRadix(16);
+   private static final String FIELD_Z_INDEX = Util.intToStringMaxRadix(19);
++  private static final String FIELD_COLLISION_AVOIDANCE = Util.intToStringMaxRadix(20);
++  private static final String FIELD_TEXT_REGION_HEIGHT = Util.intToStringMaxRadix(21);
+ 
+   /**
+    * Returns a {@link Bundle} that can be serialized to bytes.
+@@ -950,11 +1031,13 @@ public final class Cue {
+     bundle.putFloat(FIELD_TEXT_SIZE, textSize);
+     bundle.putFloat(FIELD_SIZE, size);
+     bundle.putFloat(FIELD_BITMAP_HEIGHT, bitmapHeight);
++    bundle.putFloat(FIELD_TEXT_REGION_HEIGHT, textRegionHeight);
+     bundle.putBoolean(FIELD_WINDOW_COLOR_SET, windowColorSet);
+     bundle.putInt(FIELD_WINDOW_COLOR, windowColor);
+     bundle.putInt(FIELD_VERTICAL_TYPE, verticalType);
+     bundle.putFloat(FIELD_SHEAR_DEGREES, shearDegrees);
+     bundle.putInt(FIELD_Z_INDEX, zIndex);
++    bundle.putInt(FIELD_COLLISION_AVOIDANCE, collisionAvoidance);
+     return bundle;
+   }
+ 
+@@ -1015,6 +1098,9 @@ public final class Cue {
+     if (bundle.containsKey(FIELD_BITMAP_HEIGHT)) {
+       builder.setBitmapHeight(bundle.getFloat(FIELD_BITMAP_HEIGHT));
+     }
++    if (bundle.containsKey(FIELD_TEXT_REGION_HEIGHT)) {
++      builder.setTextRegionHeight(bundle.getFloat(FIELD_TEXT_REGION_HEIGHT));
++    }
+     if (bundle.containsKey(FIELD_WINDOW_COLOR)) {
+       builder.setWindowColor(bundle.getInt(FIELD_WINDOW_COLOR));
+     }
+@@ -1030,6 +1116,9 @@ public final class Cue {
+     if (bundle.containsKey(FIELD_Z_INDEX)) {
+       builder.setZIndex(bundle.getInt(FIELD_Z_INDEX));
+     }
++    if (bundle.containsKey(FIELD_COLLISION_AVOIDANCE)) {
++      builder.setCollisionAvoidance(bundle.getInt(FIELD_COLLISION_AVOIDANCE));
++    }
+     return builder.build();
+   }
+ }
+diff --git a/libraries/common/src/main/java/androidx/media3/common/text/CustomSpanBundler.java b/libraries/common/src/main/java/androidx/media3/common/text/CustomSpanBundler.java
+index 31292eeb14..cc6d1c5524 100644
+--- a/libraries/common/src/main/java/androidx/media3/common/text/CustomSpanBundler.java
++++ b/libraries/common/src/main/java/androidx/media3/common/text/CustomSpanBundler.java
+@@ -46,7 +46,14 @@ import java.util.ArrayList;
+   @Documented
+   @Retention(RetentionPolicy.SOURCE)
+   @Target({TYPE_USE})
+-  @IntDef({UNKNOWN, RUBY, TEXT_EMPHASIS, HORIZONTAL_TEXT_IN_VERTICAL_CONTEXT, VOICE})
++  @IntDef({
++    UNKNOWN,
++    RUBY,
++    TEXT_EMPHASIS,
++    HORIZONTAL_TEXT_IN_VERTICAL_CONTEXT,
++    VOICE,
++    LETTER_SPACING
++  })
+   private @interface CustomSpanType {}
+ 
+   private static final int UNKNOWN = -1;
+@@ -59,6 +66,8 @@ import java.util.ArrayList;
+ 
+   private static final int VOICE = 4;
+ 
++  private static final int LETTER_SPACING = 5;
++
+   private static final String FIELD_START_INDEX = Util.intToStringMaxRadix(0);
+   private static final String FIELD_END_INDEX = Util.intToStringMaxRadix(1);
+   private static final String FIELD_FLAGS = Util.intToStringMaxRadix(2);
+@@ -89,6 +98,12 @@ import java.util.ArrayList;
+           spanToBundle(text, span, /* spanType= */ VOICE, /* params= */ span.toBundle());
+       bundledCustomSpans.add(bundle);
+     }
++    for (LetterSpacingSpan span : text.getSpans(0, text.length(), LetterSpacingSpan.class)) {
++      Bundle bundle =
++          spanToBundle(
++              text, span, /* spanType= */ LETTER_SPACING, /* params= */ span.toBundle());
++      bundledCustomSpans.add(bundle);
++    }
+     return bundledCustomSpans;
+   }
+ 
+@@ -111,6 +126,9 @@ import java.util.ArrayList;
+       case VOICE:
+         text.setSpan(VoiceSpan.fromBundle(checkNotNull(span)), start, end, flags);
+         break;
++      case LETTER_SPACING:
++        text.setSpan(LetterSpacingSpan.fromBundle(checkNotNull(span)), start, end, flags);
++        break;
+       default:
+         break;
+     }
+diff --git a/libraries/common/src/main/java/androidx/media3/common/text/LetterSpacingSpan.java b/libraries/common/src/main/java/androidx/media3/common/text/LetterSpacingSpan.java
+new file mode 100644
+index 0000000000..e988244520
+--- /dev/null
++++ b/libraries/common/src/main/java/androidx/media3/common/text/LetterSpacingSpan.java
+@@ -0,0 +1,86 @@
++/*
++ * Copyright 2026 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package androidx.media3.common.text;
++
++import android.os.Bundle;
++import android.text.TextPaint;
++import android.text.style.MetricAffectingSpan;
++import androidx.media3.common.util.UnstableApi;
++import androidx.media3.common.util.Util;
++
++/** A span that adds space between characters in pixels or em. */
++@UnstableApi
++public final class LetterSpacingSpan extends MetricAffectingSpan {
++
++  private static final String FIELD_LETTER_SPACING_PIXELS = Util.intToStringMaxRadix(0);
++  private static final String FIELD_LETTER_SPACING_EM = Util.intToStringMaxRadix(1);
++
++  /** The extra spacing between characters in pixels, or {@link Float#NaN} if specified in em. */
++  public final float letterSpacingPixels;
++
++  private final float letterSpacingEm;
++
++  public LetterSpacingSpan(float letterSpacingPixels) {
++    this(letterSpacingPixels, Float.NaN);
++  }
++
++  private LetterSpacingSpan(float letterSpacingPixels, float letterSpacingEm) {
++    this.letterSpacingPixels = letterSpacingPixels;
++    this.letterSpacingEm = letterSpacingEm;
++  }
++
++  /** Creates a span with extra spacing measured in em. */
++  public static LetterSpacingSpan createFromEm(float letterSpacingEm) {
++    return new LetterSpacingSpan(Float.NaN, letterSpacingEm);
++  }
++
++  @Override
++  public void updateDrawState(TextPaint textPaint) {
++    apply(textPaint);
++  }
++
++  @Override
++  public void updateMeasureState(TextPaint textPaint) {
++    apply(textPaint);
++  }
++
++  public Bundle toBundle() {
++    Bundle bundle = new Bundle();
++    if (Float.isNaN(letterSpacingEm)) {
++      bundle.putFloat(FIELD_LETTER_SPACING_PIXELS, letterSpacingPixels);
++    } else {
++      bundle.putFloat(FIELD_LETTER_SPACING_EM, letterSpacingEm);
++    }
++    return bundle;
++  }
++
++  public static LetterSpacingSpan fromBundle(Bundle bundle) {
++    return bundle.containsKey(FIELD_LETTER_SPACING_EM)
++        ? createFromEm(bundle.getFloat(FIELD_LETTER_SPACING_EM))
++        : new LetterSpacingSpan(bundle.getFloat(FIELD_LETTER_SPACING_PIXELS));
++  }
++
++  private void apply(TextPaint textPaint) {
++    if (!Float.isNaN(letterSpacingEm)) {
++      textPaint.setLetterSpacing(letterSpacingEm);
++      return;
++    }
++    float textSize = textPaint.getTextSize();
++    if (textSize > 0) {
++      textPaint.setLetterSpacing(letterSpacingPixels / textSize);
++    }
++  }
++}
+diff --git a/libraries/common/src/test/java/androidx/media3/common/text/CueTest.java b/libraries/common/src/test/java/androidx/media3/common/text/CueTest.java
+index 0850ebf10c..627be8380b 100644
+--- a/libraries/common/src/test/java/androidx/media3/common/text/CueTest.java
++++ b/libraries/common/src/test/java/androidx/media3/common/text/CueTest.java
+@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
+ 
+ import android.graphics.Bitmap;
+ import android.graphics.Color;
++import android.os.Bundle;
+ import android.text.Layout;
+ import android.text.SpannedString;
+ import androidx.test.ext.junit.runners.AndroidJUnit4;
+@@ -47,6 +48,8 @@ public class CueTest {
+             .setWindowColor(Color.CYAN)
+             .setVerticalType(Cue.VERTICAL_TYPE_RL)
+             .setShearDegrees(-15f)
++            .setTextRegionHeight(0.6f)
++            .setCollisionAvoidance(Cue.COLLISION_AVOIDANCE_DOWN)
+             .build();
+ 
+     Cue modifiedCue = cue.buildUpon().build();
+@@ -65,6 +68,8 @@ public class CueTest {
+     assertThat(cue.windowColorSet).isTrue();
+     assertThat(cue.verticalType).isEqualTo(Cue.VERTICAL_TYPE_RL);
+     assertThat(cue.shearDegrees).isEqualTo(-15f);
++    assertThat(cue.textRegionHeight).isEqualTo(0.6f);
++    assertThat(cue.collisionAvoidance).isEqualTo(Cue.COLLISION_AVOIDANCE_DOWN);
+ 
+     assertThat(modifiedCue.text).isSameInstanceAs(cue.text);
+     assertThat(modifiedCue.textAlignment).isEqualTo(cue.textAlignment);
+@@ -80,6 +85,36 @@ public class CueTest {
+     assertThat(modifiedCue.windowColorSet).isEqualTo(cue.windowColorSet);
+     assertThat(modifiedCue.verticalType).isEqualTo(cue.verticalType);
+     assertThat(modifiedCue.shearDegrees).isEqualTo(cue.shearDegrees);
++    assertThat(modifiedCue.textRegionHeight).isEqualTo(cue.textRegionHeight);
++    assertThat(modifiedCue.collisionAvoidance).isEqualTo(cue.collisionAvoidance);
++  }
++
++  @Test
++  public void newFieldsDefaultAndOldBundleRemainCompatible() {
++    Cue cue = new Cue.Builder().setText("text").build();
++
++    assertThat(cue.textRegionHeight).isEqualTo(Cue.DIMEN_UNSET);
++    assertThat(cue.collisionAvoidance).isEqualTo(Cue.COLLISION_AVOIDANCE_NONE);
++
++    Bundle oldBundle = new Bundle();
++    oldBundle.putCharSequence("0", "text");
++    Cue cueFromOldBundle = Cue.fromBundle(oldBundle);
++    assertThat(cueFromOldBundle.textRegionHeight).isEqualTo(Cue.DIMEN_UNSET);
++    assertThat(cueFromOldBundle.collisionAvoidance).isEqualTo(Cue.COLLISION_AVOIDANCE_NONE);
++  }
++
++  @Test
++  public void newFieldsRoundTripThroughAllBundleTypes() {
++    Cue cue =
++        new Cue.Builder()
++            .setText("text")
++            .setTextRegionHeight(0.25f)
++            .setCollisionAvoidance(Cue.COLLISION_AVOIDANCE_UP)
++            .build();
++
++    assertThat(Cue.fromBundle(cue.toBinderBasedBundle())).isEqualTo(cue);
++    assertThat(Cue.fromBundle(cue.toSerializableBundle())).isEqualTo(cue);
++    assertThat(Cue.fromBundle(cue.toBundle())).isEqualTo(cue);
+   }
+ 
+   @Test
+diff --git a/libraries/common/src/test/java/androidx/media3/common/text/CustomCueBundlerTest.java b/libraries/common/src/test/java/androidx/media3/common/text/CustomCueBundlerTest.java
+index 5f7a1bd08a..f20ebe2e4b 100644
+--- a/libraries/common/src/test/java/androidx/media3/common/text/CustomCueBundlerTest.java
++++ b/libraries/common/src/test/java/androidx/media3/common/text/CustomCueBundlerTest.java
+@@ -52,12 +52,18 @@ public class CustomCueBundlerTest {
+           TextAnnotation.POSITION_AFTER);
+   private static final HorizontalTextInVerticalContextSpan
+       HORIZONTAL_TEXT_IN_VERTICAL_CONTEXT_SPAN = new HorizontalTextInVerticalContextSpan();
++  private static final LetterSpacingSpan LETTER_SPACING_PIXELS_SPAN = new LetterSpacingSpan(2f);
++  private static final LetterSpacingSpan LETTER_SPACING_EM_SPAN =
++      LetterSpacingSpan.createFromEm(0.1f);
+   private static final ImmutableMap<Object, Pair<Integer, Integer>> ALL_SPANS_TO_START_END_INDEX =
+-      ImmutableMap.of(
+-          RUBY_SPAN, new Pair<>(1, 2),
+-          TEXT_EMPHASIS_SPAN, new Pair<>(2, 3),
+-          HORIZONTAL_TEXT_IN_VERTICAL_CONTEXT_SPAN, new Pair<>(5, 7),
+-          VOICE_SPAN, new Pair<>(8, 10));
++      ImmutableMap.<Object, Pair<Integer, Integer>>builder()
++          .put(RUBY_SPAN, new Pair<>(1, 2))
++          .put(TEXT_EMPHASIS_SPAN, new Pair<>(2, 3))
++          .put(HORIZONTAL_TEXT_IN_VERTICAL_CONTEXT_SPAN, new Pair<>(5, 7))
++          .put(VOICE_SPAN, new Pair<>(8, 10))
++          .put(LETTER_SPACING_PIXELS_SPAN, new Pair<>(9, 10))
++          .put(LETTER_SPACING_EM_SPAN, new Pair<>(10, 11))
++          .build();
+ 
+   @Test
+   public void serializingSpannableWithAllCustomSpans() {
+@@ -99,6 +105,10 @@ public class CustomCueBundlerTest {
+             ALL_SPANS_TO_START_END_INDEX.get(VOICE_SPAN).first,
+             ALL_SPANS_TO_START_END_INDEX.get(VOICE_SPAN).second)
+         .withName(VOICE_SPAN.name);
++    LetterSpacingSpan[] spans = result.getSpans(0, result.length(), LetterSpacingSpan.class);
++    assertThat(spans).hasLength(2);
++    assertThat(spans[0].toBundle()).isNotNull();
++    assertThat(spans[1].toBundle()).isNotNull();
+   }
+ 
+   @Test
+diff --git a/libraries/common/src/test/java/androidx/media3/common/text/LetterSpacingSpanTest.java b/libraries/common/src/test/java/androidx/media3/common/text/LetterSpacingSpanTest.java
+new file mode 100644
+index 0000000000..ee636886e6
+--- /dev/null
++++ b/libraries/common/src/test/java/androidx/media3/common/text/LetterSpacingSpanTest.java
+@@ -0,0 +1,73 @@
++/*
++ * Copyright 2026 The Android Open Source Project
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package androidx.media3.common.text;
++
++import static com.google.common.truth.Truth.assertThat;
++
++import android.text.TextPaint;
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++
++/** Tests for {@link LetterSpacingSpan}. */
++@RunWith(AndroidJUnit4.class)
++public class LetterSpacingSpanTest {
++
++  @Test
++  public void pixelSpacingUsesCurrentTextSize() {
++    TextPaint textPaint = new TextPaint();
++    textPaint.setTextSize(10f);
++
++    new LetterSpacingSpan(2f).updateMeasureState(textPaint);
++
++    assertThat(textPaint.getLetterSpacing()).isWithin(0.0001f).of(0.2f);
++  }
++
++  @Test
++  public void negativePixelSpacingIsPreserved() {
++    TextPaint textPaint = new TextPaint();
++    textPaint.setTextSize(10f);
++
++    new LetterSpacingSpan(-2f).updateDrawState(textPaint);
++
++    assertThat(textPaint.getLetterSpacing()).isWithin(0.0001f).of(-0.2f);
++  }
++
++  @Test
++  public void emSpacingIsAppliedDirectly() {
++    TextPaint textPaint = new TextPaint();
++    textPaint.setTextSize(10f);
++
++    LetterSpacingSpan.createFromEm(0.15f).updateMeasureState(textPaint);
++
++    assertThat(textPaint.getLetterSpacing()).isWithin(0.0001f).of(0.15f);
++  }
++
++  @Test
++  public void bundleRoundTripPreservesPixelAndEmSpacing() {
++    TextPaint pixelPaint = new TextPaint();
++    pixelPaint.setTextSize(8f);
++    TextPaint emPaint = new TextPaint();
++
++    LetterSpacingSpan.fromBundle(new LetterSpacingSpan(2f).toBundle())
++        .updateMeasureState(pixelPaint);
++    LetterSpacingSpan.fromBundle(LetterSpacingSpan.createFromEm(0.25f).toBundle())
++        .updateMeasureState(emPaint);
++
++    assertThat(pixelPaint.getLetterSpacing()).isWithin(0.0001f).of(0.25f);
++    assertThat(emPaint.getLetterSpacing()).isWithin(0.0001f).of(0.25f);
++  }
++}

@@ -1,0 +1,166 @@
+diff --git a/libavcodec/mediacodecdec.c b/libavcodec/mediacodecdec.c
+index 3c9ae286e9..c82b532406 100644
+--- a/libavcodec/mediacodecdec.c
++++ b/libavcodec/mediacodecdec.c
+@@ -34,6 +34,7 @@
+ #include "libavutil/pixdesc.h"
+ #include "libavutil/pixfmt.h"
+ #include "libavutil/internal.h"
++#include "libavutil/time.h"
+ 
+ #include "avcodec.h"
+ #include "codec_internal.h"
+@@ -66,6 +67,15 @@ typedef struct MediaCodecH264DecContext {
+     int operating_rate;
+     int dovi_sink_support;
+     int dovi_gpu_mapping_support;
++    int64_t port_wait_window_start_us;
++    int64_t port_wait_total_us;
++    int64_t port_wait_max_us;
++    int64_t port_wait_episode_total_us;
++    int64_t port_wait_episode_max_us;
++    int port_wait_events;
++    int port_wait_retries;
++    int port_wait_episode_count;
++    int port_wait_episode_over_50ms;
+ 
+ #if CONFIG_HEVC_MEDIACODEC_DECODER
+     HEVCParamSets hevc_ps;
+@@ -76,6 +86,65 @@ typedef struct MediaCodecH264DecContext {
+ #endif
+ } MediaCodecH264DecContext;
+ 
++#define MEDIACODEC_PORT_RETRY_TIMEOUT_US 8000
++#define MEDIACODEC_PORT_STARVATION_TIMEOUT_US 750000
++#define MEDIACODEC_PORT_STATS_INTERVAL_US 5000000
++
++static void mediacodec_record_port_wait(AVCodecContext *avctx,
++                                        MediaCodecH264DecContext *s,
++                                        int64_t wait_us,
++                                        int new_event,
++                                        int retry,
++                                        int64_t episode_us)
++{
++    int64_t now_us = av_gettime_relative();
++    if (s->port_wait_window_start_us <= 0)
++        s->port_wait_window_start_us = now_us;
++    if (new_event)
++        s->port_wait_events++;
++    if (retry)
++        s->port_wait_retries++;
++    if (wait_us > 0) {
++        s->port_wait_total_us += wait_us;
++        s->port_wait_max_us = FFMAX(s->port_wait_max_us, wait_us);
++    }
++    if (episode_us > 0) {
++        s->port_wait_episode_count++;
++        s->port_wait_episode_total_us += episode_us;
++        s->port_wait_episode_max_us = FFMAX(s->port_wait_episode_max_us,
++                                            episode_us);
++        if (episode_us >= 50000)
++            s->port_wait_episode_over_50ms++;
++    }
++    if (now_us - s->port_wait_window_start_us <
++        MEDIACODEC_PORT_STATS_INTERVAL_US)
++        return;
++    if (s->port_wait_total_us > 0) {
++        av_log(avctx, AV_LOG_WARNING,
++               "MediaCodec port backpressure: events=%d retries=%d "
++               "wait=%lld us max-step=%lld us episodes=%d avg=%lld us "
++               "max=%lld us over50ms=%d\n",
++               s->port_wait_events, s->port_wait_retries,
++               (long long)s->port_wait_total_us,
++               (long long)s->port_wait_max_us,
++               s->port_wait_episode_count,
++               (long long)(s->port_wait_episode_count > 0
++                   ? s->port_wait_episode_total_us /
++                       s->port_wait_episode_count : 0),
++               (long long)s->port_wait_episode_max_us,
++               s->port_wait_episode_over_50ms);
++    }
++    s->port_wait_window_start_us = now_us;
++    s->port_wait_total_us = 0;
++    s->port_wait_max_us = 0;
++    s->port_wait_episode_total_us = 0;
++    s->port_wait_episode_max_us = 0;
++    s->port_wait_events = 0;
++    s->port_wait_retries = 0;
++    s->port_wait_episode_count = 0;
++    s->port_wait_episode_over_50ms = 0;
++}
++
+ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
+ {
+     MediaCodecH264DecContext *s = avctx->priv_data;
+@@ -830,6 +899,8 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+ {
+     MediaCodecH264DecContext *s = avctx->priv_data;
+     const AVFrame *frame_props = NULL;
++    int64_t port_starvation_start_us = AV_NOPTS_VALUE;
++    int64_t port_starvation_last_us = AV_NOPTS_VALUE;
+     int ret;
+     ssize_t index;
+ 
+@@ -855,7 +926,10 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     while (1) {
+         if (s->ctx->current_input_buffer < 0 && !s->ctx->draining) {
+             /* poll for input space */
+-            index = ff_AMediaCodec_dequeueInputBuffer(s->ctx->codec, 0);
++            index = ff_AMediaCodec_dequeueInputBuffer(
++                s->ctx->codec,
++                port_starvation_start_us == AV_NOPTS_VALUE
++                    ? 0 : MEDIACODEC_PORT_RETRY_TIMEOUT_US);
+             if (index < 0) {
+                 /* no space, block for an output frame to appear */
+                 ret = ff_mediacodec_dec_receive(avctx, s->ctx, frame, true);
+@@ -865,11 +939,49 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+                  * return EAGAIN, which violate the design.
+                  */
+                 if (ff_AMediaCodec_infoTryAgainLater(s->ctx->codec, index) &&
+-                    ret == AVERROR(EAGAIN))
++                    ret == AVERROR(EAGAIN)) {
++                    int64_t now_us = av_gettime_relative();
++                    if (port_starvation_start_us == AV_NOPTS_VALUE) {
++                        port_starvation_start_us = now_us;
++                        port_starvation_last_us = now_us;
++                        mediacodec_record_port_wait(avctx, s, 0, 1, 0, 0);
++                    } else if (now_us - port_starvation_start_us >=
++                               MEDIACODEC_PORT_STARVATION_TIMEOUT_US) {
++                        mediacodec_record_port_wait(
++                            avctx, s, now_us - port_starvation_last_us,
++                            0, 1, now_us - port_starvation_start_us);
++                        av_log(avctx, AV_LOG_ERROR,
++                               "MediaCodec input and output ports remained "
++                               "unavailable for %d ms; failing hardware "
++                               "decode so the player can fall back\n",
++                               MEDIACODEC_PORT_STARVATION_TIMEOUT_US / 1000);
++                        return AVERROR_EXTERNAL;
++                    } else {
++                        mediacodec_record_port_wait(avctx, s,
++                                                   now_us - port_starvation_last_us,
++                                                   0, 1, 0);
++                        port_starvation_last_us = now_us;
++                    }
+                     continue;
++                }
++                if (port_starvation_start_us != AV_NOPTS_VALUE) {
++                    int64_t now_us = av_gettime_relative();
++                    mediacodec_record_port_wait(
++                        avctx, s, now_us - port_starvation_last_us,
++                        0, 0, now_us - port_starvation_start_us);
++                }
+                 return ret;
+             }
++            if (port_starvation_last_us != AV_NOPTS_VALUE) {
++                int64_t now_us = av_gettime_relative();
++                mediacodec_record_port_wait(avctx, s,
++                                           now_us - port_starvation_last_us,
++                                           0, 0,
++                                           now_us - port_starvation_start_us);
++            }
+             s->ctx->current_input_buffer = index;
++            port_starvation_start_us = AV_NOPTS_VALUE;
++            port_starvation_last_us = AV_NOPTS_VALUE;
+         }
+ 
+         /* try to flush any buffered packet data */

@@ -34,8 +34,14 @@ public class LutDialog {
             applyChange(player, callback);
             return strengthText(context);
         }, which -> {
-            LutSetting.select(which == 0 ? null : presets.get(which - 1));
-            applyChange(player, callback);
+            LutPreset preset = which == 0 ? null : presets.get(which - 1);
+            if (player != null) {
+                if (!player.selectLut(preset, false)) return;
+                if (callback != null) callback.run();
+            } else {
+                LutSetting.select(preset);
+                applyChange(null, callback);
+            }
         });
     }
 

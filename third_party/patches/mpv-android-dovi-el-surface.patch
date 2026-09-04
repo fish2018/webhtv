@@ -1,0 +1,57 @@
+diff --git a/player/loadfile.c b/player/loadfile.c
+index d6f44c8a..a0211382 100644
+--- a/player/loadfile.c
++++ b/player/loadfile.c
+@@ -1602,4 +1602,6 @@ done:
+ // Match enhancement-layer selection and pairing to the active video output.
+-// Native Dolby Vision consumes the original bitstream directly; GPU output
+-// needs the dependent EL stream selected and paired with decoded BL frames.
++// Native Dolby Vision consumes the original bitstream directly. GPU metadata
++// mapping and decoding a second enhancement layer are separate capabilities:
++// Android AImageReader currently exposes only one producer Surface, so a VO
++// must explicitly advertise that it can consume an independently decoded EL.
+ void update_vo_chain_el_state(struct MPContext *mpctx)
+@@ -1612,6 +1614,16 @@ void update_vo_chain_el_state(struct MPContext *mpctx)
+     struct sh_stream *el =
+         track ? sh_stream_dependent_sibling(track->stream) : NULL;
+-    bool use_el = el && !is_android_dolby_vision_direct_output_active(mpctx);
+-
++    bool direct_dovi =
++        is_android_dolby_vision_direct_output_active(mpctx);
++    bool gpu_dovi_el = mpctx->video_out &&
++        (mpctx->video_out->driver->caps & VO_CAP_GPU_DOVI_EL);
++    bool use_el = el && !direct_dovi && gpu_dovi_el;
++
++    if (el && !direct_dovi && !gpu_dovi_el) {
++        MP_VERBOSE(mpctx, "Dolby Vision enhancement layer disabled: active "
++                           "video output has no queue-safe EL decoder; "
++                           "rendering the base layer only.\n");
++    }
++
+     if (el) {
+         double pts = get_current_time(mpctx);
+diff --git a/video/out/vo.h b/video/out/vo.h
+index a1d4d22a..302ea423 100644
+--- a/video/out/vo.h
++++ b/video/out/vo.h
+@@ -217,4 +217,7 @@ enum {
+     VO_CAP_NATIVE_DOVI  = 1 << 8,
+     // VO can apply Dolby Vision metadata to raw GPU-mapped decoder output.
+     VO_CAP_GPU_DOVI     = 1 << 9,
++    // VO can safely consume a separately decoded Dolby Vision enhancement
++    // layer in addition to the base layer.
++    VO_CAP_GPU_DOVI_EL  = 1 << 10,
+ };
+diff --git a/video/out/vo_gpu_next.c b/video/out/vo_gpu_next.c
+index cd40793b..49dddd50 100644
+--- a/video/out/vo_gpu_next.c
++++ b/video/out/vo_gpu_next.c
+@@ -3178,5 +3178,8 @@ const struct vo_driver video_out_gpu_next = {
+             VO_CAP_FILM_GRAIN |
+             VO_CAP_VFLIP |
+             VO_CAP_GPU_DOVI |
++#if !HAVE_ANDROID
++            VO_CAP_GPU_DOVI_EL |
++#endif
+             0x0,
+     .preinit = preinit,

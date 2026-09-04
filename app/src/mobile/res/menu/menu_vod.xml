@@ -53,6 +53,11 @@
                 android:title="@string/menu_push_apk" />
 
             <item
+                android:id="@+id/push_play"
+                android:icon="@drawable/ic_popup_push"
+                android:title="@string/menu_push_play" />
+
+            <item
                 android:id="@+id/download_config"
                 android:icon="@drawable/ic_sync_download"
                 android:title="@string/menu_download_config" />

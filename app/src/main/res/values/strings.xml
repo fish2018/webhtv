@@ -765,6 +765,19 @@
     <string name="sync_select_device_first">Select a device first</string>
     <string name="sync_failed_with_reason">Sync failed: %1$s</string>
     <string name="sync_receive_success">Sync data received</string>
+    <string name="apk_push_url_busy">Another APK link download is already active</string>
+    <string name="apk_push_url_schedule_failed">Unable to start the APK link download</string>
+    <string name="apk_push_url_downloading">APK link received. Downloading on this device...</string>
+    <string name="apk_push_url_install_ready">APK downloaded. Confirm installation.</string>
+    <string name="apk_push_url_download_failed">APK link download failed: %1$s</string>
+    <string name="apk_push_url_progress_title">Receiving APK</string>
+    <string name="apk_push_url_progress_hint">Downloading the APK sent over your LAN. Android will still ask you to confirm installation.</string>
+    <string name="apk_push_url_progress_known">Receiving %1$d%% · %2$s / %3$s</string>
+    <string name="apk_push_url_progress_unknown">Received %1$s</string>
+    <string name="apk_push_url_progress_detail_remaining">%1$s/s · %2$s left · %3$s elapsed</string>
+    <string name="apk_push_url_progress_detail">%1$s/s · %2$s elapsed</string>
+    <string name="apk_push_url_cancel">Cancel download</string>
+    <string name="apk_push_url_canceled">APK download canceled</string>
     <string name="sync_paths_title">Sync folders</string>
     <string name="sync_paths_edit">Edit</string>
     <string name="sync_paths_desc">One external-storage relative path per line. Select folders in the directory tree below; folder contents are synced with Jar/script saved data.</string>
@@ -1035,6 +1048,7 @@
     <string name="lut_empty_favorites">No favorite LUT presets</string>
     <string name="lut_apply_failed">LUT color has been disabled temporarily</string>
     <string name="lut_unavailable_player">Current player engine does not support LUT color</string>
+    <string name="lut_unavailable_output_mode">Current output mode does not support LUT color. Switch to GPU output mode to use it</string>
     <string name="lut_unavailable_drm">DRM protected videos do not support LUT color</string>
     <string name="lut_unavailable_tunnel">Tunnel mode does not support LUT color</string>
     <string name="lut_unavailable_soft_decode">Software decode does not support LUT color</string>
@@ -1097,6 +1111,8 @@
     <string name="error_play_stage_network">Network reading failed. Check the network and request headers, or choose another line.</string>
     <string name="error_play_stage_media">Media parsing failed or no playable audio/video track was found. Choose another line or player.</string>
     <string name="error_play_stage_decoder">Audio/video decoding failed. Try another decode mode or player.</string>
+    <string name="error_play_stage_audio_output">Audio output failed. Reopen playback or try another decode mode.</string>
+    <string name="error_play_stage_video_output">Video output failed. Reopen playback or try another decode mode.</string>
     <string name="error_play_stage_output">Audio/video output failed. Reopen playback or try another decode mode.</string>
     <string name="error_play_stage_drm">DRM authorization or protected-media handling failed. Choose another line or player.</string>
     <string name="error_play_stage_unknown">Playback failed. Retry or switch player.</string>
@@ -1121,6 +1137,8 @@
     <string name="update_download_incomplete">The update package was not fully downloaded. Please try again.</string>
     <string name="update_download_checksum">The update package failed verification. Please try again.</string>
     <string name="update_download_invalid">The update package is invalid. Please try again.</string>
+    <string name="update_download_identity">The update package identity or signature does not match this app.</string>
+    <string name="update_download_source_unavailable">The selected update source is not available for this release.</string>
     <string name="update_confirm">Update</string>
     <string name="update_confirm_channel">Update %1$s</string>
     <string name="update_cancel">Cancel update</string>
@@ -1135,6 +1153,23 @@
     <string name="update_status_unavailable">Unavailable</string>
     <string name="update_expand">Expand</string>
     <string name="update_collapse">Collapse</string>
+    <string name="update_settings">Update settings</string>
+    <string name="update_settings_title">Update settings</string>
+    <string name="update_settings_source">Download method</string>
+    <string name="update_source_github">GitHub</string>
+    <string name="update_source_oci">OCI</string>
+    <string name="update_github_proxy">GitHub proxy</string>
+    <string name="update_github_proxy_value">GitHub proxy · %1$s</string>
+    <string name="update_oci_mirror">OCI Registry mirror</string>
+    <string name="update_oci_mirror_value">OCI mirror · %1$s</string>
+    <string name="update_custom_url">Custom HTTPS origin</string>
+    <string name="update_proxy_mode_full">Full URL prefix</string>
+    <string name="update_proxy_mode_strip">Remove https://</string>
+    <string name="update_proxy_direct">Direct</string>
+    <string name="update_proxy_custom">Custom</string>
+    <string name="update_proxy_invalid">Enter a valid HTTPS origin without credentials or a path.</string>
+    <string name="update_settings_save">Save</string>
+    <string name="update_settings_saved">Update settings saved</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>

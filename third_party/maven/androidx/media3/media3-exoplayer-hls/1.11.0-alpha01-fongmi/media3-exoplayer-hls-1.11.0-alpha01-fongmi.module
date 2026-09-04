@@ -35,11 +35,11 @@
         {
           "name": "media3-exoplayer-hls-1.11.0-alpha01-fongmi.aar",
           "url": "media3-exoplayer-hls-1.11.0-alpha01-fongmi.aar",
-          "size": 276447,
-          "sha512": "97af022f1750e25e1b1d60652a9263f5c863ca71958c96a5cdafb4081b730204ffb53726dc06bf41dcb28c75d7f845aff66f247d86a23f83e4c29b9832ee2930",
-          "sha256": "99fe816a319ee8a3033bedcbdeeb77a130e3f1ef13557e3ca42be800ff96e807",
-          "sha1": "4381598e15cd2ac12803664aeadb52eac11dfae9",
-          "md5": "ca7023f3958ded4ccfec4ef20466ebd6"
+          "size": 276916,
+          "sha512": "11ce0161d079f46392671ac88da04dd21bbd1b5ac522e347dcce7cf84bec01f5eea1a0c5276cc2ba39caa46e3e3969b1b981bdf28ce11341e9d1b2dfe8920b3b",
+          "sha256": "d91e8858bd748b2b70deea48fa2de2dee7f982106000ca69c98a10120f6e9504",
+          "sha1": "31536e766d99a5022728bf0c1c3557405393ef96",
+          "md5": "c5bc49d44d5ee91bcaee0c6c8a3cccb6"
         }
       ]
     },
@@ -78,11 +78,11 @@
         {
           "name": "media3-exoplayer-hls-1.11.0-alpha01-fongmi.aar",
           "url": "media3-exoplayer-hls-1.11.0-alpha01-fongmi.aar",
-          "size": 276447,
-          "sha512": "97af022f1750e25e1b1d60652a9263f5c863ca71958c96a5cdafb4081b730204ffb53726dc06bf41dcb28c75d7f845aff66f247d86a23f83e4c29b9832ee2930",
-          "sha256": "99fe816a319ee8a3033bedcbdeeb77a130e3f1ef13557e3ca42be800ff96e807",
-          "sha1": "4381598e15cd2ac12803664aeadb52eac11dfae9",
-          "md5": "ca7023f3958ded4ccfec4ef20466ebd6"
+          "size": 276916,
+          "sha512": "11ce0161d079f46392671ac88da04dd21bbd1b5ac522e347dcce7cf84bec01f5eea1a0c5276cc2ba39caa46e3e3969b1b981bdf28ce11341e9d1b2dfe8920b3b",
+          "sha256": "d91e8858bd748b2b70deea48fa2de2dee7f982106000ca69c98a10120f6e9504",
+          "sha1": "31536e766d99a5022728bf0c1c3557405393ef96",
+          "md5": "c5bc49d44d5ee91bcaee0c6c8a3cccb6"
         }
       ]
     },
@@ -98,11 +98,11 @@
         {
           "name": "media3-exoplayer-hls-1.11.0-alpha01-fongmi-sources.jar",
           "url": "media3-exoplayer-hls-1.11.0-alpha01-fongmi-sources.jar",
-          "size": 181521,
-          "sha512": "5bc1f814508e4716afde1afba66c2faa7e979572fffabc3bfb70fb0f16c91ed37a3f441e5432aa11a07c57ca725934197f5644f09828d2cf4d59e3bacb1e7715",
-          "sha256": "ac4dc855c204407b41c27427d56b3f0817310ac1c7da33766d42648481cd74b6",
-          "sha1": "12feaa3ea8eccd931c3fade9a349238c319c45ac",
-          "md5": "7dd3bf860697dee3a7474049b917377c"
+          "size": 181528,
+          "sha512": "3771a82e38d4d73210cdd3b957a533742c629c6651bd3cc328f0ff944d8537eca47e4634909610a3d900dc85bf7073c9297aeba5f5a5c93bab075e222c00543d",
+          "sha256": "1395c9d05e9c4e846a0afa347687d5c5828f981875787e717b65a6346e91d2cd",
+          "sha1": "4cb9defe0b26f411c24060a64598eacd2d5efde4",
+          "md5": "98f1de18d85012aa58c774f1e64ce1e7"
         }
       ]
     }

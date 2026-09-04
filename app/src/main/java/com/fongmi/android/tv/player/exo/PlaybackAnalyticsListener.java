@@ -13,14 +13,17 @@ import androidx.media3.exoplayer.DecoderReuseEvaluation;
 import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime;
+import androidx.media3.exoplayer.audio.AudioSink;
 import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer;
 import androidx.media3.exoplayer.source.LoadEventInfo;
 import androidx.media3.exoplayer.source.MediaLoadData;
 import androidx.media3.exoplayer.video.VideoFrameMetadataListener;
 
 import com.fongmi.android.tv.setting.ExoPerformanceSetting;
+import com.fongmi.android.tv.setting.PlaybackPerformanceCatalog;
 import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
+import com.fongmi.android.tv.player.PlaybackAutoContext;
 import com.fongmi.android.tv.player.PlaybackTrace;
 import com.github.catvod.crawler.DebugEventLimiter;
 import com.github.catvod.crawler.SpiderDebug;
@@ -34,6 +37,19 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
     private static volatile long lastMediaEstimateLogMs;
     private static volatile boolean loading;
     private static volatile boolean frameSchedulingExperimentActive;
+    private static volatile long seekSequence;
+    private static volatile long activeSeekSequence;
+    private static volatile long seekRequestedAtMs;
+    private static volatile long seekBufferingAtMs;
+    private static volatile long seekReadyAtMs;
+    private static volatile long seekTargetPositionMs;
+    private static volatile boolean seekFirstFrameLogged;
+    private static volatile long seekFirstVideoFrameAtMs;
+    private static volatile long seekFirstAudioAdvanceAtMs;
+    private static volatile long seekPlayingAtMs;
+    private static volatile long lastSeekVideoFrameAtMs;
+    private static volatile long lastSeekVideoPtsUs;
+    private static volatile int seekVideoFrameCount;
     private static volatile ForwardBufferTrend.Snapshot lastStableBufferTrend =
             ForwardBufferTrend.Snapshot.unknown();
     private static final long BANDWIDTH_LOG_INTERVAL_MS = 5_000;
@@ -41,6 +57,7 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
     private static final long LOADING_LOG_INTERVAL_MS = 5_000;
     private static final long LOW_BUFFER_LOADING_LOG_INTERVAL_MS = 1_000;
     private static final long LOW_BUFFER_LOG_THRESHOLD_MS = 8_000;
+    private static final long SEEK_TRACE_TIMEOUT_MS = 30_000;
     private static final ObservedMediaBitrateEstimator BITRATE_ESTIMATOR = new ObservedMediaBitrateEstimator();
     private static final ObservedVideoFrameRateEstimator FRAME_RATE_ESTIMATOR = new ObservedVideoFrameRateEstimator();
     private static final ExoFrameTimingMetrics FRAME_TIMING_METRICS = new ExoFrameTimingMetrics();
@@ -151,6 +168,50 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
         return BUFFER_TREND.snapshot();
     }
 
+    public static boolean isSeekRecoveryActive() {
+        return ExoPlaybackThresholdCoordinator.process().isSeekPending(
+                ExoPlaybackThresholdCoordinator.currentSession(),
+                SystemClock.elapsedRealtime());
+    }
+
+    public static void onUserSeekRequested(
+            long originPositionMs,
+            long targetPositionMs,
+            @Player.State int state,
+            long bufferedPositionMs,
+            long totalBufferedDurationMs,
+                boolean isLoading,
+                boolean isPlaying) {
+        long now = SystemClock.elapsedRealtime();
+        ExoPlaybackThresholdCoordinator.process().markSeek(
+                ExoPlaybackThresholdCoordinator.currentSession(), now);
+        long sequence = seekSequence == Long.MAX_VALUE ? 1 : seekSequence + 1;
+        seekSequence = sequence;
+        activeSeekSequence = sequence;
+        seekRequestedAtMs = now;
+        seekBufferingAtMs = 0;
+        seekReadyAtMs = 0;
+        seekTargetPositionMs = Math.max(0, targetPositionMs);
+        seekFirstFrameLogged = false;
+        seekFirstVideoFrameAtMs = 0;
+        seekFirstAudioAdvanceAtMs = 0;
+        seekPlayingAtMs = 0;
+        lastSeekVideoFrameAtMs = 0;
+        lastSeekVideoPtsUs = 0;
+        seekVideoFrameCount = 0;
+        seekTrace(
+                "phase=request seq=%d origin=%d target=%d delta=%d state=%s bufferedPosition=%d totalBuffered=%d loading=%s playing=%s",
+                sequence,
+                Math.max(0, originPositionMs),
+                seekTargetPositionMs,
+                targetPositionMs - originPositionMs,
+                stateName(state),
+                Math.max(0, bufferedPositionMs),
+                Math.max(0, totalBufferedDurationMs),
+                isLoading,
+                isPlaying);
+    }
+
     static ForwardBufferTrend.Snapshot getLastStableBufferTrend() {
         return lastStableBufferTrend;
     }
@@ -169,6 +230,18 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
         lastMediaEstimateLogMs = 0;
         loading = false;
         frameSchedulingExperimentActive = false;
+        activeSeekSequence = 0;
+        seekRequestedAtMs = 0;
+        seekBufferingAtMs = 0;
+        seekReadyAtMs = 0;
+        seekTargetPositionMs = 0;
+        seekFirstFrameLogged = false;
+        seekFirstVideoFrameAtMs = 0;
+        seekFirstAudioAdvanceAtMs = 0;
+        seekPlayingAtMs = 0;
+        lastSeekVideoFrameAtMs = 0;
+        lastSeekVideoPtsUs = 0;
+        seekVideoFrameCount = 0;
         playbackTraceId = PlaybackTrace.NONE;
         BITRATE_ESTIMATOR.reset();
         FRAME_RATE_ESTIMATOR.reset();
@@ -219,6 +292,10 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
     @Override
     public void onPlaybackStateChanged(EventTime eventTime, @Player.State int state) {
         long now = SystemClock.elapsedRealtime();
+        PlaybackAutoContext.SessionToken thresholdSession =
+                ExoPlaybackThresholdCoordinator.currentSession();
+        boolean seekRecovery = ExoPlaybackThresholdCoordinator.process()
+                .isSeekPending(thresholdSession, now);
         Snapshot previous = snapshot;
         Snapshot next = snapshot.withState(stateName(state), eventTime.currentPlaybackPositionMs, eventTime.totalBufferedDurationMs);
         if (state == Player.STATE_BUFFERING) {
@@ -226,13 +303,16 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
             BITRATE_ESTIMATOR.disrupt();
             BUFFER_TREND.reset();
             FRAME_TIMING_METRICS.resetReleaseContinuity();
-            if (next.everReady() && next.rebufferStartMs() <= 0) next = next.withRebufferStart(now);
+            if (next.everReady() && next.rebufferStartMs() <= 0 && !seekRecovery) {
+                next = next.withRebufferStart(now);
+            }
         }
         if (state != Player.STATE_BUFFERING && next.rebufferStartMs() > 0) next = next.withRebufferEnd(now);
         if (state == Player.STATE_READY) next = next.withEverReady();
         boolean rebufferStarted = previous.rebufferStartMs() <= 0 && next.rebufferStartMs() > 0;
         boolean rebufferEnded = previous.rebufferStartMs() > 0 && next.rebufferStartMs() <= 0;
         snapshot = next;
+        logSeekState(eventTime, state, now);
         if (rebufferStarted) {
             FRAME_SCHEDULING_METRICS.observeBoundary(
                     ExoFrameSchedulingExperimentMetrics.Boundary.REBUFFER);
@@ -246,7 +326,7 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
                 || state == Player.STATE_IDLE
                 || state == Player.STATE_ENDED) {
             ExoPlaybackThresholdCoordinator.process().endEpisode(
-                    ExoPlaybackThresholdCoordinator.currentSession());
+                    thresholdSession);
         }
         if (!SpiderDebug.isEnabled()) return;
         if (rebufferStarted) {
@@ -344,6 +424,74 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
     }
 
     @Override
+    public void onAudioTrackInitialized(EventTime eventTime, AudioSink.AudioTrackConfig config) {
+        if (!SpiderDebug.isEnabled()) return;
+        traceLog("audio track initialized encoding=%s(%d) sampleRate=%d channelMask=0x%X channels=%d tunneling=%s offload=%s buffer=%d",
+                audioEncodingName(config.encoding), config.encoding, config.sampleRate,
+                config.channelConfig, Integer.bitCount(config.channelConfig), config.tunneling,
+                config.offload, config.bufferSize);
+    }
+
+    @Override
+    public void onAudioTrackReleased(EventTime eventTime, AudioSink.AudioTrackConfig config) {
+        if (!SpiderDebug.isEnabled()) return;
+        traceLog("audio track released encoding=%s(%d) sampleRate=%d channelMask=0x%X channels=%d tunneling=%s offload=%s buffer=%d",
+                audioEncodingName(config.encoding), config.encoding, config.sampleRate,
+                config.channelConfig, Integer.bitCount(config.channelConfig), config.tunneling,
+                config.offload, config.bufferSize);
+    }
+
+    @Override
+    public void onAudioSinkError(EventTime eventTime, Exception error) {
+        if (!SpiderDebug.isEnabled()) return;
+        traceLog("audio sink error type=%s message=%s", error == null ? "unknown" : error.getClass().getSimpleName(),
+                error == null || error.getMessage() == null ? "" : error.getMessage());
+        long now = nowElapsed();
+        if (activeSeek(now)) {
+            seekTrace(
+                    "phase=audio-sink-error seq=%d elapsed=%d type=%s message=%s position=%d buffered=%d",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    error == null ? "unknown" : error.getClass().getSimpleName(),
+                    error == null || error.getMessage() == null ? "" : error.getMessage(),
+                    Math.max(0, eventTime.currentPlaybackPositionMs),
+                    Math.max(0, eventTime.totalBufferedDurationMs));
+        }
+    }
+
+    @Override
+    public void onAudioUnderrun(EventTime eventTime, int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
+        if (!SpiderDebug.isEnabled()) return;
+        traceLog("audio underrun buffer=%d bufferMs=%d elapsedSinceFeedMs=%d", bufferSize, bufferSizeMs, elapsedSinceLastFeedMs);
+        long now = nowElapsed();
+        if (activeSeek(now)) {
+            seekTrace(
+                    "phase=audio-underrun seq=%d elapsed=%d buffer=%d bufferMs=%d elapsedSinceFeedMs=%d position=%d buffered=%d",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    bufferSize,
+                    bufferSizeMs,
+                    elapsedSinceLastFeedMs,
+                    Math.max(0, eventTime.currentPlaybackPositionMs),
+                    Math.max(0, eventTime.totalBufferedDurationMs));
+        }
+    }
+
+    @Override
+    public void onAudioPositionAdvancing(EventTime eventTime, long playoutStartSystemTimeMs) {
+        long now = nowElapsed();
+        if (!activeSeek(now) || seekFirstAudioAdvanceAtMs > 0) return;
+        seekFirstAudioAdvanceAtMs = now;
+        seekTrace(
+                "phase=audio-advancing seq=%d elapsed=%d position=%d buffered=%d playoutStart=%d",
+                activeSeekSequence,
+                elapsedSinceSeek(now),
+                Math.max(0, eventTime.currentPlaybackPositionMs),
+                Math.max(0, eventTime.totalBufferedDurationMs),
+                playoutStartSystemTimeMs);
+    }
+
+    @Override
     public void onVideoSizeChanged(EventTime eventTime, VideoSize videoSize) {
         if (!SpiderDebug.isEnabled()) return;
         traceLog("video size=%dx%d unappliedRotation=%d ratio=%.3f", videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees, videoSize.pixelWidthHeightRatio);
@@ -411,18 +559,61 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
 
     @Override
     public void onPositionDiscontinuity(EventTime eventTime, Player.PositionInfo oldPosition, Player.PositionInfo newPosition, int reason) {
+        boolean seek = reason == Player.DISCONTINUITY_REASON_SEEK
+                || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT;
+        long now = nowElapsed();
         BITRATE_ESTIMATOR.disrupt();
         FRAME_RATE_ESTIMATOR.reset();
         FRAME_TIMING_METRICS.resetReleaseContinuity();
-        if (reason == Player.DISCONTINUITY_REASON_SEEK
-                || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT) {
+        if (seek) {
             FRAME_SCHEDULING_METRICS.observeBoundary(
                     ExoFrameSchedulingExperimentMetrics.Boundary.SEEK);
         }
         BUFFER_TREND.reset();
         lastStableBufferTrend = ForwardBufferTrend.Snapshot.unknown();
-        ExoPlaybackThresholdCoordinator.process().disrupt(
-                ExoPlaybackThresholdCoordinator.currentSession());
+        PlaybackAutoContext.SessionToken thresholdSession =
+                ExoPlaybackThresholdCoordinator.currentSession();
+        ExoPlaybackThresholdCoordinator.process().disrupt(thresholdSession);
+        if (seek) {
+            ExoPlaybackThresholdCoordinator.process().markSeek(
+                    thresholdSession, now);
+            if (!activeSeek(now) && SpiderDebug.isEnabled()) {
+                long sequence = seekSequence == Long.MAX_VALUE ? 1 : seekSequence + 1;
+                seekSequence = sequence;
+                activeSeekSequence = sequence;
+                seekRequestedAtMs = now;
+                seekBufferingAtMs = 0;
+                seekReadyAtMs = 0;
+                seekTargetPositionMs = Math.max(0, newPosition.positionMs);
+                seekFirstFrameLogged = false;
+                seekFirstVideoFrameAtMs = 0;
+                seekFirstAudioAdvanceAtMs = 0;
+                seekPlayingAtMs = 0;
+                lastSeekVideoFrameAtMs = 0;
+                lastSeekVideoPtsUs = 0;
+                seekVideoFrameCount = 0;
+                seekTrace(
+                        "phase=request-observed seq=%d origin=%d target=%d state=%s buffered=%d loading=%s",
+                        sequence,
+                        Math.max(0, oldPosition.positionMs),
+                        seekTargetPositionMs,
+                        snapshot.state(),
+                        Math.max(0, eventTime.totalBufferedDurationMs),
+                        loading);
+            }
+            if (!activeSeek(now)) return;
+            seekTrace(
+                    "phase=discontinuity seq=%d elapsed=%d reason=%d old=%d requested=%d actual=%d adjustment=%d buffered=%d loading=%s",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    reason,
+                    Math.max(0, oldPosition.positionMs),
+                    seekTargetPositionMs,
+                    Math.max(0, newPosition.positionMs),
+                    newPosition.positionMs - seekTargetPositionMs,
+                    Math.max(0, eventTime.totalBufferedDurationMs),
+                    loading);
+        }
     }
 
     @Override
@@ -432,6 +623,45 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
             FRAME_TIMING_METRICS.observeFrameRelease(
                     presentationTimeUs, releaseTimeNs, System.nanoTime());
         }
+        long now = nowElapsed();
+        PlaybackAutoContext.SessionToken thresholdSession =
+                ExoPlaybackThresholdCoordinator.currentSession();
+        if ("READY".equals(snapshot.state())
+                && ExoPlaybackThresholdCoordinator.process()
+                .isSeekPending(thresholdSession, now)) {
+            ExoPlaybackThresholdCoordinator.process().endEpisode(thresholdSession);
+        }
+        if (!activeSeek(now)) return;
+        seekVideoFrameCount++;
+        if (seekFirstVideoFrameAtMs <= 0) {
+            seekFirstVideoFrameAtMs = now;
+            lastSeekVideoFrameAtMs = now;
+            lastSeekVideoPtsUs = presentationTimeUs;
+            seekTrace(
+                    "phase=video-frame-first seq=%d elapsed=%d frame=%d ptsUs=%d position=%d buffered=%d",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    seekVideoFrameCount,
+                    presentationTimeUs,
+                    Math.max(0, snapshot.positionMs()),
+                    Math.max(0, snapshot.bufferedMs()));
+            return;
+        }
+        long gapMs = Math.max(0, now - lastSeekVideoFrameAtMs);
+        if (gapMs >= 120) {
+            seekTrace(
+                    "phase=video-frame-gap seq=%d elapsed=%d gap=%d frame=%d ptsDeltaUs=%d position=%d buffered=%d state=%s",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    gapMs,
+                    seekVideoFrameCount,
+                    presentationTimeUs - lastSeekVideoPtsUs,
+                    Math.max(0, snapshot.positionMs()),
+                    Math.max(0, snapshot.bufferedMs()),
+                    snapshot.state());
+        }
+        lastSeekVideoFrameAtMs = now;
+        lastSeekVideoPtsUs = presentationTimeUs;
     }
 
     @Override
@@ -440,6 +670,77 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
             Object output,
             long renderTimeMs) {
         FRAME_SCHEDULING_METRICS.observeFirstFrame(renderTimeMs);
+        long now = nowElapsed();
+        if (activeSeek(now) && !seekFirstFrameLogged) {
+            seekFirstFrameLogged = true;
+            seekTrace(
+                    "phase=first-frame seq=%d elapsed=%d afterReady=%d position=%d buffered=%d loading=%s",
+                    activeSeekSequence,
+                    elapsedSinceSeek(now),
+                    seekReadyAtMs <= 0 ? -1 : Math.max(0, now - seekReadyAtMs),
+                    Math.max(0, eventTime.currentPlaybackPositionMs),
+                    Math.max(0, eventTime.totalBufferedDurationMs),
+                    loading);
+        }
+    }
+
+    @Override
+    public void onIsPlayingChanged(EventTime eventTime, boolean isPlaying) {
+        if (!isPlaying) return;
+        long now = nowElapsed();
+        if (!activeSeek(now)) return;
+        if (seekPlayingAtMs > 0) return;
+        seekPlayingAtMs = now;
+        seekTrace(
+                "phase=playing seq=%d elapsed=%d afterReady=%d position=%d buffered=%d loading=%s",
+                activeSeekSequence,
+                elapsedSinceSeek(now),
+                seekReadyAtMs <= 0 ? -1 : Math.max(0, now - seekReadyAtMs),
+                Math.max(0, eventTime.currentPlaybackPositionMs),
+                Math.max(0, eventTime.totalBufferedDurationMs),
+                loading);
+    }
+
+    private static void logSeekState(
+            EventTime eventTime,
+            @Player.State int state,
+            long now) {
+        if (!activeSeek(now)) return;
+        if (state == Player.STATE_BUFFERING && seekBufferingAtMs <= 0) {
+            seekBufferingAtMs = now;
+        } else if (state == Player.STATE_READY && seekReadyAtMs <= 0) {
+            seekReadyAtMs = now;
+        }
+        long bufferingMs = seekBufferingAtMs <= 0 || state != Player.STATE_READY
+                ? -1 : Math.max(0, now - seekBufferingAtMs);
+        seekTrace(
+                "phase=state seq=%d elapsed=%d state=%s bufferingDuration=%d position=%d buffered=%d loading=%s",
+                activeSeekSequence,
+                elapsedSinceSeek(now),
+                stateName(state),
+                bufferingMs,
+                Math.max(0, eventTime.currentPlaybackPositionMs),
+                Math.max(0, eventTime.totalBufferedDurationMs),
+                loading);
+    }
+
+    private static boolean activeSeek(long now) {
+        if (activeSeekSequence <= 0 || seekRequestedAtMs <= 0) return false;
+        if (now - seekRequestedAtMs <= SEEK_TRACE_TIMEOUT_MS) return true;
+        activeSeekSequence = 0;
+        return false;
+    }
+
+    private static long elapsedSinceSeek(long now) {
+        return Math.max(0, now - seekRequestedAtMs);
+    }
+
+    private static long nowElapsed() {
+        return SystemClock.elapsedRealtime();
+    }
+
+    private static void seekTrace(String format, Object... args) {
+        PlaybackTrace.log("exo-seek", playbackTraceId, format, args);
     }
 
     @Override
@@ -485,12 +786,15 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
             long bufferedDurationMs,
             boolean rebuffering,
             long nowElapsedMs) {
-        if (!PlaybackPerformanceSetting.isAuto(PlayerSetting.EXO)) return;
+        if (!PlaybackPerformanceSetting.hasAutomaticOptions(
+                PlayerSetting.EXO,
+                PlaybackPerformanceCatalog.EXO_START_BUFFER,
+                PlaybackPerformanceCatalog.EXO_REBUFFER)) return;
         ExoPerformanceSetting.refreshAutoSession(playbackTraceId);
         ExoPlaybackThresholdCoordinator.process().observe(
                 ExoPlaybackThresholdCoordinator.captureInputs(
-                        ExoPerformanceSetting.getAutoSessionStartBufferMs(),
-                        ExoPerformanceSetting.getAutoSessionRebufferMs(),
+                        ExoPerformanceSetting.getEffectiveStartBufferMs(),
+                        ExoPerformanceSetting.getEffectiveRebufferMs(),
                         Math.max(0, bufferedDurationMs),
                         -1,
                         rebuffering,
@@ -525,6 +829,21 @@ public class PlaybackAnalyticsListener implements AnalyticsListener, VideoFrameM
             case Player.STATE_READY -> "READY";
             case Player.STATE_ENDED -> "ENDED";
             default -> String.valueOf(state);
+        };
+    }
+
+    private static String audioEncodingName(int encoding) {
+        return switch (encoding) {
+            case C.ENCODING_PCM_16BIT -> "pcm16";
+            case C.ENCODING_PCM_FLOAT -> "pcmfloat";
+            case C.ENCODING_AC3 -> "ac3";
+            case C.ENCODING_E_AC3 -> "eac3";
+            case C.ENCODING_E_AC3_JOC -> "eac3-joc";
+            case C.ENCODING_DTS -> "dts";
+            case C.ENCODING_DTS_HD -> "dts-hd";
+            case C.ENCODING_DTS_HD_MA -> "dts-hd-ma";
+            case C.ENCODING_DOLBY_TRUEHD -> "truehd";
+            default -> "unknown";
         };
     }
 

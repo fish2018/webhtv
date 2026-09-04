@@ -1,0 +1,13 @@
+diff --git a/src/shaders/colorspace.c b/src/shaders/colorspace.c
+index 197f819f..b91e971a 100644
+--- a/src/shaders/colorspace.c
++++ b/src/shaders/colorspace.c
+@@ -1472,7 +1472,7 @@ void pl_shader_extract_features(pl_shader sh, struct pl_color_space csp)
+          "        / (vec3(1.0) + %f * lms);         \n"
+          "lms = pow(lms, vec3(%f));                 \n"
+          "float I = dot(vec3(%f, %f, %f), lms);     \n"
+-         "color = vec4(I, 0.0, 0.0, 1.0);           \n"
++         "color.rgb = vec3(I, 0.0, 0.0);            \n"
+          "}                                         \n",
+          PL_COLOR_SDR_WHITE / 10000,
+          SH_MAT3(pl_ipt_rgb2lms(pl_raw_primaries_get(csp.primaries))),

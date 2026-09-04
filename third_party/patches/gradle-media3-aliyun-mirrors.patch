@@ -1,0 +1,132 @@
+diff --git a/build-logic-settings/build.gradle.kts b/build-logic-settings/build.gradle.kts
+index e9ad9b8743b603f7c7b3b9d95b8c9265085d93f4..db15fdd12b3755087af9a5e5618b8cca57c6fc1a 100644
+--- a/build-logic-settings/build.gradle.kts
++++ b/build-logic-settings/build.gradle.kts
+@@ -18,6 +18,9 @@ group = "androidx.media3.buildlogic"
+ version = "1.0"
+
+ repositories {
++  maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++  maven { url = uri("https://maven.aliyun.com/repository/google") }
++  maven { url = uri("https://maven.aliyun.com/repository/public") }
+   google()
+   mavenCentral()
+ }
+diff --git a/build-logic-settings/settings.gradle.kts b/build-logic-settings/settings.gradle.kts
+index 80bcdc98fc6f80240bc8210cfecee4d97f2b9f8c..82ad9e504b33deaff9c725f5a37ed0db0ab2addd 100644
+--- a/build-logic-settings/settings.gradle.kts
++++ b/build-logic-settings/settings.gradle.kts
+@@ -11,4 +11,13 @@
+ // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
++pluginManagement {
++  repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
++    gradlePluginPortal()
++  }
++}
++
+ rootProject.name = "build-logic-settings"
+diff --git a/build-logic/build.gradle.kts b/build-logic/build.gradle.kts
+index 1ea60326a58a92ba047e651bb44513253a8e9558..31d555c9501000bc001ee1e9be7ba48ab2bd4e7d 100644
+--- a/build-logic/build.gradle.kts
++++ b/build-logic/build.gradle.kts
+@@ -14,6 +14,9 @@
+ plugins { `kotlin-dsl` }
+
+ repositories {
++  maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++  maven { url = uri("https://maven.aliyun.com/repository/google") }
++  maven { url = uri("https://maven.aliyun.com/repository/public") }
+   google()
+   mavenCentral()
+   gradlePluginPortal()
+diff --git a/build-logic/settings.gradle.kts b/build-logic/settings.gradle.kts
+index 6191afc0971a6fb8c89432ecf50d6f97e3a9e3d6..814ff976123520c66ffb9bba88cb291185224bce 100644
+--- a/build-logic/settings.gradle.kts
++++ b/build-logic/settings.gradle.kts
+@@ -11,6 +11,15 @@
+ // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
++pluginManagement {
++  repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
++    gradlePluginPortal()
++  }
++}
++
+ rootProject.name = "media3-build-logic"
+
+ includeBuild("../build-logic-settings")
+diff --git a/build.gradle.kts b/build.gradle.kts
+index 0c8ecea043aa6f53e17a0150c93b042d92a7fbae..877a1acb34b92e9be0c7e852ab09b29df5c367a2 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -16,6 +16,8 @@ import java.io.File
+
+ buildscript {
+   repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
+     google()
+     mavenCentral()
+   }
+@@ -42,6 +44,8 @@ plugins {
+
+ allprojects {
+   repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
+     google()
+     mavenCentral()
+     maven {
+diff --git a/buildSrc/build.gradle.kts b/buildSrc/build.gradle.kts
+index dea3373869be07e37f56627e6aec1b090483c351..5306c6d3471b7d4198c8e821a9db61ce3d7d6b55 100644
+--- a/buildSrc/build.gradle.kts
++++ b/buildSrc/build.gradle.kts
+@@ -15,6 +15,9 @@
+ plugins { `kotlin-dsl` }
+
+ repositories {
++  maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++  maven { url = uri("https://maven.aliyun.com/repository/google") }
++  maven { url = uri("https://maven.aliyun.com/repository/public") }
+   google()
+   mavenCentral()
+ }
+diff --git a/buildSrc/settings.gradle.kts b/buildSrc/settings.gradle.kts
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a5f75b7988164b4402c42e2460b0fc677be436c
+--- /dev/null
++++ b/buildSrc/settings.gradle.kts
+@@ -0,0 +1,10 @@
++pluginManagement {
++  repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
++    gradlePluginPortal()
++  }
++}
++
++rootProject.name = "buildSrc"
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+index fc62b6a79272334d94ad3512f2f776b0c17cceaf..9210fe7dddb69837a823ec6faa2ebdded842958f 100644
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -17,6 +17,9 @@ pluginManagement {
+   includeBuild("build-logic-settings")
+   includeBuild("build-logic")
+   repositories {
++    maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
++    maven { url = uri("https://maven.aliyun.com/repository/google") }
++    maven { url = uri("https://maven.aliyun.com/repository/public") }
+     google()
+     mavenCentral()
+     gradlePluginPortal()

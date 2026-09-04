@@ -9,6 +9,7 @@ import androidx.media3.common.Tracks;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.player.engine.PlaySpec;
+import com.fongmi.android.tv.player.engine.MpvPlayerEngine;
 import com.fongmi.android.tv.player.engine.PlayerEngine;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -18,6 +19,15 @@ import java.util.Locale;
 public class LutEligibility {
 
     public static String getUnavailableReason(PlayerEngine engine, PlaySpec spec) {
+        return getUnavailableReason(engine, spec, false);
+    }
+
+    public static String getUnavailableReason(PlayerEngine engine, PlaySpec spec,
+                                              boolean allowMpvSurfaceDirect) {
+        if (!allowMpvSurfaceDirect
+                && engine instanceof MpvPlayerEngine mpv && mpv.isSurfaceDirect()) {
+            return ResUtil.getString(R.string.lut_unavailable_output_mode);
+        }
         if (engine == null || !engine.supportsLut()) return ResUtil.getString(R.string.lut_unavailable_player);
         if (spec != null && spec.getDrm() != null) return ResUtil.getString(R.string.lut_unavailable_drm);
         if (!engine.supportsNativeLut() && PlayerSetting.isTunnel()) return ResUtil.getString(R.string.lut_unavailable_tunnel);

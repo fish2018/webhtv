@@ -1,0 +1,232 @@
+diff --git a/demux/demux.c b/demux/demux.c
+index 492be0d..c45ef8a 100644
+--- a/demux/demux.c
++++ b/demux/demux.c
+@@ -135,7 +135,8 @@ const struct m_sub_options demux_conf = {
+             {"no", 0}, {"filter", 1}, {"same", 2})},
+         {"demuxer-dovi-profile7", OPT_CHOICE(dovi_profile7_mode,
+             {"preserve", DEMUX_DOVI_PROFILE7_PRESERVE},
+-            {"hdr10", DEMUX_DOVI_PROFILE7_HDR10})},
++            {"hdr10", DEMUX_DOVI_PROFILE7_HDR10},
++            {"p81", DEMUX_DOVI_PROFILE7_P81})},
+         {0}
+     },
+     .size = sizeof(struct demux_opts),
+diff --git a/demux/demux.h b/demux/demux.h
+index f6a261b..c3c0c36 100644
+--- a/demux/demux.h
++++ b/demux/demux.h
+@@ -95,6 +95,7 @@ struct demux_opts {
+ enum demux_dovi_profile7_mode {
+     DEMUX_DOVI_PROFILE7_PRESERVE = 0,
+     DEMUX_DOVI_PROFILE7_HDR10 = 1,
++    DEMUX_DOVI_PROFILE7_P81 = 2,
+ };
+ 
+ #define SEEK_FACTOR   (1 << 1)      // argument is in range [0,1]
+diff --git a/demux/dovi_split.c b/demux/dovi_split.c
+index 53d0c8f..bc0bfb1 100644
+--- a/demux/dovi_split.c
++++ b/demux/dovi_split.c
+@@ -41,6 +41,7 @@ struct mp_dovi_split {
+     AVBSFContext *bsf;
+     AVPacket *staging;
+     bool base_only;
++    bool convert_p81;
+ };
+ 
+ static void mp_dovi_split_destructor(void *p)
+@@ -53,18 +54,41 @@ static void mp_dovi_split_destructor(void *p)
+ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+                                            struct sh_stream *bl)
+ {
++    bool p81_requested = bl && bl->codec && bl->codec->dv_profile == 7 &&
++                         demuxer->opts && demuxer->opts->dovi_profile7_mode ==
++                                              DEMUX_DOVI_PROFILE7_P81;
+     bool base_only = bl && bl->codec && bl->codec->dv_profile == 7 &&
+                      demuxer->opts && demuxer->opts->dovi_profile7_mode ==
+                                           DEMUX_DOVI_PROFILE7_HDR10;
++    bool has_p81_config = false;
++    if (p81_requested && bl->codec->lav_codecpar) {
++        for (int i = 0; i < bl->codec->lav_codecpar->nb_coded_side_data; i++) {
++            AVPacketSideData *sd = &bl->codec->lav_codecpar->coded_side_data[i];
++            if (sd->type != AV_PKT_DATA_DOVI_CONF ||
++                sd->size < sizeof(AVDOVIDecoderConfigurationRecord))
++                continue;
++            const AVDOVIDecoderConfigurationRecord *cfg =
++                (const void *)sd->data;
++            has_p81_config = cfg->dv_profile == 7 &&
++                             cfg->rpu_present_flag && cfg->bl_present_flag;
++            break;
++        }
++        if (!has_p81_config) {
++            base_only = true;
++            MP_WARN(demuxer, "DV7 P8.1 conversion requires a valid profile 7 "
++                             "RPU/base-layer configuration; falling back to HDR10.\n");
++        }
++    }
++    bool convert_p81 = p81_requested && has_p81_config;
+     if (!bl || bl->type != STREAM_VIDEO || !bl->codec ||
+         !bl->codec->codec || strcmp(bl->codec->codec, "hevc") != 0 ||
+-        (!bl->codec->dv_el_present && !base_only))
++        (!bl->codec->dv_el_present && !base_only && !convert_p81))
+         return NULL;
+ 
+-    const AVBitStreamFilter *def = av_bsf_get_by_name("dovi_split");
++    const char *filter_name = convert_p81 ? "dovi_rpu" : "dovi_split";
++    const AVBitStreamFilter *def = av_bsf_get_by_name(filter_name);
++    if (!def && convert_p81) {
++        MP_WARN(demuxer, "Dolby Vision: 'dovi_rpu' BSF not available; "
++                         "falling back to HDR10 base-layer filtering.\n");
++        convert_p81 = false;
++        base_only = true;
++        filter_name = "dovi_split";
++        def = av_bsf_get_by_name(filter_name);
++    }
+     if (!def) {
+-        MP_WARN(demuxer, "Dolby Vision: 'dovi_split' BSF not available in "
+-                         "libavcodec; leaving the bitstream unchanged.\n");
++        MP_WARN(demuxer, "Dolby Vision: '%s' BSF not available in "
++                         "libavcodec; leaving the bitstream unchanged.\n",
++                filter_name);
+         return NULL;
+     }
+ 
+@@ -74,6 +98,7 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+     s->demuxer = demuxer;
+     s->bl = bl;
+     s->base_only = base_only;
++    s->convert_p81 = convert_p81;
+ 
+     int ret = AVERROR(ENOMEM);
+     s->staging = av_packet_alloc();
+@@ -93,18 +118,21 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+         goto fail;
+     s->bsf->time_base_in = mp_get_codec_timebase(bl->codec);
+ 
+-    // Feed HDR10 fallback paths a clean HEVC base layer. Leaving EL/RPU NALs
+-    // in the access unit can starve regular vendor HEVC decoders and can let
+-    // the output representation change later in the same playback session.
+-    const char *mode = s->base_only ? "bl" : "el_rpu";
+-    ret = av_opt_set(s->bsf, "mode", mode, AV_OPT_SEARCH_CHILDREN);
++    // P8.1 conversion rewrites RPU metadata and removes EL NAL units. The
++    // existing dovi_split path remains unchanged for preserve/HDR10 modes.
++    if (convert_p81)
++        ret = av_opt_set(s->bsf, "convert", "p81", AV_OPT_SEARCH_CHILDREN);
++    else {
++        const char *mode = s->base_only ? "bl" : "el_rpu";
++        ret = av_opt_set(s->bsf, "mode", mode, AV_OPT_SEARCH_CHILDREN);
++    }
+     if (ret < 0)
+         goto fail;
+     ret = av_bsf_init(s->bsf);
+     if (ret < 0)
+         goto fail;
+ 
++    if (s->convert_p81) {
++        // hvcE describes the Profile 7 enhancement layer removed by dovi_rpu.
++        av_packet_side_data_remove(s->bsf->par_out->coded_side_data,
++                                   &s->bsf->par_out->nb_coded_side_data,
++                                   AV_PKT_DATA_HEVC_CONF);
++        MP_VERBOSE(demuxer, "DV7 P8.1 conversion: removed stale enhancement-layer configuration.\n");
++    }
++
+-    if (s->base_only) {
++    if (s->base_only || s->convert_p81) {
+         if (bl->codec->lav_codecpar) {
+             AVCodecParameters *filtered = avcodec_parameters_alloc();
+             if (!filtered) {
+@@ -120,9 +148,17 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+             avcodec_parameters_free(&filtered);
+         }
+         bl->codec->dv_el_present = false;
+-        MP_INFO(demuxer, "DV7 HDR10 fallback: stripping EL/RPU before decoder.\n");
+-        MP_VERBOSE(demuxer, "DV7 HDR10 fallback: synchronized decoder "
+-                            "parameters to the HDR10 base layer.\n");
++        if (s->convert_p81) {
++            bl->codec->dovi = true;
++            bl->codec->source_dv_profile = bl->codec->dv_profile;
++            bl->codec->source_dv_level = bl->codec->dv_level;
++            bl->codec->dv_profile = 8;
++            MP_INFO(demuxer, "DV7 P8.1 conversion: using FFmpeg dovi_rpu BSF.\n");
++            MP_VERBOSE(demuxer, "DV7 P8.1 conversion: synchronized Profile 8.1 "
++                                "decoder parameters.\n");
++        } else {
++            MP_INFO(demuxer, "DV7 HDR10 fallback: stripping EL/RPU before decoder.\n");
++            MP_VERBOSE(demuxer, "DV7 HDR10 fallback: synchronized decoder "
++                                "parameters to the HDR10 base layer.\n");
++        }
+         return s;
+     }
+ 
+@@ -171,9 +207,9 @@ struct mp_dovi_split *mp_dovi_split_create(struct demuxer *demuxer,
+     return s;
+ 
+ fail:
+-    MP_WARN(demuxer, "Dolby Vision: failed to initialize 'dovi_split': %s; "
++    MP_WARN(demuxer, "Dolby Vision: failed to initialize '%s': %s; "
+                      "leaving the bitstream unchanged.\n",
+-            mp_strerror(AVUNERROR(ret)));
++            filter_name, mp_strerror(AVUNERROR(ret)));
+     talloc_free(s);
+     return NULL;
+ }
+
+@@ -198,13 +234,20 @@ static int filter_packet(struct mp_dovi_split *s,
+ bool mp_dovi_split_filter_base(struct mp_dovi_split *s,
+                                struct demux_packet **bl_dp)
+ {
+-    if (!s || !s->base_only)
++    if (!s || (!s->base_only && !s->convert_p81))
+         return true;
+     if (!bl_dp || !*bl_dp)
+         return false;
+
+     struct demux_packet *filtered = NULL;
+     int ret = filter_packet(s, *bl_dp, s->bl->index, &filtered);
+     if (ret == SPLIT_PACKET_ERROR) {
+-        MP_ERR(s->demuxer, "DV7 HDR10 fallback: failed to produce base-layer packet.\n");
++        if (s->convert_p81)
++            MP_ERR(s->demuxer, "DV7 P8.1 conversion: failed to produce converted packet.\n");
++        else
++            MP_ERR(s->demuxer, "DV7 HDR10 fallback: failed to produce base-layer packet.\n");
+         return false;
+     }
+diff --git a/demux/dovi_split.h b/demux/dovi_split.h
+index 55ed81e..4a07eb6 100644
+--- a/demux/dovi_split.h
++++ b/demux/dovi_split.h
+@@ -44,7 +44,8 @@ void mp_dovi_split_reset(struct mp_dovi_split *s);
+ // returned pointer remains valid for the lifetime of the splitter.
+ struct sh_stream *mp_dovi_split_el_stream(struct mp_dovi_split *s);
+ 
+-// Replace `*bl_dp` with a base-layer-only packet in HDR10 fallback mode.
++// Replace `*bl_dp` with a base-layer-only packet in HDR10 fallback mode or a
++// converted Profile 8.1 packet in explicit P8.1 mode.
+ // The pointer becomes NULL when an access unit contains no base-layer NAL.
+ // Returns false only for a filtering error; the caller owns the original
+ // packet in that case.
+diff --git a/demux/stheader.h b/demux/stheader.h
+--- a/demux/stheader.h
++++ b/demux/stheader.h
+@@ -174,4 +174,6 @@ struct mp_codec_params {
+     bool dovi;
+     uint8_t dv_profile;
+     uint8_t dv_level;
++    uint8_t source_dv_profile;
++    uint8_t source_dv_level;
+     bool dv_el_present;     // BL and EL interleaved in this stream (Profile 7)
+diff --git a/player/command.c b/player/command.c
+--- a/player/command.c
++++ b/player/command.c
+@@ -2212,6 +2212,10 @@ static int get_track_entry(int item, int action, void *arg, void *ctx)
+                         .unavailable = !p.dovi},
+         {"dolby-vision-level", SUB_PROP_INT(p.dv_level),
+                         .unavailable = !p.dovi},
++        {"source-dolby-vision-profile", SUB_PROP_INT(p.source_dv_profile),
++                        .unavailable = !p.source_dv_profile},
++        {"source-dolby-vision-level", SUB_PROP_INT(p.source_dv_level),
++                        .unavailable = !p.source_dv_profile},
+         {"metadata", SUB_PROP_KEYVALUE_LIST(tag_list),
+                         .unavailable = !tags->num_keys},
+         {0}

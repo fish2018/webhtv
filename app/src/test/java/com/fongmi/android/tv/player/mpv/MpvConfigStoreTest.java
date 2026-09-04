@@ -12,6 +12,15 @@ import static org.junit.Assert.assertTrue;
 public class MpvConfigStoreTest {
 
     @Test
+    public void readsTheLastExplicitAImageReaderBackend() {
+        String config = "android-vulkan-aimagereader-backend=auto\n"
+                + "# android-vulkan-aimagereader-backend=fragment\n"
+                + "--android-vulkan-aimagereader-backend=direct # low power\n";
+        assertEquals("direct", MpvConfigStore.findOptionValue(
+                config, "android-vulkan-aimagereader-backend"));
+    }
+
+    @Test
     public void defaultConfig_allowsNativeAssScaling() {
         String config = MpvConfigStore.defaultConfig();
 
