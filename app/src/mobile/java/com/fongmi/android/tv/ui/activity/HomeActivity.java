@@ -45,6 +45,7 @@ import com.fongmi.android.tv.ui.fragment.VodFragment;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.MobileWindow;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.Path;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -439,6 +440,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         VodConfig.get().clear();
         AppDatabase.backup();
         OkHttp.get().clear();
+        if (Setting.getAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();
         Server.get().stop();
         super.onDestroy();
