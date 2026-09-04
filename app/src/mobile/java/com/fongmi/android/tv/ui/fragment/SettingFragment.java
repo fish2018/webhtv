@@ -95,6 +95,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     private void setOtherText() {
         mBinding.dohText.setText(getDohList()[getDohIndex()]);
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
+        mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
     }
 
     private void setCacheText() {
@@ -113,6 +114,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         mBinding.live.setOnClickListener(this::onLive);
         mBinding.wall.setOnClickListener(this::onWall);
         mBinding.appearance.setOnClickListener(this::onAppearance);
+        mBinding.autoClearCache.setOnClickListener(this::setAutoClearCache);
         mBinding.cache.setOnClickListener(this::onCache);
         mBinding.backup.setOnClickListener(this::onBackup);
         mBinding.enhance.setOnClickListener(this::onEnhance);
@@ -269,6 +271,11 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     private boolean onWallHistory(View view) {
         HistoryDialog.create().wall().show(this);
         return true;
+    }
+
+    private void setAutoClearCache(View view) {
+        Setting.putAutoClearCache(!Setting.isAutoClearCache());
+        mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
     }
 
     private void setIncognito(View view) {

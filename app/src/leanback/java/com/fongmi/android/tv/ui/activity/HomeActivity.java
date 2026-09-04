@@ -77,6 +77,7 @@ import com.fongmi.android.tv.web.HomeWebController;
 import com.fongmi.android.tv.web.WebHomeViewport;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
+import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Json;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
@@ -778,6 +779,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         VodConfig.get().clear();
         AppDatabase.backup();
         OkHttp.get().clear();
+        if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();
         Server.get().stop();
         super.onDestroy();
