@@ -180,9 +180,11 @@ jobs:
           chmod +x ./gradlew
           rm -rf Release/apk
           ./gradlew \
+            :app:assembleMobileArm64_v8aRelease \
             :app:assembleMobileArmeabi_v7aRelease \
+            :app:assembleLeanbackArm64_v8aRelease \
             :app:assembleLeanbackArmeabi_v7aRelease \
-            --no-daemon \
+            --no-daemon
 
       - name: Collect artifacts
         run: |
