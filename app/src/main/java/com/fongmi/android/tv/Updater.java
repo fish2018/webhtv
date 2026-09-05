@@ -509,20 +509,25 @@ public class Updater implements UpdateTransfer.Callback, UpdateListener {
 
     private boolean signaturesMatch(PackageInfo installed, PackageInfo archive) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            if (installed.signingInfo == null || archive.signingInfo == null) return false;
-            if (installed.signingInfo.hasMultipleSigners() || archive.signingInfo.hasMultipleSigners()) {
-                return fingerprints(installed.signingInfo.getApkContentsSigners()).equals(fingerprints(archive.signingInfo.getApkContentsSigners()));
-            }
-            Set<String> currentInstall = fingerprints(installed.signingInfo.getApkContentsSigners());
-            Set<String> newApkHistory = fingerprints(archive.signingInfo.getSigningCertificateHistory());
-            Set<String> newApkCurrent = fingerprints(archive.signingInfo.getApkContentsSigners());
-            if (!newApkHistory.isEmpty()) {
-                return !currentInstall.isEmpty() && newApkHistory.containsAll(currentInstall);
-            } else {
-                return currentInstall.equals(newApkCurrent);
-            }
+            if (archive.signingInfo == null || installed.signingInfo == null) return true;   
+            Signature[] installedCurrent = installed.signingInfo.getApkContentsSigners();
+            if (installedCurrent == null || installedCurrent.length == 0) return true;
+            Signature[] archiveCurrent = archive.signingInfo.getApkContentsSigners();
+            if (archiveCurrent == null || archiveCurrent.length == 0) return true;
+
+            Set<String> installedCurrentSet = fingerprints(installedCurrent);
+            Set<String> archiveCurrentSet = fingerprints(archiveCurrent);
+            Signature[] installedHistoryArr = installed.signingInfo.getSigningCertificateHistory();
+            Signature[] archiveHistoryArr = archive.signingInfo.getSigningCertificateHistory();
+            Set<String> installedHistorySet = installedHistoryArr != null ? fingerprints(installedHistoryArr) : new HashSet<>();
+            Set<String> archiveHistorySet = archiveHistoryArr != null ? fingerprints(archiveHistoryArr) : new HashSet<>();
+            if (!installedHistorySet.isEmpty() && installedHistorySet.containsAll(archiveCurrentSet)) return true;
+            if (!archiveHistorySet.isEmpty() && archiveHistorySet.containsAll(installedCurrentSet)) return true;
+            return installedCurrentSet.equals(archiveCurrentSet);
+        } else {
+            if (archive.signatures == null || archive.signatures.length == 0 || installed.signatures == null || installed.signatures.length ==0) return true;
+            return fingerprints(installed.signatures).equals(fingerprints(archive.signatures));
         }
-        return fingerprints(installed.signatures).equals(fingerprints(archive.signatures));
     }
 
     private Set<String> fingerprints(Signature[] signatures) {
