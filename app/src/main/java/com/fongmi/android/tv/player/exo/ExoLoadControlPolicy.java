@@ -45,8 +45,8 @@ final class ExoLoadControlPolicy {
     }
 
     private static BufferDurations custom(int bufferLevel) {
-        int level = Math.clamp(bufferLevel, 1, 10);
-        int minBufferMs = MIN_BUFFER_MS + (level - 1) * (MAX_BUFFER_MS - MIN_BUFFER_MS) / 9;
+        int level = Math.clamp(bufferLevel, 1, 15);
+        int minBufferMs = MIN_BUFFER_MS + (level - 1) * (MAX_BUFFER_MS - MIN_BUFFER_MS) / 14;
         return new BufferDurations(minBufferMs, minBufferMs * 2);
     }
 

@@ -47,6 +47,8 @@ import java.util.Map;
 final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
 
     private static final int TRANSFORM_GROWTH_BYTES = 10 * 1024;
+    static final int INITIAL_BUFFER_BYTES = 64 * 1024;
+    static final int INITIAL_SCRATCH_BYTES = 16 * 1024;
     private static final TransformStrategy P81_STRATEGY = new TransformStrategy(
             DoviStrategy.CONVERT_TO_P8,
             DoviStrategy.CONVERT_TO_P8,
@@ -79,7 +81,9 @@ final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
     @Override
     public Extractor[] createExtractors(
             Uri uri, Map<String, List<String>> responseHeaders) {
-        return wrap(delegate.createExtractors(uri, responseHeaders), isRemoteUri(uri));
+        return wrap(
+                delegate.createExtractors(uri, responseHeaders),
+                isRemoteUri(uri) && PlaybackPerformanceSetting.isDeferredCuesEnabled());
     }
 
     private Extractor[] wrap(Extractor[] extractors, boolean deferSeekForCues) {
@@ -358,9 +362,15 @@ final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
         private final ParsableByteArray outputData = new ParsableByteArray();
         @Nullable private final ExoDolbyVisionPlaybackState playbackState;
 
-        private ByteBuffer pending = ByteBuffer.allocateDirect(1024 * 1024);
-        private byte[] inputScratch = new byte[16 * 1024];
-        private byte[] outputScratch = new byte[1024 * 1024];
+        // Sized small on purpose. One of these is constructed for every video track of every
+        // media item, DV7 or not, so a megabyte each was paid unconditionally by sources that
+        // never convert anything. ensureCapacity doubles on demand, so a converting session
+        // still reaches whatever it needs after a few one-time growths, while a non-DV session
+        // never grows them at all. Not lazily null: both ensureCapacity overloads dereference
+        // their argument, so null would add an NPE surface at every call site for no gain.
+        private ByteBuffer pending = ByteBuffer.allocateDirect(INITIAL_BUFFER_BYTES);
+        private byte[] inputScratch = new byte[INITIAL_SCRATCH_BYTES];
+        private byte[] outputScratch = new byte[INITIAL_BUFFER_BYTES];
         @Nullable private HevcFrameTransformer transformer;
         @Nullable private LibDovi validator;
         @Nullable private Format sourceFormat;

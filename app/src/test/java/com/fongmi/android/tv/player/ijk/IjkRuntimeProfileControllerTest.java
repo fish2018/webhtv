@@ -29,6 +29,82 @@ public class IjkRuntimeProfileControllerTest {
     private static final long EPOCH = 1_800_000_000_000L;
 
     @Test
+    public void standaloneFirstFrameWatchdogTriggersForFixedProfileAttempt() {
+        IjkFirstFrameWatchdog watchdog = new IjkFirstFrameWatchdog();
+        watchdog.beginSession(SESSION_A);
+        watchdog.beginAttempt(SESSION_A, true);
+        watchdog.onPrepared(SESSION_A, ELAPSED);
+
+        // 累积活跃时间刚好达到 TIMEOUT_ACTIVE_MS 即触发，不额外多等一个采样周期。
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 5_000).timedOut());
+        assertTrue(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 10_000).timedOut());
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 20_000).timedOut());
+    }
+
+    @Test
+    public void standaloneFirstFrameWatchdogCountsOnlyObservedActiveTime() {
+        IjkFirstFrameWatchdog watchdog = new IjkFirstFrameWatchdog();
+        watchdog.beginSession(SESSION_A);
+        watchdog.beginAttempt(SESSION_A, true);
+        watchdog.onPrepared(SESSION_A, ELAPSED);
+
+        // 非活跃采样跨越的 10 秒不计入，随后两个活跃采样周期才累计到阈值。
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(false, true, false),
+                ELAPSED + 20_000).timedOut());
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 25_000).timedOut());
+        assertTrue(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 30_000).timedOut());
+    }
+
+    @Test
+    public void standaloneFirstFrameWatchdogIgnoresDisabledOrRenderedAttempts() {
+        IjkFirstFrameWatchdog watchdog = new IjkFirstFrameWatchdog();
+        watchdog.beginSession(SESSION_A);
+        watchdog.beginAttempt(SESSION_A, false);
+        watchdog.onPrepared(SESSION_A, ELAPSED);
+
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 20_000).timedOut());
+
+        watchdog.beginAttempt(SESSION_A, true);
+        watchdog.onPrepared(SESSION_A, ELAPSED + 30_000);
+        watchdog.onFirstFrame(SESSION_A);
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, false),
+                ELAPSED + 50_000).timedOut());
+
+        watchdog.beginAttempt(SESSION_A, true);
+        watchdog.onPrepared(SESSION_A, ELAPSED + 60_000);
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, true, true),
+                ELAPSED + 80_000).timedOut());
+        assertFalse(watchdog.evaluate(
+                SESSION_A,
+                new IjkFirstFrameWatchdog.RuntimeSample(true, false, false),
+                ELAPSED + 100_000).timedOut());
+    }
+
+    @Test
     public void activationRequiresCurrentAutomaticSession() {
         RecordingProfiles profiles = new RecordingProfiles();
         IjkRuntimeProfileController controller = new IjkRuntimeProfileController(
@@ -76,6 +152,145 @@ public class IjkRuntimeProfileControllerTest {
         assertEquals(IjkRuntimeProfileController.Reason.ALREADY_RECORDED,
                 duplicate.reason());
         assertEquals(1, profiles.firstFramePaths.size());
+    }
+
+    @Test
+    public void preparedIjkVideoWithoutFirstFrameFallsBackAfterActiveDeadline() {
+        RecordingProfiles profiles = new RecordingProfiles();
+        IjkRuntimeProfileController controller = controller(profiles, true);
+        controller.onPrepared(SESSION_A, ELAPSED);
+        controller.onPrepared(SESSION_A, ELAPSED + 10_000);
+
+        IjkRuntimeProfileController.Decision beforeDeadline =
+                controller.handleFirstFrameTimeout(
+                        SESSION_A,
+                        facts(true),
+                        ijkSample(true, 0, 30f, 0f, 0),
+                        ELAPSED + 5_000,
+                        EPOCH);
+        IjkRuntimeProfileController.Decision afterDeadline =
+                controller.handleFirstFrameTimeout(
+                        SESSION_A,
+                        facts(true),
+                        ijkSample(true, 0, 30f, 0f, 0),
+                        ELAPSED + 15_000,
+                        EPOCH + 10_000);
+
+        assertTrue(beforeDeadline == null);
+        assertTrue(afterDeadline.requestsSwitch());
+        assertEquals(IjkRuntimeProfilePolicy.Path.IJK_SOFT,
+                afterDeadline.targetPath());
+        assertEquals(IjkRuntimeProfilePolicy.FailureKind.DECODER,
+                afterDeadline.assessment().kind());
+        assertTrue(afterDeadline.failurePersisted());
+    }
+
+    @Test
+    public void newPlaybackAttemptRestartsFirstFrameDeadline() {
+        RecordingProfiles profiles = new RecordingProfiles();
+        IjkRuntimeProfileController controller = controller(profiles, true);
+        controller.onPrepared(SESSION_A, ELAPSED);
+
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 0f, 0),
+                ELAPSED + 5_000,
+                EPOCH) == null);
+
+        // 新一次起播重置累积，此前的 5 秒不再计入。
+        controller.onPlaybackAttemptStarted(
+                SESSION_A, ijkSample(true, 0, 30f, 0f, 0));
+        controller.onPrepared(SESSION_A, ELAPSED + 10_000);
+
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 0f, 0),
+                ELAPSED + 15_000,
+                EPOCH + 10_000) == null);
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 0f, 0),
+                ELAPSED + 20_000,
+                EPOCH + 15_000).requestsSwitch());
+    }
+
+    @Test
+    public void pausedTimeDoesNotSatisfyFirstFrameDeadline() {
+        RecordingProfiles profiles = new RecordingProfiles();
+        IjkRuntimeProfileController controller = controller(profiles, true);
+        controller.onPrepared(SESSION_A, ELAPSED);
+
+        // 首次采样非活跃，跨越的 20 秒不计入；之后两个活跃周期才达阈值。
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(false, 0, 30f, 0f, 0),
+                ELAPSED + 20_000,
+                EPOCH) == null);
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 0f, 0),
+                ELAPSED + 25_000,
+                EPOCH + 5_000) == null);
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 0f, 0),
+                ELAPSED + 30_000,
+                EPOCH + 10_000).requestsSwitch());
+    }
+
+    @Test
+    public void firstFrameTimeoutIgnoresExistingOutputFrames() {
+        RecordingProfiles profiles = new RecordingProfiles();
+        IjkRuntimeProfileController controller = controller(profiles, true);
+        controller.onPrepared(SESSION_A, ELAPSED);
+
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 30f, 0),
+                ELAPSED + 5_000,
+                EPOCH) == null);
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                facts(true),
+                ijkSample(true, 0, 30f, 30f, 0),
+                ELAPSED + 15_000,
+                EPOCH + 10_000) == null);
+    }
+
+    @Test
+    public void firstFrameTimeoutIgnoresMediaWithoutVideoEvidence() {
+        RecordingProfiles profiles = new RecordingProfiles();
+        IjkRuntimeProfileController controller = controller(profiles, true);
+        IjkRuntimeProfileController.Facts audioOnly =
+                IjkRuntimeProfileController.Facts.forTest(
+                        SESSION_A,
+                        null,
+                        PlaybackAutoContext.DecodeMode.HARDWARE,
+                        true,
+                        true,
+                        0f);
+        controller.onPrepared(SESSION_A, ELAPSED);
+
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                audioOnly,
+                ijkSample(true, 0, 0f, 0f, 0),
+                ELAPSED + 5_000,
+                EPOCH) == null);
+        assertTrue(controller.handleFirstFrameTimeout(
+                SESSION_A,
+                audioOnly,
+                ijkSample(true, 0, 0f, 0f, 0),
+                ELAPSED + 20_000,
+                EPOCH + 15_000) == null);
+        assertFalse(controller.snapshot().attemptFailureRecorded());
     }
 
     @Test

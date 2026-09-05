@@ -22,10 +22,17 @@ public class FolderActivity extends BaseActivity {
     private ActivityFolderBinding mBinding;
 
     public static void start(Activity activity, String key, Result result) {
+        start(activity, key, result, -1, null, -1);
+    }
+
+    public static void start(Activity activity, String key, Result result, int historyResumeCid, String historyResumeKey, int historyResumeTargetCid) {
         if (result == null || result.getTypes().isEmpty()) return;
         Intent intent = new Intent(activity, FolderActivity.class);
         intent.putExtra("key", key);
         intent.putExtra("result", result);
+        intent.putExtra("historyResumeCid", historyResumeCid);
+        intent.putExtra("historyResumeKey", historyResumeKey);
+        intent.putExtra("historyResumeTargetCid", historyResumeTargetCid);
         activity.startActivity(intent);
     }
 
@@ -35,6 +42,18 @@ public class FolderActivity extends BaseActivity {
 
     private Result getResult() {
         return getIntent().getParcelableExtra("result");
+    }
+
+    private int getHistoryResumeCid() {
+        return getIntent().getIntExtra("historyResumeCid", -1);
+    }
+
+    private String getHistoryResumeKey() {
+        return getIntent().getStringExtra("historyResumeKey");
+    }
+
+    private int getHistoryResumeTargetCid() {
+        return getIntent().getIntExtra("historyResumeTargetCid", -1);
     }
 
     @Override
@@ -53,7 +72,7 @@ public class FolderActivity extends BaseActivity {
         setSupportActionBar(mBinding.toolbar);
         Class type = getResult().getTypes().get(0);
         setTitle(type.getTypeName());
-        getSupportFragmentManager().beginTransaction().replace(R.id.container, FolderFragment.newInstance(getKey(), type, 8), "0").commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, FolderFragment.newInstance(getKey(), type, 8, getHistoryResumeCid(), getHistoryResumeKey(), getHistoryResumeTargetCid()), "0").commit();
     }
 
     private FolderFragment getFragment() {

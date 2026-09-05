@@ -13,5 +13,14 @@ public abstract class BaseEpisodeHolder extends RecyclerView.ViewHolder {
         super(itemView);
     }
 
+    public void setUseTmdbCard(boolean useTmdbCard) {
+    }
+
+    public void setFallbackStillUrl(String fallbackStillUrl) {
+    }
+
+    public void setNativeGridExpanded(boolean nativeGridExpanded) {
+    }
+
     public abstract void initView(Episode item);
 }

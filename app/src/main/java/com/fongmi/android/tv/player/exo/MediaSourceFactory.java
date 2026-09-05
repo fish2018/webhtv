@@ -37,8 +37,10 @@ import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class MediaSourceFactory implements MediaSource.Factory {
@@ -225,10 +227,25 @@ public class MediaSourceFactory implements MediaSource.Factory {
     private DataSource.Factory getDataSourceFactory() {
         if (dataSourceFactory == null) {
             DataSource.Factory cacheDataSource = getCacheDataSource(new DefaultDataSource.Factory(App.get(), getHttpDataSourceFactory()));
-            DataSource.Factory trackedDataSource = new PlaybackBytePositionDataSource.Factory(cacheDataSource);
+            DataSource.Factory trackedDataSource = new PlaybackBytePositionDataSource.Factory(withPlaylistCleaning(cacheDataSource));
             dataSourceFactory = new PriorityTaskDataSource.Factory(trackedDataSource, PLAYBACK_PRIORITY_MANAGER, C.PRIORITY_PLAYBACK, false);
         }
         return dataSourceFactory;
+    }
+
+    /**
+     * Applies the structured HLS ad rules to playlist responses.
+     *
+     * <p>Exo has no local HLS proxy, so {@code HlsManifestCleaner} never ran on this
+     * kernel and user/interface rules were silently inert — only the legacy heuristic
+     * inside the forked playlist parser did anything. Wrapping here gives Exo the same
+     * rule engine IJK already gets through {@code MpvHlsProxy}.
+     *
+     * <p>Deliberately above the cache: rules must apply to cached playlists too, and
+     * editing a rule should take effect on the next load rather than after eviction.
+     */
+    static DataSource.Factory withPlaylistCleaning(DataSource.Factory upstream) {
+        return new HlsPlaylistCleaningDataSource.Factory(upstream);
     }
 
     private CacheDataSource.Factory getCacheDataSource(DataSource.Factory upstreamFactory) {
@@ -275,4 +292,26 @@ public class MediaSourceFactory implements MediaSource.Factory {
         }
         return userAgent;
     }
+
+    public static boolean isHlsUrl(String url) {
+        String lower = url == null ? "" : url.toLowerCase(Locale.ROOT);
+        if (lower.contains("m3u8") || lower.contains("type=hls") || lower.contains("format=hls")) return true;
+        String path = getUrlPath(lower);
+        return path.endsWith("/live.php") || path.contains("/live/");
+    }
+
+    private static String getUrlPath(String url) {
+        try {
+            String path = URI.create(url).getPath();
+            if (path != null) return path;
+        } catch (IllegalArgumentException ignored) {
+        }
+        int end = url.length();
+        int query = url.indexOf('?');
+        int fragment = url.indexOf('#');
+        if (query >= 0) end = Math.min(end, query);
+        if (fragment >= 0) end = Math.min(end, fragment);
+        return url.substring(0, end);
+    }
+
 }

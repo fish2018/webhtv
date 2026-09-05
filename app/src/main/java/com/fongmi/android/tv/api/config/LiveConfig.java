@@ -10,6 +10,7 @@ import com.fongmi.android.tv.bean.Channel;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Depot;
 import com.fongmi.android.tv.bean.Group;
+import com.fongmi.android.tv.bean.HlsAdRule;
 import com.fongmi.android.tv.bean.Keep;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Rule;
@@ -39,6 +40,7 @@ public class LiveConfig extends BaseConfig {
     private Live home;
     private List<Live> lives;
     private List<Rule> rules;
+    private List<HlsAdRule> hlsRules;
     private List<String> ads;
 
     public static LiveConfig get() {
@@ -97,7 +99,9 @@ public class LiveConfig extends BaseConfig {
         home = null;
         lives = null;
         rules = null;
+        hlsRules = null;
         RuleConfig.get().invalidate();
+        HlsRuleConfig.invalidate();
         return this;
     }
 
@@ -131,6 +135,11 @@ public class LiveConfig extends BaseConfig {
     @Override
     protected boolean isLoaded() {
         return !getLives().isEmpty() && !getHome().getGroups().isEmpty();
+    }
+
+    @Override
+    protected void onLoadSuccess() {
+        InterfaceAdRuleLearningService.schedule(getConfig().getDesc(), getConfig().getUrl(), getAds(), getRules());
     }
 
     @Override
@@ -190,6 +199,7 @@ public class LiveConfig extends BaseConfig {
         setHeaders(Header.arrayFrom(fetchArray(object, "headers")));
         setProxy(Proxy.arrayFrom(fetchArray(object, "proxy")));
         setRules(Rule.arrayFrom(fetchArray(object, "rules")));
+        setHlsRules(HlsAdRule.arrayFrom(fetchArray(object, "hlsRules")));
         setHosts(Json.safeListString(object, "hosts"));
         setAds(Json.safeListString(object, "ads"));
     }
@@ -256,6 +266,15 @@ public class LiveConfig extends BaseConfig {
 
     public List<Rule> getRules() {
         return rules == null ? Collections.emptyList() : rules;
+    }
+
+    public List<HlsAdRule> getHlsRules() {
+        return hlsRules == null ? Collections.emptyList() : hlsRules;
+    }
+
+    private void setHlsRules(List<HlsAdRule> rules) {
+        this.hlsRules = rules;
+        HlsRuleConfig.invalidate();
     }
 
     private void setRules(List<Rule> rules) {

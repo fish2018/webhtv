@@ -49,7 +49,7 @@ public class UrlUtil {
         if ("assets".equals(scheme)) path = "/";
         else if ("file".equals(scheme)) path = "/file/";
         else if ("proxy".equals(scheme)) path = "/proxy?";
-        return path != null ? url.replace(scheme + "://", Server.get().getAddress(path)) : url;
+        return path != null ? url.replace(scheme + "://", Server.get().getAddress(path)) : GithubProxy.apply(url);
     }
 
     public static String getName(String url) {

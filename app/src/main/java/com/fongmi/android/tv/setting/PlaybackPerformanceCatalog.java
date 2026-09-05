@@ -29,6 +29,7 @@ public final class PlaybackPerformanceCatalog {
     public static final String SURFACE_FIXED_SIZE = "surface_fixed_size";
     public static final String DECODER_FALLBACK = "decoder_fallback";
     public static final String DV7_HDR10_FALLBACK = "dv7_hdr10_fallback";
+    public static final String DEFERRED_CUES = "deferred_cues";
     public static final String SOFT_VIDEO_TUNE = "soft_video_tune";
     public static final String AUDIO_PASSTHROUGH = "audio_passthrough";
     public static final String PREFER_AAC = "prefer_aac";
@@ -115,6 +116,7 @@ public final class PlaybackPerformanceCatalog {
         options.add(option(SURFACE_FIXED_SIZE, DECODE, "Surface 固定尺寸", "作用：按视频尺寸创建 Surface，减少超高分辨率合成压力。电视4K建议开启（默认）；切清晰度/旋转出现画面尺寸异常时关闭。代价：少数设备切换分辨率需要重建 Surface。"));
         options.add(option(DECODER_FALLBACK, DECODE, "解码器兜底", "作用：首选硬解初始化失败时尝试其他解码器。兼容性优先建议开启（默认）；只想快速暴露硬件问题可关闭。代价：可能多等待一次初始化，且备用解码器性能可能较低。"));
         options.add(option(DV7_HDR10_FALLBACK, DECODE, "DV7处理", "默认“升级P8.1”：设备不支持当前DV7硬解、但支持P8.1硬解时，使用libdovi mode 2实时改写RPU并丢弃增强层；原生DV7可硬解时保持原样。P8.1模式会锁定整次播放，不会自动降级HDR10；转换数据无效时会停止播放。选择“降级HDR10”会整次使用基底层，兼容性更高但失去Dolby Vision动态元数据。"));
+        options.add(option(DEFERRED_CUES, DECODE, "延后MKV索引", "作用：远程 MKV 起播时先不读文件尾部的 Cues 索引，等首次拖拽再按需建立，默认开启。若起播明显变慢可关闭，改回起播即读索引。代价：关闭后大文件起播可能多等一次尾部请求；开启时首次拖拽可能多等一次建索引。仅影响 EXO 的远程 MKV。"));
         options.add(option(SOFT_VIDEO_TUNE, DECODE, "软解降负载", "作用：仅在 EXO 使用 FFmpeg 软解时降低滤波和解码负载。低性能设备/软解视频可开启；硬解4K基本不受影响。代价：积极降负载会牺牲细节，不能替代硬解。"));
         options.add(option(AUDIO_PASSTHROUGH, AUDIO, "音频直通", "作用：把 Dolby/DTS 等压缩音频交给电视或功放解码，保留多声道。设备明确支持且要环绕声才开启；出现无声立即关闭。代价：输出链不支持时不会自动变成可播放音频。"));
         options.add(option(PREFER_AAC, AUDIO, "AAC 优先", "作用：有多条音轨时优先选兼容性更高的 AAC。电视无声、切换音轨失败时建议开启；追求原始多声道/高码率时关闭。代价：可能放弃质量更高的音轨。"));

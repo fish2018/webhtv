@@ -21,11 +21,15 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:ellipsize="marquee"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
         android:singleLine="true"
-        android:textColor="@color/dialog_outlined_button_text"
+        android:textColor="@color/site_button_text"
         android:textSize="14sp"
-        app:backgroundTint="@color/dialog_outlined_button_bg"
-        app:strokeColor="@color/dialog_outlined_button_stroke"
+        app:backgroundTint="@color/site_button_bg"
+        app:strokeColor="@color/site_button_stroke"
         tools:text="泥巴" />
 
     <androidx.appcompat.widget.AppCompatImageView

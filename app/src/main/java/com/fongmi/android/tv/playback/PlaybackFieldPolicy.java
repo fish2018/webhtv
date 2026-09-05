@@ -7,8 +7,8 @@ import java.util.Set;
 public class PlaybackFieldPolicy {
 
     private static final Set<String> PROTOCOL = set("schema", "event", "eventId", "timestamp", "sessionId", "dedupeKey", "scope", "deletedAt");
-    private static final Set<String> OBJECT = set("cid", "configKey", "configName", "historyKey", "siteKey", "siteName", "vodId", "vodName", "vodPic", "flag", "episodeName");
-    private static final Set<String> PROGRESS = set("state", "positionMs", "durationMs", "progress", "speed", "completed");
+    private static final Set<String> OBJECT = set("cid", "configKey", "configName", "historyKey", "siteKey", "siteName", "vodId", "vodName", "vodPic", "flag", "sourceBindingKey", "episodeName", "mediaType", "tmdbId", "seasonNumber", "tmdbEpisodeNumber");
+    private static final Set<String> PROGRESS = set("state", "positionMs", "durationMs", "progress", "speed", "speedOverride", "completed");
     private static final Set<String> STANDARD = set("appVersion", "client");
     private static final Set<String> FULL = set("episodeUrl", "episodeIndex", "clientKey");
     private static final Set<String> OPTIONAL = set("episodeUrl", "episodeIndex", "appVersion", "client", "clientKey");

@@ -33,7 +33,7 @@
 
             <com.fongmi.android.tv.ui.custom.CustomSearchView
                 android:id="@+id/keyword"
-                android:layout_width="match_parent"
+                android:layout_width="220dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:background="@null"
@@ -50,6 +50,29 @@
                 android:textColorHint="@color/white"
                 android:textCursorDrawable="@drawable/shape_cursor"
                 android:textSize="24sp" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/searchScope"
+                android:drawableEnd="@drawable/ic_scope_expand_more"
+                android:drawablePadding="6dp"
+                android:ellipsize="marquee"
+                android:includeFontPadding="false"
+                android:maxWidth="168dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:nextFocusDown="@id/keyboard"
+                android:singleLine="true"
+                android:text="@string/search_scope_all"
+                android:textColor="@color/white"
+                android:textSize="18sp" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

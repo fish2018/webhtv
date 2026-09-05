@@ -1172,6 +1172,7 @@ POST /action?do=cast
 | `durationMs` | number | 读取、写入、远端同步、Webhook | 视频总时长 |
 | `progress` | number | 读取、写入、Webhook | `positionMs / durationMs`，写入时可作为 `positionMs` 的辅助计算值 |
 | `speed` | number | 读取、写入、Webhook | 播放倍速，缺省按 `1.0` 处理 |
+| `speedOverride` | boolean | 读取、写入、Webhook | 是否由当前影片显式覆盖个人默认倍速；`false` 表示继承个人默认值 |
 | `completed` | boolean | 读取、写入、Webhook | 是否完播；写入时为辅助字段，最终仍以进度和阈值校验 |
 | `updatedAt` | number | 写入、远端同步 | 远端记录最后更新时间；缺省时 App 使用当前时间 |
 | `client` | string | 标准/完整 Webhook | 客户端 flavor，例如 mobile、leanback |
@@ -1213,6 +1214,7 @@ GET/POST /playback/current?siteKey=站点Key
   "durationMs": 456789,
   "progress": 0.2702,
   "speed": 1.0,
+  "speedOverride": false,
   "completed": false
 }
 ```
@@ -1250,6 +1252,7 @@ POST /playback/progress/delete
   "positionMs": 123456,
   "durationMs": 456789,
   "speed": 1.0,
+  "speedOverride": true,
   "completed": false,
   "updatedAt": 1781170000000,
   "clientKey": "crawler-or-device-id"
@@ -1280,6 +1283,7 @@ POST /playback/progress/delete
 | `episodeUrl` | 当前集 URL，用于优先匹配剧集 |
 | `progress` | 无 `positionMs` 时可用 `durationMs * progress` 推导 |
 | `speed` | 播放倍速，缺省为 `1.0` |
+| `speedOverride` | 是否显式覆盖个人默认倍速。`true` 保留 `speed`（包括显式 `1.0`）作为单剧设置；`false` 清除单剧覆盖并继承个人默认值。旧请求缺省此字段时，非 `1.0` 倍速按覆盖处理，`1.0` 按继承处理 |
 | `completed` | 为 true 且有 `durationMs` 时，进度会按总时长处理 |
 | `updatedAt` | 远端记录更新时间，缺省为当前时间 |
 | `cid` | 本机配置 id。只在没有 `configKey` 时用于同一设备内指定落库空间 |
@@ -1391,6 +1395,7 @@ https://<你的服务域名>/api/playback/sync
       "positionMs": 123456,
       "durationMs": 456789,
       "speed": 1.0,
+      "speedOverride": false,
       "completed": false,
       "updatedAt": 1781170000000
     }
@@ -1471,11 +1476,13 @@ GET/POST /cache?do=set&rule=命名空间&key=键&value=值
 GET/POST /cache?do=del&rule=命名空间&key=键
 ```
 
-实际存储 key：
+逻辑缓存 key：
 
 ```text
 cache_ + (rule ? rule + "_" : "") + key
 ```
+
+底层存放在应用缓存目录，用户清理缓存时会一并删除。
 
 ### 13.6 `/file` 和文件管理
 
@@ -1740,6 +1747,7 @@ window.fm = {
   stat,
   search,
   openVod,
+  openSite,
   openLive,
   openKeep,
   openSetting,
@@ -1771,6 +1779,7 @@ window.fm = {
 | `fm.stat` | `fongmi.player.status` |
 | `fm.search` | `fongmi.app.search` |
 | `fm.openVod` | `fongmi.app.openVod` |
+| `fm.openSite` | `fongmi.app.openSite` |
 | `fm.openLive` | `fongmi.app.openLive` |
 | `fm.openKeep` | `fongmi.app.openKeep` |
 | `fm.openSetting` | `fongmi.app.openSetting` |
@@ -2203,10 +2212,11 @@ await fm.search("仙逆", {
 
 返回值为 `{}`。搜索页是否有结果由当前配置站点决定。WebHome 详情页的“搜索播放”如果希望用户从原生搜索结果进入播放器后仍看到同一张横屏背景，应传 `wallPic`；如果没有 `wallPic`，播放页不会用搜索结果海报作为背景兜底。
 
-### 19.2 点播、收藏、直播和设置入口
+### 19.2 点播、内容源、收藏、直播和设置入口
 
 ```js
 await fm.openVod();
+await fm.openSite();
 await fm.openKeep();
 await fm.openLive();
 await fm.openSetting();
@@ -2217,6 +2227,7 @@ await fm.openSetting();
 | 接口 | 行为 |
 | --- | --- |
 | `fm.openVod()` | 退出 WebHome chrome，回到原生点播首页 |
+| `fm.openSite()` | 打开原生内容源选择器；选择后刷新当前 WebHome |
 | `fm.openKeep()` | 打开原生收藏页 |
 | `fm.openLive()` | 打开原生直播页 |
 | `fm.openSetting()` | 打开原生设置页；手机端切到设置页，TV 端打开设置 Activity |
@@ -2249,6 +2260,7 @@ const history = await fm.history();
 | `position` | number | 最近播放位置，毫秒；未知时为负值 |
 | `duration` | number | 总时长，毫秒；未知时为负值 |
 | `speed` | number | 历史保存的播放倍速 |
+| `speedOverride` | boolean | 该历史是否保存了单剧倍速覆盖；`false` 表示播放时使用个人默认倍速 |
 | `scale` | number | 历史保存的画面比例索引；未设置时为 `-1` |
 | `cid` | number | 所属点播配置 ID |
 
@@ -2352,11 +2364,13 @@ await fm.cache.del("key", "rule");
 | `fm.cache.set(key, value, rule)` | `key: string`，`value: string`，`rule?: string` | `{}` | 写入字符串 |
 | `fm.cache.del(key, rule)` | `key: string`，`rule?: string` | `{}` | 删除字符串 |
 
-实际 Native 存储 key：
+逻辑 Native 缓存 key：
 
 ```text
 cache_ + (rule ? rule + "_" : "") + key
 ```
+
+底层存放在应用缓存目录，用户清理缓存时会一并删除。
 
 注意：
 

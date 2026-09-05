@@ -24,7 +24,7 @@ android {
     ndkVersion "29.0.14206865"
 
     defaultConfig {
-        applicationId "com.fongmi.android.tv"
+        applicationId "com.silent.android.webhtv"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
         versionCode 560
@@ -136,9 +136,10 @@ androidComponents {
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.aar"])
+    implementation fileTree(dir: "libs", include: ["*.aar", "*.jar"])
     implementation project(':catvod')
     implementation project(':chaquo')
+    implementation project(':nodejs')
     implementation project(':quickjs')
     implementation libs.appcompat
     implementation libs.lifecycle.service
@@ -156,9 +157,11 @@ dependencies {
     implementation libs.android.gif.drawable
     implementation libs.bundles.glide
     implementation libs.bundles.jupnp
+    implementation libs.commons.compress
     implementation libs.customactivityoncrash
     implementation libs.eventbus
     implementation libs.flexbox
+    implementation libs.tukaani.xz
     implementation libs.jgit
     implementation libs.lottie
     implementation libs.material
@@ -169,12 +172,14 @@ dependencies {
     implementation libs.simple.xml
     implementation libs.textdrawable
     implementation libs.tensorflow.lite
+    implementation libs.tink.android
     implementation libs.zxing.core
     leanbackImplementation libs.leanback
     leanbackImplementation libs.androidautosize
     leanbackImplementation libs.zxing.android.embedded
     mobileImplementation libs.biometric
     mobileImplementation libs.zxing.android.embedded
+    testImplementation libs.junit
     annotationProcessor libs.room.compiler
     annotationProcessor libs.eventbus.annotation.processor
     annotationProcessor libs.glide.compiler

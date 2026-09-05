@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 背景图底部渐变遮罩，从透明到深色 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="90"
+        android:endColor="#EE0F141A"
+        android:startColor="#000F141A"
+        android:type="linear" />
+</shape>

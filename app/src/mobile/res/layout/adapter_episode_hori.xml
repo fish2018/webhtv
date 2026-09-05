@@ -1,13 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 选集项布局：支持简单文本模式和 TMDB 卡片模式 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/text"
+    android:id="@+id/container"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:background="@drawable/shape_video_item"
-    android:ellipsize="marquee"
-    android:gravity="center"
-    android:singleLine="true"
-    android:textColor="@color/selector_video_text"
-    android:textSize="14sp"
-    tools:text="20" />
+    android:layout_height="wrap_content">
+
+    <!-- 简单文本模式（非 TMDB） -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/shape_video_item"
+        android:ellipsize="marquee"
+        android:gravity="center"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:textColor="@color/selector_video_text"
+        android:textSize="14sp"
+        tools:text="20" />
+
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/nativeFileSize"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/shape_episode_card_badge"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxWidth="84dp"
+        android:paddingStart="7dp"
+        android:paddingEnd="7dp"
+        android:singleLine="true"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="[44.01GB]"
+        tools:visibility="visible" />
+
+    <!-- TMDB 卡片模式：旧版光影剧幕覆盖式剧照卡 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        android:layout_width="230dp"
+        android:layout_height="190dp"
+        android:layout_marginEnd="12dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:cardBackgroundColor="#CC16202A"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/selector_episode_card_stroke"
+        app:strokeWidth="2dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/still"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#16202A"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="96dp"
+                android:layout_gravity="bottom"
+                android:background="@drawable/shape_episode_card_overlay" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/rating"
+                android:layout_width="wrap_content"
+                android:layout_height="24dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/shape_episode_card_badge"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="★8.5"
+                tools:visibility="visible" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/fileSize"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:layout_gravity="top|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/shape_episode_card_badge"
+                android:ellipsize="marquee"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:maxWidth="140dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:text="[5.32G]"
+                tools:visibility="visible" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:orientation="vertical"
+                android:paddingStart="10dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="10dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/cardTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="marquee"
+                    android:marqueeRepeatLimit="marquee_forever"
+                    android:scrollHorizontally="true"
+                    android:singleLine="true"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="1. 去有鳳凰的地方" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/overview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:lineSpacingExtra="1dp"
+                    android:maxLines="2"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="10sp"
+                    tools:text="这是集数的简介内容..." />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>

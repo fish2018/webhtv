@@ -1,0 +1,53 @@
+========================================
+    VodPlus 实验室 - 二进制相互调用说明
+========================================
+
+由于不同运行时（如 Node.js）可能内置了特定的 shell 路径，
+直接使用 execSync("php -v") 这样的命令可能会失败。
+
+推荐方案：使用环境变量获取其他包的二进制路径
+
+每个已安装的包都会自动设置环境变量：
+  - PHP_BIN      → PHP 二进制文件绝对路径
+  - NODEJS_BIN   → Node.js 二进制文件绝对路径
+  - PYTHON_BIN   → Python 二进制文件绝对路径
+  - MIHOMO_BIN   → Mihomo 二进制文件绝对路径
+  - ALIST_BIN    → AList 二进制文件绝对路径
+
+========================================
+    使用示例
+========================================
+
+【Node.js 调用 PHP】
+const { spawnSync } = require("child_process");
+const phpBin = process.env.PHP_BIN;
+if (phpBin) {
+    const result = spawnSync(phpBin, ["-v"]);
+    console.log(result.stdout.toString());
+}
+
+【PHP 调用 Node.js】
+$nodeBin = getenv('NODEJS_BIN');
+if ($nodeBin) {
+    $output = shell_exec($nodeBin . ' -v');
+    echo $output;
+}
+
+【Python 调用 PHP】
+import os
+import subprocess
+php_bin = os.environ.get('PHP_BIN')
+if php_bin:
+    result = subprocess.run([php_bin, '-v'], capture_output=True, text=True)
+    print(result.stdout)
+
+========================================
+    注意事项
+========================================
+
+1. 环境变量只在实验室启动的进程中可用
+2. 如果目标包未安装，对应的环境变量不存在
+3. 建议在使用前检查环境变量是否存在
+4. 示例脚本位于 examples 目录下
+
+========================================

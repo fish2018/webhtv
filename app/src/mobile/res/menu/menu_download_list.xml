@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/clear"
+        android:icon="@drawable/ic_popup_refresh"
+        android:title="@string/download_clear_finished"
+        app:iconTint="@color/white"
+        app:showAsAction="always" />
+
+</menu>

@@ -2,7 +2,6 @@ package com.fongmi.android.tv.bean;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
@@ -21,14 +20,16 @@ public class Episode implements Parcelable, Diffable<Episode> {
     private String desc;
     @SerializedName("url")
     private String url;
+    private transient String displayName;
 
     private int index;
     private int number;
     private boolean selected;
-    private transient String displayName;
+    private TmdbEpisode tmdbEpisode;
+    private transient boolean tmdbEpisodeMapped;
 
     private Episode(String name, String desc, String url) {
-        this.number = Util.getNumber(name);
+        this.number = Util.getEpisodeNumber(name);
         this.name = name;
         this.desc = desc;
         this.url = url;
@@ -54,7 +55,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
     }
 
     public String getName() {
-        return TextUtils.isEmpty(name) ? "" : name;
+        return isEmpty(name) ? "" : name;
     }
 
     public void setName(String name) {
@@ -62,7 +63,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
     }
 
     public String getDesc() {
-        return TextUtils.isEmpty(desc) ? "" : desc;
+        return isEmpty(desc) ? "" : desc;
     }
 
     public String getRawDisplayName() {
@@ -70,7 +71,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
     }
 
     public String getDisplayName() {
-        return TextUtils.isEmpty(displayName) ? getRawDisplayName() : displayName;
+        return isEmpty(displayName) ? getRawDisplayName() : displayName;
     }
 
     public void setDisplayName(String displayName) {
@@ -78,7 +79,7 @@ public class Episode implements Parcelable, Diffable<Episode> {
     }
 
     public String getUrl() {
-        return TextUtils.isEmpty(url) ? "" : url;
+        return isEmpty(url) ? "" : url;
     }
 
     public int getIndex() {
@@ -105,6 +106,24 @@ public class Episode implements Parcelable, Diffable<Episode> {
         setSelected(false);
     }
 
+    public TmdbEpisode getTmdbEpisode() {
+        return tmdbEpisode;
+    }
+
+    public void setTmdbEpisode(TmdbEpisode tmdbEpisode) {
+        this.tmdbEpisode = tmdbEpisode;
+        this.tmdbEpisodeMapped = false;
+    }
+
+    public void setMappedTmdbEpisode(TmdbEpisode tmdbEpisode) {
+        this.tmdbEpisode = tmdbEpisode;
+        this.tmdbEpisodeMapped = tmdbEpisode != null;
+    }
+
+    public boolean isTmdbEpisodeMapped() {
+        return tmdbEpisodeMapped;
+    }
+
     public int getScore(String name, int number) {
         if (getName().equalsIgnoreCase(name)) return 100;
         if (number != -1 && getNumber() == number) return 80;
@@ -118,10 +137,54 @@ public class Episode implements Parcelable, Diffable<Episode> {
         return getName().equalsIgnoreCase(other.getName());
     }
 
+    /**
+     * 按集号匹配：不同线路/不同源对同一集的命名格式往往不同（如“第9集”与“[277.1MB] 9. xxx”），
+     * URL 与集名严格比对都会失败。已绑定 TMDB 时优先比较标准季集位置；否则沿用
+     * Flag.find/Episode.getNumber 的现有集号提取结果。
+     */
+    public boolean matchesNumber(Episode other) {
+        if (other == null) return false;
+        TmdbEpisode mineTmdb = getTmdbEpisode();
+        TmdbEpisode theirsTmdb = other.getTmdbEpisode();
+        if (mineTmdb != null && theirsTmdb != null
+                && mineTmdb.getNumber() > 0 && theirsTmdb.getNumber() > 0
+                && mineTmdb.getSeasonNumber() >= 0 && theirsTmdb.getSeasonNumber() >= 0
+                && mineTmdb.getSeasonNumber() != theirsTmdb.getSeasonNumber()) return false;
+        int mine = getMatchNumber();
+        int theirs = other.getMatchNumber();
+        return mine > 0 && theirs > 0 && mine == theirs;
+    }
+
+    private int getMatchNumber() {
+        if (getTmdbEpisode() != null && getTmdbEpisode().getNumber() > 0) return getTmdbEpisode().getNumber();
+        return getNumber() > 0 ? getNumber() : Util.getEpisodeNumber(getName());
+    }
+
     public boolean matches(Episode other) {
         if (other == null) return false;
-        if (!TextUtils.isEmpty(getUrl()) && !TextUtils.isEmpty(other.getUrl())) return getUrl().equals(other.getUrl());
+        if (hasTmdbEpisodeNumber() && other.hasTmdbEpisodeNumber()) return matchesNumber(other);
+        if (!isEmpty(getUrl()) && !isEmpty(other.getUrl())) return getUrl().equals(other.getUrl());
         return matchesName(other);
+    }
+
+    /**
+     * 播放恢复时判断是否仍是同一集。源站刷新后 URL 可能变化，
+     * 因此在严格 URL 匹配失败时回退到集名和集号。
+     */
+    public boolean matchesPlayback(Episode other) {
+        if (other == null) return false;
+        if (hasTmdbEpisodeNumber() && other.hasTmdbEpisodeNumber()) return matchesNumber(other);
+        if (!isEmpty(getUrl()) && !isEmpty(other.getUrl()) && getUrl().equals(other.getUrl())) return true;
+        if (!isEmpty(getName()) && !isEmpty(other.getName()) && matchesName(other)) return true;
+        return matchesNumber(other);
+    }
+
+    private boolean hasTmdbEpisodeNumber() {
+        return getTmdbEpisode() != null && getTmdbEpisode().getNumber() > 0;
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.length() == 0;
     }
 
     public Episode trans() {

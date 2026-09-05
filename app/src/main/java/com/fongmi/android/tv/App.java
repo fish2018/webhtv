@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,16 +15,19 @@ import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
 import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.server.proxy.MultiThreadProxy;
 import com.fongmi.android.tv.playback.PlaybackRemoteSyncer;
 import com.fongmi.android.tv.player.PlaybackMemoryMonitor;
 import com.fongmi.android.tv.player.PlaybackSystemConditionMonitor;
 import com.fongmi.android.tv.remote.RemoteAgent;
+import com.fongmi.android.tv.setting.AppBranding;
 import com.fongmi.android.tv.setting.ProxySetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.DanmakuSearchListFocusFixer;
 import com.fongmi.android.tv.utils.NsdDeviceDiscovery;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PreviousProcessExitLogger;
+import com.fongmi.android.tv.utils.WebViewDataDirectoryGuard;
 import com.fongmi.hook.Hook;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.SpiderDebug;
@@ -37,8 +42,13 @@ public class App extends Application implements Application.ActivityLifecycleCal
     private final Gson gson;
     private final long time;
 
+    private final Runnable backgroundServicesStarter = this::startBackgroundServicesNow;
+
     private Activity activity;
     private Hook hook;
+
+    private Resources resources;
+    private int resourcesLanguage = Integer.MIN_VALUE;
 
     public App() {
         instance = this;
@@ -87,6 +97,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        WebViewDataDirectoryGuard.clearStaleLock(base);
         Init.set(base);
     }
 
@@ -96,6 +107,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
         PlaybackMemoryMonitor.process().initialize(this);
         PlaybackSystemConditionMonitor.process().initialize(this);
         Setting.applyLanguage();
+        AppBranding.applyLauncherIcon(this);
         DebugLogStore.restoreEnabled();
         if (DebugLogStore.isEnabled()) {
             Setting.logDebugEnvironment("restore");
@@ -103,9 +115,22 @@ public class App extends Application implements Application.ActivityLifecycleCal
         }
         Notify.createChannel();
         ProxySetting.apply();
-        DanmakuSearchListFocusFixer.start();
         registerActivityLifecycleCallbacks(this);
-        post(this::startBackgroundServices, 1200);
+        registerContentHandlers();
+        resumeBackgroundServices();
+    }
+
+    private void registerContentHandlers() {
+        // 猫源动作项排最前：它的判定最便宜（只比字符串），且命中就该直接开网页，
+        // 不该让音频/阅读器 handler 先按站点规则把它认走
+        com.fongmi.android.tv.content.ContentDispatcher.registerHandler(new com.fongmi.android.tv.content.CatActionContentHandler());
+        com.fongmi.android.tv.content.ContentDispatcher.registerHandler(new com.fongmi.android.tv.content.AudioContentHandler());
+        com.fongmi.android.tv.content.ContentDispatcher.registerHandler(new com.fongmi.android.tv.content.ReaderContentHandler());
+        registerReaderFallback();
+    }
+
+    private void registerReaderFallback() {
+        Product.registerReaderFallback();
     }
 
     @Override
@@ -120,13 +145,44 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onLowMemory();
     }
 
-    private void startBackgroundServices() {
+    private void startBackgroundServicesNow() {
         SpiderDebug.log("startup", "background services start cost=%sms", System.currentTimeMillis() - time);
         Server.get().start();
+        startMultiThreadProxy();
         PlaybackRemoteSyncer.start();
         RemoteAgent.get().start();
         NsdDeviceDiscovery.register();
+        com.fongmi.android.tv.lab.LabAutoStart.start(this);
         SpiderDebug.log("startup", "background services ready cost=%sms", System.currentTimeMillis() - time);
+    }
+
+    private void startMultiThreadProxy() {
+        try {
+            var snapshot = MultiThreadProxy.applyStored();
+            SpiderDebug.log("proxy",
+                    "multi-thread proxy enabled=%s ready=%s port=%s revision=%s",
+                    snapshot.config().enabled(),
+                    snapshot.ready(),
+                    snapshot.actualPort(),
+                    snapshot.configRevision());
+        } catch (Exception e) {
+            SpiderDebug.log("proxy", "multi-thread proxy start failed error=%s", e.getMessage());
+        }
+    }
+
+    public static void resumeBackgroundServices() {
+        removeCallbacks(get().backgroundServicesStarter);
+        DanmakuSearchListFocusFixer.start();
+        post(get().backgroundServicesStarter, 1200);
+    }
+
+    public static void stopBackgroundServices() {
+        removeCallbacks(get().backgroundServicesStarter);
+        DanmakuSearchListFocusFixer.stop();
+        MultiThreadProxy.stop();
+        PlaybackRemoteSyncer.stop();
+        RemoteAgent.get().stop();
+        NsdDeviceDiscovery.unregister();
     }
 
     @Override
@@ -137,6 +193,26 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     public String getPackageName() {
         return hook != null ? hook.getPackageName() : getBaseContext().getPackageName();
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public Resources getResources() {
+        int language = Setting.getLanguage();
+        if (resources == null || resourcesLanguage != language) {
+            Resources resources = super.getResources();
+            Configuration configuration = Setting.wrapLanguage(getBaseContext()).getResources().getConfiguration();
+            // WebView adds its resource package to the framework-owned AssetManager on Android 9.
+            resources.updateConfiguration(configuration, resources.getDisplayMetrics());
+            this.resources = resources;
+            resourcesLanguage = language;
+        }
+        return resources;
+    }
+
+    public void invalidateResources() {
+        resources = null;
+        resourcesLanguage = Integer.MIN_VALUE;
     }
 
     @Override

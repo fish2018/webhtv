@@ -56,4 +56,15 @@
         android:padding="8dp"
         android:src="@drawable/ic_subtitle_reset" />
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/search"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/selector_subtitle"
+        android:contentDescription="@string/subtitle_manual_search"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_action_search" />
+
 </androidx.appcompat.widget.LinearLayoutCompat>

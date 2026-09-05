@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Selected state (current site) - white text on blue background -->
+    <item android:color="#FFFFFF" android:state_selected="true" />
+    <!-- Focused state -->
+    <item android:color="#174EA6" android:state_focused="true" />
+    <!-- Default -->
+    <item android:color="#202124" />
+</selector>

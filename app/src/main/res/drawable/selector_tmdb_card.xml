@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TMDB卡片焦点边框选择器 - 使用focused和activated双状态 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 选中且获得焦点：高亮黄边框 -->
+    <item android:state_focused="true" android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="4dp" android:color="@color/display_option_bg_selected" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- 获得焦点：白色边框（优先级高于activated） -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="3dp" android:color="@color/white" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- activated（由代码同步焦点状态）：白色边框 -->
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="3dp" android:color="@color/white" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- 仅选中（未获得焦点）：高亮黄细边框 -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="2dp" android:color="@color/display_option_bg_selected" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- 默认：透明 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+</selector>

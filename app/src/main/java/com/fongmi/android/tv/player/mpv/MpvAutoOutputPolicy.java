@@ -63,6 +63,14 @@ public final class MpvAutoOutputPolicy {
         return width > 0 && height > 0;
     }
 
+    public static boolean requiresGpuSubtitle(boolean externalSubtitleActive, boolean userRequestedSubtitle) {
+        return false;
+    }
+
+    public static boolean shouldLeaveSurfaceDirectForSubtitle(boolean automaticOutput, boolean currentlyDirect, boolean externalSubtitleActive, boolean userRequestedSubtitle) {
+        return automaticOutput && currentlyDirect && requiresGpuSubtitle(externalSubtitleActive, userRequestedSubtitle);
+    }
+
     public static boolean canRevealDirectFrame(boolean automaticOutput,
                                                boolean outputEvaluated,
                                                boolean playbackReady,
@@ -72,9 +80,9 @@ public final class MpvAutoOutputPolicy {
         return automaticOutput
                 && !outputEvaluated
                 && playbackReady
-                && surfaceDirect
-                && width > 0
-                && height > 0;
+                 && surfaceDirect
+                 && width > 0
+                 && height > 0;
     }
 
     public enum Transition {

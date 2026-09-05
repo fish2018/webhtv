@@ -1,7 +1,5 @@
 package com.fongmi.android.tv.bean;
 
-import android.text.TextUtils;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
@@ -29,7 +27,7 @@ public class Sub {
         Sub sub = new Sub();
         sub.url = path;
         sub.name = UrlUtil.path(path);
-        sub.flag = C.SELECTION_FLAG_FORCED;
+        sub.flag = C.SELECTION_FLAG_DEFAULT;
         sub.format = PlayerHelper.getSubtitleMimeType(sub.name);
         return sub;
     }
@@ -44,19 +42,19 @@ public class Sub {
     }
 
     public String getUrl() {
-        return TextUtils.isEmpty(url) ? "" : url;
+        return isEmpty(url) ? "" : url;
     }
 
     public String getName() {
-        return TextUtils.isEmpty(name) ? "" : name;
+        return isEmpty(name) ? "" : name;
     }
 
     public String getLang() {
-        return TextUtils.isEmpty(lang) ? "" : lang;
+        return isEmpty(lang) ? "" : lang;
     }
 
     public String getFormat() {
-        return TextUtils.isEmpty(format) ? "" : format;
+        return isEmpty(format) ? "" : format;
     }
 
     public int getFlag() {
@@ -69,6 +67,10 @@ public class Sub {
 
     public boolean isForced() {
         return (flag & C.SELECTION_FLAG_FORCED) != 0;
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.length() == 0;
     }
 
     public void setFlag(int flag) {

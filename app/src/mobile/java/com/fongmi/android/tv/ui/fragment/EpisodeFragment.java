@@ -31,10 +31,19 @@ public class EpisodeFragment extends BaseFragment implements EpisodeAdapter.OnCl
         return getArguments().getParcelableArrayList("items");
     }
 
+    private boolean useTmdbCard() {
+        return getArguments().getBoolean("tmdbCard", false);
+    }
+
     public static EpisodeFragment newInstance(int spanCount, List<Episode> items) {
+        return newInstance(spanCount, items, false);
+    }
+
+    public static EpisodeFragment newInstance(int spanCount, List<Episode> items, boolean tmdbCard) {
         Bundle args = new Bundle();
         args.putInt("spanCount", spanCount);
         args.putParcelableArrayList("items", new ArrayList<>(items));
+        args.putBoolean("tmdbCard", tmdbCard);
         EpisodeFragment fragment = new EpisodeFragment();
         fragment.setArguments(args);
         return fragment;
@@ -57,6 +66,7 @@ public class EpisodeFragment extends BaseFragment implements EpisodeAdapter.OnCl
         mBinding.recycler.setLayoutManager(new GridLayoutManager(getContext(), getSpanCount()));
         mBinding.recycler.addItemDecoration(new SpaceItemDecoration(getSpanCount(), 8));
         mBinding.recycler.setAdapter(adapter = new EpisodeAdapter(this, ViewType.GRID, getItems()));
+        adapter.setUseTmdbCard(useTmdbCard());
         mBinding.recycler.scrollToPosition(adapter.getPosition());
     }
 

@@ -17,10 +17,15 @@ import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 public class Flag implements Parcelable, Diffable<Flag> {
 
@@ -66,6 +71,11 @@ public class Flag implements Parcelable, Diffable<Flag> {
         Flag item = create(flag);
         item.setEpisodes(url);
         return item;
+    }
+
+    public static String stableKey(Flag flag, int index) {
+        String value = flag == null || TextUtils.isEmpty(flag.getFlag()) ? "flag" : flag.getFlag().trim();
+        return value + "#" + Math.max(0, index);
     }
 
     public String getShow() {
@@ -133,6 +143,10 @@ public class Flag implements Parcelable, Diffable<Flag> {
         if (selected) item.episodes = episodes;
     }
 
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
     private void setSelected(Episode episode) {
         setPosition(indexOf(episode));
         for (int i = 0; i < getEpisodes().size(); i++) getEpisodes().get(i).setSelected(i == getPosition());
@@ -168,11 +182,15 @@ public class Flag implements Parcelable, Diffable<Flag> {
     public Episode find(String remarks, boolean strict) {
         if (getEpisodes().isEmpty()) return null;
         if (getEpisodes().size() == 1) return getEpisodes().get(0);
-        int number = Util.getNumber(remarks);
+        int number = Util.getEpisodeNumber(remarks);
         return getEpisodes().stream()
                 .map(episode -> new Episode.Rule(episode, episode.getScore(remarks, number)))
                 .filter(Episode.Rule::find).max(Comparator.comparingInt(Episode.Rule::score)).map(Episode.Rule::episode)
-                .orElseGet(() -> isPositionValid() ? getEpisodes().get(getPosition()) : strict ? null : getEpisodes().get(0));
+                .orElseGet(() -> {
+                    if (isPositionValid()) return getEpisodes().get(getPosition());
+                    if (strict || getEpisodes().isEmpty()) return null;
+                    return getEpisodes().get(0);
+                });
     }
 
     private boolean isPositionValid() {
@@ -181,18 +199,80 @@ public class Flag implements Parcelable, Diffable<Flag> {
 
     public Episode find(Episode target, boolean strict) {
         if (getEpisodes().isEmpty()) return null;
-        if (getEpisodes().size() == 1) return getEpisodes().get(0);
+        if (getEpisodes().size() == 1) {
+            Episode episode = getEpisodes().get(0);
+            if (hasTmdbEpisodeNumber(target) && hasTmdbEpisodeNumber(episode) && !episode.matchesNumber(target)) return null;
+            return episode;
+        }
+        if (hasTmdbEpisodeNumber(target)) {
+            for (Episode episode : getEpisodes()) {
+                if (hasTmdbEpisodeNumber(episode) && episode.matchesNumber(target)) return episode;
+            }
+            int index = indexOf(target);
+            if (index != -1) {
+                Episode episode = getEpisodes().get(index);
+                if (!hasTmdbEpisodeNumber(episode)) return episode;
+            }
+            for (Episode episode : getEpisodes()) {
+                if (!hasTmdbEpisodeNumber(episode) && episode.matchesNumber(target)) return episode;
+            }
+            for (Episode episode : getEpisodes()) {
+                if (!hasTmdbEpisodeNumber(episode) && episode.matchesName(target)) return episode;
+            }
+            return null;
+        }
         int index = indexOf(target);
         if (index != -1) return getEpisodes().get(index);
         return find(target == null ? "" : target.getName(), strict);
     }
 
+    private static boolean hasTmdbEpisodeNumber(Episode episode) {
+        return episode != null && episode.getTmdbEpisode() != null && episode.getTmdbEpisode().getNumber() > 0;
+    }
+
     public void mergeEpisodes(List<Episode> items, boolean rev) {
-        for (Episode item : items) {
-            if (getEpisodes().contains(item)) continue;
-            if (rev) getEpisodes().add(0, item);
-            else getEpisodes().add(item);
+        if (items == null || items.isEmpty()) return;
+        if (items == getEpisodes()) return;
+        IdentityHashMap<Episode, Episode> byIdentity = new IdentityHashMap<>();
+        Map<String, Episode> byUrl = new HashMap<>();
+        Map<Episode, Episode> byValue = new HashMap<>();
+        Map<String, Episode> byName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Episode episode : getEpisodes()) {
+            byIdentity.put(episode, episode);
+            byValue.putIfAbsent(episode, episode);
+            if (episode == null) continue;
+            if (!TextUtils.isEmpty(episode.getUrl())) byUrl.putIfAbsent(episode.getUrl(), episode);
+            byName.putIfAbsent(episode.getName(), episode);
         }
+        List<Episode> toAdd = new ArrayList<>();
+        for (Episode item : items) {
+            Episode target = byIdentity.get(item);
+            if (target == null && item != null && !TextUtils.isEmpty(item.getUrl())) target = byUrl.get(item.getUrl());
+            if (target == null) target = byValue.get(item);
+            if (target == null && item != null && TextUtils.isEmpty(item.getUrl())) target = byName.get(item.getName());
+            if (target != null) {
+                mergeEpisode(target, item);
+                continue;
+            }
+            toAdd.add(item);
+        }
+        if (!toAdd.isEmpty()) {
+            if (rev) {
+                Collections.reverse(toAdd);
+                getEpisodes().addAll(0, toAdd);
+            } else {
+                getEpisodes().addAll(toAdd);
+            }
+        }
+    }
+
+    private void mergeEpisode(Episode target, Episode source) {
+        if (target == null || source == null) return;
+        if (source.getTmdbEpisode() != null) {
+            if (source.isTmdbEpisodeMapped()) target.setMappedTmdbEpisode(source.getTmdbEpisode());
+            else target.setTmdbEpisode(source.getTmdbEpisode());
+        }
+        if (!TextUtils.equals(source.getDisplayName(), source.getRawDisplayName())) target.setDisplayName(source.getDisplayName());
     }
 
     public Flag trans() {

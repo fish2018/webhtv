@@ -3,11 +3,14 @@ package com.fongmi.android.tv.api.config;
 import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.api.CatSource;
 import com.fongmi.android.tv.api.CspWarmup;
 import com.fongmi.android.tv.api.Decoder;
 import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Depot;
+import com.fongmi.android.tv.bean.GroupRule;
+import com.fongmi.android.tv.bean.HlsAdRule;
 import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.bean.Rule;
 import com.fongmi.android.tv.bean.Site;
@@ -15,6 +18,7 @@ import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.setting.CustomCspSetting;
+import com.fongmi.android.tv.setting.GroupRuleConfig;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 import com.github.catvod.bean.Doh;
@@ -39,6 +43,7 @@ public class VodConfig extends BaseConfig {
     private Parse parse;
     private List<Doh> doh;
     private List<Rule> rules;
+    private List<HlsAdRule> hlsRules;
     private List<Site> sites;
     private List<String> ads;
     private List<String> flags;
@@ -69,7 +74,7 @@ public class VodConfig extends BaseConfig {
     }
 
     public static void load(Config config, Callback callback) {
-        get().clear().config(config).load(callback);
+        get().clear("vod-config-load").config(config).load(callback);
     }
 
     public VodConfig init() {
@@ -82,6 +87,10 @@ public class VodConfig extends BaseConfig {
     }
 
     public VodConfig clear() {
+        return clear("vod-config-clear");
+    }
+
+    public VodConfig clear(String reason) {
         ads = null;
         doh = null;
         home = null;
@@ -90,10 +99,13 @@ public class VodConfig extends BaseConfig {
         sites = null;
         flags = null;
         rules = null;
+        hlsRules = null;
         parses = null;
         WebHomeExtensionRegistry.get().setGlobalSources(null, "");
-        BaseLoader.get().clear();
+        BaseLoader.get().clear(reason);
         RuleConfig.get().invalidate();
+        HlsRuleConfig.invalidate();
+        GroupRuleConfig.setInterfaceRules(List.of());
         return this;
     }
 
@@ -115,8 +127,10 @@ public class VodConfig extends BaseConfig {
 
     @Override
     protected void load(Config config) throws Throwable {
-        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
-        checkJson(config, Json.parse(json).getAsJsonObject());
+        // 猫源填的是 bundle 地址（.js.md5），要先在本机把 Node 服务跑起来，再读它的 /config
+        String url = CatSource.isBundle(config.getUrl()) ? CatSource.serve(config.getUrl()) : UrlUtil.convert(config.getUrl());
+        String json = Decoder.getJson(url, TAG);
+        checkJson(config, CatSource.normalize(url, Json.parse(json)));
     }
 
     @Override
@@ -132,6 +146,7 @@ public class VodConfig extends BaseConfig {
     @Override
     protected void onLoadSuccess() {
         CspWarmup.schedule("vod-config-loaded");
+        InterfaceAdRuleLearningService.schedule(getConfig().getDesc(), getConfig().getUrl(), getAds(), getRules());
     }
 
     private void checkJson(Config config, JsonObject object) throws Throwable {
@@ -170,6 +185,8 @@ public class VodConfig extends BaseConfig {
         setHeaders(Header.arrayFrom(fetchArray(object, "headers")));
         setProxy(Proxy.arrayFrom(fetchArray(object, "proxy")));
         setRules(Rule.arrayFrom(fetchArray(object, "rules")));
+        setHlsRules(HlsAdRule.arrayFrom(fetchArray(object, "hlsRules")));
+        setGroupRules(GroupRule.arrayFrom(fetchArray(object, "groupRules")));
         setDoh(Doh.arrayFrom(fetchArray(object, "doh")));
         setFlags(Json.safeListString(object, "flags"));
         setHosts(Json.safeListString(object, "hosts"));
@@ -238,6 +255,19 @@ public class VodConfig extends BaseConfig {
 
     public List<Rule> getRules() {
         return rules == null ? Collections.emptyList() : rules;
+    }
+
+    public List<HlsAdRule> getHlsRules() {
+        return hlsRules == null ? Collections.emptyList() : hlsRules;
+    }
+
+    private void setHlsRules(List<HlsAdRule> rules) {
+        this.hlsRules = rules;
+        HlsRuleConfig.invalidate();
+    }
+
+    private void setGroupRules(List<GroupRule> rules) {
+        GroupRuleConfig.setInterfaceRules(rules);
     }
 
     private void setRules(List<Rule> rules) {

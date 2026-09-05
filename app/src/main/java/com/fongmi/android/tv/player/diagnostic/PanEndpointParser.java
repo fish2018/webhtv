@@ -20,6 +20,7 @@ public final class PanEndpointParser {
 
     public static PanEndpoint parse(String playbackUrl, Map<String, String> playbackHeaders) {
         if (!isHttp(playbackUrl)) throw new IllegalArgumentException("HTTP playback URL required");
+        if (!PanNetworkSafety.isAllowedPlaybackHost(host(playbackUrl))) throw new IllegalArgumentException("Private playback target is not allowed");
         Map<String, String> query = query(playbackUrl);
         String upstreamUrl = decodeUrl(query.get("url"));
         Map<String, String> upstreamHeaders = parseEncodedHeaders(query.get("header"));
@@ -88,9 +89,15 @@ public final class PanEndpointParser {
         String current = value;
         for (int i = 0; i < MAX_DECODE_PASSES; i++) {
             current = decodeOnce(current);
-            if (isRemoteHttp(current)) return current;
+            if (!isHttp(current)) continue;
+            if (PanNetworkSafety.isObviouslyUnsafeHost(host(current))) throw new IllegalArgumentException("Private upstream target is not allowed");
+            return current;
         }
-        return current;
+        if (isHttp(current)) {
+            if (PanNetworkSafety.isObviouslyUnsafeHost(host(current))) throw new IllegalArgumentException("Private upstream target is not allowed");
+            return current;
+        }
+        return "";
     }
 
     private static String decodeOnce(String value) {
@@ -114,8 +121,7 @@ public final class PanEndpointParser {
 
     private static boolean isRemoteHttp(String value) {
         if (!isHttp(value)) return false;
-        String host = host(value);
-        return !(host.equals("127.0.0.1") || host.equals("localhost") || host.equals("::1"));
+        return !PanNetworkSafety.isObviouslyUnsafeHost(host(value));
     }
 
     private static String host(String value) {

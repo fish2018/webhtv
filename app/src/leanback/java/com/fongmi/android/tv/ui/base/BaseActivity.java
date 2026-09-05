@@ -57,7 +57,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private void addCustomWall() {
-        ((ViewGroup) findViewById(android.R.id.content)).addView(new CustomWallView(this, null), 0, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
+        ((ViewGroup) findViewById(android.R.id.content)).addView(new CustomWallView(this, null).setMotionEnabled(customWallMotion()), 0, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
     }
 
     protected FragmentActivity getActivity() {
@@ -65,6 +65,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected boolean customWall() {
+        return true;
+    }
+
+    /**
+     * 动态壁纸（视频/GIF）是否允许在本页面播放。返回 false 时壁纸降级为首帧静态图，
+     * 避免与页面自身的播放器争抢 MediaCodec 硬解实例并按壁纸帧率重绘整个界面。
+     */
+    protected boolean customWallMotion() {
         return true;
     }
 

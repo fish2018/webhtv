@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/colorControlHighlight">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/selector_video_item" />
+            <corners android:radius="4dp" />
+            <padding
+                android:bottom="8dp"
+                android:left="12dp"
+                android:right="12dp"
+                android:top="8dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/white" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+</ripple>

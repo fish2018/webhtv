@@ -20,6 +20,12 @@
             android:text="@string/play_config" />
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/osdSettings"
+            style="@style/Control"
+            android:layout_marginEnd="8dp"
+            android:text="@string/player_osd" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/source"
             style="@style/Control"
             android:layout_marginEnd="8dp"

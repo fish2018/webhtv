@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_shell_proxy_dialog"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/add"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/ad_rule_add_manual"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textSize="14sp"
+        app:backgroundTint="@color/dialog_outlined_button_bg"
+        app:strokeColor="@color/dialog_outlined_button_stroke" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/stats"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/ad_block_stats"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textSize="14sp"
+        app:backgroundTint="@color/dialog_outlined_button_bg"
+        app:strokeColor="@color/dialog_outlined_button_stroke" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/importCandidates"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textSize="14sp"
+        android:visibility="gone"
+        app:backgroundTint="@color/dialog_outlined_button_bg"
+        app:strokeColor="@color/dialog_outlined_button_stroke"
+        tools:text="待审核接口规则（2）"
+        tools:visibility="visible" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/ad_rule_section_custom"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/customEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/ad_rule_empty"
+        android:textColor="@color/white_60"
+        android:textSize="12sp"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:overScrollMode="never"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/ad_rule_section_server"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/serverRules"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/white_60"
+        android:textSize="12sp"
+        tools:text="来自配置 · 共 12 条（只读）" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

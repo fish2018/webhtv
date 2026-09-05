@@ -59,10 +59,13 @@ public class MpvPlayerEngine implements PlayerEngine {
     private boolean retriedFormat;
     private boolean surfaceDirect;
     private Boolean surfaceDirectOverride;
+    private boolean lutAllowed = true;
     private Boolean vulkanRenderOverride;
     private String vulkanBackendOverride;
     private String vulkanBackend = MpvVulkanBackendPolicy.AUTO;
     private boolean vulkanRenderer;
+    private String hwdecOverride;
+    private String configuredHwdec = "no";
     private String dv7HandlingOption;
     private boolean dv7P81FallbackTried;
     private boolean initialSubtitleSurfaceRequested;
@@ -70,8 +73,9 @@ public class MpvPlayerEngine implements PlayerEngine {
     private final BiConsumer<Integer, Integer> videoSizeProbeListener;
     private int decode;
 
-    public MpvPlayerEngine(int decode, Player.Listener listener, BiConsumer<Integer, Integer> videoSizeProbeListener) {
+    public MpvPlayerEngine(int decode, boolean lutAllowed, Player.Listener listener, BiConsumer<Integer, Integer> videoSizeProbeListener) {
         this.decode = decode;
+        this.lutAllowed = lutAllowed;
         this.videoSizeProbeListener = videoSizeProbeListener;
         resetDv7HandlingForNewItem();
         this.player = buildPlayer(listener);
@@ -251,6 +255,11 @@ public class MpvPlayerEngine implements PlayerEngine {
     }
 
     @Override
+    public void setVideoAspect(float aspectRatio, boolean stretch) {
+        player.setVideoAspect(aspectRatio, stretch);
+    }
+
+    @Override
     public PlaybackFactsSnapshot getPlaybackFactsSnapshot() {
         Format video = TrackUtil.explicitlySelectedFormat(getCurrentTracks(), C.TRACK_TYPE_VIDEO);
         Format audio = TrackUtil.explicitlySelectedFormat(getCurrentTracks(), C.TRACK_TYPE_AUDIO);
@@ -291,6 +300,11 @@ public class MpvPlayerEngine implements PlayerEngine {
         return player.getFrameTimingSnapshot();
     }
 
+    /** True while the current BUFFERING window was opened by a seek rather than a stall. */
+    public boolean isSeekBuffering() {
+        return player.isSeekBuffering();
+    }
+
     @Override
     public boolean supportsNativeLut() {
         return !surfaceDirect;
@@ -302,6 +316,13 @@ public class MpvPlayerEngine implements PlayerEngine {
 
     public void setSurfaceDirectOverride(@Nullable Boolean value) {
         surfaceDirectOverride = value;
+    }
+
+    // 直播等场景会禁用 LUT，此时不能因为全局 LUT 开关而放弃电视直出，
+    // 否则与 PlayerManager 的 lutAllowed && LutSetting.isEnabled() 判断相反，
+    // 会在启播后多触发一次播放器重建。仅影响下一次 buildConfig()。
+    public void setLutAllowed(boolean allowed) {
+        lutAllowed = allowed;
     }
 
     public void setVulkanBackendOverride(@Nullable String value) {
@@ -319,6 +340,20 @@ public class MpvPlayerEngine implements PlayerEngine {
     public boolean shouldFallbackVulkanToStable() {
         return vulkanRenderer && MpvVulkanBackendPolicy.isAutomaticConfig()
                 && !MpvVulkanBackendPolicy.STABLE.equals(vulkanBackend);
+    }
+
+    public void forceMediaCodecCopy() {
+        hwdecOverride = "mediacodec-copy";
+    }
+
+    public boolean clearHwdecOverride() {
+        boolean changed = hwdecOverride != null;
+        hwdecOverride = null;
+        return changed;
+    }
+
+    public boolean isMediaCodecCopyOnly() {
+        return "mediacodec-copy".equals(configuredHwdec);
     }
 
     public MpvPlayer.AutoCacheBaselineResult applyAutoCacheBaseline(
@@ -833,14 +868,15 @@ public class MpvPlayerEngine implements PlayerEngine {
 
     private MpvPlayerConfig buildConfig() {
         MpvConfigStore.ensureReady();
-        boolean autoDirectEligible = MpvAutoOutputPolicy.canStartSurfaceDirect(
+        boolean zeroCopyBlocked = MpvPerformanceSetting.isZeroCopyBlocked();
+        boolean autoDirectEligible = !zeroCopyBlocked && MpvAutoOutputPolicy.canStartSurfaceDirect(
                 decode == HARD,
                 Util.isLeanback(),
-                MpvPerformanceSetting.isInterpolation() || LutSetting.isEnabled(),
+                MpvPerformanceSetting.isInterpolation() || lutAllowed && LutSetting.isEnabled(),
                 MpvConfigStore.hasGpuVideoProcessing());
         surfaceDirect = surfaceDirectOverride == null
                 ? MpvPerformanceSetting.shouldUseSurfaceDirect(autoDirectEligible, Util.isLeanback(), decode == HARD)
-                : surfaceDirectOverride && decode == HARD;
+                : surfaceDirectOverride && decode == HARD && !zeroCopyBlocked;
         boolean requestVulkan = vulkanRenderOverride != null
                 ? vulkanRenderOverride
                 : PlayerSetting.getMpvRender() == PlayerSetting.MPV_RENDER_VULKAN;
@@ -859,10 +895,12 @@ public class MpvPlayerEngine implements PlayerEngine {
                 : configuredBackend.isEmpty() ? MpvVulkanBackendPolicy.AUTO : configuredBackend;
         boolean useGpuNext = !surfaceDirect && (useVulkan || decode != HARD);
         if (requestVulkan && !surfaceDirect && !useVulkan) SpiderDebug.log("player-engine", "mpv render requested=vulkan but unavailable native=%s device=%s; fallback=opengl", nativeVulkan, deviceVulkan);
-        SpiderDebug.log("player-engine", "mpv output mode=%s direct=%s render requested=%s nativeVulkan=%s deviceVulkan=%s decode=%s actual=%s/%s", MpvPerformanceSetting.getOutputModeText(), surfaceDirect, requestVulkan ? "vulkan" : "opengl", nativeVulkan, deviceVulkan, decode == HARD ? "hard" : "soft", surfaceDirect ? "surface" : useVulkan ? "vulkan" : "opengl", surfaceDirect ? "mediacodec_embed" : useGpuNext ? "gpu-next" : "gpu");
+        String hwdec = surfaceDirect ? "mediacodec" : resolveGpuHwdec(zeroCopyBlocked);
+        configuredHwdec = hwdec;
+        SpiderDebug.log("player-engine", "mpv output mode=%s direct=%s zeroCopyBlocked=%s hwdec=%s render requested=%s nativeVulkan=%s deviceVulkan=%s decode=%s actual=%s/%s", MpvPerformanceSetting.getOutputModeText(), surfaceDirect, zeroCopyBlocked, hwdec, requestVulkan ? "vulkan" : "opengl", nativeVulkan, deviceVulkan, decode == HARD ? "hard" : "soft", surfaceDirect ? "surface" : useVulkan ? "vulkan" : "opengl", surfaceDirect ? "mediacodec_embed" : useGpuNext ? "gpu-next" : "gpu");
         MpvPlayerConfig.Builder builder = MpvPlayerConfig.builder(App.get())
                 .configDir(MpvConfigStore.configDir())
-                .hwdec(surfaceDirect ? "mediacodec" : decode == HARD ? MpvPerformanceSetting.getHwdecOption() : "no")
+                .hwdec(hwdec)
                 .audioSpdif(resolveAudioSpdifCodecs())
                 .logLevel(MpvPerformanceSetting.isVerboseLog() ? "all=v" : "all=warn")
                 .demuxerMaxBytes(getDemuxerMaxBytes())
@@ -921,11 +959,20 @@ public class MpvPlayerEngine implements PlayerEngine {
         return builder.build();
     }
 
+    private String resolveGpuHwdec(boolean zeroCopyBlocked) {
+        if (decode != HARD) return "no";
+        if (zeroCopyBlocked) return "mediacodec-copy";
+        return hwdecOverride == null ? MpvPerformanceSetting.getHwdecOption() : hwdecOverride;
+    }
+
     private void applySoftDecodeOptions(MpvPlayerConfig.Builder builder) {
-        if (decode != SOFT || MpvPerformanceSetting.getSoftTuneMode() == MpvPerformanceSetting.SOFT_TUNE_OFF) return;
+        int mode = MpvPerformanceSetting.getSoftTuneMode();
+        if (mode == MpvPerformanceSetting.SOFT_TUNE_OFF) return;
+        // MPV can silently fall back from MediaCodec while the engine still represents a hard-decode request.
+        // Prime the libavcodec fallback so 4K software decoding does not start with the expensive defaults.
         builder.option("vd-lavc-fast", "yes");
         builder.option("vd-lavc-threads", "0");
-        builder.option("vd-lavc-skiploopfilter", MpvPerformanceSetting.getSoftTuneMode() == MpvPerformanceSetting.SOFT_TUNE_AGGRESSIVE ? "nonkey" : "nonref");
+        builder.option("vd-lavc-skiploopfilter", mode == MpvPerformanceSetting.SOFT_TUNE_AGGRESSIVE ? "nonkey" : "nonref");
     }
 
     private String resolveAudioSpdifCodecs() {
@@ -960,6 +1007,10 @@ public class MpvPlayerEngine implements PlayerEngine {
             case 3 -> forward;
             default -> 0;
         };
+    }
+
+    private int getDemuxerReadAheadSeconds() {
+        return Math.min(120, Math.max(15, PlayerSetting.getBuffer(PlayerSetting.MPV) * 4));
     }
 
     private int getCacheTargetSeconds() {

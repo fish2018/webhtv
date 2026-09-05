@@ -22,6 +22,7 @@ import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.BufferDialog;
+import com.fongmi.android.tv.ui.dialog.ChoiceDialog;
 import com.fongmi.android.tv.ui.dialog.LutDialog;
 import com.fongmi.android.tv.ui.dialog.MpvConfigDialog;
 import com.fongmi.android.tv.ui.dialog.PlaybackPerformanceDialog;
@@ -30,10 +31,13 @@ import com.fongmi.android.tv.ui.dialog.PlayerButtonConfigDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerKernelDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
+import com.fongmi.android.tv.ui.dialog.VideoAspectModeDialog;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.text.DecimalFormat;
+
+import is.xyz.mpv.MPVLib;
 
 public class SettingPlayerActivity extends BaseActivity implements UaListener, BufferListener, SpeedListener {
 
@@ -42,7 +46,9 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private String[] backBuffer;
     private String[] bufferBytes;
     private String[] caption;
+    private String[] failureFallback;
     private String[] kernel;
+    private String[] mpvRender;
     private String[] playCache;
     private String[] render;
     private String[] scale;
@@ -72,7 +78,6 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.tunnelText.setText(getSwitch(PlayerSetting.isTunnel()));
         setPerformanceText();
         setPlayerButtonsText();
-        mBinding.adblockText.setText(getSwitch(Setting.isAdblock()));
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.bufferText.setText(String.valueOf(PlayerSetting.getBuffer()));
         mBinding.bufferBytesText.setText((bufferBytes = ResUtil.getStringArray(R.array.select_buffer_bytes))[PlayerSetting.getBufferBytesOption()]);
@@ -81,15 +86,21 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         setPreloadText();
         mBinding.autoPlayText.setText(getSwitch(PlayerSetting.isAutoPlay()));
         mBinding.autoChangeText.setText(getSwitch(PlayerSetting.isAutoChange()));
+        mBinding.failureFallbackText.setText((failureFallback = ResUtil.getStringArray(R.array.select_player_failure_fallback))[PlayerSetting.getFailureFallback()]);
         mBinding.backgroundText.setText(getSwitch(PlayerSetting.isBackgroundOn()));
+        mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
+        mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
         mBinding.audioDecodeText.setText(getSwitch(PlayerSetting.isAudioPrefer()));
         mBinding.audioPassThroughText.setText(getSwitch(PlayerSetting.isAudioPassThrough()));
         mBinding.videoDecodeText.setText(getSwitch(PlayerSetting.isVideoPrefer()));
+        mBinding.ffmpegModeText.setText(getFFmpegModeText());
         mBinding.osdText.setText(getOsdText(osd = ResUtil.getStringArray(R.array.select_player_osd)));
         mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
+        mpvRender = ResUtil.getStringArray(R.array.select_mpv_render);
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.lutText.setText(LutSetting.getSummary());
         setMpvRows();
+        setFfmpegModeVisibility();
         mBinding.renderText.setText((render = ResUtil.getStringArray(R.array.select_render))[PlayerSetting.getRender()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
         hidePerformanceRows();
@@ -103,6 +114,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.scale.setOnClickListener(this::setScale);
         mBinding.lut.setOnClickListener(this::onLut);
         mBinding.mpvConfig.setOnClickListener(view -> MpvConfigDialog.show(this, () -> mBinding.mpvConfigText.setText(MpvConfigStore.summary())));
+        mBinding.mpvRender.setOnClickListener(this::setMpvRender);
         mBinding.osd.setOnClickListener(this::onOsd);
         mBinding.playerButtons.setOnClickListener(view -> PlayerButtonConfigDialog.show(this, this::setPlayerButtonsText));
         mBinding.speed.setOnClickListener(this::onSpeed);
@@ -118,16 +130,19 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.preloadPause.setOnClickListener(this::setPreloadPause);
         mBinding.autoPlay.setOnClickListener(this::setAutoPlay);
         mBinding.autoChange.setOnClickListener(this::setAutoChange);
+        mBinding.failureFallback.setOnClickListener(this::setFailureFallback);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.tunnel.setOnClickListener(this::setTunnel);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
-        mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.background.setOnClickListener(this::onBackground);
+        mBinding.musicNotification.setOnClickListener(this::setMusicNotification);
+        mBinding.audioBookNotification.setOnClickListener(this::setAudioBookNotification);
         mBinding.audioDecode.setOnClickListener(this::setAudioDecode);
         mBinding.audioPassThrough.setOnClickListener(this::setAudioPassThrough);
         mBinding.videoDecode.setOnClickListener(this::setVideoDecode);
+        mBinding.ffmpegMode.setOnClickListener(this::setFfmpegMode);
     }
 
     private void setVisible() {
@@ -156,14 +171,16 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
             mBinding.kernelText.setText(kernel[index]);
             PlayerSetting.putPlayer(index);
             setMpvRows();
+            setFfmpegModeVisibility();
             setPerformanceText();
         });
     }
 
     private void setScale(View view) {
-        int index = (PlayerSetting.getScale() + 1) % scale.length;
-        mBinding.scaleText.setText(scale[index]);
-        PlayerSetting.putScale(index);
+        VideoAspectModeDialog.show(this, PlayerSetting.getScale(), mode -> {
+            mBinding.scaleText.setText(scale[mode]);
+            PlayerSetting.putScale(mode);
+        });
     }
 
     private void onLut(View view) {
@@ -173,7 +190,29 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     private void setMpvRows() {
         boolean visible = PlayerSetting.getPlayer() == PlayerSetting.MPV;
         mBinding.mpvConfig.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.mpvRender.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.mpvConfigText.setText(MpvConfigStore.summary());
+        mBinding.mpvRenderText.setText(getMpvRenderText());
+    }
+
+    private void setFfmpegModeVisibility() {
+        boolean visible = PlayerSetting.getPlayer() == PlayerSetting.EXO;
+        mBinding.ffmpegMode.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void setMpvRender(View view) {
+        int index = (PlayerSetting.getMpvRender() + 1) % mpvRender.length;
+        PlayerSetting.putMpvRender(index);
+        mBinding.mpvRenderText.setText(getMpvRenderText());
+    }
+
+    private String getMpvRenderText() {
+        int render = PlayerSetting.getMpvRender();
+        String text = mpvRender[render];
+        if (render == PlayerSetting.MPV_RENDER_VULKAN && !MPVLib.isVulkanRendererAvailable(this)) {
+            text += " (" + getString(R.string.mpv_render_native_unavailable) + ")";
+        }
+        return text;
     }
 
     private void onOsd(View view) {
@@ -188,17 +227,11 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
     }
 
     private boolean[] getOsdChecked() {
-        return new boolean[]{PlayerSetting.isOsdTitle(), PlayerSetting.isOsdResolution(), PlayerSetting.isOsdTime(), PlayerSetting.isOsdProgress(), PlayerSetting.isOsdTraffic(), PlayerSetting.isOsdMini(), PlayerSetting.isOsdDiagnostics()};
+        return PlayerSetting.getDisplayChecked();
     }
 
     private void setOsdChecked(boolean[] checked) {
-        PlayerSetting.putOsdTitle(checked[0]);
-        PlayerSetting.putOsdResolution(checked[1]);
-        PlayerSetting.putOsdTime(checked[2]);
-        PlayerSetting.putOsdProgress(checked[3]);
-        PlayerSetting.putOsdTraffic(checked[4]);
-        PlayerSetting.putOsdMini(checked[5]);
-        PlayerSetting.putOsdDiagnostics(checked[6]);
+        PlayerSetting.putDisplayChecked(checked);
     }
 
     private String getOsdText(String[] items) {
@@ -343,6 +376,13 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.autoChangeText.setText(getSwitch(PlayerSetting.isAutoChange()));
     }
 
+    private void setFailureFallback(View view) {
+        ChoiceDialog.showSingle(this, R.string.player_failure_fallback, failureFallback, PlayerSetting.getFailureFallback(), which -> {
+            PlayerSetting.putFailureFallback(which);
+            mBinding.failureFallbackText.setText(failureFallback[which]);
+        });
+    }
+
     private void setRender(View view) {
         if (PlayerSetting.isTunnel() && PlayerSetting.getRender() == 0) setTunnel(view);
         int index = (PlayerSetting.getRender() + 1) % render.length;
@@ -408,14 +448,19 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         mBinding.captionText.setText(caption[PlayerSetting.isCaption() ? 1 : 0]);
     }
 
-    private void setAdblock(View view) {
-        Setting.putAdblock(!Setting.isAdblock());
-        mBinding.adblockText.setText(getSwitch(Setting.isAdblock()));
-    }
-
     private boolean onCaption(View view) {
         if (PlayerSetting.isCaption()) startActivity(new Intent(Settings.ACTION_CAPTIONING_SETTINGS));
         return PlayerSetting.isCaption();
+    }
+
+    private void setMusicNotification(View view) {
+        PlayerSetting.putMusicNotification(!PlayerSetting.isMusicNotification());
+        mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
+    }
+
+    private void setAudioBookNotification(View view) {
+        PlayerSetting.putAudioBookNotification(!PlayerSetting.isAudioBookNotification());
+        mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
     }
 
     private void setAudioDecode(View view) {
@@ -439,8 +484,24 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
         setPerformanceText();
     }
 
+    private void setFfmpegMode(View view) {
+        int mode = (PlayerSetting.getFFmpegMode() + 1) % 4;
+        PlayerSetting.putFFmpegMode(mode);
+        mBinding.ffmpegModeText.setText(getFFmpegModeText());
+    }
+
+    private String getFFmpegModeText() {
+        return switch (PlayerSetting.getFFmpegMode()) {
+            case PlayerSetting.FFMPEG_MODE_OFFICIAL -> "Official";
+            case PlayerSetting.FFMPEG_MODE_SIMPLE -> "Simple";
+            case PlayerSetting.FFMPEG_MODE_AUTO -> "自动";
+            default -> "NextLib";
+        };
+    }
+
     private void onBackground(View view) {
         PlayerSetting.putBackground(PlayerSetting.isBackgroundOn() ? 0 : 1);
         mBinding.backgroundText.setText(getSwitch(PlayerSetting.isBackgroundOn()));
     }
+
 }

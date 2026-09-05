@@ -79,6 +79,7 @@ public class SiteHealthDialog extends BaseAlertDialog {
             dialogSort = !dialogSort;
             updateButton(binding.dialogSort, dialogSort);
         });
+        binding.report.setOnClickListener(view -> SiteHealthReportDialog.show(requireActivity()));
         binding.negative.setOnClickListener(view -> dismiss());
         binding.positive.setOnClickListener(view -> onPositive());
     }

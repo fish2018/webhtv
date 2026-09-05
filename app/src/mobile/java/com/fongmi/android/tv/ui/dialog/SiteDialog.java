@@ -5,15 +5,13 @@ import android.graphics.drawable.ColorDrawable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.LinearLayoutCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -28,15 +26,15 @@ import com.fongmi.android.tv.databinding.DialogSiteBinding;
 import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteBlockSetting;
+import com.fongmi.android.tv.setting.SiteGroupOrderStore;
 import com.fongmi.android.tv.ui.adapter.SiteAdapter;
+import com.fongmi.android.tv.ui.adapter.SiteGroupAdapter;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickListener {
@@ -44,6 +42,7 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     private DialogSiteBinding binding;
     private SiteListener listener;
     private SiteAdapter adapter;
+    private SiteGroupAdapter groupAdapter;
     private ItemTouchHelper sortTouchHelper;
     private SpaceItemDecoration itemDecoration;
     private List<String> groups;
@@ -51,6 +50,7 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     private boolean search;
     private boolean change;
     private boolean block;
+    private boolean groupOrderChanged;
     private int columnCount = 1;
 
     public static SiteDialog create() {
@@ -85,16 +85,21 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     @Override
     protected void initView() {
         adapter = new SiteAdapter(this);
+        groupAdapter = new SiteGroupAdapter(this::onGroupClick);
         groups = getGroups();
         binding.recycler.setAdapter(adapter);
+        binding.groupList.setLayoutManager(new LinearLayoutManager(requireContext(), RecyclerView.HORIZONTAL, false));
+        binding.groupList.setAdapter(groupAdapter);
         adapter.search(search).change(change);
         setColumnCount(Setting.getSiteColumn());
         setGroupView();
         filter();
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(true);
+        binding.groupList.setItemAnimator(null);
         attachSortTouchHelper();
-        binding.recycler.post(() -> binding.recycler.scrollToPosition(0));
+        attachGroupSortTouchHelper();
+        binding.recycler.post(() -> binding.recycler.scrollToPosition(adapter.getSelectedPosition()));
     }
 
     private void attachSortTouchHelper() {
@@ -119,6 +124,49 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             }
         });
         sortTouchHelper.attachToRecyclerView(binding.recycler);
+    }
+
+    private void attachGroupSortTouchHelper() {
+        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, 0) {
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return true;
+            }
+
+            @Override
+            public boolean isItemViewSwipeEnabled() {
+                return false;
+            }
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder source, @NonNull RecyclerView.ViewHolder target) {
+                boolean moved = groupAdapter.move(source.getBindingAdapterPosition(), target.getBindingAdapterPosition());
+                groupOrderChanged = groupOrderChanged || moved;
+                return moved;
+            }
+
+            @Override
+            public void onSelectedChanged(RecyclerView.ViewHolder viewHolder, int actionState) {
+                super.onSelectedChanged(viewHolder, actionState);
+                if (actionState != ItemTouchHelper.ACTION_STATE_DRAG || viewHolder == null) return;
+                Util.hideKeyboard(binding.keyword);
+                viewHolder.itemView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                if (!groupOrderChanged) return;
+                groupOrderChanged = false;
+                groups = groupAdapter.getItems();
+                SiteGroupOrderStore.save(getAllGroups(), groups);
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            }
+        });
+        helper.attachToRecyclerView(binding.groupList);
     }
 
     @Override
@@ -168,42 +216,24 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     }
 
     private List<String> getGroups() {
-        return new ArrayList<>(Site.getGroups(SiteBlockSetting.filter(VodConfig.get().getSites(), block)));
+        return SiteGroupOrderStore.sort(Site.getGroups(SiteBlockSetting.filter(VodConfig.get().getSites(), block)));
+    }
+
+    private List<String> getAllGroups() {
+        return Site.getGroups(SiteBlockSetting.filter(VodConfig.get().getSites(), true));
     }
 
     private void setGroupView() {
+        groupOrderChanged = false;
         if (groups.isEmpty()) {
             selectedGroup = "";
-            binding.groupScroll.setVisibility(View.GONE);
+            groupAdapter.submit(groups, selectedGroup);
+            binding.groupList.setVisibility(View.GONE);
             return;
         }
         if (!TextUtils.isEmpty(selectedGroup) && !groups.contains(selectedGroup)) selectedGroup = "";
-        binding.groupScroll.setVisibility(View.VISIBLE);
-        binding.groupList.removeAllViews();
-        for (String group : groups) binding.groupList.addView(getGroupView(group));
-        updateGroupView();
-    }
-
-    private MaterialButton getGroupView(String group) {
-        MaterialButton button = new MaterialButton(requireContext(), null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
-        LinearLayoutCompat.LayoutParams params = new LinearLayoutCompat.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMarginEnd(ResUtil.dp2px(8));
-        button.setLayoutParams(params);
-        button.setText(group);
-        button.setSingleLine(true);
-        button.setAllCaps(false);
-        button.setMinWidth(0);
-        button.setMinHeight(0);
-        button.setMinimumWidth(0);
-        button.setMinimumHeight(0);
-        button.setInsetTop(0);
-        button.setInsetBottom(0);
-        button.setPadding(ResUtil.dp2px(14), ResUtil.dp2px(6), ResUtil.dp2px(14), ResUtil.dp2px(6));
-        button.setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.dialog_outlined_button_text));
-        button.setBackgroundTintList(ContextCompat.getColorStateList(requireContext(), R.color.dialog_outlined_button_bg));
-        button.setStrokeColor(ContextCompat.getColorStateList(requireContext(), R.color.dialog_outlined_button_stroke));
-        button.setOnClickListener(v -> onGroupClick(group, button));
-        return button;
+        binding.groupList.setVisibility(View.VISIBLE);
+        groupAdapter.submit(groups, selectedGroup);
     }
 
     private void onGroupClick(String group, View view) {
@@ -215,16 +245,11 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
     }
 
     private void updateGroupView() {
-        for (int i = 0; i < binding.groupList.getChildCount(); i++) {
-            View view = binding.groupList.getChildAt(i);
-            boolean selected = ((MaterialButton) view).getText().toString().equals(selectedGroup);
-            view.setSelected(selected);
-            view.setAlpha(TextUtils.isEmpty(selectedGroup) || selected ? 1.0f : 0.5f);
-        }
+        groupAdapter.select(selectedGroup);
     }
 
     private void centerGroup(View view) {
-        binding.groupScroll.post(() -> binding.groupScroll.smoothScrollTo(Math.max(0, view.getLeft() + view.getWidth() / 2 - binding.groupScroll.getWidth() / 2), 0));
+        binding.groupList.post(() -> binding.groupList.smoothScrollBy(view.getLeft() + view.getWidth() / 2 - binding.groupList.getWidth() / 2, 0));
     }
 
     private void filter() {

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 剧集详情对话框布局 - 全屏沉浸式 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipChildren="false"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:clipChildren="false"
+            android:descendantFocusability="afterDescendants">
+
+            <!-- 剧照 - 16:9 固定比例，紧凑布局 -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/stillCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:focusedByDefault="true"
+                android:foreground="@drawable/selector_episode_photo"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <ImageView
+                    android:id="@+id/still"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:background="#1A1A1A"
+                    android:contentDescription="@null"
+                    android:maxHeight="280dp"
+                    android:scaleType="centerCrop" />
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- 标题 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="#000000"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                tools:text="第1集 - 去有鳳凰的地方" />
+
+            <!-- 原始名称（刮削前的源站集数名称） -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/originalName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#666666"
+                android:textIsSelectable="true"
+                android:textSize="14sp"
+                android:visibility="gone"
+                tools:text="原始名称：第01集.mp4"
+                tools:visibility="visible" />
+
+            <!-- 日期和时长 - 横向排列 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#555555"
+                    android:textSize="15sp"
+                    tools:text="播出日期: 2024-01-01" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/runtime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:textColor="#555555"
+                    android:textSize="15sp"
+                    tools:text="时长: 45 分钟" />
+
+            </LinearLayout>
+
+            <!-- 评分 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/rating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#F57C00"
+                android:textSize="17sp"
+                tools:text="★ 8.5" />
+
+            <!-- 简介标题 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/overviewLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="剧情简介"
+                android:textColor="#1A1A1A"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- 简介内容 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/overview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:lineSpacingExtra="4dp"
+                android:textColor="#333333"
+                android:textSize="15sp"
+                tools:text="这是剧集的详细简介内容..." />
+
+            <!-- 本集图片标题 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/photosLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="本集图片"
+                android:textColor="#1A1A1A"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- 本集图片列表 -->
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/photosGrid"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="8dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:focusable="true"
+                android:nextFocusUp="@id/stillCard"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/guestsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/detail_episode_guests"
+                android:textColor="#1A1A1A"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/guestsGrid"
+                android:layout_width="match_parent"
+                android:layout_height="170dp"
+                android:layout_marginTop="4dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="8dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:focusable="true"
+                android:nextFocusUp="@id/photosGrid"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 选集卡片-选中状态：高亮黄边框 + 圆角 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#2A2A2A" />
+    <stroke android:width="2dp" android:color="@color/display_option_bg_selected" />
+    <corners android:radius="8dp" />
+</shape>

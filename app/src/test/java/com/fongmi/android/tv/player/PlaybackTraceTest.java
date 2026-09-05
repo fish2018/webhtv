@@ -9,6 +9,68 @@ import static org.junit.Assert.assertTrue;
 public class PlaybackTraceTest {
 
     @Test
+    public void startupSummaryIsEmptyBeforeAnyStage() {
+        PlaybackTrace trace = new PlaybackTrace();
+        assertEquals("", trace.startupSummary());
+        assertEquals("", trace.slowestStage());
+
+        trace.begin(1_000);
+        assertEquals("", trace.startupSummary());
+        assertEquals("", trace.slowestStage());
+    }
+
+    @Test
+    public void startupSummaryReportsChronologicalOrderNotEnumOrder() {
+        PlaybackTrace trace = new PlaybackTrace();
+        trace.begin(1_000);
+        // READY is declared before FIRST_FRAME in the enum but arrives after it.
+        trace.mark(PlaybackTrace.Stage.PREPARE, 1_060, null);
+        trace.mark(PlaybackTrace.Stage.TRACKS, 8_500, null);
+        trace.mark(PlaybackTrace.Stage.FIRST_FRAME, 9_900, null);
+        trace.mark(PlaybackTrace.Stage.READY, 12_000, null);
+
+        String summary = trace.startupSummary();
+        assertTrue(summary, summary.indexOf("prepare") < summary.indexOf("tracks"));
+        assertTrue(summary, summary.indexOf("tracks") < summary.indexOf("first-frame"));
+        assertTrue(summary, summary.indexOf("first-frame") < summary.indexOf("ready"));
+        assertTrue(summary, summary.contains("tracks 7500ms"));
+        assertTrue(summary, summary.contains("ready 11000ms"));
+    }
+
+    @Test
+    public void slowestStageIdentifiesTheLargestGap() {
+        PlaybackTrace trace = new PlaybackTrace();
+        trace.begin(0);
+        trace.mark(PlaybackTrace.Stage.PREPARE, 60, null);
+        trace.mark(PlaybackTrace.Stage.TRACKS, 7_560, null);
+        trace.mark(PlaybackTrace.Stage.FIRST_FRAME, 9_000, null);
+
+        assertEquals("tracks:7500ms", trace.slowestStage());
+    }
+
+    @Test
+    public void unreachedStagesAreOmittedRatherThanZero() {
+        PlaybackTrace trace = new PlaybackTrace();
+        trace.begin(0);
+        trace.mark(PlaybackTrace.Stage.PREPARE, 50, null);
+
+        String summary = trace.startupSummary();
+        assertTrue(summary, summary.contains("prepare"));
+        assertFalse(summary, summary.contains("tracks"));
+        assertFalse(summary, summary.contains("ready"));
+    }
+
+    @Test
+    public void clearDropsTheStartupSummary() {
+        PlaybackTrace trace = new PlaybackTrace();
+        trace.begin(0);
+        trace.mark(PlaybackTrace.Stage.PREPARE, 50, null);
+        trace.clear();
+
+        assertEquals("", trace.startupSummary());
+    }
+
+    @Test
     public void ensureKeepsOneTraceUntilExplicitBegin() {
         PlaybackTrace trace = new PlaybackTrace();
 

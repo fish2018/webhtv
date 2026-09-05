@@ -50,8 +50,9 @@ public class ExoLoadControlPolicyTest {
     @Test
     public void customLevelScalesFromFifteenToThirtySeconds() {
         assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 1, 15_000, 30_000);
-        assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 4, 20_000, 40_000);
-        assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 10, 30_000, 60_000);
+        assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 8, 22_500, 45_000);
+        assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 15, 30_000, 60_000);
+        assertDurations(PlaybackPerformanceSetting.PROFILE_CUSTOM, 16, 30_000, 60_000);
     }
 
     private static void assertDurations(int profile, int minMs, int maxMs) {

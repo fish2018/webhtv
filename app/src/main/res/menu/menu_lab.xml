@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:icon="@drawable/ic_action_help"
+        android:id="@+id/help"
+        android:title="@string/menu_help"
+        app:iconTint="@android:color/white"
+        app:showAsAction="always"/>
+    <item
+        android:icon="@drawable/ic_action_plus"
+        android:id="@+id/import_pkg"
+        android:title="@string/lab_import"
+        app:iconTint="@android:color/white"
+        app:showAsAction="always"/>
+    <item
+        android:icon="@drawable/ic_action_setting"
+        android:id="@+id/setting"
+        android:title="@string/nav_setting"
+        app:iconTint="@android:color/white"
+        app:showAsAction="always"/>
+</menu>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="@string/dialog_ai_recommend_prompt_label" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            style="@style/Widget.WebHTV.LightDialog.Input"
+            android:id="@+id/recommendPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:maxLines="8"
+            android:minLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
+            android:text="@string/dialog_ai_title_extraction_prompt_label" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            style="@style/Widget.WebHTV.LightDialog.Input"
+            android:id="@+id/titleExtractionPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:maxLines="8"
+            android:minLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
+            android:text="@string/dialog_ai_viewing_report_prompt_label" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            style="@style/Widget.WebHTV.LightDialog.Input"
+            android:id="@+id/viewingReportPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:maxLines="8"
+            android:minLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
+            android:text="@string/dialog_ai_ad_detection_prompt_label" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            style="@style/Widget.WebHTV.LightDialog.Input"
+            android:id="@+id/adDetectionPrompt"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:maxLines="8"
+            android:minLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:paddingBottom="8dp"
+            android:text="@string/dialog_ai_group_rule_prompt_label" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/groupRulePrompt"
+            style="@style/Widget.WebHTV.LightDialog.Input"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:maxLines="8"
+            android:minLines="6"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

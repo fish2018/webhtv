@@ -33,6 +33,16 @@ public class CustomKeyDownVod extends GestureDetector.SimpleOnGestureListener {
         return detector.onTouchEvent(e);
     }
 
+    public boolean isChangingSpeed() {
+        return changeSpeed;
+    }
+
+    public void releaseSpeed() {
+        if (!changeSpeed) return;
+        changeSpeed = false;
+        listener.onSpeedEnd();
+    }
+
     public void setFull(boolean full) {
         this.full = full;
     }

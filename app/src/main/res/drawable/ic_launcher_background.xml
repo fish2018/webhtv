@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由 scripts/gen_app_icon.py 生成，请勿手工编辑 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <path android:pathData="M0,0h512v512h-512z">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt"
+            name="android:fillColor">
+            <gradient
+                android:startX="85.33"
+                android:startY="85.33"
+                android:endX="426.67"
+                android:endY="426.67"
+                android:type="linear"
+                android:tileMode="clamp">
+                <item android:offset="0" android:color="#2563EB" />
+                <item android:offset="1" android:color="#4B93F8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

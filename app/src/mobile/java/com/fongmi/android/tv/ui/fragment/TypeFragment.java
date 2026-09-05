@@ -21,6 +21,7 @@ import com.fongmi.android.tv.bean.Value;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentTypeBinding;
 import com.fongmi.android.tv.model.SiteViewModel;
+import com.fongmi.android.tv.ui.activity.HistoryResumeCoordinator;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.VodAdapter;
@@ -40,6 +41,10 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     private VodAdapter mAdapter;
 
     public static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder, int y) {
+        return newInstance(key, typeId, style, extend, folder, y, -1, null, -1);
+    }
+
+    public static TypeFragment newInstance(String key, String typeId, Style style, HashMap<String, String> extend, boolean folder, int y, int historyResumeCid, String historyResumeKey, int historyResumeTargetCid) {
         Bundle args = new Bundle();
         args.putInt("y", y);
         args.putString("key", key);
@@ -47,6 +52,9 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         args.putBoolean("folder", folder);
         args.putParcelable("style", style);
         args.putSerializable("extend", extend);
+        args.putInt("historyResumeCid", historyResumeCid);
+        args.putString("historyResumeKey", historyResumeKey);
+        args.putInt("historyResumeTargetCid", historyResumeTargetCid);
         TypeFragment fragment = new TypeFragment();
         fragment.setArguments(args);
         return fragment;
@@ -74,6 +82,22 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
 
     private boolean isFolder() {
         return getArguments().getBoolean("folder");
+    }
+
+    private int getHistoryResumeCid() {
+        return getArguments().getInt("historyResumeCid", -1);
+    }
+
+    private String getHistoryResumeKey() {
+        return getArguments().getString("historyResumeKey");
+    }
+
+    private int getHistoryResumeTargetCid() {
+        return getArguments().getInt("historyResumeTargetCid", -1);
+    }
+
+    private boolean isHistoryResume() {
+        return getHistoryResumeCid() >= 0 && getHistoryResumeTargetCid() >= 0 && getHistoryResumeKey() != null && !getHistoryResumeKey().isEmpty();
     }
 
     private boolean isHome() {
@@ -195,8 +219,15 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
         } else if (item.isFolder()) {
             getParent().openFolder(item.getId(), mExtends);
         } else {
-            if (getSite().isIndex()) SearchActivity.start(requireActivity(), item.getName());
-            else VideoActivity.start(requireActivity(), getKey(), item.getId(), item.getName(), item.getPic(), isFolder() ? item.getName() : null);
+            if (getSite().isIndex()) {
+                if (isHistoryResume()) HistoryResumeCoordinator.openSearch(requireActivity(), getHistoryResumeCid(), getHistoryResumeKey(), getHistoryResumeTargetCid(), item.getName());
+                else SearchActivity.start(requireActivity(), item.getName());
+            } else if (isHistoryResume()) {
+                item.setSite(getSite());
+                HistoryResumeCoordinator.openSelected(requireActivity(), getHistoryResumeCid(), getHistoryResumeKey(), getHistoryResumeTargetCid(), item);
+            } else {
+                VideoActivity.start(requireActivity(), getKey(), item.getId(), item.getName(), item.getPic(), isFolder() ? item.getName() : null);
+            }
         }
     }
 

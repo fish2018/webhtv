@@ -3,6 +3,8 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
         google()
+        maven { url = "https://maven.aliyun.com/repository/gradle-plugin" }
+        maven { url = "https://maven.aliyun.com/repository/public" }
     }
 }
 
@@ -16,6 +18,8 @@ dependencyResolutionManagement {
         maven { url = uri("$rootDir/third_party/maven") }
         mavenCentral()
         google()
+        maven { url = "https://maven.aliyun.com/repository/public" }
+        maven { url = "https://maven.aliyun.com/repository/google" }
         flatDir { dirs "$rootDir/app/libs" }
         maven { url = "https://jitpack.io" }
     }
@@ -24,5 +28,6 @@ dependencyResolutionManagement {
 include ':app'
 include ':catvod'
 include ':chaquo'
+include ':nodejs'
 include ':quickjs'
 rootProject.name = "TV"

@@ -34,4 +34,5 @@ dependencies {
     api libs.zxing.core
     coreLibraryDesugaring libs.desugar
     testImplementation libs.junit
+    testImplementation libs.okhttp.mockwebserver
 }

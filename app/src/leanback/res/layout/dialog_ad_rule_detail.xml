@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scroll"
+    android:layout_width="match_parent"
+    android:layout_height="360dp"
+    android:clipToPadding="false"
+    android:fadeScrollbars="false"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:paddingHorizontal="24dp"
+    android:scrollbars="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:lineSpacingExtra="4dp"
+        android:paddingBottom="20dp"
+        android:textColor="@color/dialog_outlined_button_text"
+        android:textIsSelectable="true"
+        android:textSize="14sp" />
+
+</androidx.core.widget.NestedScrollView>

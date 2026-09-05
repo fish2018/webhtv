@@ -71,9 +71,12 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
         Keep item = getItem(position);
         setClickListener(holder.itemView, item);
         holder.binding.name.setText(item.getVodName());
+        holder.setMarquee(holder.itemView.hasFocus());
+        holder.binding.progress.setVisibility(View.GONE);
         holder.binding.remark.setVisibility(View.GONE);
         holder.binding.site.setVisibility(View.VISIBLE);
         holder.binding.site.setText(item.getSiteName());
+        holder.binding.playback.setVisibility(View.GONE);
         holder.binding.delete.setVisibility(!delete ? View.GONE : View.VISIBLE);
         ImgUtil.load(item.getVodName(), item.getVodPic(), holder.binding.image);
     }
@@ -90,16 +93,20 @@ public class KeepAdapter extends BaseDiffAdapter<Keep, KeepAdapter.ViewHolder> {
 
         private void setFocusListener() {
             itemView.setOnFocusChangeListener((v, hasFocus) -> {
+                setMarquee(hasFocus);
                 if (hasFocus) {
                     v.animate().scaleX(1.1f).scaleY(1.1f).setDuration(150).start();
                     v.setTranslationZ(10f);
-                    v.setSelected(true);
                 } else {
                     v.animate().scaleX(1f).scaleY(1f).setDuration(150).start();
                     v.setTranslationZ(0f);
-                    v.setSelected(false);
                 }
             });
+        }
+
+        private void setMarquee(boolean active) {
+            binding.name.setSelected(active);
+            binding.remark.setSelected(active);
         }
     }
 }

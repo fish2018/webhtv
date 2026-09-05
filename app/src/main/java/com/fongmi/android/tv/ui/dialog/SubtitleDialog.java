@@ -12,6 +12,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.media3.ui.SubtitleView;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.databinding.DialogSubtitleBinding;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -24,9 +25,11 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
     private static final float DEFAULT_TEXT_SIZE = 0.0533f;
     private static final float TEXT_STEP = 0.002f;
     private static final float POSITION_STEP = 0.005f;
+    private static final float NATIVE_POSITION_STEP = 0.05f;
 
     private DialogSubtitleBinding binding;
     private SubtitleView subtitleView;
+    private Runnable searchAction;
     private PlayerManager player;
 
     public static SubtitleDialog create() {
@@ -35,6 +38,11 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
 
     public SubtitleDialog view(SubtitleView subtitleView) {
         this.subtitleView = subtitleView;
+        return this;
+    }
+
+    public SubtitleDialog search(Runnable searchAction) {
+        this.searchAction = searchAction;
         return this;
     }
 
@@ -66,6 +74,7 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
     protected void initView() {
         int count = binding.getRoot().getChildCount();
         if (isFull()) for (int i = 0; i < count; i++) ((ImageView) binding.getRoot().getChildAt(i)).getDrawable().setTint(MDColor.WHITE);
+        binding.search.setVisibility(searchAction == null ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -75,11 +84,12 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
         binding.large.setOnClickListener(this::onLarge);
         binding.small.setOnClickListener(this::onSmall);
         binding.reset.setOnClickListener(this::onReset);
+        binding.search.setOnClickListener(this::onSearch);
     }
 
     private void onUp(View view) {
         if (isNativeSubtitleStyle()) {
-            setNativePosition(PlayerSetting.getSubtitlePosition() + POSITION_STEP);
+            setNativePosition(PlayerSetting.getSubtitlePosition() + NATIVE_POSITION_STEP);
             return;
         }
         if (subtitleView == null) return;
@@ -89,7 +99,7 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
 
     private void onDown(View view) {
         if (isNativeSubtitleStyle()) {
-            setNativePosition(PlayerSetting.getSubtitlePosition() - POSITION_STEP);
+            setNativePosition(PlayerSetting.getSubtitlePosition() - NATIVE_POSITION_STEP);
             return;
         }
         if (subtitleView == null) return;
@@ -146,6 +156,12 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
         value = Math.max(-0.5f, Math.min(1.0f, value));
         PlayerSetting.putSubtitlePosition(value);
         player.setSubtitleStyle(PlayerSetting.getSubtitleTextSize(), value);
+    }
+
+    private void onSearch(View view) {
+        if (searchAction == null) return;
+        dismiss();
+        App.post(searchAction::run, 100);
     }
 
     @Override

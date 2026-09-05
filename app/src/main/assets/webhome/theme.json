@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "id": "maple.eclipse",
+  "name": "枫叶 · 光影",
+  "version": "3.0.0",
+  "minHostApi": 3,
+  "targets": ["mobile", "leanback"],
+  "pages": {
+    "home": {
+      "entry": "eclipse.html",
+      "contract": "vod.home@1",
+      "fallback": "native"
+    },
+    "detail": {
+      "entry": "eclipse-detail.html",
+      "contract": "vod.detail@1",
+      "fallback": "native"
+    }
+  },
+  "permissions": {
+    "home": ["vod.home", "vod.category", "navigation.openDetail", "app.search", "app.openVod", "app.openSite", "app.openSetting"],
+    "detail": [
+      "vod.detail",
+      "favorite.read",
+      "favorite.write",
+      "history.read",
+      "player.playVod",
+      "app.search",
+      "person.open",
+      "image.preview",
+      "image.save",
+      "recommendation.open",
+      "recommendation.info",
+      "recommendation.feedback",
+      "external.open",
+      "episode.info"
+    ]
+  },
+  "player": {
+    "engine": "native",
+    "chrome": "tokens"
+  }
+}

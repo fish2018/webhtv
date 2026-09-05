@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/contentScroll"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F6F8FC"
+    android:fillViewport="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="20dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_tmdb_section_data" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Helper"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="14dp"
+                    android:text="@string/dialog_tmdb_enable_tip" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_api_key_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/apiKeyInput"
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_tmdb_api_key_hint"
+                    android:inputType="textVisiblePassword"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:selectAllOnFocus="false" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Helper"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
+                    android:text="@string/dialog_tmdb_api_key_tip" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_language_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/languageInput"
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_tmdb_language_hint"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:selectAllOnFocus="false" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_api_host_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/apiHostInput"
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_tmdb_api_host_hint"
+                    android:inputType="textUri"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:selectAllOnFocus="false" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_image_host_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/imageHostInput"
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_tmdb_image_host_hint"
+                    android:inputType="textUri"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:selectAllOnFocus="false" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_tmdb_section_ratings" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_omdb_api_key_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/omdbApiKeyInput"
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_omdb_api_key_hint"
+                    android:inputType="textVisiblePassword"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:selectAllOnFocus="false" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Helper"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
+                    android:text="@string/dialog_omdb_api_key_tip" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_tmdb_section_rules" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_enabled_sites_label" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/enabledChips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="4dp" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/ruleInput"
+                        style="@style/Widget.WebHTV.LightDialog.Input"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:hint="@string/dialog_tmdb_add_rule_hint"
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:selectAllOnFocus="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/add"
+                        style="@style/Widget.WebHTV.LightDialog.Button.Tonal"
+                        android:layout_width="96dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="12dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/dialog_tmdb_add"
+                        android:textAllCaps="false" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/disabledLabel"
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_tmdb_disabled_sites_label"
+                    android:textColor="#B3261E"
+                    android:visibility="gone" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/disabledChips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="4dp" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/disabledInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/disabledRuleInput"
+                        style="@style/Widget.WebHTV.LightDialog.Input"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:hint="@string/dialog_tmdb_add_disabled_rule_hint"
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:selectAllOnFocus="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/addDisabled"
+                        style="@style/Widget.WebHTV.LightDialog.Button.Tonal"
+                        android:layout_width="96dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="12dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="@string/dialog_tmdb_add"
+                        android:textAllCaps="false" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/manage"
+                        style="@style/Widget.WebHTV.LightDialog.Button.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_weight="1"
+                        android:text="@string/dialog_tmdb_site_manage"
+                        android:textAllCaps="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/resetDefault"
+                        style="@style/Widget.WebHTV.LightDialog.Button.Tonal"
+                        android:layout_width="0dp"
+                        android:layout_height="52dp"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="@string/dialog_tmdb_reset_default"
+                        android:textAllCaps="false" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

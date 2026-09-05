@@ -1,0 +1,1530 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F141A">
+
+    <FrameLayout
+        android:id="@+id/hero"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#0F141A">
+
+        <ImageView
+            android:id="@+id/backdropFill"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <ImageView
+            android:id="@+id/backdrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+
+        <View
+            android:id="@+id/backdropShade"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#7A0F141A" />
+    </FrameLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/pageContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="28dp">
+
+            <LinearLayout
+                android:id="@+id/headerBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/headerTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/themeModeTop"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="40dp"
+                    android:minWidth="96dp"
+                    android:text="@string/detail_theme_light"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rematchTop"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:minHeight="40dp"
+                    android:minWidth="72dp"
+                    android:text="@string/detail_tmdb_rematch"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/keepTop"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:minHeight="40dp"
+                    android:minWidth="72dp"
+                    android:text="@string/keep"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:backgroundTint="#3A4652"
+                    app:strokeColor="@android:color/transparent" />
+            </LinearLayout>
+
+            <!-- 占位 + 焦点桥梁：真正的 playerPanel 已提升到 root 层，避免全屏切换时 SurfaceView reparent 导致黑屏。
+                 这个 View 在流式布局中占据播放器空间，同时作为可获焦节点，让方向键从周围按钮能导航到播放器区域。 -->
+            <View
+                android:id="@+id/playerPanelSpacer"
+                android:layout_width="match_parent"
+                android:layout_height="252dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="16dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:importantForAccessibility="no"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/mobileFusionPlayerActionDock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone" />
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/fusionActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:alignItems="center"
+                app:flexWrap="wrap">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/changeSource"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:minHeight="42dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:text="@string/play_change"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:layout_flexBasisPercent="0%"
+                    app:layout_flexGrow="1"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/keepFusion"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:minHeight="42dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:text="@string/keep"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:layout_flexBasisPercent="0%"
+                    app:layout_flexGrow="1"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rematchFusion"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:minHeight="42dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:text="@string/detail_tmdb_rematch"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:layout_flexBasisPercent="0%"
+                    app:layout_flexGrow="1"
+                    app:strokeColor="@android:color/transparent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/themeMode"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:minHeight="42dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:text="@string/detail_theme_light"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#3A4652"
+                    app:layout_flexBasisPercent="0%"
+                    app:layout_flexGrow="1"
+                    app:strokeColor="@android:color/transparent" />
+            </com.google.android.flexbox.FlexboxLayout>
+
+            <Space
+                android:id="@+id/heroSpacer"
+                android:layout_width="match_parent"
+                android:layout_height="102dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/contentPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#D9141B23"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#26FFFFFF"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:id="@+id/contentInner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/heroRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/posterCard"
+                            android:layout_width="112dp"
+                            android:layout_height="160dp"
+                            app:cardCornerRadius="16dp"
+                            app:cardElevation="0dp"
+                            app:strokeColor="#30FFFFFF"
+                            app:strokeWidth="1dp">
+
+                            <ImageView
+                                android:id="@+id/poster"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:scaleType="centerCrop" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:id="@+id/detailInfo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="@android:color/white"
+                                android:textSize="28sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/subtitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:textColor="#CCFFFFFF"
+                                android:textSize="14sp" />
+
+                            <com.google.android.flexbox.FlexboxLayout
+                                android:id="@+id/metaContainer"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                app:flexWrap="wrap" />
+
+                            <com.google.android.flexbox.FlexboxLayout
+                                android:id="@+id/ratingsContainer"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:visibility="gone"
+                                app:flexWrap="wrap" />
+
+                            <TextView
+                                android:id="@+id/overview"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="10dp"
+                                android:lineSpacingExtra="3dp"
+                                android:maxLines="5"
+                                android:textColor="#E6FFFFFF"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/overviewToggle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:textColor="#7EE7A2"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/detailActions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/play"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:minHeight="46dp"
+                            android:singleLine="true"
+                            android:textColor="@android:color/white"
+                            android:textStyle="bold"
+                            app:backgroundTint="#2CC56F" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/changeSourceDetail"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minHeight="42dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="0dp"
+                                android:paddingEnd="0dp"
+                                android:singleLine="true"
+                                android:text="@string/play_change"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp"
+                                app:backgroundTint="#2B3743"
+                                app:strokeColor="@android:color/transparent" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/keep"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minHeight="42dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="0dp"
+                                android:paddingEnd="0dp"
+                                android:singleLine="true"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp"
+                                app:backgroundTint="#2B3743"
+                                app:strokeColor="@android:color/transparent" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/rematch"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minHeight="42dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="0dp"
+                                android:paddingEnd="0dp"
+                                android:singleLine="true"
+                                android:text="@string/detail_tmdb_rematch"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp"
+                                app:backgroundTint="#2B3743"
+                                app:strokeColor="@android:color/transparent" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/themeModeDetail"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:minHeight="42dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="0dp"
+                                android:paddingEnd="0dp"
+                                android:singleLine="true"
+                                android:text="@string/detail_theme_light"
+                                android:textColor="@android:color/white"
+                                android:textSize="13sp"
+                                app:backgroundTint="#2B3743"
+                                app:strokeColor="@android:color/transparent" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/flagHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="22dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/flagTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_flag"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/sourceValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:ellipsize="end"
+                            android:gravity="end"
+                            android:maxLines="1"
+                            android:maxWidth="260dp"
+                            android:textColor="#99FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <HorizontalScrollView
+                        android:id="@+id/flagScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:scrollbars="none"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:id="@+id/flagContainer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
+
+                    <LinearLayout
+                        android:id="@+id/episodeHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="22dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/episodeLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/detail_episode"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeTitle"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="12dp"
+                            android:clickable="true"
+                            android:ellipsize="end"
+                            android:insetBottom="0dp"
+                            android:insetTop="0dp"
+                            android:focusable="true"
+                            android:focusableInTouchMode="false"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:minHeight="36dp"
+                            android:minWidth="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="8dp"
+                            android:singleLine="true"
+                            android:text="@string/tmdb_season_button"
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@android:color/transparent"
+                            app:strokeColor="@android:color/transparent" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeReverse"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="36dp"
+                            android:minHeight="36dp"
+                            android:minWidth="0dp"
+                            android:contentDescription="@string/detail_episode_reverse"
+                            android:padding="0dp"
+                            app:backgroundTint="#2B3743"
+                            app:icon="@drawable/ic_action_sort_asc"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconSize="20dp"
+                            app:iconTint="@android:color/white"
+                            app:strokeColor="@android:color/transparent" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeFileName"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:minHeight="36dp"
+                            android:minWidth="0dp"
+                            android:contentDescription="@string/detail_episode_file_name_scraped_action"
+                            android:padding="0dp"
+                            app:backgroundTint="#2B3743"
+                            app:icon="@drawable/ic_action_name_full"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconSize="20dp"
+                            app:iconTint="@android:color/white"
+                            app:strokeColor="@android:color/transparent" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/episodeViewMode"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="40dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:minHeight="36dp"
+                            android:minWidth="0dp"
+                            android:contentDescription="@string/detail_episode_view_grid_action"
+                            android:padding="0dp"
+                            app:backgroundTint="#2B3743"
+                            app:icon="@drawable/ic_site_list"
+                            app:iconGravity="textStart"
+                            app:iconPadding="0dp"
+                            app:iconSize="20dp"
+                            app:iconTint="@android:color/white"
+                            app:strokeColor="@android:color/transparent" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/seasonScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:clipToPadding="false"
+                        android:visibility="gone">
+
+                        <com.google.android.flexbox.FlexboxLayout
+                            android:id="@+id/seasonContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:alignItems="center"
+                            app:flexWrap="wrap" />
+                    </FrameLayout>
+
+                    <HorizontalScrollView
+                        android:id="@+id/episodeRangeScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:scrollbars="none"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:id="@+id/episodeRangeContainer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal" />
+                    </HorizontalScrollView>
+
+                    <TextView
+                        android:id="@+id/episodeEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/episodeContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:clipToPadding="false"
+                        android:paddingEnd="8dp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/episodeSkeleton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+
+                        <View
+                            android:layout_width="230dp"
+                            android:layout_height="190dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_tmdb_loading_overlay" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:id="@+id/tmdbSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/tmdbPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="#D9141B23"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#26FFFFFF"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/episodePhotoTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_tmdb_photos"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/episodePhotoList"
+                            android:layout_width="match_parent"
+                            android:layout_height="124dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/posterTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/detail_tmdb_posters"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/posterList"
+                            android:layout_width="match_parent"
+                            android:layout_height="222dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/relatedVideoTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/tmdb_related_videos_label"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/relatedVideoList"
+                            android:layout_width="match_parent"
+                            android:layout_height="180dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/castTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_tmdb_cast"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/castList"
+                            android:layout_width="match_parent"
+                            android:layout_height="180dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/creatorTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_tmdb_creators"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/creatorList"
+                            android:layout_width="match_parent"
+                            android:layout_height="180dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/relatedTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/detail_tmdb_works"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/relatedList"
+                            android:layout_width="match_parent"
+                            android:layout_height="262dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/personalTmdbTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/tmdb_personal_recommendations_tmdb_label"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/personalTmdbList"
+                            android:layout_width="match_parent"
+                            android:layout_height="262dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/personalDoubanTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/tmdb_personal_recommendations_douban_label"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/personalDoubanList"
+                            android:layout_width="match_parent"
+                            android:layout_height="262dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/personalAiTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/tmdb_personal_recommendations_ai_label"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/personalAiList"
+                            android:layout_width="match_parent"
+                            android:layout_height="262dp"
+                            android:layout_marginTop="12dp"
+                            android:clipToPadding="false"
+                            android:paddingEnd="8dp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/personalAiReason"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="16dp"
+                            android:ellipsize="end"
+                            android:includeFontPadding="false"
+                            android:lineSpacingExtra="2dp"
+                            android:maxLines="2"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="13sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/externalLinksTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:text="@string/tmdb_external_links_label"
+                            android:textColor="@android:color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/externalLinksContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="vertical"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tmdbStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="13sp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 提升到 root 层的内嵌播放器：全屏/退出全屏仅调整 LayoutParams，不做 reparent -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/playerPanel"
+        android:layout_width="match_parent"
+        android:layout_height="252dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:clipToOutline="true"
+        android:focusable="true"
+        android:descendantFocusability="afterDescendants"
+        android:visibility="gone"
+        app:cardBackgroundColor="@android:color/black"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#26FFFFFF"
+        app:strokeWidth="1dp">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/exo"
+            style="@style/Player.Vod"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:surface_type="none" />
+
+        <master.flame.danmaku.ui.widget.DanmakuView
+            android:id="@+id/danmaku"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <include
+            android:id="@+id/osd"
+            layout="@layout/view_player_osd"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/playerProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminateTint="@android:color/white" />
+
+            <TextView
+                android:id="@+id/playerProgressTraffic"
+                style="@style/Shadow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/playerError"
+            style="@style/Shadow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/playerDisplayTopLeft"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="24dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/playerDisplayTitle"
+                style="@style/Shadow"
+                android:layout_width="320dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/playerDisplaySize"
+                style="@style/Shadow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/playerDisplayClock"
+            style="@style/Shadow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
+            android:fontFeatureSettings="tnum"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/playerDisplayBottomProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="120dp"
+            android:layout_marginBottom="24dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/playerDisplayPosition"
+                style="@style/Shadow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFeatureSettings="tnum"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
+            <ProgressBar
+                android:id="@+id/playerDisplayBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_marginTop="8dp"
+                android:max="10000"
+                android:progress="0"
+                android:progressBackgroundTint="@color/white_40"
+                android:progressTint="#2196F3" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/playerDisplayTraffic"
+            style="@style/Shadow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="24dp"
+            android:fontFeatureSettings="tnum"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <com.fongmi.android.tv.ui.custom.MiniProgressView
+            android:id="@+id/playerDisplayMini"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_gravity="bottom"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/gestureSeek"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/shape_widget"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/gestureAction"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@drawable/ic_widget_rewind" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/gestureTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:text="/"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/gestureDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/gestureSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="24dp"
+            android:src="@drawable/ic_widget_forward"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/gestureBright"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/shape_widget"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/gestureBrightIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_widget_bright_high" />
+
+            <ProgressBar
+                android:id="@+id/gestureBrightProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="120dp"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="@color/white_40"
+                android:progressTint="@android:color/white" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/gestureVolume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/shape_widget"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/gestureVolumeIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_widget_volume_high" />
+
+            <ProgressBar
+                android:id="@+id/gestureVolumeProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="120dp"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="@color/white_40"
+                android:progressTint="@android:color/white" />
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/playerControls"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/playerCast"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_control_cast" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/playerInfo"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_control_info"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/playerDanmakuToggle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_danmaku_on"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/playerBottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:background="@drawable/shape_controller_scrim"
+                android:orientation="vertical"
+                android:paddingStart="24dp"
+                android:paddingTop="24dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="16dp">
+
+                <HorizontalScrollView
+                    android:id="@+id/playerActionRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fillViewport="true"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerNext"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_next" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerPrev"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_prev" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerEpisodes"
+                            style="@style/Control"
+                            android:layout_marginEnd="12dp"
+                            android:text="@string/detail_episode" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerRefresh"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_reset" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerChangeSource"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_change" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerSearch"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_search" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerFullscreenAction"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_fullscreen" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerExternal"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_exo" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerDecode"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_decode" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerPlayParams"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_params" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerMultiThreadProxy"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/multi_thread_proxy_button" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerCodecCapability"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/codec_capability_short" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerSpeed"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_speed" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerScale"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_scale" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerQuality"
+                            style="@style/Control"
+                            android:layout_marginEnd="12dp"
+                            android:text="@string/detail_quality"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerLut"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_lut" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerParse"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/parse"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerDisplay"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/control_display" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerTextTrack"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:tag="3"
+                            android:text="@string/play_track_text" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerAudioTrack"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:tag="1"
+                            android:text="@string/play_track_audio" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerVideoTrack"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:tag="2"
+                            android:text="@string/play_track_video" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerOpening"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_op" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerEnding"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_ed" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerDanmaku"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/danmaku"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerAdFeedback"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_ad_feedback"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerChapter"
+                            style="@style/Control"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/play_title"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/playerRepeat"
+                            style="@style/Control"
+                            android:text="@string/play_repeat" />
+
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <com.fongmi.android.tv.ui.custom.CustomSeekView
+                    android:id="@+id/seek"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" />
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <FrameLayout
+            android:id="@+id/detailControlHost"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <com.fongmi.android.tv.ui.custom.LutQuickPanel
+            android:id="@+id/lutQuick"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <FrameLayout
+        android:id="@+id/loading"
+        android:layout_width="148dp"
+        android:layout_height="112dp"
+        android:layout_gravity="center"
+        android:background="@drawable/shape_tmdb_loading_overlay"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminateTint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/loadingText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/detail_tmdb_loading_detail"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:alpha="1.0" />
+        </LinearLayout>
+    </FrameLayout>
+
+</FrameLayout>

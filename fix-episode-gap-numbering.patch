@@ -1,0 +1,47 @@
+--- a/app/src/main/java/com/fongmi/android/tv/ui/activity/TmdbDetailActivity.java
++++ b/app/src/main/java/com/fongmi/android/tv/ui/activity/TmdbDetailActivity.java
+@@ -7378,13 +7378,15 @@ public class TmdbDetailActivity extends BaseActivity {
+         }
+         int titleSeason = sourceTitleSeasonNumber();
+         if (!hasExplicitSeasonNumbers(episodes) && seasonNumbers.contains(titleSeason)) {
+-            android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=titleSeasonIndexPlus1 -> s" + titleSeason + "e" + (index + 1));
+-            return new EpisodePosition(titleSeason, index + 1);
++            int number = linearEpisodeNumber(sourceNumber, index);
++            android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=titleSeasonLinear -> s" + titleSeason + "e" + number);
++            return new EpisodePosition(titleSeason, number);
+         }
+         if (!EpisodeSeasonPolicy.canSliceBySeasonCounts(episodes.size(), seasonNumbers, seasonEpisodeCounts)) {
+-            android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=noSliceIndexPlus1 -> s" + selectedSeasonNumber + "e" + (index + 1));
+-            return new EpisodePosition(selectedSeasonNumber, index + 1);
++            int number = linearEpisodeNumber(sourceNumber, index);
++            android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=noSliceLinear -> s" + selectedSeasonNumber + "e" + number);
++            return new EpisodePosition(selectedSeasonNumber, number);
+         }
++        // sliceBySeasonCounts 分支保持不变，因为它处理真正的多季分片，需要用 index - start + 1 计算季内位置
+         int start = 0;
+         for (int i = 0; i < seasonNumbers.size(); i++) {
+             Integer season = seasonNumbers.get(i);
+@@ -7396,8 +7398,10 @@ public class TmdbDetailActivity extends BaseActivity {
+             }
+             start += count;
+         }
+-        android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=fallbackIndexPlus1 -> s" + selectedSeasonNumber + "e" + (index + 1));
+-        return new EpisodePosition(selectedSeasonNumber, index + 1);
++        // fallback 分支也改用 linearEpisodeNumber，处理边界情况
++        int number = linearEpisodeNumber(sourceNumber, index);
++        android.util.Log.d("EPPOS", "[" + epName + "] idx=" + index + " src=" + sourceNumber + " branch=fallbackLinear -> s" + selectedSeasonNumber + "e" + number);
++        return new EpisodePosition(selectedSeasonNumber, number);
+     }
+
+     private int linearEpisodeNumber(int sourceEpisodeNumber, int zeroBasedIndex) {
+
+理由：
+1. titleSeasonIndexPlus1 → titleSeasonLinear：保留源编号（如13），除非源编号 < index+1（如源编号1但在index=5位置）
+2. noSliceIndexPlus1 → noSliceLinear：同上
+3. fallbackIndexPlus1 → fallbackLinear：兜底分支也统一逻辑
+4. sliceBySeasonCounts 分支不变：因为它处理真正的多季分片，用 index - start + 1 计算的是"季内位置"，不是全局位置
+
+测试场景：
+- [1..11, 13, 14] → 第一个13在index=11，linearEpisodeNumber(13, 11) → 13 >= 12 → 返回13 ✓
+- [1..12] 正常连续 → linearEpisodeNumber(12, 11) → 12 >= 12 → 返回12 ✓
+- [1, 1, 1...] 重复编号 → linearEpisodeNumber(1, 5) → 1 >= 6? → false → 返回6（位置编号）✓

@@ -1,11 +1,13 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home">首页</string>
     <string name="home_vod">点播</string>
     <string name="home_live">直播</string>
     <string name="home_search">搜索</string>
     <string name="home_keep">收藏</string>
     <string name="home_push">推送</string>
+    <string name="home_cast">投屏</string>
     <string name="home_setting">设置</string>
     <string name="control_speed">倍速</string>
     <string name="control_scale">缩放</string>
@@ -15,7 +17,12 @@
     <string name="control_compact_episode_title">精简标题</string>
     <string name="control_track">轨道</string>
     <string name="home_history">最近观看</string>
+    <string name="home_history_button">历史</string>
     <string name="home_recommend">更新推荐</string>
+    <string name="setting_home_buttons">首页按钮</string>
+    <string name="home_buttons_reset">重置</string>
+    <string name="home_buttons_selected">已启用 %1$d/%2$d</string>
+    <string name="detail_tmdb_rematch">TMDB</string>
 
     <!-- Collect -->
     <string name="collect_result">“<xliff:g name="name">%s</xliff:g>”的搜索结果</string>
@@ -32,5 +39,9 @@
     <string name="timer_30">30 分钟</string>
     <string name="timer_60">1 小时</string>
     <string name="timer_delay">延长 5 分钟</string>
-    <string name="timer_cancel">取消定时器</string>
+   <string name="timer_cancel">取消定时器</string>
+
+    <!-- Delete Dialog -->
+    <string name="dialog_delete_record">删除全部记录？</string>
+    <string name="dialog_delete_history">观看记录将会全部删除。</string>
 </resources>

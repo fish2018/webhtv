@@ -20,15 +20,16 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.FragmentSettingBinding;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.ConfigEvent;
+import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.LiveListener;
 import com.fongmi.android.tv.impl.SiteListener;
+import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.AboutDialog;
-import com.fongmi.android.tv.ui.dialog.AppearanceDialog;
 import com.fongmi.android.tv.ui.dialog.ChoiceDialog;
 import com.fongmi.android.tv.ui.dialog.ConfigDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
@@ -36,10 +37,12 @@ import com.fongmi.android.tv.ui.dialog.LiveDialog;
 import com.fongmi.android.tv.ui.dialog.RestoreDialog;
 import com.fongmi.android.tv.ui.dialog.BackupProgressDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.dialog.ThemeDialog;
 import com.fongmi.android.tv.utils.AppVersion;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
+import com.fongmi.android.tv.utils.ResUtil;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.net.OkHttp;
 
@@ -50,9 +53,12 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingFragment extends BaseFragment implements ConfigListener, SiteListener, LiveListener {
+public class SettingFragment extends BaseFragment implements ConfigListener, SiteListener, LiveListener, ThemeDialog.Listener {
 
     private FragmentSettingBinding mBinding;
+    private String[] size;
+    private String[] language;
+    private String[] uiScale;
 
     public static SettingFragment newInstance() {
         return new SettingFragment();
@@ -60,6 +66,12 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
 
     private String getSwitch(boolean value) {
         return getString(value ? R.string.setting_on : R.string.setting_off);
+    }
+
+    private String getThemeText() {
+        int color = Setting.getThemeColor();
+        if (color == -1) return getString(R.string.setting_off);
+        return getString(color == 0 ? R.string.setting_auto : R.string.setting_custom);
     }
 
     private int getDohIndex() {
@@ -93,8 +105,12 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void setOtherText() {
+        mBinding.themeColorText.setText(getThemeText());
         mBinding.dohText.setText(getDohList()[getDohIndex()]);
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
+        mBinding.languageText.setText((language = ResUtil.getStringArray(R.array.select_language))[Setting.getLanguageIndex()]);
+        mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
+        mBinding.uiScaleText.setText((uiScale = ResUtil.getStringArray(R.array.select_ui_scale))[Setting.getUiScaleIndex()]);
     }
 
     private void setCacheText() {
@@ -112,12 +128,19 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         mBinding.doh.setOnClickListener(this::setDoh);
         mBinding.live.setOnClickListener(this::onLive);
         mBinding.wall.setOnClickListener(this::onWall);
-        mBinding.appearance.setOnClickListener(this::onAppearance);
+        mBinding.size.setOnClickListener(this::setSize);
+        mBinding.language.setOnClickListener(this::setLanguage);
+        mBinding.uiScale.setOnClickListener(this::setUiScale);
         mBinding.cache.setOnClickListener(this::onCache);
         mBinding.backup.setOnClickListener(this::onBackup);
         mBinding.enhance.setOnClickListener(this::onEnhance);
+        mBinding.tmdb.setOnClickListener(this::onTmdb);
+        mBinding.ai.setOnClickListener(this::onAi);
+        mBinding.personal.setOnClickListener(this::onPersonal);
         mBinding.player.setOnClickListener(this::onPlayer);
+        mBinding.ad.setOnClickListener(this::onAd);
         mBinding.danmaku.setOnClickListener(this::onDanmaku);
+        mBinding.subtitle.setOnClickListener(this::onSubtitle);
         mBinding.restore.setOnClickListener(this::onRestore);
         mBinding.version.setOnClickListener(this::onVersion);
         mBinding.vod.setOnLongClickListener(this::onVodEdit);
@@ -127,6 +150,7 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         mBinding.wall.setOnLongClickListener(this::onWallEdit);
         mBinding.incognito.setOnClickListener(this::setIncognito);
         mBinding.vodHistory.setOnClickListener(this::onVodHistory);
+        mBinding.themeColor.setOnClickListener(this::onThemeColor);
         mBinding.liveHistory.setOnClickListener(this::onLiveHistory);
         mBinding.wallDefault.setOnClickListener(this::setWallDefault);
         mBinding.wallRefresh.setOnClickListener(this::setWallRefresh);
@@ -190,6 +214,12 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         LiveConfig.get().setHome(item);
     }
 
+    @Override
+    public void setTheme(int color) {
+        Setting.putThemeColor(color);
+        RefreshEvent.theme();
+    }
+
     private void onVod(View view) {
         ConfigDialog.create().vod().show(this);
     }
@@ -237,16 +267,36 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         getRoot().change(2);
     }
 
+    private void onAd(View view) {
+        getRoot().change(9);
+    }
+
     private void onDanmaku(View view) {
         getRoot().change(4);
+    }
+
+    private void onSubtitle(View view) {
+        getRoot().change(6);
     }
 
     private void onEnhance(View view) {
         getRoot().change(3);
     }
 
-    private void onAppearance(View view) {
-        AppearanceDialog.show(this);
+    private void onTmdb(View view) {
+        getRoot().change(7);
+    }
+
+    private void onAi(View view) {
+        getRoot().change(8);
+    }
+
+    private void onPersonal(View view) {
+        getRoot().change(5);
+    }
+
+    private void onThemeColor(View view) {
+        ThemeDialog.show(this);
     }
 
 
@@ -276,6 +326,31 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
     }
 
+    private void setSize(View view) {
+        ChoiceDialog.showSingle(this, R.string.setting_size, size, PlayerSetting.getSize(), which -> {
+            mBinding.sizeText.setText(size[which]);
+            PlayerSetting.putSize(which);
+            RefreshEvent.size();
+        });
+    }
+
+    private void setLanguage(View view) {
+        ChoiceDialog.showSingle(this, R.string.setting_language, language, Setting.getLanguageIndex(), which -> {
+            if (which != Setting.getLanguageIndex()) {
+                Setting.putLanguageIndex(which);
+                RefreshEvent.language();
+            }
+        });
+    }
+
+    private void setUiScale(View view) {
+        ChoiceDialog.showSingle(this, R.string.setting_ui_scale, uiScale, Setting.getUiScaleIndex(), which -> {
+            mBinding.uiScaleText.setText(uiScale[which]);
+            Setting.putUiScaleIndex(which);
+            requireActivity().recreate();
+        });
+    }
+
     private void setDoh(View view) {
         ChoiceDialog.showSingle(this, R.string.setting_doh, getDohList(), getDohIndex(), which -> {
             setDoh(VodConfig.get().getDoh().get(which));
@@ -299,36 +374,46 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
 
     private void onBackup(View view) {
         PermissionUtil.requestFile(this, allGranted -> {
+            if (!allGranted) {
+                Notify.show(R.string.backup_permission_denied);
+                return;
+            }
             BackupProgressDialog progress = BackupProgressDialog.open(getParentFragmentManager(), "备份应用数据");
             AppDatabase.backup(new Callback() {
-            @Override
-            public void success() {
-                progress.finish();
-                Notify.show(R.string.backup_success);
-            }
+                @Override
+                public void success() {
+                    progress.finish();
+                    Notify.show(R.string.backup_success);
+                }
 
-            @Override
-            public void error() {
-                progress.finish();
-                Notify.show(R.string.backup_fail);
-            }
+                @Override
+                public void error() {
+                    progress.finish();
+                    Notify.show(R.string.backup_fail);
+                }
             }, progress::update);
         });
     }
 
     private void onRestore(View view) {
-        PermissionUtil.requestFile(this, allGranted -> RestoreDialog.create().show(requireActivity(), new Callback() {
-            @Override
-            public void success() {
-                Notify.show(R.string.restore_success);
-                setOtherText();
+        PermissionUtil.requestFile(this, allGranted -> {
+            if (!allGranted) {
+                Notify.show(R.string.backup_permission_denied);
+                return;
             }
+            RestoreDialog.create().show(requireActivity(), new Callback() {
+                @Override
+                public void success() {
+                    Notify.show(R.string.restore_success);
+                    setOtherText();
+                }
 
-            @Override
-            public void error() {
-                Notify.show(R.string.restore_fail);
-            }
-        }));
+                @Override
+                public void error() {
+                    Notify.show(R.string.restore_fail);
+                }
+            });
+        });
     }
 
     private void initConfig() {

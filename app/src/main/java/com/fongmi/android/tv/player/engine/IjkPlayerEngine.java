@@ -1,8 +1,8 @@
 package com.fongmi.android.tv.player.engine;
 
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
-import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
@@ -77,7 +77,7 @@ public class IjkPlayerEngine implements PlayerEngine {
 
     @Override
     public void start(PlaySpec spec) {
-        start(spec, true);
+        start(spec, C.TIME_UNSET, true);
     }
 
     @Override

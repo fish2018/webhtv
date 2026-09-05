@@ -61,10 +61,10 @@
         android:layout_marginBottom="14dp"
         android:background="#E5E7EB" />
 
-    <androidx.core.widget.NestedScrollView
+    <com.fongmi.android.tv.ui.custom.CustomNestedScrollView
         android:id="@+id/contentScroll"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
+        android:layout_height="wrap_content"
         android:clipToPadding="false"
         android:fadeScrollbars="false"
         android:overScrollMode="never"
@@ -79,39 +79,57 @@
             android:textColor="#303134"
             android:textSize="14sp" />
 
-    </androidx.core.widget.NestedScrollView>
+    </com.fongmi.android.tv.ui.custom.CustomNestedScrollView>
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="18dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/checkUpdate"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:nextFocusRight="@id/confirm"
-            android:text="@string/about_check_update"
-            android:textColor="@color/dialog_tonal_button_text"
-            android:textSize="14sp"
-            app:backgroundTint="@color/dialog_tonal_button_bg"
-            app:cornerRadius="8dp" />
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/checkUpdate"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="1"
+                android:minHeight="44dp"
+                android:text="@string/about_check_update"
+                android:textColor="@color/dialog_tonal_button_text"
+                android:textSize="14sp"
+                app:backgroundTint="@color/dialog_tonal_button_bg"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/githubProxy"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:minHeight="44dp"
+                android:text="@string/setting_github_proxy_short"
+                android:textColor="@color/dialog_tonal_button_text"
+                android:textSize="14sp"
+                app:backgroundTint="@color/dialog_tonal_button_bg"
+                app:cornerRadius="8dp" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/confirm"
             style="@style/Widget.Material3.Button"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="44dp"
-            android:layout_weight="1"
+            android:layout_marginTop="10dp"
             android:minHeight="44dp"
-            android:nextFocusLeft="@id/checkUpdate"
-            android:nextFocusRight="@id/updateSettings"
             android:text="@string/about_acknowledge"
             android:textColor="@color/dialog_primary_button_text"
             android:textSize="14sp"
@@ -122,10 +140,10 @@
             android:id="@+id/updateSettings"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:layout_marginStart="10dp"
+            android:layout_gravity="end"
+            android:layout_marginTop="10dp"
             android:background="@drawable/selector_dialog_step_button"
             android:contentDescription="@string/update_settings"
-            android:nextFocusLeft="@id/confirm"
             android:padding="10dp"
             android:src="@drawable/ic_remote_settings"
             app:tint="#5F6368" />

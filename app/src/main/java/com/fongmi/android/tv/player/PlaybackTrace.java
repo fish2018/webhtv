@@ -13,6 +13,22 @@ public final class PlaybackTrace {
     public static final String NONE = "none";
 
     private static final AtomicLong SEQUENCE = new AtomicLong();
+
+    /**
+     * Chronological order for reporting, which is not the enum declaration order:
+     * a first frame normally arrives before {@code STATE_READY}, so iterating an
+     * {@link EnumMap} directly would print the timeline out of sequence.
+     */
+    private static final Stage[] STAGE_ORDER = {
+            Stage.REQUEST,
+            Stage.PARSE_COMPLETE,
+            Stage.PREPARE,
+            Stage.TRACKS,
+            Stage.FIRST_FRAME,
+            Stage.AUDIO_PLAYABLE,
+            Stage.READY,
+    };
+
     private final EnumMap<Stage, Long> stageTimes = new EnumMap<>(Stage.class);
     private String traceId = "";
     private long startedAtMs = -1;
@@ -92,6 +108,51 @@ public final class PlaybackTrace {
 
     synchronized boolean hasStage(Stage stage) {
         return stageTimes.containsKey(stage);
+    }
+
+    /**
+     * Renders the startup timeline for on-screen diagnostics, so a slow start can be
+     * localized to a stage without pulling a debug log. Stages appear in the order
+     * they were reached; a stage not yet reached is omitted rather than shown as zero.
+     */
+    public synchronized String startupSummary() {
+        if (startedAtMs < 0 || stageTimes.isEmpty()) return "";
+        StringBuilder builder = new StringBuilder();
+        long previous = 0;
+        for (Stage stage : STAGE_ORDER) {
+            Long time = stageTimes.get(stage);
+            if (time == null) continue;
+            long elapsed = Math.max(0, time - startedAtMs);
+            if (builder.length() > 0) builder.append("  ");
+            builder.append(stage.label()).append(' ').append(elapsed).append("ms");
+            long delta = elapsed - previous;
+            if (delta > 0 && previous > 0) builder.append("(+").append(delta).append(')');
+            previous = elapsed;
+        }
+        return builder.toString();
+    }
+
+    /**
+     * Returns the stage that consumed the most wall time, as {@code label:deltaMs},
+     * or an empty string when fewer than two stages have been reached.
+     */
+    public synchronized String slowestStage() {
+        if (startedAtMs < 0 || stageTimes.size() < 2) return "";
+        Stage worst = null;
+        long worstDelta = -1;
+        long previous = 0;
+        for (Stage stage : STAGE_ORDER) {
+            Long time = stageTimes.get(stage);
+            if (time == null) continue;
+            long elapsed = Math.max(0, time - startedAtMs);
+            long delta = elapsed - previous;
+            if (delta > worstDelta) {
+                worstDelta = delta;
+                worst = stage;
+            }
+            previous = elapsed;
+        }
+        return worst == null || worstDelta <= 0 ? "" : worst.label() + ":" + worstDelta + "ms";
     }
 
     public static String normalize(String traceId) {

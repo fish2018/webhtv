@@ -27,6 +27,14 @@ final class MpvDiagnosticsPolicy {
         };
     }
 
+    static boolean allowsDetailedDiagnostics(Request request, boolean debugLogEnabled) {
+        if (request == null) return false;
+        return switch (request) {
+            case PANEL, PLAYBACK, ERROR_MINIMAL -> false;
+            case DEBUG_LOG, ERROR_DETAILED -> debugLogEnabled;
+        };
+    }
+
     static String sourceSummary(String source) {
         String value = source == null ? "" : source.trim();
         String scheme = scheme(value);

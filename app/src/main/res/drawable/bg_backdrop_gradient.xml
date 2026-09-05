@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TMDB背景幻灯片渐变遮罩：从半透明黑色到完全透明 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="90"
+        android:startColor="#CC000000"
+        android:centerColor="#66000000"
+        android:endColor="#00000000"
+        android:type="linear" />
+</shape>

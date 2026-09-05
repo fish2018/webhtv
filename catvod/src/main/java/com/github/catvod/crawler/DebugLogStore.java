@@ -5,15 +5,15 @@ import android.text.TextUtils;
 import com.github.catvod.Init;
 import com.github.catvod.utils.Prefers;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -25,6 +25,8 @@ public class DebugLogStore {
     private static final String FILE_NAME = "webhtv-debug-log.txt";
     private static final String PREF_ENABLED = "debug_log";
     private static final int MAX_MESSAGE_CHARS = 12000;
+    private static final int MAX_LINES = 2000;
+    private static final int MAX_FILE_BYTES = 4 * 1024 * 1024;
     private static long version;
     private static volatile boolean enabled;
 
@@ -54,6 +56,7 @@ public class DebugLogStore {
         String line = FORMAT.get().format(new Date()) + " [" + Thread.currentThread().getName() + "] " + safe(tag) + ": " + limit(msg);
         synchronized (LOCK) {
             LINES.addLast(line);
+            trimLines(LINES, MAX_LINES);
             version++;
             writeLocked(line);
         }
@@ -127,8 +130,13 @@ public class DebugLogStore {
         try {
             File file = file();
             if (file == null) return;
+            byte[] data = (line + "\n").getBytes(StandardCharsets.UTF_8);
+            if (file.length() + data.length > MAX_FILE_BYTES) {
+                rewriteLocked(file);
+                return;
+            }
             try (FileOutputStream stream = new FileOutputStream(file, true)) {
-                stream.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+                stream.write(data);
             }
         } catch (Throwable ignored) {
         }
@@ -138,22 +146,58 @@ public class DebugLogStore {
         try {
             File file = file();
             if (file == null || !file.exists()) return;
-            String text = readAll(file);
+            String text = readTail(file, MAX_FILE_BYTES);
             if (TextUtils.isEmpty(text)) return;
             LINES.clear();
             for (String line : text.split("\\r?\\n")) {
                 if (!TextUtils.isEmpty(line)) LINES.addLast(line);
             }
+            trimLines(LINES, MAX_LINES);
+            if (file.length() > MAX_FILE_BYTES) rewriteLocked(file);
         } catch (Throwable e) {
         }
     }
 
-    private static String readAll(File file) throws Exception {
-        try (FileInputStream input = new FileInputStream(file); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
-            return output.toString(StandardCharsets.UTF_8.name());
+    static void trimLines(ArrayDeque<String> lines, int maxLines) {
+        while (lines.size() > maxLines) lines.removeFirst();
+    }
+
+    static String readTail(File file, int maxBytes) throws Exception {
+        try (RandomAccessFile input = new RandomAccessFile(file, "r")) {
+            long length = input.length();
+            long start = Math.max(0, length - maxBytes);
+            boolean startsOnLine = start == 0;
+            if (start > 0) {
+                input.seek(start - 1);
+                startsOnLine = input.read() == '\n';
+            }
+            input.seek(start);
+            byte[] data = new byte[(int) (length - start)];
+            input.readFully(data);
+            int offset = 0;
+            if (!startsOnLine) {
+                while (offset < data.length && data[offset] != '\n') offset++;
+                if (offset < data.length) offset++;
+            }
+            return new String(data, offset, data.length - offset, StandardCharsets.UTF_8);
+        }
+    }
+
+    private static void rewriteLocked(File file) throws Exception {
+        ArrayDeque<String> retained = new ArrayDeque<>();
+        int bytes = 0;
+        Iterator<String> iterator = LINES.descendingIterator();
+        while (iterator.hasNext()) {
+            String line = iterator.next();
+            int size = line.getBytes(StandardCharsets.UTF_8).length + 1;
+            if (bytes + size > MAX_FILE_BYTES) break;
+            retained.addFirst(line);
+            bytes += size;
+        }
+        LINES.clear();
+        LINES.addAll(retained);
+        try (FileOutputStream stream = new FileOutputStream(file, false)) {
+            for (String line : LINES) stream.write((line + "\n").getBytes(StandardCharsets.UTF_8));
         }
     }
 

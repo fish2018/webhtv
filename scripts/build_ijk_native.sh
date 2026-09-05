@@ -5,10 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SOURCE_DIR="${IJK_BUILD_DIR:-$ROOT_DIR/third_party/sources/ijkplayer-android}"
 IJK_REPO="https://github.com/ShikinChen/ijkplayer-android.git"
 IJK_REVISION="be89479c77c52acfb023d3b3acefccc5d8b9a101"
-FF4_CONFIG_REVISION="96598d75"
+FF4_CONFIG_REVISION="96598d75d381a4e8c3137795a7b490253a26ec80"
 FFMPEG_REPO="https://github.com/ShikinChen/FFmpeg.git"
-FFMPEG_TAG="ff4.0--ijk0.8.8--20210426--001"
-OPENSSL_COMMIT="openssl-3.2"
+FFMPEG_REVISION="e88b5afbf9ca543a098ede6dd6765ef0e629836d"
+OPENSSL_BRANCH="openssl-3.2"
+OPENSSL_REVISION="14ddbcee237cb99b3921c352852b4d4fadbb8e6c"
 IJK_PATCH="$ROOT_DIR/third_party/patches/ijk-vod-buffer-capacity.patch"
 IJK_LINK_PATCH="$ROOT_DIR/third_party/patches/ijk-ffmpeg4-link.patch"
 IJK_BUFFER_PATCH="$ROOT_DIR/third_party/patches/ijk-vod-buffer-capacity-ff4.patch"
@@ -121,13 +122,14 @@ git -C "$SOURCE_DIR" apply "$IJK_ERROR_PATCH"
 # configuration used by WebHTV's IJK ABI.
 git -C "$SOURCE_DIR" show "$FF4_CONFIG_REVISION:init-android.sh" > "$SOURCE_DIR/init-android.sh"
 sed -i.bak "s#https://github.com/Bilibili/FFmpeg.git#$FFMPEG_REPO#g" "$SOURCE_DIR/init-android.sh"
-sed -i.bak "s#IJK_FFMPEG_COMMIT=.*#IJK_FFMPEG_COMMIT=$FFMPEG_TAG#" "$SOURCE_DIR/init-android.sh"
+sed -i.bak "s#IJK_FFMPEG_COMMIT=.*#IJK_FFMPEG_COMMIT=$FFMPEG_REVISION#" "$SOURCE_DIR/init-android.sh"
+sed -i.bak "s#^IJK_OPENSSL_COMMIT=.*#IJK_OPENSSL_COMMIT=$OPENSSL_REVISION#" "$SOURCE_DIR/init-android-openssl.sh"
 for arch in armv5 armv7a arm64 x86 x86_64; do
   if [[ "$arch" != "$IJK_ARCH" ]]; then
     sed -i.bak "/^pull_fork \"$arch\"$/d" "$SOURCE_DIR/init-android.sh"
   fi
 done
-rm -f "$SOURCE_DIR/init-android.sh.bak"
+rm -f "$SOURCE_DIR/init-android.sh.bak" "$SOURCE_DIR/init-android-openssl.sh.bak"
 for app_mk in \
   "$SOURCE_DIR/android/ijkplayer/ijkplayer-arm64/src/main/jni/Application.mk" \
   "$SOURCE_DIR/android/ijkplayer/ijkplayer-armv7a/src/main/jni/Application.mk"; do
@@ -147,16 +149,17 @@ export ANDROID_NDK_HOME="$NDK_ROOT"
 cd "$SOURCE_DIR"
 ./init-android.sh
 FFMPEG_DIR="$SOURCE_DIR/android/contrib/ffmpeg-$IJK_ARCH"
-git -C "$FFMPEG_DIR" reset --hard "$FFMPEG_TAG"
+git -C "$FFMPEG_DIR" reset --hard "$FFMPEG_REVISION"
 git -C "$FFMPEG_DIR" clean -fdx
 git -C "$FFMPEG_DIR" apply --check "$FFMPEG_PATCH"
 git -C "$FFMPEG_DIR" apply "$FFMPEG_PATCH"
 # init-android-openssl.sh edits a tracked OpenSSL config file for clang
-# detection. Reset that checkout before each ABI build so a previous ABI's
+# detection. Reset the exact checkout before each ABI build so a previous ABI's
 # generated Makefile cannot trigger OpenSSL's one-time configdata rebuild.
 OPENSSL_DIR="$SOURCE_DIR/extra/openssl"
 if [[ -d "$OPENSSL_DIR/.git" ]]; then
-  git -C "$OPENSSL_DIR" reset --hard "$OPENSSL_COMMIT"
+  git -C "$OPENSSL_DIR" fetch origin "$OPENSSL_BRANCH"
+  git -C "$OPENSSL_DIR" reset --hard "$OPENSSL_REVISION"
   git -C "$OPENSSL_DIR" clean -fdx
 fi
 ./init-android-openssl.sh

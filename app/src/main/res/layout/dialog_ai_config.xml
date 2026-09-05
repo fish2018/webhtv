@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F6F8FC"
+    android:fillViewport="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="20dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_ai_section_service" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/enabled"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/dialog_ai_enable"
+                    android:textColor="#202124"
+                    android:textSize="15sp"
+                    app:thumbTint="@color/dialog_switch_thumb"
+                    app:trackTint="@color/dialog_switch_track" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/titleExtraction"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/dialog_ai_title_extraction"
+                    android:textColor="#202124"
+                    android:textSize="15sp"
+                    app:thumbTint="@color/dialog_switch_thumb"
+                    app:trackTint="@color/dialog_switch_track" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_ai_section_connection" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_ai_protocol_label" />
+
+                <androidx.appcompat.widget.AppCompatAutoCompleteTextView
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:id="@+id/protocol"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:dropDownHeight="240dp"
+                    android:gravity="center_vertical"
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:popupBackground="@color/white"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_ai_endpoint_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:id="@+id/endpoint"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_ai_endpoint_hint"
+                    android:inputType="textUri"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_ai_api_key_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:id="@+id/apiKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_ai_api_key_hint"
+                    android:inputType="textVisiblePassword"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#D8E0EA"
+            app:strokeWidth="1dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/dialog_ai_section_model" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_ai_model_label" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <androidx.appcompat.widget.AppCompatAutoCompleteTextView
+                        style="@style/Widget.WebHTV.LightDialog.Input"
+                        android:id="@+id/model"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:dropDownHeight="280dp"
+                        android:gravity="center_vertical"
+                        android:hint="@string/dialog_ai_model_hint"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:popupBackground="@color/white"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        style="@style/Widget.WebHTV.LightDialog.Button.Tonal"
+                        android:id="@+id/fetchModels"
+                        android:layout_width="142dp"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/dialog_ai_fetch_models"
+                        android:textAllCaps="false" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/Widget.WebHTV.LightDialog.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/dialog_ai_user_agent_label" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    style="@style/Widget.WebHTV.LightDialog.Input"
+                    android:id="@+id/userAgent"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:hint="@string/dialog_ai_user_agent_hint"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                style="@style/Widget.WebHTV.LightDialog.Button.Outlined"
+                android:id="@+id/prompt"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:text="@string/dialog_ai_prompt_config"
+                android:textAllCaps="false" />
+
+            <com.google.android.material.button.MaterialButton
+                style="@style/Widget.WebHTV.LightDialog.Button.Tonal"
+                android:id="@+id/test"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="@string/dialog_ai_test"
+                android:textAllCaps="false" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

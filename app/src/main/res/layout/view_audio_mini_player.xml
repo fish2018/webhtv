@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/audioMiniRoot"
+    android:layout_width="520dp"
+    android:layout_height="96dp"
+    android:layout_gravity="end|bottom"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="28dp"
+    android:background="@drawable/shape_audio_mini_player"
+    android:clickable="true"
+    android:clipToOutline="true"
+    android:elevation="12dp"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    android:visibility="gone">
+
+    <ImageView
+        android:id="@+id/audioMiniBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.32"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black_70" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingEnd="8dp">
+
+        <ImageView
+            android:id="@+id/audioMiniCover"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:background="@drawable/shape_audio_cover"
+            android:clipToOutline="true"
+            android:padding="4dp"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:id="@+id/audioMiniInfo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/audioMiniTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/audioMiniSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/white_70"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/audioMiniState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="9dp"
+                android:textColor="@color/white_60"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/audioMiniPrev"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="@drawable/shape_audio_round_button"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_audio_prev"
+            app:tint="@color/white_80" />
+
+        <ImageView
+            android:id="@+id/audioMiniPlay"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/shape_audio_round_button"
+            android:focusable="true"
+            android:padding="9dp"
+            android:src="@drawable/ic_audio_play"
+            app:tint="@color/white" />
+
+        <ImageView
+            android:id="@+id/audioMiniNext"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/shape_audio_round_button"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_audio_next"
+            app:tint="@color/white_80" />
+
+        <ImageView
+            android:id="@+id/audioMiniClose"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="5dp"
+            android:background="@drawable/shape_audio_round_button"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_audio_close"
+            app:tint="@color/white_80" />
+    </LinearLayout>
+</FrameLayout>

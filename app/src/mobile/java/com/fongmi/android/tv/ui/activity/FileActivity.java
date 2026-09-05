@@ -14,6 +14,7 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.databinding.ActivityFileBinding;
 import com.fongmi.android.tv.ui.adapter.FileAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.ui.web.WebReaderActivity;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.github.catvod.utils.Path;
 
@@ -28,6 +29,7 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
     private FileAdapter mAdapter;
     private File dir;
     private boolean selectDir;
+    private boolean readMode;
 
     private boolean isRoot() {
         return Path.root().equals(dir);
@@ -48,6 +50,7 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
     @Override
     protected void initView(Bundle savedInstanceState) {
         selectDir = getIntent().getBooleanExtra("select_dir", false);
+        readMode = getIntent().getBooleanExtra("read_mode", false);
         setSupportActionBar(mBinding.toolbar);
         setRecyclerView();
         checkPermission();
@@ -87,10 +90,26 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
     public void onItemClick(File file) {
         if (file.isDirectory()) {
             update(file);
+        } else if (readMode && isReadable(file)) {
+            startReader(file);
         } else {
             setResult(RESULT_OK, new Intent().setData(Uri.fromFile(file)));
             finish();
         }
+    }
+
+    private boolean isReadable(File file) {
+        String n = file.getName().toLowerCase();
+        return n.endsWith(".txt") || n.endsWith(".html") || n.endsWith(".htm")
+                || n.endsWith(".epub") || n.endsWith(".zip") || n.endsWith(".pdf")
+                || n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png")
+                || n.endsWith(".webp") || n.endsWith(".gif") || n.endsWith(".bmp");
+    }
+
+    private void startReader(File file) {
+        Intent intent = new Intent(this, WebReaderActivity.class);
+        intent.putExtra(WebReaderActivity.EXTRA_LOCAL_PATH, file.getAbsolutePath());
+        startActivity(intent);
     }
 
     @Override

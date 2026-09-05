@@ -69,6 +69,20 @@ public class PreloadLifecycleTrackerTest {
     }
 
     @Test
+    public void internalWorkerFailureIsRecordedOnlyOnce() {
+        PreloadLifecycleTracker tracker = new PreloadLifecycleTracker();
+        tracker.beginSession();
+        tracker.startTask(9, 5_000, 10_000);
+
+        PreloadLifecycleTracker.TaskEvent failed = tracker.endTask(PreloadLifecycleTracker.TaskEvent.Outcome.INTERNAL_ERROR);
+
+        assertEquals(PreloadLifecycleTracker.TaskEvent.Type.END, failed.type());
+        assertEquals(PreloadLifecycleTracker.TaskEvent.Outcome.INTERNAL_ERROR, failed.outcome());
+        assertEquals("internal-error", failed.outcome().label());
+        assertNull(tracker.endTask(PreloadLifecycleTracker.TaskEvent.Outcome.CANCELLED));
+    }
+
+    @Test
     public void sessionsAreIndependentAndEndClearsActiveTask() {
         PreloadLifecycleTracker tracker = new PreloadLifecycleTracker();
         long firstSession = tracker.beginSession().sessionId();

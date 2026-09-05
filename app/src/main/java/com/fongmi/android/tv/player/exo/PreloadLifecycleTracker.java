@@ -138,6 +138,7 @@ final class PreloadLifecycleTracker {
             REPLACED("replaced"),
             PREPARE_ERROR("prepare-error"),
             DOWNLOAD_ERROR("download-error"),
+            INTERNAL_ERROR("internal-error"),
             START_ERROR("start-error");
 
             private final String label;

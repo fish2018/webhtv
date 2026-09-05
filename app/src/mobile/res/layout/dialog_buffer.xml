@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:stepSize="1"
         android:valueFrom="1"
-        android:valueTo="10"
+        android:valueTo="15"
         app:haloColor="#1F1A73E8"
         app:labelStyle="@style/Widget.WebHTV.LightDialogSliderLabel"
         app:thumbColor="#1A73E8"

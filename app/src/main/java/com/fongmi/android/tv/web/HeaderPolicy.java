@@ -2,7 +2,6 @@ package com.fongmi.android.tv.web;
 
 import android.text.TextUtils;
 
-import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.player.PlayerHelper;
 import com.github.catvod.utils.Json;
 import com.google.common.net.HttpHeaders;
@@ -37,7 +36,7 @@ public class HeaderPolicy {
     public static Map<String, String> withDefaultUa(Map<String, String> headers) {
         Map<String, String> result = new HashMap<>(headers);
         boolean hasUa = result.keySet().stream().anyMatch(HttpHeaders.USER_AGENT::equalsIgnoreCase);
-        if (!hasUa) result.put(HttpHeaders.USER_AGENT, Setting.getUa().isEmpty() ? PlayerHelper.getDefaultUa() : Setting.getUa());
+        if (!hasUa) result.put(HttpHeaders.USER_AGENT, PlayerHelper.getUa());
         return result;
     }
 

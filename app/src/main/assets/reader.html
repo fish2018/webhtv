@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=no, viewport-fit=cover">
+<title>阅读器</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { width:100%; min-height:100%; }
+body {
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+    background:#e8ecf1; color:#1a1a2e; zoom:1;
+}
+
+/* ===== 顶部导航 ===== */
+.top-nav {
+    position:fixed; top:0; left:0; right:0; z-index:999;
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    background:rgba(255,255,255,0.65); border:none; margin:0; padding:8px 12px; height:44px;
+    display:flex; align-items:center; gap:10px; font-size:16px; font-weight:800; overflow:hidden; white-space:nowrap;
+}
+.top-nav .back { text-decoration:none; font-weight:500; cursor:pointer; white-space:nowrap; }
+.top-nav .split { flex-shrink:0; color:#999; }
+.top-nav .current { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:1; min-width:0; color:#1a1a2e; }
+
+/* ===== 遮罩 ===== */
+.mask { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9998; display:none; }
+.mask.show { display:block; }
+
+/* ===== 阅读菜单（弹窗） ===== */
+.reader-menu {
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    backdrop-filter:blur(20px) saturate(200%); -webkit-backdrop-filter:blur(20px) saturate(200%);
+    background:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.5); border-radius:24px; padding:24px;
+    z-index:9999; display:none; min-width:280px; max-width:90vw; max-height:85vh; overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.5);
+}
+.reader-menu.show { display:block; }
+.menu-title { text-align:center; margin-bottom:20px; font-size:18px; font-weight:800; letter-spacing:2px; text-shadow:0 2px 4px rgba(0,0,0,0.2); }
+.section-box { border:1px solid rgba(255,255,255,0.3); border-radius:18px; padding:16px; backdrop-filter:blur(8px); margin-bottom:12px; background:rgba(255,255,255,0.2); }
+.section-title { font-size:13px; font-weight:800; margin-bottom:14px; padding-left:4px; letter-spacing:1px; text-transform:uppercase; text-shadow:0 1px 2px rgba(0,0,0,0.2); color:#1a1a2e; }
+.auto-scroll-btn { width:100%; padding:16px; border:none; border-radius:18px; backdrop-filter:blur(12px); font-size:15px; font-weight:700; border:1px solid rgba(255,255,255,0.5); cursor:pointer; background:rgba(255,255,255,0.5); color:#1a1a2e; }
+.speed-btn { padding:12px; border:none; border-radius:14px; backdrop-filter:blur(8px); font-size:13px; font-weight:600; border:1px solid rgba(255,255,255,0.5); cursor:pointer; background:rgba(255,255,255,0.35); color:#1a1a2e; }
+.speed-btn.active { border-color:#ff8c42; background:rgba(255,140,66,0.35); }
+.speed-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+.bookmark-btn { width:100%; padding:16px; border:none; border-radius:18px; backdrop-filter:blur(12px); font-size:15px; font-weight:700; margin-top:8px; display:flex; align-items:center; justify-content:center; gap:7px; border:1px solid rgba(255,255,255,0.5); cursor:pointer; background:rgba(255,255,255,0.5); color:#1a1a2e; }
+.chapter-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; max-height:320px; overflow-y:auto; }
+.chapter-item-btn {
+    padding:4px 6px; border:none; border-radius:12px; backdrop-filter:blur(8px); background:rgba(255,255,255,0.35);
+    text-align:center; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    height:44px; overflow:hidden; white-space:nowrap; font-size:12px; font-weight:600; border:1px solid rgba(255,255,255,0.4); color:#1a1a2e;
+}
+.chapter-item-btn.active { font-weight:700; border-color:#ff8c42; background:rgba(255,140,66,0.35); }
+
+/* ===== 书签面板 ===== */
+.bookmark-panel {
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+    backdrop-filter:blur(20px) saturate(200%); -webkit-backdrop-filter:blur(20px) saturate(200%);
+    background:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.5); border-radius:22px; padding:22px;
+    z-index:10000; display:none; min-width:280px; max-width:90vw; max-height:70vh; overflow-y:auto;
+}
+.bookmark-panel.show { display:block; }
+.bm-header { font-size:16px; font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between; color:#1a1a2e; }
+.bm-close { color:#ff4d4d; cursor:pointer; font-size:18px; }
+.bm-item { border:1px solid rgba(255,255,255,0.6); border-radius:14px; padding:12px 14px; margin-bottom:8px; cursor:pointer; backdrop-filter:blur(8px); background:rgba(255,255,255,0.4); }
+.bm-item .book { font-size:12px; font-weight:600; color:#1a1a2e; }
+.bm-item .chap { font-size:13px; display:inline; color:#1a1a2e; }
+.bm-item .page { font-size:11px; display:inline; margin-left:8px; color:#666; }
+.bm-del { color:#ff4d4d; font-size:15px; float:right; padding:4px; }
+
+/* ===== 阅读主体 ===== */
+#reader { width:100%; min-height:105vh; padding-top:0; padding-bottom:15px; }
+#reader img { display:block; width:100%; height:auto; }
+canvas { display:block; width:100%; height:auto; margin:0 auto; }
+.pdf-error { padding:80px 24px; text-align:center; color:#999; font-size:15px; line-height:1.8; }
+
+/* ===== 章节末尾翻页（上一章/下一章 矢量图标按钮） ===== */
+.chapter-nav {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:28px 24px 48px 24px;
+    padding-left:max(24px, env(safe-area-inset-left));
+    padding-right:max(24px, env(safe-area-inset-right));
+}
+.chapter-nav-btn {
+    width:56px; height:56px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.55); cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    transition:transform 0.15s ease, opacity 0.2s ease;
+    -webkit-tap-highlight-color:transparent;
+}
+.chapter-nav-btn:active { transform:scale(0.9); }
+.chapter-nav-btn.disabled { opacity:0.25; pointer-events:none; }
+.chapter-nav-btn svg { width:28px; height:28px; display:block; fill:#1a1a2e; }
+body.theme-dark .chapter-nav-btn { background:rgba(30,30,55,0.6); border-color:rgba(255,255,255,0.2); }
+body.theme-dark .chapter-nav-btn svg { fill:#e8ecf1; }
+
+/* 小说正文 */
+/* 底部留白需大于 progress-bar-wrap 高度，否则固定进度条会压住正文最后一行 */
+.novel-content { padding:20px 16px 140px 16px; font-size:18px; line-height:2; word-break:break-all; text-align:justify; color:#1a1a2e; }
+.novel-content p { text-indent:1em; margin-bottom:22px !important; margin-top:2px !important; padding:0; }
+.novel-content p, .novel-content img { content-visibility:auto; contain-intrinsic-size:auto 30px; }
+.novel-chapter-title { text-align:center; font-size:24px; font-weight:800; margin:30px 0 26px 0; padding:0 0 16px 0; letter-spacing:3px; color:#1a1a2e; position:relative; }
+.novel-chapter-title::after {
+    content:''; position:absolute; left:1em; right:1em; bottom:0;
+    height:3px; border-radius:2px;
+    background:linear-gradient(90deg, transparent, #ff8c42, transparent);
+}
+/* HTML 格式小说正文（EPUB/网页提取） */
+.novel-html { line-height:2; word-break:break-all; text-align:justify; color:#1a1a2e; }
+.novel-html p { text-indent:1em; margin-bottom:22px !important; margin-top:2px !important; }
+.novel-html h1,.novel-html h2,.novel-html h3,.novel-html h4 { text-align:center; margin:20px 0 16px; font-weight:700; }
+.novel-html img { display:block; max-width:100%; height:auto; margin:14px auto; border-radius:8px; }
+.novel-html a { color:#4a90d9; text-decoration:none; }
+.novel-html br { content:''; display:block; margin:6px 0; }
+/* EPUB 图文小说：按章节分块做可视窗口渲染（跳过离屏渲染，上下各预留约一个窗口缓冲） */
+.epub-chapter { content-visibility:auto; contain-intrinsic-size:auto 1000px; }
+.epub-chapter img { display:block; max-width:100%; height:auto; margin:14px auto; border-radius:8px; }
+
+/* ===== 水晶球弹窗 ===== */
+.crystal-overlay {
+    position:fixed !important; inset:0 !important; z-index:9999 !important;
+    background:rgba(0,0,0,0.5) !important; backdrop-filter:blur(4px) !important; -webkit-backdrop-filter:blur(4px) !important;
+    display:none !important; justify-content:center !important; align-items:center !important;
+}
+.crystal-overlay.show { display:flex !important; }
+.crystal-overlay .crystal-balls { display:flex !important; flex-direction:row !important; justify-content:center !important; align-items:center !important; gap:20px !important; transition:all 0.3s cubic-bezier(0.16,1,0.3,1) !important; flex-wrap:nowrap !important; }
+.crystal-balls.flyaway { opacity:0 !important; transform:translateY(-120vh) scale(0.3) !important; pointer-events:none !important; }
+.crystal-overlay .crystal-balls .crystal-ball {
+    width:64px !important; height:64px !important; min-width:64px !important; min-height:64px !important; max-width:64px !important; max-height:64px !important;
+    border-radius:50% !important; position:relative !important; cursor:pointer !important; display:flex !important; align-items:center !important; justify-content:center !important;
+    transition:transform 0.2s ease !important; background:none !important; border:none !important; padding:0 !important; margin:0 !important; overflow:visible !important; flex-shrink:0 !important; box-sizing:content-box !important;
+}
+.crystal-ball:active { transform:scale(0.88) !important; }
+.crystal-overlay .crystal-balls .crystal-ball .ball-shell {
+    position:absolute !important; inset:0 !important; border-radius:50% !important;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45) 0%, rgba(140,120,210,0.25) 40%, rgba(60,40,140,0.15) 100%) !important;
+    border:1.5px solid rgba(255,255,255,0.35) !important; box-shadow:0 8px 28px rgba(100,70,200,0.25), inset 0 2px 4px rgba(255,255,255,0.25) !important;
+    animation:ballSpin 5s linear infinite !important; padding:0 !important; margin:0 !important; box-sizing:border-box !important;
+}
+@keyframes ballSpin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+.crystal-overlay .crystal-balls .crystal-ball .ball-icon { font-size:26px !important; position:relative !important; z-index:1 !important; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.25)) !important; pointer-events:none !important; line-height:1 !important; }
+.crystal-balls.dropIn .crystal-ball { animation:ballDrop 0.9s cubic-bezier(0.22,0.61,0.36,1) forwards !important; }
+.crystal-balls.dropIn .crystal-ball:nth-child(1){ animation-delay:0s !important; }
+.crystal-balls.dropIn .crystal-ball:nth-child(2){ animation-delay:0.08s !important; }
+.crystal-balls.dropIn .crystal-ball:nth-child(3){ animation-delay:0.16s !important; }
+.crystal-balls.dropIn .crystal-ball:nth-child(4){ animation-delay:0.24s !important; }
+@keyframes ballDrop {
+    0% { transform:translateY(-80vh) scale(0.5); opacity:0; }
+    50% { transform:translateY(10px) scale(1.05); opacity:1; }
+    70% { transform:translateY(-15px) scale(0.96); }
+    85% { transform:translateY(5px) scale(1.02); }
+    95% { transform:translateY(-3px) scale(0.99); }
+    100% { transform:translateY(0) scale(1); opacity:1; }
+}
+.crystal-panel {
+    position:absolute !important; background:rgba(255,255,255,0.12) !important; backdrop-filter:blur(28px) saturate(180%) !important; -webkit-backdrop-filter:blur(28px) saturate(180%) !important;
+    border:1px solid rgba(255,255,255,0.2) !important; border-radius:24px !important; padding:20px 16px 16px !important;
+    width:calc(100vw - 32px) !important; max-width:380px !important; max-height:60vh !important; overflow-y:auto !important; -webkit-overflow-scrolling:touch !important;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+    display:none !important; animation:panelDropIn 0.7s cubic-bezier(0.22,0.61,0.36,1) forwards !important;
+}
+.crystal-panel.show { display:block !important; }
+.crystal-panel.flyaway { animation:panelFlyAway 0.4s cubic-bezier(0.55,0,1,0.45) forwards !important; }
+@keyframes panelDropIn {
+    0% { transform:translateY(-100vh) scale(0.7); opacity:0; }
+    55% { transform:translateY(8px) scale(1.02); opacity:1; }
+    75% { transform:translateY(-12px) scale(0.97); }
+    88% { transform:translateY(4px) scale(1.01); }
+    96% { transform:translateY(-2px) scale(0.995); }
+    100% { transform:translateY(0) scale(1); opacity:1; }
+}
+@keyframes panelFlyAway { to { transform:translateY(100vh) scale(0.7); opacity:0; } }
+
+/* ===== toast / loading / 进度条 ===== */
+.toast {
+    position:fixed; left:50%; bottom:80px; transform:translateX(-50%);
+    backdrop-filter:blur(20px); background:rgba(0,0,0,0.75); color:#fff;
+    padding:12px 24px; border-radius:30px; font-size:13px; font-weight:500; z-index:10001;
+    opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:nowrap;
+}
+.toast.show { opacity:1; }
+.loading-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); z-index:10002; display:flex; align-items:center; justify-content:center; }
+.loading-spinner { width:44px; height:44px; border:4px solid rgba(255,255,255,0.2); border-top-color:#ff8c42; box-shadow:0 0 20px rgba(255,140,66,0.3); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.chapter-switch-toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.75); color:#fff; padding:14px 24px; border-radius:30px; font-size:14px; z-index:10003; display:none; align-items:center; gap:10px; }
+.chapter-switch-toast.show { display:flex; }
+.switch-spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; }
+.progress-bar-wrap { position:fixed; bottom:0; left:0; right:0; z-index:10000; padding:24px 18px 16px; display:flex; align-items:center; gap:10px; background:linear-gradient(180deg, transparent, rgba(0,0,0,0.35) 60%); }
+.progress-track { flex:1; height:5px; border-radius:3px; overflow:hidden; background:rgba(255,255,255,0.25); }
+.progress-fill { height:100%; border-radius:3px; transition:width 0.3s ease; background:linear-gradient(90deg,#ff8c42,#ffb000); }
+.progress-text { white-space:nowrap; min-width:52px; text-align:right; font-variant-numeric:tabular-nums; font-weight:500; color:#fff; font-size:12px; }
+
+/* ===== 主题 ===== */
+body.theme-dark { background:#1a1a2e !important; color:#e8ecf1 !important; }
+body.theme-dark .novel-content, body.theme-dark .novel-chapter-title, body.theme-dark .top-nav .current, body.theme-dark .menu-title, body.theme-dark .section-title { color:#e8ecf1 !important; }
+body.theme-dark .top-nav { background:rgba(20,20,40,0.7) !important; }
+body.theme-dark .reader-menu, body.theme-dark .bookmark-panel { background:rgba(30,30,55,0.6) !important; }
+body.theme-dark .section-box, body.theme-dark .auto-scroll-btn, body.theme-dark .speed-btn, body.theme-dark .bookmark-btn, body.theme-dark .chapter-item-btn { background:rgba(255,255,255,0.08) !important; color:#e8ecf1 !important; }
+body.theme-dark .bm-item .book, body.theme-dark .bm-item .chap, body.theme-dark .bm-header { color:#e8ecf1 !important; }
+
+body.theme-forestfog { background:#C0F0D1 !important; color:#000 !important; }
+body.theme-forestfog .novel-content, body.theme-forestfog .novel-chapter-title { color:#000 !important; }
+body.theme-forestfog .progress-fill { background:linear-gradient(90deg,#50d888,#80e8b0) !important; }
+body.theme-forestfog .loading-spinner { border-top-color:#50d888 !important; }
+
+/* 其余浅色主题：主题色做强调（进度条/按钮 active），背景保持浅灰蓝 */
+body.theme-blue .progress-fill { background:linear-gradient(90deg,#4a90d9,#64e8ff) !important; }
+body.theme-pink .progress-fill { background:linear-gradient(90deg,#ff9eb5,#ffd740) !important; }
+body.theme-green .progress-fill { background:linear-gradient(90deg,#5aab8a,#20c080) !important; }
+body.theme-purple .progress-fill { background:linear-gradient(90deg,#7a5aff,#9030ff) !important; }
+body.theme-crimson .progress-fill { background:linear-gradient(90deg,#e01020,#ff5a8c) !important; }
+body.theme-teal .progress-fill { background:linear-gradient(90deg,#00b090,#20c080) !important; }
+body.theme-cobalt .progress-fill { background:linear-gradient(90deg,#2060ff,#42a5ff) !important; }
+body.theme-violet .progress-fill { background:linear-gradient(90deg,#9030ff,#9c6aff) !important; }
+body.theme-amber .progress-fill { background:linear-gradient(90deg,#ffb000,#ffd740) !important; }
+body.theme-magenta .progress-fill { background:linear-gradient(90deg,#e000a0,#ff5a8c) !important; }
+body.theme-indigo .progress-fill { background:linear-gradient(90deg,#4a40d0,#2060ff) !important; }
+body.theme-coral .progress-fill { background:linear-gradient(90deg,#ff5050,#ff8c42) !important; }
+body.theme-mint .progress-fill { background:linear-gradient(90deg,#20c080,#50d888) !important; }
+</style>
+<script>
+/* 全局错误捕获：脚本解析/运行失败时把原因送到 WebChromeClient.onConsoleMessage（TV-reader 日志） */
+window.onerror = function(msg, src, line, col){
+    console.error('[reader] onerror ' + msg + ' @' + src + ':' + line + ':' + col);
+};
+window.addEventListener('unhandledrejection', function(e){
+    console.error('[reader] unhandledrejection ' + (e && e.reason));
+});
+console.log('[reader] head start');
+</script>
+<script src="pdf.min.js"></script>
+<script>console.log('[reader] pdfjs=' + (typeof window.pdfjsLib));</script>
+</head>
+<body>
+<script>document.body.className = 'theme-' + (localStorage.getItem('reader_theme') || 'orange');</script>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loadingOverlay" style="display:none"><div class="loading-spinner"></div></div>
+<div class="mask" id="mask"></div>
+
+<!-- 水晶球弹窗 -->
+<div class="crystal-overlay" id="crystalOverlay">
+    <div class="crystal-balls dropIn" id="crystalBalls">
+        <div class="crystal-ball" data-target="autoScroll"><div class="ball-shell"></div><div class="ball-icon">▶️</div></div>
+        <div class="crystal-ball" data-target="chapters"><div class="ball-shell"></div><div class="ball-icon">📋</div></div>
+        <div class="crystal-ball" data-target="theme"><div class="ball-shell"></div><div class="ball-icon">🎨</div></div>
+    </div>
+    <div class="crystal-panel" id="crystalPanel"><div id="crystalPanelContent"></div></div>
+</div>
+
+<!-- 原 menu 复用内容（隐藏） -->
+<div class="reader-menu" id="menu" style="display:none;">
+    <div class="section-box" id="autoScrollSection">
+        <div class="section-title" style="text-align:center;margin:12px 0;">⚙️ 自动阅读</div>
+        <button class="auto-scroll-btn" id="toggleScroll" style="margin:10px auto;display:block;padding:10px 16px;">▶️ 开始自动阅读</button>
+        <div class="speed-row" style="justify-content:center;gap:15px;margin:15px 0;">
+            <button class="speed-btn" data-speed="2" style="padding:8px 18px;">🐢 慢</button>
+            <button class="speed-btn active" data-speed="5" style="padding:8px 18px;">⚡ 中</button>
+            <button class="speed-btn" data-speed="10" style="padding:8px 18px;">💨 快</button>
+        </div>
+    </div>
+    <div class="section-box" id="fontSection">
+        <div class="section-title" style="text-align:center;margin:12px 0;">🔤 文字设置</div>
+        <div class="speed-row" style="justify-content:center;gap:15px;margin:15px 0;">
+            <button class="speed-btn" id="fontSizeDown" style="padding:8px 18px;">A-</button>
+            <button class="speed-btn active" id="fontSizeVal" style="padding:8px 18px;">18</button>
+            <button class="speed-btn" id="fontSizeUp" style="padding:8px 18px;">A+</button>
+        </div>
+        <div class="speed-row" style="justify-content:center;gap:15px;margin:15px 0;">
+            <button class="speed-btn" id="lineHeightDown" style="padding:8px 18px;">↕-</button>
+            <button class="speed-btn active" id="lineHeightVal" style="padding:8px 18px;">2.0</button>
+            <button class="speed-btn" id="lineHeightUp" style="padding:8px 18px;">↕+</button>
+        </div>
+    </div>
+    <div class="section-box" id="chapterSection">
+        <div class="section-title" style="text-align:center;margin:12px 0;">📖 章节目录</div>
+        <div class="chapter-grid" id="chapterGrid" style="margin-top:15px;"></div>
+    </div>
+</div>
+
+<div id="reader"></div>
+<div class="chapter-switch-toast" id="chapterSwitchToast"><span class="switch-spinner"></span><span>正在切换章节...</span></div>
+<div class="progress-bar-wrap" id="progressBar" style="display:none">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-text" id="progressText">0 / 0</span>
+</div>
+
+<script>
+/* ===================== 数据层（App 注入） ===================== */
+if (window.pdfjsLib) { try { pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js'; } catch(e){} }
+var DATA = { kind:1, title:'', content:'', images:[], chapters:[], current:0, vodName:'', pdfFile:'' };
+var BATCH = 5;
+
+function __injectReader(data){
+    DATA = data || DATA;
+    if(DATA.pdfFile == null) DATA.pdfFile = '';
+    document.getElementById('loadingOverlay').style.display = 'none';
+    renderChapterList();
+    renderContent();
+    setTitle(DATA.title || DATA.vodName || '阅读');
+    updateProgressBar();
+    if(DATA.restore){
+        // App 稍后会恢复位置：先上锁，避免此刻上报 anchor=0 覆盖掉待恢复的进度
+        restoringPage = true;
+    } else {
+        // 主动上报一次：只看第一屏就退出时也要留下历史记录（不滚动就没有 scroll 事件）
+        reportProgress();
+    }
+}
+function __updateChapter(data){
+    if(data.kind != null) DATA.kind = data.kind;
+    if(data.title != null) DATA.title = data.title;
+    if(data.content != null) DATA.content = data.content;
+    if(data.images != null) DATA.images = data.images;
+    if(data.pdfFile != null) DATA.pdfFile = data.pdfFile;
+    // 类型切换时清掉另一路残留数据，避免渲染上一章内容
+    if(DATA.kind === 1){ DATA.images = []; DATA.pdfFile = ''; }
+    else if(DATA.kind === 3){ DATA.content = ''; DATA.images = []; }
+    else { DATA.content = ''; DATA.pdfFile = ''; }
+    setTitle(DATA.title || DATA.vodName || '阅读');
+    renderContent();
+    window.scrollTo(0, 0);
+    updateProgressBar();
+    if(switchWatchdog){ clearTimeout(switchWatchdog); switchWatchdog = null; }
+    switchingChapter = false;
+    reportProgress();
+}
+
+function setTitle(t){ document.title = t; var el = document.getElementById('topTitle'); if(el) el.textContent = t; }
+
+/* ===================== 内容渲染 ===================== */
+function renderContent(){
+    // 内容被替换 → 作废在途的恢复定位循环，并解除它设下的上报锁
+    restoreGen++;
+    restoringPage = false;
+    // 换章即清锚点记忆：PDF 章在 pdfDoc 解析完成前 anchorTotal() 为 0，
+    // effectiveAnchorIndex() 会在 total<=0 处早退，不经过 currentAnchorIndex()
+    // 的归零短路 —— 上一章的高位值会残留下来，把新章第 1 页记成上一章的位置。
+    lastAnchorIndex = 0;
+    // PDF 代号在这里也要自增：renderPdf() 只在新章还是 PDF 时才调用，
+    // 从 PDF 切到漫画时上一章的 pageSettled 仍会跑，把 pdfAppendedCount 加到
+    // numPages 后调 appendChapterNav()，翻页按钮就被插到漫画第 5 张图后面。
+    pdfGen++;
+    pdfDoc = null; pdfAppendedCount = 0;
+    var r = document.getElementById('reader');
+    r.innerHTML = '';
+    navAppended = false;
+    if(DATA.kind === 1){
+        var w = document.createElement('div'); w.className = 'novel-content';
+        var h = document.createElement('div'); h.className = 'novel-chapter-title'; h.textContent = DATA.title || '';
+        w.appendChild(h);
+        var text = DATA.content || '（本章内容为空）';
+        if(looksLikeHtml(text)){
+            var body = document.createElement('div'); body.className = 'novel-html';
+            body.innerHTML = sanitizeHtml(text);
+            w.appendChild(body);
+        } else {
+            text.split(/\n+/).forEach(function(para){
+                para = para.replace(/\r/g,'').trim();
+                if(!para) return;
+                var p = document.createElement('p'); p.textContent = para; w.appendChild(p);
+            });
+        }
+        r.appendChild(w);
+        applyFontSettings();
+        appendChapterNav();
+    } else if(DATA.kind === 3){
+        renderPdf();
+    } else {
+        renderComic();
+    }
+}
+
+var navAppended = false;
+function appendChapterNav(){
+    if(navAppended) return;
+    var r = document.getElementById('reader');
+    if(!DATA.chapters || DATA.chapters.length <= 1) return;
+    navAppended = true;
+    var nav = document.createElement('div'); nav.className = 'chapter-nav';
+    var prev = document.createElement('div'); prev.className = 'chapter-nav-btn';
+    prev.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>';
+    if(DATA.current <= 0) prev.classList.add('disabled');
+    prev.onclick = function(){ if(DATA.current > 0) goChapter(DATA.current - 1); };
+    var next = document.createElement('div'); next.className = 'chapter-nav-btn';
+    next.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>';
+    if(DATA.current >= DATA.chapters.length - 1) next.classList.add('disabled');
+    next.onclick = function(){ if(DATA.current < DATA.chapters.length - 1) goChapter(DATA.current + 1); };
+    nav.appendChild(prev); nav.appendChild(next);
+    r.appendChild(nav);
+}
+
+function looksLikeHtml(s){ return /<[a-z][\s\S]*>/i.test(s); }
+
+/* ===== HTML 正文净化 =====
+   正文来自第三方 spider 插件，属于不可信输入，且本页运行在 file:// origin 上，
+   一旦执行任意 JS 就能读应用私有文件。因此不能用正则黑名单
+   （`<img/onerror=x>`、无引号属性、不闭合的 <script>/<iframe> 都能绕过），
+   改为「解析成 DOM + 允许列表遍历」：只保留白名单标签与属性，其余整体丢弃。
+   解析用 DOMParser，产出的文档是惰性的（不加载资源、不执行脚本）。 */
+var ALLOWED_TAGS = {
+    P:1, BR:1, DIV:1, SPAN:1, SECTION:1, ARTICLE:1, BLOCKQUOTE:1,
+    H1:1, H2:1, H3:1, H4:1, H5:1, H6:1,
+    B:1, STRONG:1, I:1, EM:1, U:1, S:1, SUB:1, SUP:1, SMALL:1,
+    UL:1, OL:1, LI:1, DL:1, DT:1, DD:1, HR:1, PRE:1, CODE:1,
+    TABLE:1, THEAD:1, TBODY:1, TR:1, TD:1, TH:1, FIGURE:1, FIGCAPTION:1,
+    IMG:1, RUBY:1, RT:1, RP:1
+};
+/* 只放行 img 的图片地址；一律不放行 style/class/id/事件属性 */
+var ALLOWED_ATTRS = { IMG: { src:1, alt:1, width:1, height:1 } };
+
+/** 图片地址是否安全：允许 http(s)、本地 file/缓存图、以及自定义防盗链 scheme。禁 javascript:/data:。 */
+function safeImageUrl(u){
+    if(!u) return false;
+    var v = String(u).trim().toLowerCase();
+    // 去掉可能用于混淆的控制字符后再判协议
+    v = v.replace(/[\u0000-\u0020]/g, '');
+    return /^(https?:|file:|readerpic:)/.test(v) || v.charAt(0) === '/' || /^[\w./-]+$/.test(v);
+}
+
+function sanitizeHtml(html){
+    var out = document.createElement('div');
+    var doc;
+    try {
+        doc = new DOMParser().parseFromString(String(html), 'text/html');
+    } catch(e){
+        out.textContent = String(html);
+        return out.innerHTML;
+    }
+    if(!doc || !doc.body){ out.textContent = String(html); return out.innerHTML; }
+    try {
+        copyAllowed(doc.body, out, 0);
+    } catch(e){
+        // 层级过深等异常：退化成纯文本，不要让整章渲染失败
+        out.textContent = doc.body.textContent || '';
+    }
+    return out.innerHTML;
+}
+
+/** 允许的最大嵌套层级，超过则把该子树当纯文本处理（防止深层嵌套导致栈溢出）。 */
+var MAX_SANITIZE_DEPTH = 200;
+
+/** 把 src 的子节点按允许列表复制到 dst。不在白名单里的元素丢弃，但保留其文字内容。 */
+function copyAllowed(src, dst, depth){
+    if(depth > MAX_SANITIZE_DEPTH){
+        dst.appendChild(document.createTextNode(src.textContent || ''));
+        return;
+    }
+    for(var node = src.firstChild; node; node = node.nextSibling){
+        if(node.nodeType === 3){ // 文本
+            dst.appendChild(document.createTextNode(node.nodeValue));
+            continue;
+        }
+        if(node.nodeType !== 1) continue; // 注释等一律丢弃
+        var tag = node.tagName ? node.tagName.toUpperCase() : '';
+        // script/style/iframe 等：连文字内容一起丢，避免把 JS 源码显示成正文
+        if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IFRAME' || tag === 'OBJECT'
+            || tag === 'EMBED' || tag === 'LINK' || tag === 'META' || tag === 'SVG'){
+            continue;
+        }
+        if(!ALLOWED_TAGS[tag]){
+            // 未知标签：跳过标签本身，继续处理它的子节点（保住正文）
+            copyAllowed(node, dst, depth + 1);
+            continue;
+        }
+        var el = document.createElement(tag);
+        var allow = ALLOWED_ATTRS[tag];
+        if(allow){
+            for(var i = 0; i < node.attributes.length; i++){
+                var a = node.attributes[i];
+                var name = a.name.toLowerCase();
+                if(!allow[name]) continue;
+                if(name === 'src' && !safeImageUrl(a.value)) continue;
+                el.setAttribute(name, a.value);
+            }
+        }
+        copyAllowed(node, el, depth + 1);
+        dst.appendChild(el);
+    }
+}
+
+var comicIdx = 0, comicLoading = false;
+function renderComic(){
+    comicIdx = 0; comicLoading = false;
+    document.getElementById('reader').innerHTML = '';
+    loadMoreComic();
+}
+function loadMoreComic(){
+    if(comicLoading || comicIdx >= DATA.images.length) return;
+    comicLoading = true;
+    var end = Math.min(comicIdx + BATCH, DATA.images.length);
+    var r = document.getElementById('reader');
+    for(var i = comicIdx; i < end; i++){
+        var img = new Image();
+        img.src = DATA.images[i];
+        img.loading = 'lazy';
+        r.appendChild(img);
+    }
+    comicIdx = end;
+    comicLoading = false;
+    if(comicIdx >= DATA.images.length) appendChapterNav();
+}
+
+/* ===================== PDF 漫画渲染（PDF.js） ===================== */
+var pdfDoc = null, pdfPageIdx = 0, renderedPdfPages = {}, pdfRendering = false, pdfAppendedCount = 0;
+/** PDF 渲染代号：每次换章自增，作废上一章仍在途的渲染回调。 */
+var pdfGen = 0;
+function renderPdf(){
+    var r = document.getElementById('reader');
+    r.innerHTML = '';
+    pdfGen++;
+    pdfDoc = null; pdfPageIdx = 0; renderedPdfPages = {}; pdfRendering = false; pdfAppendedCount = 0;
+    if(!DATA.pdfFile){ r.innerHTML = '<div class="pdf-error">未找到 PDF 文件</div>'; return; }
+    if(!window.pdfjsLib){ r.innerHTML = '<div class="pdf-error">PDF 组件加载失败</div>'; return; }
+    showLoading(true);
+    // getDocument 的两个回调也必须带代号：#reader 是所有章节共用的容器，
+    // 上一章的 PDF 慢加载在用户已切到别章后完成/失败时，会把新章的内容整段替换掉
+    // （失败分支写 pdf-error）或把旧章的 canvas 与 pdfDoc 塞进新章。
+    var gen = pdfGen;
+    pdfjsLib.getDocument(DATA.pdfFile).promise.then(function(doc){
+        // 先收遮罩再判代号：遮罩是全屏 z-index:10002，只有这里和首屏注入会隐藏它。
+        // 放在代号判定之后，跨类型换章（PDF→漫画）时旧章的 getDocument 早退，
+        // 遮罩就永久盖在新章上面吞掉所有点击，只能按返回键退出。
+        showLoading(false);
+        if(gen !== pdfGen) return;
+        pdfDoc = doc;
+        renderPdfMore();
+        // 此时才知道总页数：注入时 pdfDoc 还是 null，anchorTotal() 为 0，
+        // 那一刻的上报会被 ReaderHistory 丢掉，所以这里补一次。
+        reportProgress();
+    }).catch(function(e){
+        showLoading(false);
+        if(gen !== pdfGen) return;
+        // 用 textContent：本地模式下 DATA.pdfFile 是用户真实路径，
+        // pdf.js 会把它拼进异常消息，走 innerHTML 等于把文件名当 HTML 执行。
+        var d = document.createElement('div');
+        d.className = 'pdf-error';
+        d.textContent = 'PDF 加载失败：' + (e && e.message ? e.message : '未知错误');
+        r.innerHTML = '';
+        r.appendChild(d);
+    });
+}
+function renderPdfMore(){
+    if(!pdfDoc || pdfRendering) return;
+    if(pdfPageIdx >= pdfDoc.numPages) return;
+    pdfRendering = true;
+    var end = Math.min(pdfPageIdx + BATCH, pdfDoc.numPages);
+    for(var i = pdfPageIdx + 1; i <= end; i++) renderPdfPage(i);
+    pdfPageIdx = end;
+    pdfRendering = false;
+}
+/**
+ * 渲染第 n 页（1 基）。
+ *
+ * canvas 必须先按页序同步插进 DOM，再异步往上画：一批多页是并发渲染的，
+ * 若等 render 完成才 appendChild，复杂页晚完成就会插到后面去，页序错乱，
+ * 连「第几页」这个阅读进度锚点也会失真。
+ */
+function renderPdfPage(n){
+    if(renderedPdfPages[n]) return;
+    renderedPdfPages[n] = true;
+    var c = document.createElement('canvas');
+    c.style.width = '100%'; c.style.height = 'auto';
+    c.dataset.page = n;
+    document.getElementById('reader').appendChild(c);
+    // 代号：换章会把计数清零，上一章仍在途的渲染回调若继续 ++，
+    // 会把新章的 pdfAppendedCount 撑到 numPages，让「一页未画」也被判成排版完成。
+    var gen = pdfGen;
+    // 无论渲染成功还是失败都要计数：anchorsSettled() 用它判断「整章是否已排版完」，
+    // 少算一页就会让这一章永远无法记录成读完，进度也永远停在失败页之前。
+    function pageSettled(){
+        if(gen !== pdfGen) return;   // 本次渲染属于已被替换的章节
+        updateProgressBar();
+        pdfAppendedCount++;
+        if(pdfDoc && pdfAppendedCount >= pdfDoc.numPages) appendChapterNav();
+    }
+    pdfDoc.getPage(n).then(function(p){
+        // fulfillment 里同步抛错（getContext 返回 null、canvas 尺寸分配失败等）
+        // 不会被同一个 then 的 rejection 处理器捕获，必须自己兜住，否则这一页永不计数。
+        try {
+            var viewport = p.getViewport({scale:2});
+            c.width = viewport.width; c.height = viewport.height;
+            p.render({canvasContext:c.getContext('2d'), viewport:viewport}).promise.then(pageSettled, pageSettled);
+        } catch(e){
+            pageSettled();
+        }
+    }, pageSettled);
+}
+function showLoading(v){ var el = document.getElementById('loadingOverlay'); if(el) el.style.display = v ? 'flex' : 'none'; }
+
+/* ===================== 章节目录 ===================== */
+/* ===== 目录窗口化渲染 =====
+   长篇小说动辄数千章，一次性建全部按钮会让打开目录卡死数十秒。
+   这里只渲染当前章附近的一窗，向下滚动时再追加；点击用事件委托，不逐个挂监听。
+   已渲染数量记在各容器的 dataset 上（原容器与面板内容器各自独立）。 */
+var CHAPTER_WINDOW = 60;
+
+function chapterButtonHtml(ch, i){
+    return '<button class="chapter-item-btn' + (i === DATA.current ? ' active' : '')
+        + '" data-idx="' + i + '">' + escapeHtml(ch.name || ('第' + (i + 1) + '章')) + '</button>';
+}
+function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/** 往容器里填 [start,end) 区间的章节按钮。 */
+function fillChapterGrid(grid, start, end){
+    var list = DATA.chapters || [];
+    end = Math.min(end, list.length);
+    var html = '';
+    for(var i = start; i < end; i++) html += chapterButtonHtml(list[i], i);
+    grid.innerHTML = html;
+    grid.dataset.from = start;
+    grid.dataset.to = end;
+    bindChapterGrid(grid);
+}
+
+/** 以当前章为中心的窗口起点（从第 4900 章进入时不能从 0 开始铺，否则等于没做窗口化）。 */
+function chapterWindowStart(){
+    return Math.max(0, (DATA.current | 0) - Math.floor(CHAPTER_WINDOW / 2));
+}
+
+/** 渲染目录首窗（含当前章，使其可见）。 */
+function renderChapterList(){
+    var grid = document.getElementById('chapterGrid');
+    if(!grid) return;
+    var start = chapterWindowStart();
+    fillChapterGrid(grid, start, start + CHAPTER_WINDOW);
+}
+
+/** 滚动到底部时向后追加一窗。 */
+function appendChapterWindow(grid){
+    var list = DATA.chapters || [];
+    var to = parseInt(grid.dataset.to, 10) || 0;
+    if(to >= list.length) return;
+    var end = Math.min(list.length, to + CHAPTER_WINDOW);
+    var html = '';
+    for(var i = to; i < end; i++) html += chapterButtonHtml(list[i], i);
+    grid.insertAdjacentHTML('beforeend', html);
+    grid.dataset.to = end;
+}
+
+/** 滚动到顶部时向前追加一窗（窗口不再从 0 起，必须能往回翻）。 */
+function prependChapterWindow(grid){
+    var from = parseInt(grid.dataset.from, 10) || 0;
+    if(from <= 0) return;
+    var start = Math.max(0, from - CHAPTER_WINDOW);
+    var list = DATA.chapters || [];
+    var html = '';
+    for(var i = start; i < from; i++) html += chapterButtonHtml(list[i], i);
+    var before = grid.scrollHeight;
+    grid.insertAdjacentHTML('afterbegin', html);
+    grid.dataset.from = start;
+    // 保持视觉位置不跳
+    grid.scrollTop += grid.scrollHeight - before;
+}
+
+/** 同步高亮：面板容器不由 renderChapterList 重建，切章后需单独更新 active。 */
+function markActiveChapter(i){
+    var panel = document.getElementById('chapterGridPanel');
+    if(!panel) return;
+    var actives = panel.querySelectorAll('.chapter-item-btn.active');
+    for(var k = 0; k < actives.length; k++) actives[k].classList.remove('active');
+    var cur = panel.querySelector('.chapter-item-btn[data-idx="' + i + '"]');
+    if(cur) cur.classList.add('active');
+}
+
+/** 目录容器绑定：事件委托 + 滚动追加（对原始容器和面板内的克隆都适用）。 */
+function bindChapterGrid(grid){
+    if(!grid || grid.dataset.bound) return;
+    grid.dataset.bound = '1';
+    grid.addEventListener('click', function(e){
+        var btn = e.target.closest('.chapter-item-btn');
+        if(!btn) return;
+        var i = parseInt(btn.dataset.idx, 10);
+        if(!isNaN(i)) goChapter(i);
+    });
+    grid.addEventListener('scroll', function(){
+        if(grid.scrollTop <= 200) prependChapterWindow(grid);
+        else if(grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 200) appendChapterWindow(grid);
+    });
+}
+/** 切章前的章节下标，失败时用于回退（否则新章名会套在旧内容上）。 */
+var prevChapterIndex = 0;
+/** 切章看门狗：宿主静默不回调时，超时自行解锁，避免进度记录永久停摆。 */
+var switchWatchdog = null;
+
+function goChapter(i){
+    if(i < 0){ showToast('✅ 已是第一章'); return; }
+    if(i >= DATA.chapters.length){ showToast('✅ 已到最终章'); stopAuto(); return; }
+    // 先把当前章的位置记下来，再切走（否则这一章读到哪就丢了）
+    reportProgress();
+    prevChapterIndex = DATA.current | 0;
+    switchingChapter = true;
+    if(switchWatchdog) clearTimeout(switchWatchdog);
+    switchWatchdog = setTimeout(function(){ __chapterFailed(); }, 30000);
+    DATA.current = i;
+    renderChapterList();
+    markActiveChapter(i);
+    var ch = DATA.chapters[i];
+    setTitle(ch.name);
+    document.getElementById('chapterSwitchToast').classList.add('show');
+    setTimeout(function(){
+        document.getElementById('chapterSwitchToast').classList.remove('show');
+    }, 800);
+    AndroidReader.loadChapter(ch.url);
+}
+
+/**
+ * 切章失败：由 App 在各失败分支调用，也由看门狗兜底。
+ * 必须把 DATA.current 回退到旧章 —— goChapter 已经把它改成新章了，
+ * 不回退会让后续进度把旧内容记到新章名下。
+ */
+function __chapterFailed(){
+    // 恢复位置的重解析失败时也走这里：必须解掉 restoringPage，
+    // 否则 __injectReader 设下的锁会永久留着，之后的阅读进度全都不再上报。
+    restoreGen++;
+    restoringPage = false;
+    if(!switchingChapter){ reportProgress(); return; }
+    if(switchWatchdog){ clearTimeout(switchWatchdog); switchWatchdog = null; }
+    switchingChapter = false;
+    DATA.current = prevChapterIndex;
+    renderChapterList();
+    markActiveChapter(DATA.current);
+    setTitle((DATA.chapters[DATA.current] || {}).name || DATA.title || DATA.vodName || '阅读');
+    updateProgressBar();
+    reportProgress();
+}
+
+/* ===================== 水晶球弹窗 ===================== */
+var crystalOverlay = document.getElementById('crystalOverlay');
+var crystalBalls = document.getElementById('crystalBalls');
+var crystalPanel = document.getElementById('crystalPanel');
+var crystalPanelContent = document.getElementById('crystalPanelContent');
+var crystalVisible = false, panelVisible = false;
+
+function showCrystalOverlay(){
+    crystalOverlay.classList.add('show'); crystalVisible = true; panelVisible = false;
+    crystalPanel.classList.remove('show','flyaway'); crystalPanel.style.display = 'none'; crystalPanelContent.innerHTML = '';
+    crystalBalls.classList.remove('flyaway'); crystalBalls.classList.add('dropIn');
+}
+function hideCrystalOverlay(){
+    crystalBalls.classList.add('flyaway');
+    setTimeout(function(){ crystalOverlay.classList.remove('show'); crystalVisible = false; crystalBalls.classList.remove('dropIn','flyaway'); }, 300);
+}
+function showPanel(target){
+    crystalBalls.classList.add('flyaway'); panelVisible = true;
+    setTimeout(function(){
+        crystalBalls.classList.remove('dropIn');
+        loadCrystalContent(target);
+        crystalPanel.style.display = 'block'; crystalPanel.classList.remove('flyaway');
+        void crystalPanel.offsetHeight; crystalPanel.classList.add('show');
+    }, 300);
+}
+function hidePanel(){
+    crystalPanel.classList.add('flyaway'); crystalPanel.classList.remove('show'); panelVisible = false;
+    setTimeout(function(){
+        crystalPanel.style.display = 'none'; crystalPanelContent.innerHTML = '';
+        crystalPanel.classList.remove('flyaway');
+        crystalBalls.classList.remove('flyaway'); crystalBalls.classList.add('dropIn');
+    }, 400);
+}
+function hideCrystalOverlayQuick(){
+    crystalOverlay.classList.remove('show'); crystalVisible = false; panelVisible = false;
+    crystalBalls.classList.remove('dropIn','flyaway');
+    crystalPanel.classList.remove('show','flyaway'); crystalPanel.style.display = 'none'; crystalPanelContent.innerHTML = '';
+}
+crystalOverlay.addEventListener('click', function(e){ if(e.target === crystalOverlay) hideCrystalOverlayQuick(); });
+document.querySelectorAll('.crystal-ball').forEach(function(ball){
+    ball.addEventListener('click', function(e){ e.stopPropagation(); if(!panelVisible) showPanel(this.dataset.target); });
+});
+
+function loadCrystalContent(target){
+    var html = '';
+    if(target === 'autoScroll'){ html = document.getElementById('autoScrollSection').innerHTML; if(DATA.kind === 1) html += document.getElementById('fontSection').innerHTML; }
+    else if(target === 'chapters'){
+        // 只取空壳模板，避免把原容器里已渲染的按钮一起序列化复制一遍。
+        // id 必须与隐藏的原容器不同，否则 getElementById 会命中面板里这个（DOM 顺序在前），
+        // 导致 goChapter → renderChapterList 把面板刚定位好的窗口刷掉。
+        html = '<div class="section-box"><div class="section-title" style="text-align:center;margin:12px 0;">📖 章节目录</div>'
+             + '<div class="chapter-grid" id="chapterGridPanel" style="margin-top:15px;"></div></div>';
+    }
+    else if(target === 'theme'){ html = '<div class="section-box"><div class="section-title" style="text-align:center;margin:12px 0;">🎨 阅读主题</div><div id="themeGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;justify-content:center;"></div></div>'; }
+    crystalPanelContent.innerHTML = html;
+
+    if(target === 'theme'){ renderThemeGrid(); return; }
+
+    var tglBtn = crystalPanelContent.querySelector('#toggleScroll');
+    if(tglBtn) tglBtn.addEventListener('click', function(){ hideCrystalOverlayQuick(); setTimeout(toggleAuto, 500); });
+    crystalPanelContent.querySelectorAll('.speed-btn[data-speed]').forEach(function(b){
+        b.addEventListener('click', function(){
+            crystalPanelContent.querySelectorAll('.speed-btn[data-speed]').forEach(function(s){ s.classList.remove('active'); });
+            b.classList.add('active'); speed = Number(b.dataset.speed);
+            document.querySelectorAll('#autoScrollSection .speed-btn[data-speed]').forEach(function(ob){
+                ob.classList.remove('active'); if(Number(ob.dataset.speed) === speed) ob.classList.add('active');
+            });
+        });
+    });
+    var fsD = crystalPanelContent.querySelector('#fontSizeDown'), fsU = crystalPanelContent.querySelector('#fontSizeUp');
+    var lhD = crystalPanelContent.querySelector('#lineHeightDown'), lhU = crystalPanelContent.querySelector('#lineHeightUp');
+    if(fsD) fsD.addEventListener('click', function(){ setFontSize(fontSize - 1); });
+    if(fsU) fsU.addEventListener('click', function(){ setFontSize(fontSize + 1); });
+    if(lhD) lhD.addEventListener('click', function(){ setLineHeight(lineHeight - 0.1); });
+    if(lhU) lhU.addEventListener('click', function(){ setLineHeight(lineHeight + 0.1); });
+    // 目录：面板里的容器直接按窗口渲染，不再从原容器序列化 innerHTML 往返复制
+    var cloneGrid = crystalPanelContent.querySelector('#chapterGridPanel');
+    if(cloneGrid){
+        var start = chapterWindowStart();
+        fillChapterGrid(cloneGrid, start, start + CHAPTER_WINDOW);
+        setTimeout(function(){
+            var a = cloneGrid.querySelector('.chapter-item-btn.active');
+            if(a) a.scrollIntoView({block:'center'});
+        }, 50);
+    }
+}
+
+/* ===================== 主题 ===================== */
+var THEMES = ['orange','blue','pink','green','dark','purple','crimson','lava','bronze','emerald','teal','cobalt','violet','amber','magenta','indigo','coral','mint','gold','mecha','royal','orangea','emeraldd','forest','purplee','ocean','aurora','blackgold','crimsonn','forestfog'];
+var THEME_COLORS = ['#ff8c42','#4a90d9','#ff9eb5','#5aab8a','#1a1a2e','#7a5aff','#e01020','#ff5a00','#c89830','#00c060','#00b090','#2060ff','#9030ff','#ffb000','#e000a0','#4a40d0','#ff5050','#20c080','#ffd740','#ff5500','#daa520','#ff8c42','#00b86b','#66bb6a','#9c6aff','#42a5ff','#64e8ff','#e6b850','#ff5a8c','#50d888'];
+function renderThemeGrid(){
+    var g = document.getElementById('themeGrid'); g.innerHTML = '';
+    THEMES.forEach(function(t, i){
+        var b = document.createElement('button');
+        b.style.cssText = 'width:38px;height:38px;border-radius:50%;background:'+THEME_COLORS[i]+';border:2px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 0 2px rgba(255,255,255,0.08),0 4px 15px rgba(0,0,0,0.15);opacity:0.92;transition:all 0.2s ease;';
+        b.onclick = function(){ setTheme(t); hideCrystalOverlayQuick(); };
+        g.appendChild(b);
+    });
+}
+function setTheme(name){
+    localStorage.setItem('reader_theme', name);
+    document.body.className = 'theme-' + name;
+}
+
+/* ===================== 字体 / 行高 ===================== */
+var fontSize = parseInt(localStorage.getItem('novel_fontSize')) || 18;
+var lineHeight = parseFloat(localStorage.getItem('novel_lineHeight')) || 2.0;
+function setFontSize(v){
+    fontSize = Math.max(16, Math.min(60, v));
+    var c = document.querySelector('.novel-content'); if(c) c.style.fontSize = fontSize + 'px';
+    var fsv = document.getElementById('fontSizeVal'); if(fsv) fsv.textContent = fontSize;
+    var cv = crystalPanelContent.querySelector('#fontSizeVal'); if(cv) cv.textContent = fontSize;
+    localStorage.setItem('novel_fontSize', fontSize);
+}
+function setLineHeight(v){
+    lineHeight = Math.max(1.0, Math.min(5.0, Math.round(v * 10) / 10));
+    var ps = document.querySelectorAll('.novel-content p'); ps.forEach(function(p){ p.style.lineHeight = lineHeight; });
+    var lhv = document.getElementById('lineHeightVal'); if(lhv) lhv.textContent = lineHeight.toFixed(1);
+    var cv = crystalPanelContent.querySelector('#lineHeightVal'); if(cv) cv.textContent = lineHeight.toFixed(1);
+    localStorage.setItem('novel_lineHeight', lineHeight);
+}
+function applyFontSettings(){
+    var c = document.querySelector('.novel-content'); if(c) c.style.fontSize = fontSize + 'px';
+    var ps = document.querySelectorAll('.novel-content p'); ps.forEach(function(p){ p.style.lineHeight = lineHeight; });
+    var fsv = document.getElementById('fontSizeVal'); if(fsv) fsv.textContent = fontSize;
+    var lhv = document.getElementById('lineHeightVal'); if(lhv) lhv.textContent = lineHeight.toFixed(1);
+}
+
+/* ===================== 自动滚动 ===================== */
+var speed = 5, isPlaying = false, scrollRafId = null;
+function smoothScroll(){
+    if(!isPlaying) return;
+    window.scrollBy(0, speed / 2);
+    updateProgressBar();
+    scrollRafId = requestAnimationFrame(smoothScroll);
+}
+function toggleAuto(){
+    if(isPlaying){ isPlaying = false; cancelAnimationFrame(scrollRafId); updateToggleBtns('▶️ 开始自动阅读'); }
+    else { isPlaying = true; scrollRafId = requestAnimationFrame(smoothScroll); updateToggleBtns('⏸️ 暂停阅读'); }
+}
+function stopAuto(){ isPlaying = false; cancelAnimationFrame(scrollRafId); updateToggleBtns('▶️ 开始自动阅读'); }
+function updateToggleBtns(text){
+    var tb = document.getElementById('toggleScroll'); if(tb) tb.innerHTML = text;
+    var cb = crystalPanelContent.querySelector('#toggleScroll'); if(cb) cb.innerHTML = text;
+}
+document.getElementById('toggleScroll').addEventListener('click', toggleAuto);
+
+/* ===================== 书签功能已移除，改用 APP 内播放历史记录 ===================== */
+
+/** 单调毫秒时钟：不受系统时间校正影响，用于所有时长比较。 */
+function nowMs(){
+    return (window.performance && performance.now) ? performance.now() : Date.now();
+}
+
+/* ===================== 进度条 ===================== */
+function updateProgressBar(){
+    var wrap = document.getElementById('progressBar'), fill = document.getElementById('progressFill'), text = document.getElementById('progressText');
+    if(!wrap || !fill || !text) return;
+    // 与进度记录用同一套锚点，保证进度条读数和恢复位置一致
+    var total = anchorTotal();
+    if(total <= 0) return;
+    wrap.style.display = 'flex';
+    // 读数取「当前锚点」而不是「已加载数量」：漫画首批就挂 5 张 DOM，
+    // 按已加载算会在刚打开时显示 5 / 95，让人以为跳到了第 5 页。
+    // 例外是整章第一屏就全部露出来了，此时确实全读到了，读数给总数。
+    // 判据用「最后一个锚点的底边落在视口内」，不能用 body 是否可滚动 ——
+    // #reader 的 min-height:105vh 让页面永远可滚动，那个判据恒为真。
+    var current = Math.min(total, effectiveAnchorIndex() + 1);
+    fill.style.width = Math.min(100, (current / total) * 100) + '%';
+    text.textContent = current + ' / ' + total;
+}
+
+/* ===================== 点击 / 滚动 ===================== */
+var lastTap = 0;
+document.getElementById('reader').addEventListener('click', function(e){
+    e.stopPropagation();
+    var now = nowMs(), delta = now - lastTap; lastTap = now;
+    if(delta > 0 && delta < 300){
+        if(crystalVisible){ if(panelVisible) hidePanel(); else hideCrystalOverlay(); }
+        else showCrystalOverlay();
+    }
+});
+var scrollDebounceTimer;
+window.addEventListener('scroll', function(){
+    clearTimeout(scrollDebounceTimer);
+    scrollDebounceTimer = setTimeout(function(){
+        updateProgressBar();
+        reportProgress();
+    }, 120);
+});
+
+/* ===================== 阅读进度上报 / 恢复 =====================
+   两种内容都按「锚点序号 + 总数」记录，不用滚动百分比：
+   - 小说：视口顶部所在的段落序号
+   - 漫画 / PDF：视口内的页序号
+
+   不用百分比的原因是文档高度并不稳定 ——
+   漫画分批懒加载且图片异步解码，小说段落用了 content-visibility:auto
+   （屏外段落先按估算高度占位），同一像素位置在不同时刻对应的内容不同。
+   锚点序号还有个好处：改字号 / 行高 / 主题后仍能回到同一段文字。 */
+
+/** 恢复定位进行中：期间 scrollTo 引起的滚动事件不是用户真实位置，不上报。 */
+var restoringPage = false;
+/** 恢复定位的代号，内容每次替换时自增，用于作废在途的 seek 循环。 */
+var restoreGen = 0;
+/** 切章请求已发出、新内容未到：旧内容还在屏上，此时滚动属于旧章，不能记到新章名下。 */
+var switchingChapter = false;
+
+/** 小说正文的可定位块：纯文本取 <p>，HTML 正文取 .novel-html 的直接子元素。 */
+function novelBlocks(){
+    var els = document.querySelectorAll('#reader .novel-content > p');
+    if(els.length === 0) els = document.querySelectorAll('#reader .novel-html > *');
+    return els;
+}
+
+/** 当前内容类型的锚点元素列表。 */
+function anchorEls(){
+    if(DATA.kind === 1) return novelBlocks();
+    if(DATA.kind === 3) return document.querySelectorAll('#reader canvas');
+    return document.querySelectorAll('#reader img');
+}
+
+/** 锚点总数（漫画/PDF 用声明的总页数，避免只按已渲染数量算） */
+function anchorTotal(){
+    if(DATA.kind === 1) return novelBlocks().length;
+    if(DATA.kind === 3) return pdfDoc ? pdfDoc.numPages : anchorEls().length;
+    return (DATA.images || []).length;
+}
+
+/**
+ * 视口顶部所在的锚点序号（0 基）。
+ * 小说取仍露在视口内的第一段（阈值 0）；漫画整页很高，取跨过视口中线的那页。
+ *
+ * 只能用 bottom 判断，不能用 height：小说段落带 content-visibility:auto，
+ * 实测 getBoundingClientRect().height 恒为 0 而 bottom 有效且单调递增，
+ * 拿 height 当「未就绪」信号会让所有小说章的进度永远停在第 1 段。
+ *
+ * 两道退化保护，缺一个都会把进度虚报到批次末尾（95 页漫画停在第 2 页却记成第 5 页、
+ * 33 段小说刚打开就记成第 33 段）：
+ * 1) 停在顶部时当前锚点必然是第 0 个，直接短路，不依赖任何 rect；
+ * 2) 没有任何锚点跨过阈值时，循环末尾的 `idx = i` 已经推到了最后一个锚点。
+ *    只有锚点确已排版完（anchorsSettled）且真的滚到文末，才说明确实读到那里；
+ *    否则是图未解码/加载失败造成的退化测量 —— 此时文档异常地矮，轻扫就能「到底」，
+ *    沿用上一次可信值，既不虚报也不倒退。
+ */
+var lastAnchorIndex = 0;
+function currentAnchorIndex(){
+    var scrolled = window.scrollY || window.pageYOffset || 0;
+    if(scrolled <= 0) return lastAnchorIndex = 0;
+    var els = anchorEls();
+    var threshold = DATA.kind === 1 ? 0 : window.innerHeight * 0.5;
+    var idx = 0, found = false;
+    for(var i = 0; i < els.length; i++){
+        if(els[i].getBoundingClientRect().bottom > threshold){ idx = i; found = true; break; }
+        idx = i;
+    }
+    if(found || (anchorsSettled() && atDocumentEnd())) return lastAnchorIndex = idx;
+    return lastAnchorIndex;
+}
+
+/** 是否已滚到文档末尾。单独用不可信，必须与 anchorsSettled() 一起判，详见后者注释。 */
+function atDocumentEnd(){
+    return (window.scrollY || window.pageYOffset || 0) + window.innerHeight >= document.body.scrollHeight - 2;
+}
+
+/**
+ * 锚点是否已真正排版完 —— 只有此时才能相信「已滚到文档末尾」这类整体判据。
+ *
+ * 退化态下文档会异常地矮，轻扫就能满足「到底」，把没读到的内容记成读完：
+ * - 漫画：图加载失败/未解码时高度恒为 0，不占空间。末页有真实高度才算排版完。
+ * - PDF：canvas 先按页序插进 DOM 再异步绘制，未绘制的 canvas 不是 0×0 而是固有
+ *   300×150（配合 width:100% 后高约为视口宽的一半），有高度但并非真实页高，
+ *   所以要看真正画完的页数 pdfAppendedCount。
+ * - 小说：段落受 content-visibility 影响高度恒为 0，无法据高度判断，只能认已到底。
+ */
+function anchorsSettled(){
+    var total = anchorTotal();
+    var els = anchorEls();
+    if(total <= 0 || els.length < total) return false;
+    if(DATA.kind === 3) return pdfDoc != null && pdfAppendedCount >= pdfDoc.numPages;
+    if(DATA.kind === 1) return true;
+    // 漫画看末尾两页：图是一批批各自异步解码的，末页并不保证最后完成
+    // （体积小 / 命中缓存 / 是占位错误图时尤其容易先出来）。只看末页时，
+    // 用户实际停在前几页却可能被记成整章读完。
+    for(var i = Math.max(0, total - 2); i < total; i++){
+        if(els[i].getBoundingClientRect().height <= 0) return false;
+    }
+    return true;
+}
+
+/**
+ * 落库与进度条共用的锚点序号：两边必须同一个真值，否则会出现
+ * 「进度条显示 33/33、退出再进却回到第 30 段」这种读数与记录分叉。
+ */
+function effectiveAnchorIndex(){
+    var total = anchorTotal();
+    if(total <= 0) return 0;
+    var idx = Math.min(total - 1, currentAnchorIndex());   // 先算，保证 memo 始终被更新
+    // 已滚到文档末尾且锚点确已排版完 → 视为读完本章。
+    // 不能只靠 currentAnchorIndex()：小说正文下方还有 140px 内边距 + 章节导航（约 309px），
+    // 末段底边永远进不了视口，历史列表就永远到不了 100%。
+    if(anchorsSettled() && atDocumentEnd()) return total - 1;
+    return idx;
+}
+
+function reportProgress(){
+    if(!window.AndroidReader || !AndroidReader.saveProgress) return;
+    if(restoringPage || switchingChapter) return;
+    var ch = (DATA.chapters || [])[DATA.current] || {};
+    try { AndroidReader.saveProgress(DATA.current|0, ch.url || '', ch.name || DATA.title || '', effectiveAnchorIndex(), anchorTotal()); } catch(e){}
+}
+
+/**
+ * 由 App 调用：恢复到上次阅读位置。
+ * @param pos   total>0 时为锚点序号；total==0 时为旧版滚动百分比 0~1
+ * @param total 锚点总数（旧记录传 0）
+ */
+function __restoreScroll(pos, total){
+    var p = Number(pos) || 0;
+    if(p <= 0) return;
+    if((Number(total) || 0) <= 0) return restoreScrollPercent(Math.max(0, Math.min(1, p)));
+    restoreAnchor(Math.round(p));
+}
+
+/**
+ * 用户主动触摸/滚轮/按键后立即放弃恢复。
+ *
+ * 百分比恢复与锚点恢复都会在收敛期反复 scrollTo；漫画/PDF 慢源可能持续数秒乃至 60s。
+ * 若用户开始手动阅读却继续把视口拉回旧位置，体验等同于页面卡死。用户交互的当前位置
+ * 比旧记录优先，作废循环、解锁上报，让下一次 scroll debounce 写入用户真实位置。
+ */
+function cancelRestoreForUser(){
+    if(!restoringPage) return;
+    restoreGen++;
+    restoringPage = false;
+    updateProgressBar();
+    reportProgress();
+}
+window.addEventListener('touchstart', cancelRestoreForUser, {passive:true});
+window.addEventListener('pointerdown', cancelRestoreForUser, {passive:true});
+window.addEventListener('wheel', cancelRestoreForUser, {passive:true});
+window.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown' || e.key === ' ') cancelRestoreForUser();
+});
+
+/** 旧记录兼容：按章节内滚动百分比定位。 */
+function restoreScrollPercent(p){
+    // 代号：内容一旦被替换（切章 / 重新注入），本次恢复立即作废，
+    // 否则它会继续对新章 scrollTo，并把新章的进度按旧百分比写掉。
+    var gen = ++restoreGen;
+    restoringPage = true;
+    // 预算给足：漫画要一批批（BATCH 张）催到全部进 DOM 才算排版完，20 次×100ms 不够
+    var deadline = nowMs() + 60000;
+    var lastMax = null, stable = 0;
+    (function seek(){
+        if(gen !== restoreGen) return;
+        // 小说的 content-visibility 估算高度在用户滚动前根本不变，所以「高度稳定」
+        // 对它是空护栏（首帧即稳定）。真正的判据是「按目标百分比滚过去之后，
+        // 换算回来的锚点位置也稳定下来」—— 与 restoreAnchor 一样先滚再收敛。
+        var max = document.body.scrollHeight - window.innerHeight;
+        if(max > 0) window.scrollTo(0, max * p);
+        var idx = effectiveAnchorIndex();
+        var settled = anchorTotal() > 0 && anchorsSettled();
+        if(!settled || lastMax === null || lastMax !== idx) stable = 0;
+        else stable++;
+        lastMax = idx;
+        if(stable < 3 && nowMs() < deadline){
+            // 漫画 / PDF 要主动催加载：光等不会让剩下的页自己进 DOM，
+            // anchorsSettled() 就永远为假，旧百分比记录既恢复不了也迁移不了。
+            if(DATA.kind === 3) renderPdfMore();
+            else if(DATA.kind !== 1) loadMoreComic();
+            setTimeout(seek, 60);
+            return;
+        }
+        var ready = stable >= 3;
+        // 必须解锁：__injectReader 在 DATA.restore 时设了 restoringPage，
+        // 这条旧记录分支不解锁的话整个会话都不再上报进度，旧记录也永远迁不到新语义。
+        restoringPage = false;
+        updateProgressBar();
+        // 迁移旧记录时不能盲目上报：短章内容一屏放得下时，滚到 max*p（min-height 撑出的
+        // 约 5vh）后当前锚点仍是第 0 个，上报等于把用户存的 90% 覆盖成章首。
+        // 只有换算出的锚点不比原百分比对应的位置更靠前，才是一次有意义的迁移。
+        if(ready){
+            var total = anchorTotal();
+            var expected = Math.min(total - 1, Math.floor(p * total));
+            if(effectiveAnchorIndex() >= expected) reportProgress();
+        }
+    })();
+}
+
+/**
+ * 滚动到指定锚点（小说=段落，漫画/PDF=页）。
+ *
+ * 定位后内容高度还会变：漫画的图片在异步解码，小说屏外段落的估算高度会被实测值替换。
+ * 这些变化发生在目标锚点之前时，会把已定位的内容整体推走（表现为「存第 10 页、回来第 6 页」）。
+ * 所以定位后必须重新测量，直到目标锚点位置连续两次一致。
+ */
+function restoreAnchor(index){
+    restoringPage = true;
+    // 代号：内容一旦被替换（切章 / 重新注入），旧的 seek 循环立即作废。
+    // 否则它会继续对新章执行 scrollTo，并让 restoringPage 一直为真，堵住进度上报。
+    var gen = ++restoreGen;
+    // 用 performance.now()：Date.now() 会被系统时间校正影响，向前跳会立刻超时（位置恢复不了），
+    // 向后跳会让循环跑得远超预算。
+    var deadline = nowMs() + 60000;   // 总预算 60s：远程漫画一批批加载到第 N 页很慢
+    var lastTop = null, stable = 0;
+
+    /** 目标页之前尚未撑开高度（未解码）的页数。 */
+    function pendingBefore(els, i){
+        var n = 0;
+        for(var k = 0; k <= i; k++) if(els[k].getBoundingClientRect().height <= 0) n++;
+        return n;
+    }
+
+    (function seek(){
+        if(gen !== restoreGen) return;   // 内容已被替换，本次恢复作废
+        if(nowMs() > deadline){
+            // 超时：停在当前位置，不再纠正（此时至少已滚到已加载部分的目标附近）
+            console.log('[reader] restoreAnchor timeout index=' + index);
+            restoringPage = false;
+            updateProgressBar();
+            // 只有确实到达（或超过）目标锚点才补报。部分加载时 seek 只能滚到已加载末尾，
+            // 此刻上报会把「存第 50 页」倒退成「第 9 页」；一次都没滚动成功时更是直接清成开头。
+            // 不报的代价仅是本次不刷新记录，用户存的位置原样保留。
+            if(effectiveAnchorIndex() >= index) reportProgress();
+            return;
+        }
+        var els = anchorEls();
+        if(els.length === 0){ setTimeout(seek, 100); return; }
+
+        // 漫画 / PDF：目标页还没渲染出来 → 持续催加载，并先滚到已加载的末尾
+        // （滚到底部才会触发 scroll 懒加载；只调 loadMoreComic 每轮仅进 BATCH 张，
+        //   328 页的书靠单条路径太慢）
+        if(DATA.kind !== 1 && els.length <= index){
+            if(DATA.kind === 3) renderPdfMore(); else loadMoreComic();
+            var lastEl = els[els.length - 1];
+            if(lastEl) window.scrollTo(0, window.scrollY + lastEl.getBoundingClientRect().top);
+            setTimeout(seek, 60);
+            return;
+        }
+        var i = Math.min(index, els.length - 1);
+
+        // 漫画 / PDF：目标页之前还有未解码的页会在解码后把内容推走，先等它们撑开。
+        // 但不能无限等（有的图会加载失败，永远为 0），只等到「剩余未撑开的很少」为止。
+        if(DATA.kind !== 1){
+            var pending = pendingBefore(els, i);
+            if(pending > 2){ setTimeout(seek, 100); return; }
+        }
+
+        var top = window.scrollY + els[i].getBoundingClientRect().top;
+        window.scrollTo(0, top);
+        if(lastTop !== null && Math.abs(top - lastTop) < 2){
+            if(++stable >= 3){
+                restoringPage = false;
+                updateProgressBar();
+                // 定位完成后补报一次：否则用户不滚动就退出会把 anchor 记成 0
+                reportProgress();
+                return;
+            }
+        } else {
+            stable = 0;
+        }
+        lastTop = top;
+        setTimeout(seek, 100);
+    })();
+}
+
+/* ===================== toast ===================== */
+function showToast(msg){ var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 1500); }
+
+/* 漫画/PDF 懒加载 */
+window.addEventListener('scroll', function(){
+    if(window.innerHeight + window.scrollY >= document.body.scrollHeight - 800){
+        if(DATA.kind === 3) renderPdfMore();
+        else if(DATA.kind !== 1) loadMoreComic();
+    }
+});
+
+/* 主脚本执行到底的标记：日志里没有这一行说明中途抛错，__injectReader 不会存在 */
+console.log('[reader] script ready injectReader=' + (typeof window.__injectReader));
+</script>
+</body>
+</html>

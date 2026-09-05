@@ -29,7 +29,7 @@
 
 -keep class tv.danmaku.ijk.media.player.** { *; }
 -keepclassmembers class tv.danmaku.ijk.media.player.** { *; }
--keepattributes *Annotation*,InnerClasses,EnclosingMethod
+-keepattributes Signature,*Annotation*,InnerClasses,EnclosingMethod
 
 -keep class androidx.media3.decoder.VideoDecoderOutputBuffer { *; }
 -keep class androidx.media3.decoder.DecoderInputBuffer { *; }

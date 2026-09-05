@@ -352,6 +352,68 @@ public class ExoAutomaticVideoConstraintPolicyTest {
     }
 
     @Test
+    public void throughputFaultStepsDownTheLadderAndRecoversLikeOtherFaults() {
+        // 起播固定选最高画质后原生 ABR 不再兜底吞吐，带宽不足/重缓冲要靠 THROUGHPUT 证据降档。
+        ExoAutomaticVideoConstraintPolicy.SelectedTrack selected =
+                new ExoAutomaticVideoConstraintPolicy.SelectedTrack(3840, 2160, 60, 18_000_000);
+        ExoAutomaticVideoConstraintPolicy.Input input = input(
+                ExoAutomaticVideoConstraintPolicy.Environment.unknown(), true,
+                selected, ExoAutomaticVideoConstraintPolicy.ResourceMode.ADAPTIVE_VARIANTS, 1_000);
+
+        ExoAutomaticVideoConstraintPolicy.Decision first =
+                ExoAutomaticVideoConstraintPolicy.onFault(
+                        ExoAutomaticVideoConstraintPolicy.initial(BASELINE), input,
+                        ExoAutomaticVideoConstraintPolicy.Fault.THROUGHPUT);
+        // 带宽回调很频繁，冷却期内的重复证据不能继续往下踩。
+        ExoAutomaticVideoConstraintPolicy.Decision repeated =
+                ExoAutomaticVideoConstraintPolicy.onFault(
+                        first.state(), input(first.state(), selected, 5_000),
+                        ExoAutomaticVideoConstraintPolicy.Fault.THROUGHPUT);
+        // 冷却结束后仍然吞吐不足则继续降一档。
+        ExoAutomaticVideoConstraintPolicy.Decision stepped =
+                ExoAutomaticVideoConstraintPolicy.onFault(
+                        repeated.state(),
+                        input(repeated.state(),
+                                new ExoAutomaticVideoConstraintPolicy.SelectedTrack(2560, 1440, 60, 11_000_000),
+                                17_000),
+                        ExoAutomaticVideoConstraintPolicy.Fault.THROUGHPUT);
+
+        assertEquals(TIERS.get(1), first.state().effective());
+        assertTrue(first.faultStepped());
+        assertTrue(first.faultActive());
+        assertEquals(TIERS.get(1), repeated.state().effective());
+        assertFalse(repeated.faultStepped());
+        assertEquals(ExoAutomaticVideoConstraintPolicy.Action.FAULT_COOLDOWN, repeated.action());
+        assertEquals(TIERS.get(2), stepped.state().effective());
+        assertTrue(stepped.faultStepped());
+    }
+
+    @Test
+    public void throughputFaultNeverFallsBelowTheLowestTier() {
+        // 反复吞吐不足时必须停在最低档，不能越降越低把画面降没了。
+        ExoAutomaticVideoConstraintPolicy.State state =
+                ExoAutomaticVideoConstraintPolicy.initial(BASELINE);
+        ExoAutomaticVideoConstraintPolicy.Limit lowest = TIERS.get(TIERS.size() - 1);
+        long now = 1_000;
+        for (int i = 0; i < TIERS.size() + 3; i++) {
+            ExoAutomaticVideoConstraintPolicy.Limit effective = state.effective();
+            ExoAutomaticVideoConstraintPolicy.Decision decision =
+                    ExoAutomaticVideoConstraintPolicy.onFault(
+                            state,
+                            input(state,
+                                    new ExoAutomaticVideoConstraintPolicy.SelectedTrack(
+                                            effective.width(), effective.height(),
+                                            effective.frameRate(), effective.maxVideoBitrate()),
+                                    now),
+                            ExoAutomaticVideoConstraintPolicy.Fault.THROUGHPUT);
+            state = decision.state();
+            now += ExoAutomaticVideoConstraintPolicy.FAULT_STEP_COOLDOWN_MS + 1;
+        }
+
+        assertEquals(lowest, state.effective());
+    }
+
+    @Test
     public void progressiveModeNeverReportsABandwidthDowngradeAction() {
         ExoAutomaticVideoConstraintPolicy.Decision decision = evaluate(
                 ExoAutomaticVideoConstraintPolicy.initial(BASELINE),

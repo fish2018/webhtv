@@ -3,11 +3,13 @@ package com.fongmi.android.tv.ui.dialog;
 import android.app.Dialog;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,12 +28,16 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.ui.helper.TmdbSeasonResolver;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textview.MaterialTextView;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 public final class ChoiceDialog extends DialogFragment {
 
@@ -67,6 +73,64 @@ public final class ChoiceDialog extends DialogFragment {
     public interface OnNeutral {
         CharSequence onNeutral();
     }
+
+    public interface OnTmdbSeasonChoice {
+        void onAuto();
+
+        void onTmdbCounts();
+
+        void onFlat();
+
+        default void onAi() {
+        }
+
+        void onSeason(int seasonNumber);
+    }
+
+    public static void showTmdbSeason(
+            FragmentActivity activity,
+            List<Integer> seasonNumbers,
+            Map<Integer, Integer> episodeCounts,
+            TmdbSeasonResolver.Resolution resolution,
+            OnTmdbSeasonChoice listener) {
+        if (activity == null || listener == null) return;
+        List<Integer> seasons = new ArrayList<>();
+        if (seasonNumbers != null) {
+            for (Integer season : seasonNumbers) {
+                if (season != null && season >= 0 && !seasons.contains(season)) seasons.add(season);
+            }
+        }
+        CharSequence[] items = new CharSequence[seasons.size() + 4];
+        items[0] = activity.getString(R.string.tmdb_season_auto);
+        items[1] = activity.getString(R.string.tmdb_season_auto_by_counts);
+        items[2] = activity.getString(R.string.tmdb_season_keep_original);
+        items[3] = activity.getString(R.string.tmdb_season_ai_analyze);
+        for (int index = 0; index < seasons.size(); index++) {
+            int season = seasons.get(index);
+            int count = episodeCounts == null ? 0 : Math.max(0, episodeCounts.getOrDefault(season, 0));
+            items[index + 4] = season == 0
+                    ? activity.getString(R.string.tmdb_season_special, count)
+                    : activity.getString(R.string.tmdb_season_option, season, count);
+        }
+        int selected = selectedTmdbSeasonIndex(seasons, resolution);
+        showSingle(activity.getSupportFragmentManager(), activity.getString(R.string.tmdb_season_match_title), items, selected, which -> {
+            if (which == 0) listener.onAuto();
+            else if (which == 1) listener.onTmdbCounts();
+            else if (which == 2) listener.onFlat();
+            else if (which == 3) listener.onAi();
+            else if (which - 4 < seasons.size()) listener.onSeason(seasons.get(which - 4));
+        });
+    }
+
+    private static int selectedTmdbSeasonIndex(List<Integer> seasons, TmdbSeasonResolver.Resolution resolution) {
+        if (resolution == null) return 0;
+        if (resolution.getSource() == TmdbSeasonResolver.Source.MANUAL_MULTI_SLICE) return 1;
+        if (resolution.getSource() == TmdbSeasonResolver.Source.MANUAL_FLAT) return 2;
+        if (resolution.getSource() != TmdbSeasonResolver.Source.MANUAL || resolution.getSelectedSeason() == null) return 0;
+        int index = seasons.indexOf(resolution.getSelectedSeason());
+        return index < 0 ? 0 : index + 4;
+    }
+
 
     public static void showSingle(Fragment fragment, int titleRes, CharSequence[] items, int selected, OnChoice choice) {
         showSingle(fragment.getChildFragmentManager(), fragment.getString(titleRes), items, selected, choice);
@@ -194,7 +258,90 @@ public final class ChoiceDialog extends DialogFragment {
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setAttributes(params);
         window.setLayout(params.width, params.height);
-        window.getDecorView().post(this::focusSelectedItem);
+        window.getDecorView().post(() -> {
+            adaptListHeight(window);
+            if (Util.isLeanback()) window.getDecorView().post(this::focusSelectedItem);
+        });
+    }
+
+    private void focusSelectedItem() {
+        View root = viewRoot();
+        View listView = root == null ? null : root.findViewWithTag("choice_list");
+        if (!(listView instanceof ViewGroup list) || list.getChildCount() == 0) return;
+        int start = selected >= 0 && selected < list.getChildCount() ? selected : 0;
+        for (int offset = 0; offset < list.getChildCount(); offset++) {
+            View child = list.getChildAt((start + offset) % list.getChildCount());
+            if (child.isEnabled() && child.isFocusable()) {
+                child.requestFocus();
+                return;
+            }
+        }
+    }
+
+    private void adaptListHeight(Window window) {
+        View root = viewRoot();
+        View listView = root == null ? null : root.findViewWithTag("choice_list");
+        if (!(listView instanceof ViewGroup list) || !(list.getParent() instanceof ScrollView scroll) || !(scroll.getParent() instanceof ViewGroup rootGroup)) return;
+        int chrome = dialogChromeHeight(rootGroup, scroll);
+        int windowHeight = availableWindowHeight(window);
+        if (windowHeight <= 0) return;
+        int height = adaptiveListHeight(windowHeight, chrome);
+        ViewGroup.LayoutParams params = scroll.getLayoutParams();
+        if (params.height == height) return;
+        params.height = height;
+        scroll.setLayoutParams(params);
+        window.setLayout(window.getAttributes().width, WindowManager.LayoutParams.WRAP_CONTENT);
+        scroll.post(() -> adaptListHeight(window));
+    }
+
+    private int availableWindowHeight(Window window) {
+        Rect frame = new Rect();
+        window.getDecorView().getWindowVisibleDisplayFrame(frame);
+        return frame.height();
+    }
+
+    private int dialogChromeHeight(ViewGroup root, View target) {
+        return calculateDialogChromeHeight(root.getMeasuredHeight(), target.getMeasuredHeight());
+    }
+
+    static int calculateDialogChromeHeight(int rootHeight, int targetHeight) {
+        return Math.max(0, rootHeight - targetHeight);
+    }
+
+    private int adaptiveListHeight(int screenHeight, int chromeHeight) {
+        int desired = Math.max(dp(56), items.length * dp(54));
+        return calculateAdaptiveListHeight(desired, dp(56), screenHeight, chromeHeight, dp(32));
+    }
+
+    static int calculateAdaptiveListHeight(int desiredHeight, int minHeight, int screenHeight, int chromeHeight, int safeMargin) {
+        int desired = Math.max(0, Math.max(minHeight, desiredHeight));
+        int viewport = Math.max(0, screenHeight);
+        int chrome = Math.max(0, chromeHeight);
+        int margin = Math.max(0, safeMargin);
+        if ((long) chrome + desired + margin <= viewport) return desired;
+        int available = Math.max(0, viewport - chrome - margin);
+        return Math.min(desired, available);
+    }
+
+    private boolean focusAdjacentItem(int position, int direction) {
+        View root = viewRoot();
+        View listView = root == null ? null : root.findViewWithTag("choice_list");
+        if (!(listView instanceof ViewGroup list)) return false;
+        for (int index = position + direction; index >= 0 && index < list.getChildCount(); index += direction) {
+            View child = list.getChildAt(index);
+            if (child.isEnabled() && child.isFocusable() && child.requestFocus()) return true;
+        }
+        return direction > 0 ? focusFirstAction(root) : true;
+    }
+
+    private boolean focusFirstAction(View root) {
+        View actionView = root.findViewWithTag("choice_actions");
+        if (!(actionView instanceof ViewGroup actions)) return true;
+        for (int index = 0; index < actions.getChildCount(); index++) {
+            View child = actions.getChildAt(index);
+            if (child.isEnabled() && child.isFocusable() && child.requestFocus()) return true;
+        }
+        return true;
     }
 
     private View createView(LayoutInflater inflater) {
@@ -242,8 +389,8 @@ public final class ChoiceDialog extends DialogFragment {
         for (int i = 0; i < items.length; i++) list.addView(createItem(i));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.topMargin = dp(16);
-        int maxHeight = positive != null || negative != null || neutral != null ? dp(300) : dp(360);
-        params.height = Math.min(maxHeight, Math.max(dp(56), items.length * dp(54)));
+        int initialMaxHeight = dp(actionCount() > 0 ? 300 : 360);
+        params.height = Math.min(initialMaxHeight, Math.max(dp(56), items.length * dp(54)));
         root.addView(scroll, params);
     }
 
@@ -262,6 +409,12 @@ public final class ChoiceDialog extends DialogFragment {
         styleItem(button, position);
         button.setOnFocusChangeListener((view, hasFocus) -> styleItem(button, position));
         button.setOnClickListener(view -> onItemClick(position));
+        button.setOnKeyListener((view, keyCode, event) -> {
+            if (!Util.isLeanback() || event == null || event.getAction() != KeyEvent.ACTION_DOWN) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return focusAdjacentItem(position, 1);
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return focusAdjacentItem(position, -1);
+            return false;
+        });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46));
         params.bottomMargin = dp(8);
         button.setLayoutParams(params);
@@ -304,14 +457,6 @@ public final class ChoiceDialog extends DialogFragment {
         button.setStrokeColor(ColorStateList.valueOf(stroke));
     }
 
-    private void focusSelectedItem() {
-        if (!Util.isLeanback() || multi || selected < 0) return;
-        View root = viewRoot();
-        View listView = root == null ? null : root.findViewWithTag("choice_list");
-        if (!(listView instanceof ViewGroup list) || selected >= list.getChildCount()) return;
-        list.getChildAt(selected).requestFocus();
-    }
-
     private void onItemClick(int position) {
         if (!itemEnabled(position)) return;
         if (multi) {
@@ -349,6 +494,7 @@ public final class ChoiceDialog extends DialogFragment {
 
     private void addActions(LinearLayout root) {
         LinearLayout actions = new LinearLayout(requireContext());
+        actions.setTag("choice_actions");
         actions.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         boolean compact = actionCount() >= 3;

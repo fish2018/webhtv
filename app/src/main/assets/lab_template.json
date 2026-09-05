@@ -1,0 +1,1512 @@
+{
+    "version": "1.0",
+    "groups": [
+        {
+            "id": "runtime",
+            "name": "运行环境",
+            "order": 1
+        },
+        {
+            "id": "tools",
+            "name": "工具插件",
+            "order": 2
+        },
+        {
+            "id": "network",
+            "name": "网络工具",
+            "order": 3
+        },
+        {
+            "id": "ubuntu",
+            "name": "Ubuntu 运行环境",
+            "order": 4
+        }
+    ],
+    "lists": [
+        {
+            "name": "php",
+            "group": "runtime",
+            "version": "7.3.22",
+            "icon": "https://img.icons8.com/?size=240&id=121463&format=png&color=000000",
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "爬虫运行时，支持多架构，适合低版本安卓和性能较差的设备，此运行时强制静默无感安装。\nsite配置：\n    {\n      \"key\": \"php甜圈短剧\",\n      \"name\": \"php | 甜圈短剧\",\n      \"api\": \"./vod/甜圈短剧.php\",\n      \"type\": \"3\"\n    }\n\n【需自备压缩包】此包没有官方 Android 构建，请把 php.zip 放到 根目录/EnvFiles/ 后再安装（根目录见右上角设置）。",
+            "binary_path": "bin/php",
+            "var_path": {
+                "LD_LIBRARY_PATH": "bin"
+            },
+            "commands": [
+                {
+                    "id": "server",
+                    "name": "轻量服务器",
+                    "description": "php内置服务器，可以跑任何php脚本。",
+                    "command": "php -S 0.0.0.0:{port} -t {root_dir} -d error_log={sdcard}/WebHTV/logs/php_error.log",
+                    "auto_execute": true,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "端口号",
+                            "type": "number",
+                            "default": "8901",
+                            "hint": "服务器监听端口",
+                            "required": true,
+                            "min": 1024,
+                            "max": 65535
+                        },
+                        {
+                            "key": "root_dir",
+                            "name": "根目录",
+                            "type": "directory",
+                            "default": "{sdcard}/WebHTV/wwwroot",
+                            "hint": "Web 服务器根目录",
+                            "required": true
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "打开首页",
+                            "action": "open",
+                            "value": "http://0.0.0.0:{port}"
+                        },
+                        {
+                            "title": "T4代理接口",
+                            "action": "webview",
+                            "value": "http://0.0.0.0:{port}/vod.php?key=站源key&ac=list",
+                            "style": "dialog"
+                        }
+                    ]
+                },
+                {
+                    "id": "modules",
+                    "name": "查看模块",
+                    "description": "查看已加载的 PHP 模块",
+                    "command": "php -m",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "test_all_types",
+                    "name": "测试所有变量类型",
+                    "description": "用于测试对话框 UI 的命令",
+                    "command": "php -r \"echo '{text_val} {num_val} {select_val} {switch_val} {file_val} {dir_val} {multiline_val}';\"",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "text_val",
+                            "name": "文本输入",
+                            "type": "text",
+                            "default": "hello",
+                            "hint": "普通文本输入框",
+                            "required": true
+                        },
+                        {
+                            "key": "num_val",
+                            "name": "数字输入",
+                            "type": "number",
+                            "default": "8080",
+                            "hint": "端口号",
+                            "required": true,
+                            "min": 1024,
+                            "max": 65535
+                        },
+                        {
+                            "key": "select_val",
+                            "name": "下拉选择",
+                            "type": "select",
+                            "default": "dev",
+                            "hint": "选择运行环境",
+                            "required": true,
+                            "options": [
+                                {
+                                    "label": "开发环境",
+                                    "value": "dev"
+                                },
+                                {
+                                    "label": "测试环境",
+                                    "value": "test"
+                                },
+                                {
+                                    "label": "生产环境",
+                                    "value": "prod"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "switch_val",
+                            "name": "开关选项",
+                            "type": "switch",
+                            "default": "true",
+                            "hint": "启用调试模式",
+                            "required": false
+                        },
+                        {
+                            "key": "file_val",
+                            "name": "文件选择",
+                            "type": "file",
+                            "default": "/sdcard/test.php",
+                            "hint": "选择 PHP 文件",
+                            "required": false,
+                            "filter": "*.php"
+                        },
+                        {
+                            "key": "dir_val",
+                            "name": "目录选择",
+                            "type": "directory",
+                            "default": "/sdcard/www",
+                            "hint": "选择工作目录",
+                            "required": false
+                        },
+                        {
+                            "key": "multiline_val",
+                            "name": "多行文本",
+                            "type": "text_multiline",
+                            "default": "line1\nline2",
+                            "hint": "输入多行内容",
+                            "required": false
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "测试链接",
+                            "action": "open",
+                            "value": "http://0.0.0.0:{num_val}"
+                        },
+                        {
+                            "title": "复制命令",
+                            "action": "copy",
+                            "value": "php -r \"echo '{text_val}'\""
+                        },
+                        {
+                            "title": "内置浏览",
+                            "action": "webview",
+                            "value": "http://0.0.0.0:{num_val}",
+                            "style": "dialog",
+                            "content": "在应用内打开网页"
+                        },
+                        {
+                            "title": "二维码",
+                            "action": "qrcode",
+                            "value": "http://0.0.0.0:{num_val}",
+                            "content": "扫码访问服务"
+                        },
+                        {
+                            "title": "分享",
+                            "action": "share",
+                            "value": "http://0.0.0.0:{num_val}"
+                        },
+                        {
+                            "title": "使用说明",
+                            "action": "alert",
+                            "value": "本命令用于测试所有变量类型，包括文本、数字、选择、开关、文件、目录、多行文本等。",
+                            "content": "请根据需要填写各项参数后运行命令"
+                        },
+                        {
+                            "title": "提示",
+                            "action": "toast",
+                            "value": "当前文本值: {text_val}"
+                        }
+                    ]
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "7.3.33",
+                    "url": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/php.zip",
+                    "size": "15.2 MB"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "7.3.22",
+                    "url": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/php.zip",
+                    "size": "14.8 MB"
+                }
+            ]
+        },
+        {
+            "name": "python",
+            "group": "runtime",
+            "version": "3.12",
+            "icon": "https://img.icons8.com/?size=240&id=13441&format=png&color=000000",
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "Python静态编译版本，适用于Android ARM架构\n\n【需自备压缩包】此包没有官方 Android 构建，请把 python_arm64.7z 放到 根目录/EnvFiles/ 后再安装（根目录见右上角设置）。",
+            "binary_path": "bin/python3",
+            "var_path": {
+                "PATH": "bin",
+                "LD_LIBRARY_PATH": "lib",
+                "PYTHONHOME": ".",
+                "PYTHONPATH": "lib/python3.12/site-packages"
+            },
+            "commands": [
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 --version",
+                    "description": "显示 Python 版本信息",
+                    "id": "version",
+                    "name": "查看版本",
+                    "show_output": true
+                },
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 -m pip list",
+                    "description": "列出已安装的第三方模块",
+                    "id": "pip_list",
+                    "name": "查看模块",
+                    "show_output": true
+                },
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 -m pip install {package}",
+                    "description": "使用 pip 安装的 Python 模块",
+                    "id": "pip_install",
+                    "name": "安装模块",
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "default": "requests",
+                            "hint": "请输入要安装的模块名称，如 requests、httpx",
+                            "key": "package",
+                            "name": "名称",
+                            "required": true,
+                            "type": "text"
+                        }
+                    ]
+                },
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 -m pip uninstall {package} -y",
+                    "description": "使用 pip 卸载的 Python 模块",
+                    "id": "pip_uninstall",
+                    "name": "卸载模块",
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "default": "",
+                            "hint": "请输入要卸载的模块名称",
+                            "key": "package",
+                            "name": "名称",
+                            "required": true,
+                            "type": "text"
+                        }
+                    ]
+                },
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 -m pip install --upgrade {package}",
+                    "description": "升级的 Python 模块到最新版本",
+                    "id": "pip_upgrade",
+                    "name": "升级模块",
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "default": "pip",
+                            "hint": "请输入要升级的模块名称，默认升级 pip 自身",
+                            "key": "package",
+                            "name": "名称",
+                            "required": true,
+                            "type": "text"
+                        }
+                    ]
+                },
+                {
+                    "auto_execute": false,
+                    "background": false,
+                    "command": "python3 {script_path}",
+                    "description": "运行的 Python 脚本",
+                    "id": "run_script",
+                    "name": "运行脚本",
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "default": "/storage/emulated/0/",
+                            "filter": "*.py",
+                            "hint": "请选择要运行的 .py 脚本",
+                            "key": "script_path",
+                            "name": "脚本路径",
+                            "required": true,
+                            "type": "file"
+                        }
+                    ]
+                },
+                {
+                    "auto_execute": false,
+                    "background": true,
+                    "command": "python3 -m http.server {port} --directory {root_dir}",
+                    "description": "启动一个临时的 HTTP 文件服务器",
+                    "id": "http_server",
+                    "name": "HTTP 文件服务器",
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "default": "8080",
+                            "hint": "HTTP 服务器监听端口",
+                            "key": "port",
+                            "max": 65535,
+                            "min": 1024,
+                            "name": "端口号",
+                            "required": true,
+                            "type": "number"
+                        },
+                        {
+                            "default": "/storage/emulated/0/",
+                            "hint": "要共享的根目录",
+                            "key": "root_dir",
+                            "name": "根目录",
+                            "required": true,
+                            "type": "directory"
+                        }
+                    ]
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "url": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/python_arm64.7z",
+                    "size": "12.1 MB",
+                    "version": "3.12"
+                }
+            ]
+        },
+        {
+            "name": "nodejs",
+            "group": "runtime",
+            "cmd_name": "node",
+            "version": "25.2.1",
+            "icon": "https://img.icons8.com/?size=240&id=hsPbhkOH4FMe&format=png&color=000000",
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "Node.js静态编译版本，适用于Android ARM架构\n\n【需自备压缩包】此包没有官方 Android 构建，请把 nodejs_arm64.zip 放到 根目录/EnvFiles/ 后再安装（根目录见右上角设置）。",
+            "binary_path": "bin/node",
+            "var_path": {
+                "LD_LIBRARY_PATH": "lib",
+                "OPENSSL_CONF": "/dev/null",
+                "NODE_PATH": "lib/node_modules"
+            },
+            "commands": [
+                {
+                    "id": "mcp-gateway",
+                    "name": "🌐 MCP HTTP 网关",
+                    "description": "启动 HTTP 网关，让浏览器可以调用 MCP 服务",
+                    "command": "node {sdcard}/WebHTV/drpy-node-mcp/mcp-gateway.js",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "drpy-node-mcp",
+                    "name": "🌎 Drpy-Node-MCP服务",
+                    "description": "启动服务，为drpy-node提供一个影视资源聚合接口...",
+                    "command": "env ROOT={sdcard}/WebHTV/drpy_node node {sdcard}/WebHTV/drpy-node-mcp/dist/index.js",
+                    "auto_execute": false,
+                    "show_output": false
+                },
+                {
+                    "id": "kill-drpy-node-mcp",
+                    "name": "🛑 停止drpy-node-mcp服务",
+                    "description": "停止drpy-node-mcp进程",
+                    "command": "pkill -f \"drpy-node-mcp\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "version",
+                    "name": "查看版本",
+                    "description": "显示 Node.js 版本信息",
+                    "command": "node -v",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "list_modules",
+                    "name": "查看模块",
+                    "description": "列出已安装的 Node.js 模块",
+                    "command": "node -e \"require('fs').readdirSync('{envRootPath}/lib/node_modules').forEach(m => console.log(m))\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "run_script",
+                    "name": "运行脚本",
+                    "description": "执行指定的 JavaScript 脚本",
+                    "command": "node {script_path}",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "script_path",
+                            "name": "脚本路径",
+                            "type": "file",
+                            "default": "",
+                            "hint": "选择要执行的 JS 脚本",
+                            "required": true,
+                            "filter": "*.js"
+                        }
+                    ]
+                },
+                {
+                    "id": "t4_proxy",
+                    "name": "T4代理服务器",
+                    "description": "启动 Spider API Type 4 代理服务器，支持将壳子当前的所有数据(py,php,js,jar以及t1和t4)暴露为T4接口",
+                    "command": "node {sdcard}/WebHTV/Proxy/T4Proxy.js --port {port}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "download": {
+                        "title": "脚本地址",
+                        "url": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/T4Proxy.js",
+                        "save_to": "{sdcard}/WebHTV/Proxy/T4Proxy.js",
+                        "check_file": "Proxy/T4Proxy.js",
+                        "size": "JS脚本"
+                    },
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "端口号",
+                            "type": "number",
+                            "default": "10998",
+                            "hint": "服务器监听端口",
+                            "required": true,
+                            "min": 1024,
+                            "max": 65535
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "配置接口",
+                            "action": "webview",
+                            "value": "http://0.0.0.0:{port}?ac=config",
+                            "style": "dialog",
+                            "content": "查看所有站源配置"
+                        },
+                        {
+                            "title": "接口文档",
+                            "action": "alert",
+                            "value": "T4代理接口说明：\n\n• 配置接口: /?ac=config\n• 首页接口: /站源key\n• 分类接口: /站源key?t=分类ID&pg=页码\n• 详情接口: /站源key?ids=视频ID\n• 搜索接口: /站源key?wd=关键词&pg=页码\n• 播放接口: /站源key?flag=播放源&id=播放ID\n\n提示：ac参数可省略，系统会自动识别接口类型\n筛选参数：area=地区&year=年份&type=类型&class=剧情&lang=语言",
+                            "content": "详细接口说明"
+                        },
+                        {
+                            "title": "打开首页",
+                            "action": "open",
+                            "value": "http://0.0.0.0:{port}"
+                        },
+                        {
+                            "title": "生成二维码",
+                            "action": "qrcode",
+                            "value": "http://0.0.0.0:{port}?ac=config",
+                            "content": "扫码访问配置接口"
+                        },
+                        {
+                            "title": "复制地址",
+                            "action": "copy",
+                            "value": "http://0.0.0.0:{port}"
+                        }
+                    ]
+                },
+                {
+                    "id": "dz_drpy_node",
+                    "name": "道长Drpy一键运行",
+                    "description": "啥都不说了,内置一堆源,运行后复制配置到设置点播中粘贴即可",
+                    "command": "node {sdcard}/WebHTV/drpy_node/index.js",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "min_version": 110,
+                    "clicks": [
+                        {
+                            "title": "复制配置",
+                            "action": "copy",
+                            "value": "http://127.0.0.1:5757/config/1"
+                        }
+                    ],
+                    "download": {
+                        "title": "下载地址",
+                        "url": "https://git-proxy.playdreamer.cn/hjdhnx/drpy-node/releases/download/V1.3.24/drpy-node-20260214.7z",
+                        "extract_to": "drpy_node",
+                        "check_file": "drpy_node/index.js",
+                        "size": "25Mb",
+                        "mirrors": {
+                            "github": "https://github.com/hjdhnx/drpy-node/releases/download/V1.3.24/drpy-node-20260214.7z"
+                        }
+                    }
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "url": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/nodejs_arm64.zip",
+                    "liburl": "http://127.0.0.1:{serverPort}/file/WebHTV/EnvFiles/nodejs_lib_arm64.zip",
+                    "size": "68.5 MB"
+                }
+            ]
+        },
+        {
+            "name": "mihomo",
+            "group": "network",
+            "version": "1.19.20",
+            "icon": "https://img.icons8.com/?size=240&id=suepw1UyS0Hf&format=png&color=000000",
+            "auto_install": false,
+            "mkdir": "{sdcard}/WebHTV/mihomo",
+            "available": true,
+            "show": true,
+            "info": "一个多协议的代理工具，支持多种代理协议。\n注意：启动后整个实验室和app都会走代理！",
+            "binary_path": "bin/mihomo",
+            "commands": [
+                {
+                    "id": "run_config",
+                    "name": "启动代理",
+                    "description": "使用指定配置文件启动代理",
+                    "command": "mihomo -f {config_path} -ext-ctl {ui_host} -secret {secret}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "min_version": 110,
+                    "download": {
+                        "title": "订阅地址",
+                        "url": "",
+                        "save_to": "{sdcard}/WebHTV/mihomo/config.yaml",
+                        "check_file": "config.yaml",
+                        "size": ""
+                    },
+                    "variables": [
+                        {
+                            "key": "config_path",
+                            "name": "配置文件",
+                            "type": "file",
+                            "default": "{sdcard}/WebHTV/mihomo/config.yaml",
+                            "hint": "选择 Mihomo 配置文件",
+                            "required": true,
+                            "filter": "*.yaml,*.yml"
+                        },
+                        {
+                            "key": "ui_host",
+                            "name": "外部服务",
+                            "type": "text",
+                            "default": "0.0.0.0:9090",
+                            "hint": "webUI的ip和端口",
+                            "required": true
+                        },
+                        {
+                            "key": "secret",
+                            "name": "服务密码",
+                            "type": "text",
+                            "default": "123456",
+                            "hint": "webUI的登录密码",
+                            "required": true
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "测试谷歌",
+                            "action": "webview",
+                            "value": "https://www.google.com",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "面板1",
+                            "action": "webview",
+                            "value": "https://yacd.metacubex.one/",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "面板2",
+                            "action": "webview",
+                            "value": "https://d.metacubex.one/",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "面板3",
+                            "action": "webview",
+                            "value": "https://board.zash.run.place/",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "复制代理",
+                            "action": "copy",
+                            "value": "0.0.0.0:7890"
+                        }
+                    ]
+                },
+                {
+                    "id": "version",
+                    "name": "查看版本",
+                    "description": "显示 Mihomo 版本信息",
+                    "command": "mihomo -v",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "help",
+                    "name": "查看帮助",
+                    "description": "显示 Mihomo 帮助信息",
+                    "command": "mihomo -h",
+                    "auto_execute": false,
+                    "show_output": true
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "1.19.30",
+                    "size": "17.1 MB",
+                    "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.30/mihomo-android-arm64-v8-v1.19.30.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "1.19.30",
+                    "size": "17.7 MB",
+                    "url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.30/mihomo-android-armv7-v1.19.30.gz"
+                }
+            ],
+            "cmd_name": "mihomo"
+        },
+        {
+            "name": "alist",
+            "group": "tools",
+            "version": "3.45.0",
+            "icon": "https://wsrv.nl/?url=https://alist.nn.ci/logo.svg&w=240&h=240&output=png",
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "一个支持多种存储的文件列表程序，支持阿里云盘、百度网盘、OneDrive等",
+            "binary_path": "bin/alist",
+            "var_path": {},
+            "commands": [
+                {
+                    "id": "version",
+                    "name": "查看版本",
+                    "description": "显示 AList 版本信息",
+                    "command": "alist version",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "server",
+                    "name": "启动服务",
+                    "description": "启动 AList 文件服务器",
+                    "command": "alist server --data {data_dir}",
+                    "auto_execute": true,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "data_dir",
+                            "name": "数据目录",
+                            "type": "directory",
+                            "default": "{dataPath}",
+                            "hint": "AList 数据存储目录",
+                            "required": true
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "浏览首页",
+                            "action": "webview",
+                            "value": "http://0.0.0.0:5244",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "后台管理",
+                            "action": "webview",
+                            "value": "http://0.0.0.0:5244/@manage",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "复制地址",
+                            "action": "copy",
+                            "value": "http://0.0.0.0:5244"
+                        }
+                    ]
+                },
+                {
+                    "id": "admin",
+                    "name": "设置密码",
+                    "description": "设置管理员密码",
+                    "command": "alist admin set {password} --data {data_dir}",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "password",
+                            "name": "管理员密码",
+                            "type": "text",
+                            "default": "admin123",
+                            "hint": "设置管理员登录密码",
+                            "required": true
+                        },
+                        {
+                            "key": "data_dir",
+                            "name": "数据目录",
+                            "type": "directory",
+                            "default": "{dataPath}",
+                            "hint": "AList 数据存储目录",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "id": "random_pwd",
+                    "name": "随机密码",
+                    "description": "生成随机管理员密码",
+                    "command": "alist admin random --data {data_dir}",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "data_dir",
+                            "name": "数据目录",
+                            "type": "directory",
+                            "default": "{dataPath}",
+                            "hint": "AList 数据存储目录",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "id": "config_port",
+                    "name": "配置端口",
+                    "description": "修改 AList 监听端口",
+                    "command": "alist config set --port {port} --data {data_dir}",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "端口号",
+                            "type": "number",
+                            "default": "5244",
+                            "hint": "AList 服务监听端口",
+                            "required": true,
+                            "min": 1024,
+                            "max": 65535
+                        },
+                        {
+                            "key": "data_dir",
+                            "name": "数据目录",
+                            "type": "directory",
+                            "default": "{dataPath}",
+                            "hint": "AList 数据存储目录",
+                            "required": true
+                        }
+                    ]
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "3.63.0",
+                    "size": "41.9 MB",
+                    "url": "https://github.com/AlistGo/alist/releases/download/v3.63.0/alist-android-arm64.tar.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "3.63.0",
+                    "size": "41.2 MB",
+                    "url": "https://github.com/AlistGo/alist/releases/download/v3.63.0/alist-android-arm.tar.gz"
+                }
+            ],
+            "cmd_name": "alist"
+        },
+        {
+            "name": "frp",
+            "group": "network",
+            "version": "0.67.0",
+            "icon": "https://p2.so.qhimg.com/t02329536615c28bc32.png",
+            "auto_install": false,
+            "mkdir": "{sdcard}/WebHTV/frp",
+            "available": true,
+            "show": true,
+            "info": "FRP 是一个专注于内网穿透的高性能的反向代理应用，支持 TCP、UDP、HTTP、HTTPS 等多种协议。可以将内网服务以安全、便捷的方式通过具有公网 IP 节点的中转暴露到公网。",
+            "binary_path": "bin/frpc",
+            "commands": [
+                {
+                    "id": "version",
+                    "name": "查看版本",
+                    "description": "显示 FRP 客户端版本信息",
+                    "command": "frpc -v",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "run_config",
+                    "name": "启动客户端",
+                    "description": "使用指定配置文件启动 FRP 客户端",
+                    "command": "frpc -c {config_path}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "config_path",
+                            "name": "配置文件",
+                            "type": "file",
+                            "default": "{sdcard}/WebHTV/frp/frpc.toml",
+                            "hint": "选择 FRP 客户端配置文件",
+                            "required": true,
+                            "filter": "*.toml,*.ini"
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "配置说明",
+                            "action": "alert",
+                            "value": "FRP 配置文件示例：\n\n[common]\nserver_addr = 你的服务器IP\nserver_port = 7000\ntoken = 你的密钥\n\n[web]\ntype = http\nlocal_port = 8080\ncustom_domains = 你的域名",
+                            "content": "请根据实际情况修改配置文件"
+                        },
+                        {
+                            "title": "官方文档",
+                            "action": "open",
+                            "value": "https://gofrp.org/zh-cn/docs/"
+                        }
+                    ]
+                },
+                {
+                    "id": "quick_http",
+                    "name": "快速HTTP穿透",
+                    "description": "快速配置HTTP内网穿透",
+                    "command": "frpc http -s {server_addr}:{server_port} -t {token} -n {proxy_name} -l {local_port} -d {custom_domain}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "server_addr",
+                            "name": "服务器地址",
+                            "type": "text",
+                            "default": "",
+                            "hint": "FRP 服务器 IP 或域名",
+                            "required": true
+                        },
+                        {
+                            "key": "server_port",
+                            "name": "服务器端口",
+                            "type": "number",
+                            "default": "7000",
+                            "hint": "FRP 服务器端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        },
+                        {
+                            "key": "token",
+                            "name": "连接密钥",
+                            "type": "text",
+                            "default": "",
+                            "hint": "服务器设置的 token",
+                            "required": true
+                        },
+                        {
+                            "key": "proxy_name",
+                            "name": "代理名称",
+                            "type": "text",
+                            "default": "web",
+                            "hint": "代理服务的名称",
+                            "required": true
+                        },
+                        {
+                            "key": "local_port",
+                            "name": "本地端口",
+                            "type": "number",
+                            "default": "8080",
+                            "hint": "本地服务端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        },
+                        {
+                            "key": "custom_domain",
+                            "name": "自定义域名",
+                            "type": "text",
+                            "default": "",
+                            "hint": "访问的域名（可选）",
+                            "required": false
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "使用提示",
+                            "action": "toast",
+                            "value": "HTTP穿透已启动，请通过服务器配置的域名访问"
+                        }
+                    ]
+                },
+                {
+                    "id": "quick_tcp",
+                    "name": "快速TCP穿透",
+                    "description": "快速配置TCP内网穿透",
+                    "command": "frpc tcp -s {server_addr}:{server_port} -t {token} -n {proxy_name} -l {local_port} -r {remote_port}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "server_addr",
+                            "name": "服务器地址",
+                            "type": "text",
+                            "default": "",
+                            "hint": "FRP 服务器 IP 或域名",
+                            "required": true
+                        },
+                        {
+                            "key": "server_port",
+                            "name": "服务器端口",
+                            "type": "number",
+                            "default": "7000",
+                            "hint": "FRP 服务器端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        },
+                        {
+                            "key": "token",
+                            "name": "连接密钥",
+                            "type": "text",
+                            "default": "",
+                            "hint": "服务器设置的 token",
+                            "required": true
+                        },
+                        {
+                            "key": "proxy_name",
+                            "name": "代理名称",
+                            "type": "text",
+                            "default": "ssh",
+                            "hint": "代理服务的名称",
+                            "required": true
+                        },
+                        {
+                            "key": "local_port",
+                            "name": "本地端口",
+                            "type": "number",
+                            "default": "22",
+                            "hint": "本地服务端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        },
+                        {
+                            "key": "remote_port",
+                            "name": "远程端口",
+                            "type": "number",
+                            "default": "6000",
+                            "hint": "服务器映射的端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "连接信息",
+                            "action": "alert",
+                            "value": "TCP穿透已启动\n\n访问地址：{server_addr}:{remote_port}\n本地端口：{local_port}",
+                            "content": "请使用上述地址访问本地服务"
+                        },
+                        {
+                            "title": "复制地址",
+                            "action": "copy",
+                            "value": "{server_addr}:{remote_port}"
+                        }
+                    ]
+                },
+                {
+                    "id": "quick_app_service",
+                    "name": "穿透应用服务",
+                    "description": "快速穿透应用内置的HTTP服务（默认9978端口）",
+                    "command": "frpc http -s {server_addr}:{server_port} -t {token} -n vodplus_service -l 9978 -d {custom_domain}",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "variables": [
+                        {
+                            "key": "server_addr",
+                            "name": "服务器地址",
+                            "type": "text",
+                            "default": "",
+                            "hint": "FRP 服务器 IP 或域名",
+                            "required": true
+                        },
+                        {
+                            "key": "server_port",
+                            "name": "服务器端口",
+                            "type": "number",
+                            "default": "7000",
+                            "hint": "FRP 服务器端口",
+                            "required": true,
+                            "min": 1,
+                            "max": 65535
+                        },
+                        {
+                            "key": "token",
+                            "name": "连接密钥",
+                            "type": "text",
+                            "default": "",
+                            "hint": "服务器设置的 token",
+                            "required": true
+                        },
+                        {
+                            "key": "custom_domain",
+                            "name": "自定义域名",
+                            "type": "text",
+                            "default": "",
+                            "hint": "访问的域名（可选）",
+                            "required": false
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "访问地址",
+                            "action": "alert",
+                            "value": "应用服务穿透已启动\n\n本地端口：9978\n访问域名：{custom_domain}\n\n可通过公网访问以下接口：\n• VOD API: /vod/api\n• Spider API: /spider\n• 代理服务: /proxy",
+                            "content": "请通过配置的域名访问应用服务"
+                        },
+                        {
+                            "title": "复制域名",
+                            "action": "copy",
+                            "value": "{custom_domain}"
+                        },
+                        {
+                            "title": "测试连接",
+                            "action": "webview",
+                            "value": "http://{custom_domain}/vod/api?ac=site",
+                            "style": "dialog",
+                            "content": "测试VOD API接口"
+                        },
+                        {
+                            "title": "使用说明",
+                            "action": "alert",
+                            "value": "应用服务穿透说明：\n\n1. 确保应用内置HTTP服务已启动\n2. 本地端口固定为9978\n3. 穿透后可通过公网访问应用的所有API接口\n4. 建议配置自定义域名以便访问\n\n注意：请确保服务器防火墙已开放相应端口",
+                            "content": "详细使用说明"
+                        }
+                    ]
+                },
+                {
+                    "id": "help",
+                    "name": "查看帮助",
+                    "description": "显示 FRP 客户端帮助信息",
+                    "command": "frpc -h",
+                    "auto_execute": false,
+                    "show_output": true
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "0.71.0",
+                    "size": "12.5 MB",
+                    "url": "https://github.com/fatedier/frp/releases/download/v0.71.0/frp_0.71.0_android_arm64.tar.gz"
+                }
+            ],
+            "cmd_name": "frp"
+        },
+        {
+            "name": "aria2",
+            "group": "network",
+            "version": "1.37.0",
+            "icon": "https://wsrv.nl/?url=https://store-images.s-microsoft.com/image/apps.11619.14635839640377203.9a7358e8-a286-4e0f-964a-606f3d488405.9df10642-71e6-4181-98b9-e96899a98b92&w=240&h=240&output=png",
+            "auto_install": false,
+            "mkdir": "{sdcard}/WebHTV/aria2",
+            "available": true,
+            "show": true,
+            "info": "一个轻量级的多协议多源命令行下载工具，支持HTTP/HTTPS、FTP、SFTP、BitTorrent和Metalink",
+            "binary_path": "bin/aria2c",
+            "var_path": {
+                "ARIA2_DATA": "{dataPath}/aria2",
+                "ARIA2_SESSION": "{dataPath}/aria2/session.dat",
+                "ARIA2_LOG": "{dataPath}/logs/aria2.log"
+            },
+            "commands": [
+                {
+                    "id": "rpc_server",
+                    "name": "启动RPC服务",
+                    "description": "启动aria2 RPC服务，支持远程管理，会保留运行状态",
+                    "command": "aria2c --enable-rpc --rpc-listen-all=true --rpc-listen-port={port} --rpc-secret={secret} -d {download_dir} --input-file={session_file} --save-session={session_file} --save-session-interval=60 --continue=true --max-connection-per-server=16 --split=16 --min-split-size=1M --console-log-level=warn --summary-interval=0",
+                    "auto_execute": false,
+                    "show_output": false,
+                    "background": true,
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "RPC端口",
+                            "type": "number",
+                            "default": "6800",
+                            "hint": "RPC服务监听端口",
+                            "required": true,
+                            "min": 1024,
+                            "max": 65535
+                        },
+                        {
+                            "key": "secret",
+                            "name": "RPC密钥",
+                            "type": "text",
+                            "default": "aria2secret",
+                            "hint": "RPC访问密钥（留空表示无密钥）",
+                            "required": false
+                        },
+                        {
+                            "key": "download_dir",
+                            "name": "下载目录",
+                            "type": "directory",
+                            "default": "/storage/emulated/0/Download",
+                            "hint": "文件下载保存目录",
+                            "required": true
+                        },
+                        {
+                            "key": "session_file",
+                            "name": "会话文件",
+                            "type": "file",
+                            "default": "{sdcard}/WebHTV/aria2/session.dat",
+                            "hint": "保存下载任务的会话文件",
+                            "required": false
+                        }
+                    ],
+                    "clicks": [
+                        {
+                            "title": "WebUI管理面板",
+                            "action": "webview",
+                            "value": "http://ariang.js.org/#!/settings/rpc/set/http/0.0.0.0:{port}/jsonrpc/{secret}",
+                            "style": "dialog"
+                        },
+                        {
+                            "title": "复制RPC地址",
+                            "action": "copy",
+                            "value": "http://0.0.0.0:{port}/jsonrpc"
+                        },
+                        {
+                            "title": "使用说明",
+                            "action": "alert",
+                            "value": "RPC服务启动后会保持运行状态\n密钥: {secret}\n端口: {port}\n下载目录: {download_dir}"
+                        }
+                    ]
+                },
+                {
+                    "id": "download",
+                    "name": "下载文件",
+                    "description": "使用aria2下载文件",
+                    "command": "aria2c -d {download_dir} -o {filename} {url}",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "url",
+                            "name": "下载链接",
+                            "type": "text",
+                            "default": "",
+                            "hint": "输入要下载的文件URL",
+                            "required": true
+                        },
+                        {
+                            "key": "download_dir",
+                            "name": "下载目录",
+                            "type": "directory",
+                            "default": "/storage/emulated/0/Download",
+                            "hint": "选择下载保存目录",
+                            "required": true
+                        },
+                        {
+                            "key": "filename",
+                            "name": "文件名",
+                            "type": "text",
+                            "default": "",
+                            "hint": "保存的文件名（留空自动识别）",
+                            "required": false
+                        }
+                    ]
+                },
+                {
+                    "id": "version",
+                    "name": "查看版本",
+                    "description": "显示 aria2 版本信息",
+                    "command": "aria2c --version",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "status",
+                    "name": "查看状态",
+                    "description": "通过RPC查看当前下载状态",
+                    "command": "curl -X POST http://0.0.0.0:{port}/jsonrpc -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"aria2.tellActive\",\"params\":[\"{secret}\"]}'",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "RPC端口",
+                            "type": "number",
+                            "default": "6800",
+                            "hint": "RPC服务端口",
+                            "required": true
+                        },
+                        {
+                            "key": "secret",
+                            "name": "RPC密钥",
+                            "type": "text",
+                            "default": "aria2secret",
+                            "hint": "RPC访问密钥",
+                            "required": false
+                        }
+                    ]
+                }
+            ],
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "1.37.0",
+                    "size": "2.39 MB",
+                    "url": "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-aarch64-linux-android-build1.zip"
+                }
+            ]
+        },
+        {
+            "name": "ubuntu-php",
+            "group": "ubuntu",
+            "version": "24.04",
+            "icon": "https://img.icons8.com/?size=240&id=27842&format=png",
+            "rootfs": true,
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "在独立的 Ubuntu 24.04 rootfs 中安装并运行 PHP CLI。\n首次安装只是解压系统底包，之后点「安装 PHP」用 apt 装运行时。",
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "24.04",
+                    "size": "28.5 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "24.04",
+                    "size": "27 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-armhf.tar.gz"
+                }
+            ],
+            "commands": [
+                {
+                    "id": "shell",
+                    "name": "进入终端",
+                    "description": "打开 Ubuntu 交互式 shell",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "apt_update",
+                    "name": "更新软件源",
+                    "description": "apt update",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "install_php",
+                    "name": "安装 PHP",
+                    "description": "apt install php-cli",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update && apt install -y php-cli\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "php_version",
+                    "name": "查看版本",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"php -v\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "php_serve",
+                    "name": "启动内置服务",
+                    "description": "php -S 监听指定端口，站点根目录在 rootfs 内",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"cd /root && php -S 0.0.0.0:{port}\"",
+                    "auto_execute": false,
+                    "show_output": true,
+                    "variables": [
+                        {
+                            "key": "port",
+                            "name": "端口",
+                            "type": "number",
+                            "default": "8080",
+                            "hint": "监听端口",
+                            "required": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "ubuntu-python3",
+            "group": "ubuntu",
+            "version": "24.04",
+            "icon": "https://img.icons8.com/?size=240&id=13441&format=png",
+            "rootfs": true,
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "在独立的 Ubuntu 24.04 rootfs 中安装并运行 Python3。\n带 pip，可以直接装第三方库，不再依赖手工静态编译包。",
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "24.04",
+                    "size": "28.5 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "24.04",
+                    "size": "27 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-armhf.tar.gz"
+                }
+            ],
+            "commands": [
+                {
+                    "id": "shell",
+                    "name": "进入终端",
+                    "description": "打开 Ubuntu 交互式 shell",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "apt_update",
+                    "name": "更新软件源",
+                    "description": "apt update",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "install_python",
+                    "name": "安装 Python3",
+                    "description": "apt install python3 python3-pip",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update && apt install -y python3 python3-pip\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "python_version",
+                    "name": "查看版本",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"python3 -V && pip3 -V\"",
+                    "auto_execute": false,
+                    "show_output": true
+                }
+            ]
+        },
+        {
+            "name": "ubuntu-nodejs",
+            "group": "ubuntu",
+            "version": "24.04",
+            "icon": "https://img.icons8.com/?size=240&id=54087&format=png",
+            "rootfs": true,
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "在独立的 Ubuntu 24.04 rootfs 中安装并运行 Node.js。\n带 npm，可以直接装包。",
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "24.04",
+                    "size": "28.5 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "24.04",
+                    "size": "27 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-armhf.tar.gz"
+                }
+            ],
+            "commands": [
+                {
+                    "id": "shell",
+                    "name": "进入终端",
+                    "description": "打开 Ubuntu 交互式 shell",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "apt_update",
+                    "name": "更新软件源",
+                    "description": "apt update",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "install_node",
+                    "name": "安装 Node.js",
+                    "description": "apt install nodejs npm",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update && apt install -y nodejs npm\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "node_version",
+                    "name": "查看版本",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"node -v && npm -v\"",
+                    "auto_execute": false,
+                    "show_output": true
+                }
+            ]
+        },
+        {
+            "name": "ubuntu",
+            "group": "ubuntu",
+            "version": "24.04",
+            "icon": "https://img.icons8.com/?size=240&id=42835&format=png",
+            "rootfs": true,
+            "auto_install": false,
+            "available": true,
+            "show": true,
+            "info": "干净的 Ubuntu 24.04 终端环境，进去后可以自行 apt 装任何东西。\n首次进入建议先执行「更新软件源」。",
+            "downloads": [
+                {
+                    "arch": "arm64-v8a",
+                    "version": "24.04",
+                    "size": "28.5 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+                },
+                {
+                    "arch": "armeabi-v7a",
+                    "version": "24.04",
+                    "size": "27 MB",
+                    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-armhf.tar.gz"
+                }
+            ],
+            "commands": [
+                {
+                    "id": "shell",
+                    "name": "进入终端",
+                    "description": "打开 Ubuntu 交互式 shell",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "apt_update",
+                    "name": "更新软件源",
+                    "description": "apt update",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "install_basic",
+                    "name": "安装常用工具",
+                    "description": "curl wget git nano 等",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"apt update && apt install -y curl wget git nano ca-certificates\"",
+                    "auto_execute": false,
+                    "show_output": true
+                },
+                {
+                    "id": "os_info",
+                    "name": "查看系统信息",
+                    "command": "proot -0 -r {envRootPath}/rootfs -b /dev -b /proc -b /sys -b /dev/urandom:/dev/random -w /root --kill-on-exit /usr/bin/env -i HOME=/root TERM=xterm-256color LANG=C.UTF-8 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /bin/bash --login -c \"cat /etc/os-release && uname -a\"",
+                    "auto_execute": false,
+                    "show_output": true
+                }
+            ]
+        }
+    ],
+    "root": "/storage/emulated/0/WebHTV"
+}

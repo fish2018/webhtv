@@ -1,14 +1,19 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">TV</string>
+   <string name="app_name">默影视</string>
+   <string name="setting_app_branding">App icon</string>
+    <string name="app_branding_icon_current">Default icon</string>
+    <string name="app_branding_icon_history">Original icon</string>
+   <string name="app_branding_icon_select">Select icon</string>
+    <string name="app_exit_confirm">Press back again to exit</string>
 
     <!-- Live -->
     <string name="live_pass">Pass</string>
     <string name="live_refresh">Refresh</string>
     <string name="live_line">Line <xliff:g name="name">%s</xliff:g></string>
     <string name="live_control_source">Live source</string>
-    <string name="live_no_epg">00:00 - 23:59 暂无节目信息</string>
+    <string name="live_no_epg">00:00 - 23:59 No program info</string>
 
     <!-- Detail -->
     <string name="detail_title"><xliff:g name="name">%s</xliff:g> : <xliff:g name="name">%s</xliff:g></string>
@@ -20,14 +25,28 @@
     <string name="detail_actor">Actor: <xliff:g name="name">%s</xliff:g></string>
     <string name="detail_content">Summary: <xliff:g name="name">%s</xliff:g></string>
     <string name="detail_desc">Summary</string>
+    <string name="detail_episode">Episode</string>
+    <string name="detail_episode_season_context">Episode · Season %1$d</string>
+    <string name="detail_episode_reverse">Reverse</string>
+    <string name="detail_episode_forward">Forward</string>
+    <string name="detail_episode_view_grid">Grid</string>
+    <string name="detail_episode_view_list">List</string>
+    <string name="detail_episode_view_grid_action">Switch to grid</string>
+    <string name="detail_episode_view_list_action">Switch to list</string>
+    <string name="detail_episode_file_name_original">Original</string>
+    <string name="detail_episode_file_name_scraped">Scraped</string>
+    <string name="detail_episode_file_name_original_action">Switch to original filename</string>
+    <string name="detail_episode_file_name_scraped_action">Switch to scraped filename</string>
 
     <!-- Keep -->
     <string name="keep">Keep</string>
     <string name="keep_add">Added</string>
     <string name="keep_del">Removed</string>
-    <string name="exit_confirm_title">Exit app?</string>
-    <string name="exit_confirm_message">The current page will close. Background playback will continue if it is running.</string>
-    <string name="exit_confirm_positive">Exit</string>
+    <string name="exit_confirm_title">Exit app</string>
+    <string name="exit_confirm_message">The app, playback, and background services will stop.</string>
+    <string name="exit_confirm_playing_message">Playback is active. Background playback keeps it playing; Exit completely stops playback and background services.</string>
+    <string name="exit_confirm_background">Background playback</string>
+    <string name="exit_confirm_positive">Exit completely</string>
 
     <!-- Play -->
     <string name="play">Play</string>
@@ -83,9 +102,16 @@
     <string name="play_switch_flag">Switching flag to <xliff:g name="name">%s</xliff:g></string>
     <string name="play_switch_site">Switching site to <xliff:g name="name">%s</xliff:g></string>
     <string name="play_switch_parse">Switching parse to <xliff:g name="name">%s</xliff:g></string>
+    <string name="play_night_mode">Night mode</string>
+    <string name="night_mode_off">Night mode off</string>
+    <string name="night_mode_low">Night mode: Low</string>
+    <string name="night_mode_medium">Night mode: Medium</string>
+    <string name="night_mode_high">Night mode: High</string>
 
     <!-- Danmaku Setting -->
     <string name="danmaku">Danmaku</string>
+    <string name="danmaku_show_on">Danmaku enabled</string>
+    <string name="danmaku_show_off">Danmaku disabled</string>
     <string name="danmaku_select">Select danmaku</string>
     <string name="danmaku_setting">Danmaku setting</string>
     <string name="danmaku_text_size">Text scale</string>
@@ -155,7 +181,114 @@
     <string name="setting_builtin_wall">Built-in wallpapers</string>
     <string name="setting_player">Player setting</string>
     <string name="setting_danmaku">Danmaku setting</string>
+    <string name="setting_subtitle">Subtitle setting</string>
     <string name="setting_enhance">Enhancements</string>
+    <string name="setting_tmdb">TMDB</string>
+    <string name="setting_ai">AI services</string>
+    <string name="setting_ai_group_recommendation">Recommendations</string>
+    <string name="setting_ai_group_detection">Content detection</string>
+    <string name="setting_ai_group_subtitle">Subtitles</string>
+    <string name="setting_personal">Personal</string>
+    <string name="setting_group_rule">Group rules</string>
+    <string name="setting_group_rule_summary">Enabled %1$d / %2$d</string>
+    <string name="group_rule_add">Add rule</string>
+    <string name="group_rule_edit">Edit rule</string>
+    <string name="group_rule_manage">Manage</string>
+    <string name="group_rule_delete">Delete</string>
+    <string name="group_rule_name">Rule name</string>
+    <string name="group_rule_regex">Regular expression</string>
+    <string name="group_rule_regex_hint">Capture group 1 is used as the group name. Multiple enabled rules use OR matching.</string>
+    <string name="group_rule_regex_required">Regex is required</string>
+    <string name="group_rule_regex_invalid">Invalid regular expression</string>
+    <string name="group_rule_empty_custom">No custom or interface rules</string>
+    <string name="group_rule_edit_item">Edit · %1$s\n%2$s</string>
+    <string name="group_rule_interface_item">Interface · %1$s\n%2$s</string>
+    <string name="group_rule_ai_identify">AI identify</string>
+    <string name="group_rule_ai_reidentify">AI re-identify</string>
+    <string name="group_rule_ai_privacy_title">Use AI group identification</string>
+    <string name="group_rule_ai_privacy_message">Visible source names from the current VOD configuration will be sent to your configured AI service. Large lists may be split into multiple requests (up to 8). Source APIs, interface URLs, extension settings, playback history, and AI credentials are not included in the analysis content.</string>
+    <string name="group_rule_ai_start">Start</string>
+    <string name="group_rule_ai_config_incomplete">AI service configuration is incomplete. Complete endpoint, API key, and model in Enhance → AI configuration.</string>
+    <string name="group_rule_ai_no_sources">The current VOD configuration has no visible source names to analyze.</string>
+    <string name="group_rule_ai_analyzing_title">AI is identifying groups</string>
+    <string name="group_rule_ai_analyzing_message">Analyzing %1$d source names… Candidate rules will be validated locally before preview.</string>
+    <string name="group_rule_ai_preview_title">AI group preview</string>
+    <string name="group_rule_ai_preview_summary">%1$d sources · %2$d candidate rules · final coverage %3$d/%4$d (%5$d%%)</string>
+    <string name="group_rule_ai_groups_title">Extracted groups</string>
+    <string name="group_rule_ai_rules_title">Generated rules</string>
+    <string name="group_rule_ai_rule_summary">%1$s\n%2$s\nMatched %3$d sources · %4$d groups · %5$d newly covered · %6$d in repeated groups</string>
+    <string name="group_rule_ai_unmatched">Ungrouped · %1$d sources</string>
+    <string name="group_rule_ai_more_groups">…and %1$d more groups</string>
+    <string name="group_rule_ai_preview_note">Applying replaces only AI rules for the current VOD configuration. Built-in, interface, and manual rules are unchanged.</string>
+    <string name="group_rule_ai_retry">Retry</string>
+    <string name="group_rule_ai_apply">Apply rules</string>
+    <string name="group_rule_ai_select_required">Keep at least one candidate rule before applying.</string>
+    <string name="group_rule_ai_saved">Saved %1$d AI group rules for “%2$s”</string>
+    <string name="group_rule_ai_failed_title">AI identification failed</string>
+    <string name="group_rule_ai_error_http">AI service returned HTTP %1$s.</string>
+    <string name="group_rule_ai_error_invalid_response">AI returned an invalid rule response. Try again.</string>
+    <string name="group_rule_ai_error_no_valid_rules">AI did not produce any safe and useful group rules.</string>
+    <string name="group_rule_ai_error_timeout">AI identification timed out.</string>
+    <string name="group_rule_ai_error_network">Unable to connect to the AI service.</string>
+    <string name="group_rule_ai_error_too_many_sources">There are too many source names to analyze safely. Reduce the current VOD source list and try again.</string>
+    <string name="group_rule_ai_error_prompt_too_large">The custom group-rule prompt is too long. Shorten it in AI prompt configuration.</string>
+    <string name="group_rule_ai_error_generic">AI identification failed.</string>
+    <string name="group_rule_ai_config_changed">The VOD configuration changed during analysis. Run identification again.</string>
+    <string name="group_rule_ai_label">AI · %1$s\n%2$s</string>
+    <string name="group_rule_ai_current_interface">Current VOD configuration</string>
+
+    <string name="setting_home_vod_auto_load">Auto-load VOD</string>
+    <string name="setting_home_site_lock">Home source lock</string>
+    <string name="setting_auto_backup">Automatic backup</string>
+    <string name="setting_fullscreen_menu_key">Fullscreen menu key</string>
+    <string name="setting_home_menu_key">Home menu key</string>
+    <string name="setting_play_back_to_detail">Return playback to detail</string>
+    <string name="setting_play_speed">Playback speed</string>
+    <string name="setting_episode_history">Remember episode progress</string>
+    <string name="setting_history_aggregation">Aggregate history by TMDB</string>
+    <string name="setting_history_aggregation_hint">Unify history across sources based on TMDB match</string>
+    <string name="setting_global_history">Global history resume</string>
+    <string name="history_other_config">Other config</string>
+    <string name="history_source_unavailable">Source unavailable</string>
+    <string name="history_source_searching">Matching a playable source…</string>
+    <string name="history_source_not_found">No reliable playback source found</string>
+    <string name="history_source_open_search">Open global search</string>
+    <string name="history_source_episode_missing">The selected source does not match the history or lacks the saved episode</string>
+    <string name="history_source_load_failed">Unable to load the selected source</string>
+    <string name="history_record_missing">The history record no longer exists</string>
+    <string name="history_config_changed">VOD configuration changed. Please try again.</string>
+    <string name="dialog_delete_global_history">Delete history from all VOD configurations?</string>
+    <string name="setting_home_history">Home recent history</string>
+    <string name="setting_personal_recommendation">Personal recommendations</string>
+    <string name="setting_recommendation_feedback">Not interested management</string>
+    <string name="setting_recommendation_feedback_count">%1$d items · auto-restore after 90 days</string>
+    <string name="setting_recommendation_feedback_empty">None · auto-restore after 90 days</string>
+    <string name="setting_tmdb_episode_file_size">Keep file size in TMDB episodes</string>
+    <string name="setting_auto_skip_intro_outro">Auto skip intro/outro</string>
+    <string name="intro_skip_confirm_title">Skip intro/outro?</string>
+    <string name="intro_skip_confirm_intro">Skip intro</string>
+    <string name="intro_skip_confirm_recap">Skip recap</string>
+    <string name="intro_skip_confirm_outro">Skip outro</string>
+    <string name="intro_skip_confirm_preview">Skip next-episode preview</string>
+    <!-- Detected (not user-set) intro/outro time shown on the control bar; %1$s is the timestamp -->
+    <string name="intro_skip_detected_value">~%1$s</string>
+    <string name="intro_skip_kind_recap">Recap</string>
+    <string name="intro_skip_kind_intro">Intro</string>
+    <string name="intro_skip_kind_outro">Outro</string>
+    <string name="intro_skip_kind_preview">Preview</string>
+    <string name="setting_intro_skip_kinds">Segments to skip</string>
+    <string name="intro_skip_kinds_none">None</string>
+    <string name="intro_skip_kinds_all">All</string>
+    <!-- Shown after an automatic skip; %1$s is the segment type -->
+    <string name="intro_skip_notice_seeked">Skipped %1$s</string>
+    <string name="intro_skip_notice_ended">Skipped %1$s, going to the next episode</string>
+    <string name="personal_recommendation_confirm_title">Enable personal recommendations</string>
+    <string name="personal_recommendation_confirm_message">Personal recommendations read movie and show titles from local viewing history, and may send the current title and history titles to TMDB or Douban as search keywords to build related lists.\n\nPlayback URLs, account information, source configuration, and playback progress are not sent. You can turn this off at any time.</string>
+    <string name="setting_search_thread">Search threads</string>
+    <string name="setting_search_ui">Search layout</string>
+    <string name="setting_search_column">Search results per row</string>
+    <string name="setting_site_column">Site display mode</string>
+    <string name="setting_search_result_sort">Search result mode</string>
     <string name="repo_github">GitHub repository</string>
     <string name="repo_cnb">CNB repository</string>
     <string name="setting_debug_log">Debug log</string>
@@ -373,7 +506,74 @@
     <string name="setting_site_health_enable">Enable site health ranking</string>
     <string name="setting_site_health_dialog_sort">Sort site dialog</string>
     <string name="site_health_clear_done">Site health data cleared</string>
+    <string name="site_health_report_view">View report</string>
+    <string name="site_health_report_title">Playback chain health</string>
+    <string name="site_health_report_empty">No site health samples yet</string>
+    <string name="site_health_report_filter_empty">No matching site health samples</string>
+    <string name="site_health_filter_all">All</string>
+    <string name="site_health_filter_bad">Bad</string>
+    <string name="site_health_filter_warn">Degraded</string>
+    <string name="site_health_sort_failures">Failures</string>
+    <string name="site_health_sort_recent">Recent</string>
+    <string name="site_health_sort_rate">Success</string>
+    <string name="site_health_sort_samples">Samples</string>
+    <string name="site_health_report_summary">%1$d sites · %2$d samples · %3$d failures · %4$d degraded</string>
+    <string name="site_health_report_summary_reason">%1$d sites · %2$d samples · %3$d failures · %4$d degraded · Top %5$s x%6$d</string>
+    <string name="site_health_report_setting_summary">%1$d sites · %2$d samples</string>
+    <string name="site_health_report_row_meta">%1$d samples · %2$d failures</string>
+    <string name="site_health_report_ad_blocked">Ads blocked · %1$d</string>
+    <string name="site_health_report_stage">%1$s · %2$s · %3$d/%4$d</string>
+    <string name="site_health_report_rate">%1$d%%</string>
+    <string name="site_health_report_no_data">No data</string>
+    <string name="site_health_report_empty_count">empty %1$d</string>
+    <string name="site_health_report_cost">%1$dms</string>
+    <string name="site_health_report_reason">Reason: %1$s x%2$d</string>
+    <string name="site_health_report_reason_tag">%1$s x%2$d</string>
+    <string name="site_health_report_recent_errors">Recent errors</string>
+    <string name="site_health_report_recent_error">%1$s: %2$s</string>
+    <string name="site_health_report_recent_error_time">%1$s · %2$s · %3$s</string>
+    <string name="site_health_clear_site">Clear this site</string>
+    <string name="site_health_clear_site_title">Clear site health?</string>
+    <string name="site_health_clear_site_message">Clear health samples for %1$s?</string>
+    <string name="site_health_stage_search">Search</string>
+    <string name="site_health_stage_detail">Detail</string>
+    <string name="site_health_stage_parse">Parse</string>
+    <string name="site_health_stage_play">Play</string>
+    <string name="site_health_status_good">Healthy</string>
+    <string name="site_health_status_warn">Degraded</string>
+    <string name="site_health_status_bad">Bad</string>
+    <string name="site_health_status_unknown">Unknown</string>
+    <string name="site_health_reason_empty_result">No search results</string>
+    <string name="site_health_reason_timeout">Timeout</string>
+    <string name="site_health_reason_http_403">HTTP 403</string>
+    <string name="site_health_reason_http_404">HTTP 404</string>
+    <string name="site_health_reason_http_429">HTTP 429</string>
+    <string name="site_health_reason_http_5xx">HTTP 5xx</string>
+    <string name="site_health_reason_network">Network error</string>
+    <string name="site_health_reason_parse_failed">Parse failed</string>
+    <string name="site_health_reason_vip_required">VIP required</string>
+    <string name="site_health_reason_geo_blocked">Region blocked</string>
+    <string name="site_health_reason_drm_or_encrypted">DRM or encrypted</string>
+    <string name="site_health_reason_manifest_failed">Manifest failed</string>
+    <string name="site_health_reason_codec_unsupported">Codec unsupported</string>
+    <string name="site_health_reason_cors_blocked">CORS blocked</string>
+    <string name="site_health_reason_search_failed">Search failed</string>
+    <string name="site_health_reason_detail_failed">Detail failed</string>
+    <string name="site_health_reason_play_failed">Playback failed</string>
     <string name="setting_web_home_extension">WebHome extensions</string>
+    <string name="setting_web_home_theme">Global WebHome theme</string>
+    <string name="setting_web_home_theme_eclipse">Eclipse (built-in)</string>
+    <string name="setting_web_home_theme_custom">Custom URL</string>
+    <string name="setting_web_home_theme_url_hint">https://example.com/webhome.html</string>
+    <string name="setting_web_home_theme_invalid_url">Enter an HTTPS WebHome URL</string>
+    <string name="setting_web_home_theme_remote_warning_title">Trust this remote theme?</string>
+    <string name="setting_web_home_theme_remote_warning_message">The remote theme from %1$s runs website code and can request catalog data or trigger permitted app actions. Continue only if you trust its provider.</string>
+    <string name="setting_web_home_theme_recovery">Version recovery</string>
+    <string name="setting_web_home_theme_recovery_unavailable">No recoverable theme version is available</string>
+    <string name="setting_web_home_theme_rollback_message">Roll back to the previous validated theme version? The current version will be kept so you can retry it later.</string>
+    <string name="setting_web_home_theme_retry_message">Retry the rolled-back theme version? If its first load fails again, the stable version will be restored automatically.</string>
+    <string name="setting_web_home_theme_recovery_success">Theme version updated</string>
+    <string name="setting_web_home_theme_recovery_failed">Unable to update the theme version</string>
     <string name="setting_web_home_fullscreen">WebHome homepage fullscreen</string>
     <string name="setting_csp_warmup">CSP warmup</string>
     <string name="setting_csp_warmup_default">Default</string>
@@ -466,6 +666,7 @@
         <item>Total duration in milliseconds.</item>
         <item>Progress ratio from 0 to 1.</item>
         <item>Playback speed.</item>
+        <item>Whether playback speed explicitly overrides the personal default.</item>
         <item>Whether this item is considered completed.</item>
         <item>Original episode URL. May contain source-site parameters.</item>
         <item>Episode index when available.</item>
@@ -666,6 +867,21 @@
     <string name="setting_one_key_sync">One-key sync</string>
     <string name="setting_incognito">Incognito mode</string>
     <string name="setting_drive_check">Drive link check</string>
+    <string name="setting_audio_source">Audio source config</string>
+    <string name="setting_novel_source">Novel source config</string>
+    <string name="setting_comic_source">Comic source config</string>
+    <string name="setting_local_reader">Local novel and comic reader</string>
+    <string name="setting_local_reader_summary">Multiple formats supported</string>
+    <string name="setting_site_name">Site names and groups</string>
+    <string name="setting_site_name_summary">%1$d customized</string>
+    <string name="site_name_custom">Custom name</string>
+    <string name="site_name_original">Original: %1$s</string>
+    <string name="site_name_key">Key: %1$s</string>
+    <string name="site_name_group_hint">Use [tag] in the custom name to create groups, or configure regex group rules in Personal settings</string>
+    <string name="site_name_empty">No sites available</string>
+    <string name="site_name_reset_title">Reset custom site names?</string>
+    <string name="site_name_reset_message">All custom names and groups for the current interface will be removed.</string>
+    <string name="setting_short_drama_source">Short drama source config</string>
     <string name="setting_theme_color">Theme color</string>
     <string name="setting_appearance">Appearance &amp; language</string>
     <string name="setting_appearance_summary">4 options</string>
@@ -683,6 +899,8 @@
     <string name="setting_about">About</string>
     <string name="setting_version">Version</string>
     <string name="setting_choose">Choose</string>
+    <string name="setting_choose_dir">Folder</string>
+    <string name="setting_reset">Reset</string>
     <string name="setting_delete">Delete</string>
     <string name="setting_disable">Disable</string>
     <string name="setting_enable">Enable</string>
@@ -698,6 +916,19 @@
     <string name="about_disclaimer">WebHomeTV is a technical learning and research project based on open source ecosystems. The software itself is completely free and does not provide paid services, video content, live sources, API sources, resource storage, or content distribution.\n\nThis software is only for technical learning, research, and personal testing. Please uninstall it within 24 hours after downloading, installing, or trying it. All behavior and consequences arising from continued use are borne by the user.\n\nThis software does not embed, sell, or distribute any video resources, and is not responsible for interfaces, sources, plugins, scripts, links, cloud-drive resources, or third-party service content added by users. Users must comply with local laws and regulations, respect the rights of copyright owners and content providers, and must not use this software for infringement, piracy, illegal content distribution, or other illegal purposes.\n\nAny individual or organization is strictly prohibited from selling, traffic diversion, paid maintenance, membership services, advertising monetization, box preinstallation, TV box bundle sales, or any other form of profit-making in the name of this software. The project clearly opposes and condemns selling or promoting this software as part of TV boxes, set-top boxes, paid packages, or commercial services.\n\nIf you do not agree with this statement, please stop using and uninstall this software immediately.</string>
     <string name="about_check_update">Check updates</string>
     <string name="about_acknowledge">I understand</string>
+    <string name="setting_github_proxy">GitHub acceleration sources</string>
+    <string name="setting_github_proxy_short">Accelerate</string>
+    <string name="setting_github_proxy_hint">Enter a source URL</string>
+    <string name="setting_github_proxy_message">Tap a source to make it active. Turn acceleration off to use direct GitHub Raw/Release connections.</string>
+    <string name="setting_github_proxy_enabled">Use GitHub acceleration</string>
+    <string name="setting_github_proxy_add">Add</string>
+    <string name="setting_github_proxy_remove">Remove</string>
+    <string name="setting_github_proxy_reset">Reset to default</string>
+    <string name="setting_github_proxy_invalid">Please enter a valid http/https URL</string>
+    <string name="setting_github_proxy_probe">Probe latency</string>
+    <string name="setting_github_proxy_latency">%1$d ms</string>
+    <string name="setting_github_proxy_latency_failed">Failed</string>
+    <string name="setting_github_proxy_latency_testing">Testing</string>
 
     <!-- Backup & Restore -->
     <string name="restore_select">Select backup</string>
@@ -705,6 +936,7 @@
     <string name="restore_fail">Restore failed</string>
     <string name="backup_success">Backup successful</string>
     <string name="backup_fail">Backup failed</string>
+    <string name="backup_permission_denied">Storage permission is required to back up or restore data</string>
 
     <!-- Device Sync -->
     <string name="device_select">Select devices</string>
@@ -751,19 +983,6 @@
     <string name="sync_select_device_first">Select a device first</string>
     <string name="sync_failed_with_reason">Sync failed: %1$s</string>
     <string name="sync_receive_success">Sync data received</string>
-    <string name="apk_push_url_busy">Another APK link download is already active</string>
-    <string name="apk_push_url_schedule_failed">Unable to start the APK link download</string>
-    <string name="apk_push_url_downloading">APK link received. Downloading on this device...</string>
-    <string name="apk_push_url_install_ready">APK downloaded. Confirm installation.</string>
-    <string name="apk_push_url_download_failed">APK link download failed: %1$s</string>
-    <string name="apk_push_url_progress_title">Receiving APK</string>
-    <string name="apk_push_url_progress_hint">Downloading the APK sent over your LAN. Android will still ask you to confirm installation.</string>
-    <string name="apk_push_url_progress_known">Receiving %1$d%% · %2$s / %3$s</string>
-    <string name="apk_push_url_progress_unknown">Received %1$s</string>
-    <string name="apk_push_url_progress_detail_remaining">%1$s/s · %2$s left · %3$s elapsed</string>
-    <string name="apk_push_url_progress_detail">%1$s/s · %2$s elapsed</string>
-    <string name="apk_push_url_cancel">Cancel download</string>
-    <string name="apk_push_url_canceled">APK download canceled</string>
     <string name="sync_paths_title">Sync folders</string>
     <string name="sync_paths_edit">Edit</string>
     <string name="sync_paths_desc">One external-storage relative path per line. TV, TVBox and TVData are synced by default. You can add local package folders; folder contents are synced with Jar/script saved data.</string>
@@ -821,9 +1040,30 @@
 
     <!-- Player -->
     <string name="player">Player</string>
+    <string name="player_default">Default player</string>
     <string name="player_render">Render</string>
+    <string name="multi_thread_proxy_button">Multi-thread</string>
+    <string name="multi_thread_proxy_title">Multi-thread playback acceleration</string>
+    <string name="multi_thread_proxy_enable">Enable multi-thread playback (experimental)</string>
+    <string name="multi_thread_proxy_enable_hint">Only direct HTTP(S) progressive media is routed through the local proxy.</string>
+    <string name="multi_thread_proxy_threads">Global parallel threads</string>
+    <string name="multi_thread_proxy_shards">Global shard count</string>
+    <string name="multi_thread_proxy_domain_rules">Per-domain overrides</string>
+    <string name="multi_thread_proxy_domain_rules_hint">One rule per line: example.com,cdn.example.com=6,12</string>
+    <string name="multi_thread_proxy_domain_rules_help">A rule can contain multiple domains. The same thread/shard values apply to all listed domains. Matching also includes subdomains. Unmatched domains use the global values.</string>
+    <string name="multi_thread_proxy_saved">Multi-thread settings saved.</string>
+    <string name="multi_thread_proxy_save_failed">Could not apply the multi-thread setting</string>
+    <string name="multi_thread_proxy_extract_domain">Use current domain</string>
+    <string name="multi_thread_proxy_domain_added">Added current domain: %1$s</string>
+    <string name="multi_thread_proxy_domain_unavailable">No valid domain is available from the current playback URL</string>
+    <string name="multi_thread_proxy_domain_exists">The current domain is already present in the override rules</string>
+    <string name="multi_thread_proxy_apply_title">Apply multi-thread settings</string>
+    <string name="multi_thread_proxy_apply_message">Reload the current video now to apply the new settings? The current playback position will be preserved when possible.</string>
+    <string name="multi_thread_proxy_apply_now">Apply now</string>
+    <string name="multi_thread_proxy_apply_later">Next playback</string>
+    <string name="multi_thread_proxy_applied">Reloaded the current video with the multi-thread settings.</string>
     <string name="player_button_config">Player buttons</string>
-    <string name="player_button_config_summary">%1$d/%2$d shown</string>
+    <string name="player_button_config_summary">Globally enabled %1$d/%2$d; availability varies by player mode</string>
     <string name="player_pad_live">Tablet live</string>
     <string name="player_button_up">Up</string>
     <string name="player_button_down">Down</string>
@@ -835,6 +1075,7 @@
     <string name="player_performance_auto">Auto</string>
     <string name="player_performance_compatible">Compatible</string>
     <string name="player_performance_lightweight">Light</string>
+    <string name="player_performance_original">Original</string>
     <string name="player_performance_help">Guide</string>
     <string name="player_performance_help_title">Playback performance guide</string>
     <string name="player_performance_help_close">Close</string>
@@ -918,9 +1159,12 @@
     <string name="pan_diagnostic_entry">Link test</string>
     <string name="pan_diagnostic_title">Playback link diagnostics</string>
     <string name="player_kernel">Player engine</string>
+    <string name="player_kernel_external">External</string>
     <string name="player_scale">Scale</string>
     <string name="player_lut">LUT color</string>
     <string name="player_mpv_config">MPV config manager</string>
+    <string name="player_mpv_render">MPV renderer</string>
+    <string name="mpv_render_native_unavailable">Unavailable</string>
     <string name="mpv_config_target">%1$s · %2$s</string>
     <string name="mpv_config_default">Default</string>
     <string name="mpv_config_local">Local mpv.conf</string>
@@ -987,7 +1231,10 @@
     <string name="player_audio_decode">Audio software decode</string>
     <string name="player_audio_passthrough">Audio passthrough</string>
     <string name="player_video_decode">Video software decode</string>
+    <string name="player_ffmpeg_mode">FFmpeg mode</string>
     <string name="player_aac_track">Prefer aac track</string>
+    <string name="player_music_notification">Music background notification</string>
+    <string name="player_audio_book_notification">Audiobook background notification</string>
     <string name="player_adblock">Remove ads</string>
     <string name="player_tunnel">Tunnel mode</string>
     <string name="player_buffer">Forward buffer target</string>
@@ -1008,9 +1255,86 @@
     <string name="player_preload_pause_always">Always</string>
     <string name="player_auto_play">Auto play</string>
     <string name="player_auto_change">Auto source change</string>
+    <string name="player_remember_brightness">Remember playback brightness</string>
+    <string name="player_failure_fallback">Failure fallback</string>
     <string name="player_speed">Press speed</string>
     <string name="player_ua">User-Agent</string>
     <string name="player_osd">On-screen display</string>
+    <string name="player_subtitle_auto_match">Auto subtitle match</string>
+    <string name="player_subtitle_language">Preferred subtitle language</string>
+    <string name="player_subtitle_assrt_token">ASSRT token</string>
+    <string name="player_subtitle_ai_max_concurrency">AI subtitle max concurrency</string>
+    <string name="player_subtitle_ai_chunk_count">AI subtitle chunks</string>
+    <string name="subtitle_auto_match_hit">Subtitle matched: %1$s</string>
+    <string name="subtitle_auto_match_hit_not_applied">Subtitle found but not applied: %1$s</string>
+    <string name="subtitle_auto_match_empty">No matching subtitle found</string>
+    <string name="subtitle_auto_match_provider_unavailable">Configure a subtitle source first</string>
+    <string name="subtitle_auto_match_failed">Subtitle match failed: %1$s</string>
+    <string name="subtitle_auto_match_unknown_reason">unknown error</string>
+    <string name="subtitle_manual_search">Search subtitles</string>
+    <string name="subtitle_manual_searching">Searching subtitles...</string>
+    <string name="subtitle_manual_select_title">Select subtitle (%1$d)</string>
+    <string name="subtitle_manual_search_empty">No subtitles found</string>
+    <string name="subtitle_manual_search_failed">Subtitle search failed</string>
+    <string name="subtitle_manual_resolving">Loading subtitle...</string>
+    <string name="subtitle_manual_applied">Subtitle applied: %1$s</string>
+    <string name="subtitle_manual_apply_failed">Subtitle found but could not be applied</string>
+    <string name="subtitle_manual_inactive">Start playback before searching subtitles</string>
+    <string name="player_subtitle_realtime_model">Real-time recognition language</string>
+    <string name="subtitle_realtime_source_language">Original audio language</string>
+    <string name="subtitle_realtime_model_status">%1$s · %2$s</string>
+    <string name="subtitle_realtime_model_select_title">Select audio source language</string>
+    <string name="subtitle_realtime_model_delete_action">Delete model</string>
+    <string name="subtitle_realtime_model_missing">Not downloaded (tap to download)</string>
+    <string name="subtitle_realtime_model_ready">Downloaded (tap to delete)</string>
+    <string name="subtitle_realtime_model_downloading">Downloading...</string>
+    <string name="subtitle_realtime_model_downloading_progress">Downloading %1$d%%</string>
+    <string name="subtitle_realtime_model_deleting">Deleting...</string>
+    <string name="subtitle_realtime_model_download_success">Real-time subtitle model downloaded</string>
+    <string name="subtitle_realtime_model_download_failed">Model download failed: %1$s</string>
+    <string name="subtitle_realtime_model_delete_title">Delete real-time subtitle model</string>
+    <string name="subtitle_realtime_model_delete_message">Delete the downloaded model and disable real-time AI subtitles?</string>
+    <string name="subtitle_realtime_model_delete_success">Real-time subtitle model deleted</string>
+    <string name="subtitle_realtime_model_delete_failed">Model deletion failed: %1$s</string>
+    <string name="subtitle_realtime_action">Real-time AI subtitles</string>
+    <string name="subtitle_realtime_preparing">Preparing the selected real-time subtitle model...</string>
+    <string name="subtitle_realtime_preparing_progress">Preparing subtitle model %1$d%%</string>
+    <string name="subtitle_realtime_on">Real-time AI subtitles enabled</string>
+    <string name="subtitle_realtime_off">Real-time AI subtitles disabled</string>
+    <string name="subtitle_realtime_failed">Real-time subtitle failed: %1$s</string>
+    <string name="subtitle_realtime_pcm_title">Disable incompatible audio modes</string>
+    <string name="subtitle_realtime_pcm_required">Real-time AI subtitles require PCM audio. Disable audio passthrough and tunnel mode now, then continue?</string>
+    <string name="subtitle_realtime_speed_title">Reset playback speed</string>
+    <string name="subtitle_realtime_speed_required">Synchronized real-time subtitles currently require 1x playback. Reset the speed and continue?</string>
+    <string name="subtitle_realtime_speed_disabled">Real-time subtitles were disabled because playback speed changed</string>
+    <string name="subtitle_realtime_model_delete_error">Cannot delete the subtitle model</string>
+    <string name="subtitle_realtime_model_directory_error">Cannot create the subtitle model directory</string>
+    <string name="subtitle_realtime_model_partial_error">Cannot replace the partial model download</string>
+    <string name="subtitle_realtime_model_incomplete">Incomplete model file: %1$s</string>
+    <string name="subtitle_realtime_model_checksum_error">Model file checksum failed: %1$s</string>
+    <string name="subtitle_realtime_model_install_error">Cannot install model file: %1$s</string>
+    <string name="subtitle_realtime_model_memory_low">This model requires at least %1$d MB of device memory</string>
+    <string name="subtitle_realtime_model_memory_available_low">Available memory is low. Close background apps and try again</string>
+    <string name="subtitle_realtime_model_storage_low">At least %1$d MB of free storage is required</string>
+    <string name="subtitle_ai_translate_title">AI subtitle translation</string>
+    <string name="subtitle_ai_translate_message">Translate this subtitle to Chinese with the current AI configuration?</string>
+    <string name="subtitle_ai_translate_action">AI translate to Chinese</string>
+    <string name="subtitle_ai_regenerate_action">Regenerate AI subtitle</string>
+    <string name="subtitle_ai_translating">Translating subtitle...</string>
+    <string name="subtitle_ai_preparing">Preparing AI subtitle translation...</string>
+    <string name="subtitle_ai_regenerating">Regenerating AI subtitle...</string>
+    <string name="subtitle_ai_progress">AI translating: %1$d/%2$d chunks</string>
+    <string name="subtitle_ai_progress_eta">AI translating: %1$d/%2$d chunks, about %3$s left</string>
+    <string name="subtitle_ai_cache_hit">Using cached AI subtitle...</string>
+    <string name="subtitle_ai_applied">AI subtitle applied: %1$s</string>
+    <string name="subtitle_ai_apply_failed">AI subtitle generated but could not be applied</string>
+    <string name="subtitle_ai_failed">AI subtitle translation failed: %1$s</string>
+    <string name="subtitle_ai_config_required">Configure and enable AI first</string>
+    <string name="subtitle_ai_no_selected_subtitle">Select a subtitle first</string>
+    <string name="subtitle_ai_local_srt_required">Select a local SRT subtitle first</string>
+    <string name="subtitle_ai_unsupported_format">AI subtitle translation currently supports SRT only</string>
+    <string name="subtitle_ai_stale_result">Playback changed, AI subtitle result was ignored</string>
+    <string name="subtitle_ai_unknown_reason">unknown error</string>
     <string name="lut_original">Original</string>
     <string name="lut_missing">Preset missing</string>
     <string name="lut_summary">%1$s · %2$d%%</string>
@@ -1048,11 +1372,23 @@
     <string name="danmaku_api_invalid">Invalid danmaku API URL</string>
     <string name="danmaku_auto_load">Auto search</string>
     <string name="danmaku_spider_first">Spider first</string>
+    <string name="danmaku_search_title">Danmaku search</string>
+    <string name="danmaku_search_empty">No matching danmaku found</string>
+    <string name="danmaku_source_default">Danmaku</string>
+    <string name="danmaku_source_count">%1$d items</string>
 
     <!-- Search -->
     <string name="search_keyword">Keywords…</string>
     <string name="search_column">Search layout</string>
     <string name="site_search_hint">Search sites…</string>
+    <string name="site_group_all">All</string>
+    <string name="site_group_sort_desc">%1$s, long press to reorder</string>
+    <string name="site_group_sort_tv_desc">%1$s, long press OK to reorder</string>
+    <string name="site_group_sort_tv_hint">Long press OK on a group to reorder</string>
+    <string name="site_group_sort_tv_active">Reordering: Left/Right move, OK save, Back cancel</string>
+    <string name="site_group_sort_tv_active_desc">%1$s, reordering. Left or right to move, OK to save, Back to cancel</string>
+    <string name="site_group_sort_saved">Group order saved</string>
+    <string name="site_group_sort_cancelled">Group reorder canceled</string>
     <string name="search_record">History</string>
     <string name="search_suggest">Suggest</string>
     <string name="search_hot">Hot</string>
@@ -1067,11 +1403,54 @@
     <string name="dialog_edit">Edit</string>
     <string name="dialog_positive">OK</string>
     <string name="dialog_negative">Cancel</string>
+    <string name="setting_reset_app">Reset app</string>
+    <string name="dialog_reset_app">Reset app?</string>
+    <string name="dialog_reset_app_data">All app data will be reset, and app will be shutdown.</string>
+    <string name="reset_app_failed">Unable to reset app data. Please try again.</string>
+
+    <string name="dialog_audio_site_rules">Audio source rules: enabled sources or keywords, separated by ;. Default: [音];[听]</string>
+    <string name="dialog_audio_site_manage">Select audio sources</string>
+    <string name="dialog_audio_site_default">Default [音]/[听]</string>
+    <string name="dialog_audio_playback_style">Audio playback style</string>
+    <string name="dialog_audio_playback_style_immersive">Immersive audio (merged upstream)</string>
+    <string name="dialog_audio_playback_style_built_in">Standard audio (built-in)</string>
+    <string name="dialog_audio_enabled_label">Enabled rules</string>
+    <string name="dialog_audio_add_hint">Add a keyword or site…</string>
+    <string name="dialog_audio_add">Add</string>
+    <string name="dialog_novel_enabled_label">Enabled rules</string>
+    <string name="dialog_novel_add_hint">Add a keyword or site…</string>
+    <string name="dialog_novel_add">Add</string>
+    <string name="dialog_novel_site_manage">Select novel sources</string>
+    <string name="dialog_novel_site_default">Default [书]/[小说]</string>
+    <string name="dialog_comic_enabled_label">Enabled rules</string>
+    <string name="dialog_comic_add_hint">Add a keyword or site…</string>
+    <string name="dialog_comic_add">Add</string>
+    <string name="dialog_comic_site_manage">Select comic sources</string>
+    <string name="dialog_comic_site_default">Default [画]/[漫画]</string>
+    <string name="reader_chapter_failed">Failed to load chapter</string>
+    <string name="reader_opening">Opening %1$s</string>
+    <string name="reader_opening_default">Opening reader</string>
+    <string name="cat_web_opening">Opening settings</string>
+    <string name="cat_web_failed">Failed to load page: %1$s</string>
+    <string name="cat_web_external">Opened in browser</string>
+    <string name="cat_web_download">Downloading %1$s to Downloads</string>
+    <string name="cat_web_download_failed">Download failed</string>
+    <string name="dialog_short_drama_site_rules">Short drama source rules: enabled sources or keywords, separated by ;. Default: [短];短剧</string>
+    <string name="dialog_short_drama_site_manage">Select short drama sources</string>
+    <string name="dialog_short_drama_site_default">Default [短]/短剧</string>
+    <string name="dialog_short_drama_site_disabled">Excluded: %1$s</string>
+    <string name="dialog_short_drama_enabled_label">Enabled rules</string>
+    <string name="dialog_short_drama_disabled_label">Excluded</string>
+    <string name="dialog_short_drama_add_hint">Add a keyword or site…</string>
+    <string name="dialog_short_drama_add">Add</string>
+
     <string name="dialog_reset">Reset</string>
     <string name="setting_show">Show</string>
     <string name="setting_hide">Hide</string>
     <string name="dialog_select_title">Select chapter</string>
     <string name="dialog_config_hint">Please enter the config…</string>
+    <string name="dialog_config_choose_dir">Choose folder (cat source local package)</string>
+    <string name="dialog_config_choose_failed">Could not read the selected item, please pick the package folder or zip again</string>
     <string name="dialog_config_name">Please enter the name…</string>
     <string name="dialog_config_url">Please enter the url…</string>
 
@@ -1104,6 +1483,9 @@
     <string name="error_play_stage_unknown">Playback failed. Retry or switch player.</string>
     <string name="error_play_flag">No flag data</string>
     <string name="error_play_timeout">Timed out</string>
+    <string name="error_play_fallback">%1$s playback failed, switched to %2$s</string>
+    <string name="error_play_ijk_unavailable">IJK is unavailable on this device</string>
+    <string name="error_play_ijk_unavailable_switch">IJK is unavailable on this device, switched to %1$s</string>
     <string name="error_play_tvbus">Error code: <xliff:g name="name">%s</xliff:g></string>
     <string name="error_detail">No play data</string>
     <string name="error_empty">Nothing here 👀</string>
@@ -1123,8 +1505,6 @@
     <string name="update_download_incomplete">The update package was not fully downloaded. Please try again.</string>
     <string name="update_download_checksum">The update package failed verification. Please try again.</string>
     <string name="update_download_invalid">The update package is invalid. Please try again.</string>
-    <string name="update_download_identity">The update package identity or signature does not match this app.</string>
-    <string name="update_download_source_unavailable">The selected update source is not available for this release.</string>
     <string name="update_confirm">Update</string>
     <string name="update_confirm_channel">Update %1$s</string>
     <string name="update_cancel">Cancel update</string>
@@ -1139,6 +1519,14 @@
     <string name="update_status_unavailable">Unavailable</string>
     <string name="update_expand">Expand</string>
     <string name="update_collapse">Collapse</string>
+    <string name="update_backup_title">Backup Before Update</string>
+    <string name="update_backup_message">It is recommended to backup your current configuration before updating. Would you like to backup first?</string>
+    <string name="update_backup_positive">Backup &amp; Update</string>
+    <string name="update_backup_negative">Update Directly</string>
+    <string name="update_backup_running">Backing up…</string>
+    <string name="update_backup_done">Backup completed, starting update</string>
+    <string name="update_backup_failed">Backup failed, will continue update anyway</string>
+    <string name="update_backup_permission_denied">Storage permission denied, cannot backup, will continue update anyway</string>
     <string name="update_settings">Update settings</string>
     <string name="update_settings_title">Update settings</string>
     <string name="update_settings_source">Download method</string>
@@ -1156,12 +1544,28 @@
     <string name="update_proxy_invalid">Enter a valid HTTPS origin without credentials or a path.</string>
     <string name="update_settings_save">Save</string>
     <string name="update_settings_saved">Update settings saved</string>
+    <string name="apk_push_url_busy">Another APK link download is already active</string>
+    <string name="apk_push_url_schedule_failed">Unable to start the APK link download</string>
+    <string name="apk_push_url_downloading">APK link received. Downloading on this device...</string>
+    <string name="apk_push_url_install_ready">APK downloaded. Confirm installation.</string>
+    <string name="apk_push_url_download_failed">APK link download failed: %1$s</string>
+    <string name="apk_push_url_progress_title">Receiving APK</string>
+    <string name="apk_push_url_progress_hint">Downloading the APK sent over your LAN. Android will still ask you to confirm installation.</string>
+    <string name="apk_push_url_progress_known">Receiving %1$d%% · %2$s / %3$s</string>
+    <string name="apk_push_url_progress_unknown">Received %1$s</string>
+    <string name="apk_push_url_progress_detail_remaining">%1$s/s · %2$s left · %3$s elapsed</string>
+    <string name="apk_push_url_progress_detail">%1$s/s · %2$s elapsed</string>
+    <string name="apk_push_url_cancel">Cancel download</string>
+    <string name="apk_push_url_canceled">APK download canceled</string>
+    <string name="update_download_identity">The update package identity or signature does not match this app.</string>
+    <string name="update_download_source_unavailable">The selected update source is not available for this release.</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>
     <string name="crash_restart">Restart app</string>
     <string name="crash_details">Error details</string>
     <string name="crash_details_title">Error details</string>
+    <string name="crash_details_message">App version: %1$s\n\n%2$s</string>
     <string name="crash_details_close">Close</string>
 
     <!-- Hint -->
@@ -1199,9 +1603,41 @@
     <string name="times">times</string>
     <string name="lines">lines</string>
 
+    <!-- SEARCH -->
+    <string name="search_scope_all">All</string>
+    <string name="search_scope_current">Current site</string>
+    <string name="search_scope_current_hint">Current site: %1$s</string>
+    <string name="search_scope_group_hint">Group: %1$s</string>
+    <string name="search_result_all">Search results for %1$s</string>
+    <string name="search_result_current">Current site search: %1$s</string>
+    <string name="search_result_group">%1$s search: %2$s</string>
+    <string name="search_filter_similarity">Similarity</string>
+    <string name="search_filter_similarity_unlimited">No filter</string>
+    <string name="search_filter_similarity_value">Similarity %d%%</string>
+    <string name="search_filter_similarity_exact">Exact</string>
+    <string name="search_filter_similarity_hint">Adjust search strictness: 100 = exact, 0 = no filter</string>
+    <string name="search_filter_similarity_description">%1$s. %2$s</string>
+    <string name="search_filter_empty">No results reached %1$d%% similarity. Lower the similarity to see more.</string>
+    <string name="search_filter_empty_exact">No exact matches. Lower the similarity to see more.</string>
+    <string name="detail_site_not_searchable">Current site does not support search</string>
+
+    <string-array name="select_player">
+        <item>EXO</item>
+        <item>IJK</item>
+        <item>System</item>
+        <item>MPV</item>
+    </string-array>
+
     <string-array name="select_decode">
         <item>Soft</item>
         <item>Hard</item>
+    </string-array>
+
+    <string-array name="select_player_failure_fallback">
+        <item>Decoder, then core</item>
+        <item>Decoder only</item>
+        <item>Core only</item>
+        <item>Off</item>
     </string-array>
 
     <string-array name="select_render">
@@ -1212,7 +1648,12 @@
     <string-array name="select_player_kernel">
         <item>EXO</item>
         <item>IJK</item>
+        <item>System</item>
         <item>MPV</item>
+    </string-array>
+    <string-array name="select_mpv_render">
+        <item>OpenGL</item>
+        <item>Vulkan</item>
     </string-array>
     <string-array name="select_buffer_bytes">
         <item>Auto</item>
@@ -1241,6 +1682,64 @@
         <item>Extra</item>
     </string-array>
 
+    <string-array name="select_fullscreen_menu_key">
+        <item>Control</item>
+        <item>Episodes</item>
+    </string-array>
+
+    <string-array name="select_home_menu_key">
+        <item>Select dialog</item>
+        <item>Change site</item>
+        <item>Change config</item>
+        <item>Live page</item>
+        <item>History page</item>
+        <item>Search page</item>
+        <item>Push page</item>
+        <item>Cast page</item>
+        <item>Keep page</item>
+        <item>Setting page</item>
+    </string-array>
+
+    <string-array name="select_search_ui">
+        <item>Landscape</item>
+        <item>Portrait</item>
+    </string-array>
+
+    <string-array name="select_search_column">
+        <item>Auto</item>
+        <item>1 item</item>
+        <item>2 items</item>
+    </string-array>
+
+    <string-array name="select_tmdb_match_mode">
+        <item>Strict</item>
+        <item>Smart</item>
+        <item>Strict + dialog</item>
+        <item>Smart + dialog</item>
+    </string-array>
+
+    <string-array name="select_global_history_mode">
+        <item>Off</item>
+        <item>Auto-match source</item>
+        <item>Choose source from search</item>
+    </string-array>
+
+    <string-array name="select_auto_skip_intro_outro">
+        <item>Off</item>
+        <item>Auto skip</item>
+        <item>Ask to confirm</item>
+    </string-array>
+
+    <string-array name="select_site_column">
+        <item>Single row</item>
+        <item>Double row</item>
+    </string-array>
+
+    <string-array name="select_search_result_sort">
+        <item>Dynamic (first returned first)</item>
+        <item>Fixed (by source order)</item>
+    </string-array>
+
     <string-array name="select_ui_scale">
         <item>Follow system</item>
         <item>Standard</item>
@@ -1256,12 +1755,20 @@
         <item>Traditional Chinese</item>
     </string-array>
 
+    <string name="aspect_ratio_title">Custom aspect ratio</string>
+    <string name="aspect_ratio_width">Width</string>
+    <string name="aspect_ratio_height">Height</string>
+    <string name="aspect_ratio_hint">Enter a ratio such as 2560:1080 or 64:27</string>
+    <string name="aspect_ratio_invalid">Enter a valid ratio</string>
     <string-array name="select_scale">
         <item>Default</item>
         <item>16:9</item>
         <item>4:3</item>
         <item>Fill</item>
         <item>Zoom</item>
+        <item>21:9</item>
+        <item>Adaptive</item>
+        <item>Custom</item>
     </string-array>
 
     <string-array name="select_reset">
@@ -1274,14 +1781,72 @@
         <item>System</item>
     </string-array>
 
+    <string-array name="select_realtime_subtitle_model">
+        <item>Mandarin (about 31 MB)</item>
+        <item>Cantonese (about 135 MB)</item>
+        <item>English (about 45 MB)</item>
+        <item>German (about 71 MB)</item>
+        <item>French (about 71 MB)</item>
+        <item>Spanish (about 156 MB)</item>
+        <item>Japanese (about 73 MB)</item>
+        <item>Chinese + English (about 199 MB)</item>
+    </string-array>
+    <string-array name="select_realtime_subtitle_model_value">
+        <item>zh</item>
+        <item>yue</item>
+        <item>en</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ja</item>
+        <item>zh-en</item>
+    </string-array>
+    <string-array name="select_realtime_subtitle_language">
+        <item>Mandarin</item>
+        <item>Cantonese</item>
+        <item>English</item>
+        <item>German</item>
+        <item>French</item>
+        <item>Spanish</item>
+        <item>Japanese</item>
+        <item>Chinese + English</item>
+    </string-array>
+    <string-array name="select_subtitle_language">
+        <item>Chinese first</item>
+        <item>Simplified Chinese</item>
+        <item>Traditional Chinese</item>
+        <item>English</item>
+        <item>Japanese</item>
+        <item>Korean</item>
+        <item>No preference</item>
+    </string-array>
+
+    <string-array name="select_subtitle_language_value">
+        <item>zh</item>
+        <item>zh-Hans</item>
+        <item>zh-Hant</item>
+        <item>en</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>any</item>
+    </string-array>
+
     <string-array name="select_player_osd">
-        <item>Title</item>
-        <item>Resolution</item>
-        <item>Clock</item>
-        <item>Progress</item>
-        <item>Network speed</item>
-        <item>Mini</item>
+        <item>@string/display_time</item>
+        <item>@string/display_traffic</item>
+        <item>@string/display_size</item>
+        <item>@string/display_progress</item>
+        <item>@string/display_mini</item>
+        <item>@string/display_title</item>
         <item>Playback params</item>
+    </string-array>
+
+    <string-array name="select_live_player_osd">
+        <item>@string/display_time</item>
+        <item>@string/display_traffic</item>
+        <item>@string/display_size</item>
+        <item>@string/display_title</item>
+        <item>@string/play_params</item>
     </string-array>
 
     <string-array name="select_track">
@@ -1291,174 +1856,716 @@
     </string-array>
     <string name="select_secondary_subtitle_track">Select secondary subtitle</string>
 
-    <string name="player_karaoke_status_free">Karaoke · Free sing</string>
-    <string name="player_karaoke_status_free_score_grade">Karaoke · Fun %1$d · %2$s</string>
-    <string name="player_karaoke_status_score">Karaoke · %1$d</string>
-    <string name="player_karaoke_status_score_grade">Karaoke · %1$d · %2$s</string>
-    <string name="player_karaoke_status_rhythm_score">Karaoke · Rhythm %1$d</string>
-    <string name="player_karaoke_status_rhythm_score_grade">Karaoke · Rhythm %1$d · %2$s</string>
-    <string name="player_karaoke_need_permission">Microphone permission required</string>
-    <string name="player_karaoke_mic_unavailable">Microphone unavailable</string>
-    <string name="player_karaoke_no_voice">Sing closer to the microphone</string>
-    <string name="player_karaoke_pitch">Pitch %1$s</string>
-    <string name="player_karaoke_pitch_score">Pitch %1$s · %2$s</string>
-    <string name="player_karaoke_pitch_hit">Hit</string>
-    <string name="player_karaoke_pitch_perfect">Perfect</string>
-    <string name="player_karaoke_pitch_vibrato">Vibrato</string>
-    <string name="player_karaoke_pitch_miss">Off %1$.1f st</string>
-    <string name="player_karaoke_free_detail">Pitch %1$s · Participation %2$d%%</string>
-    <string name="player_karaoke_rhythm_detail">Rhythm hit %1$d%%</string>
-    <string name="player_karaoke_combo">Combo %1$d sec</string>
-    <string name="player_karaoke_line_score">Line %1$d%%</string>
-    <string name="player_karaoke_result_title">Karaoke result</string>
-    <string name="player_karaoke_result_scoring">Pitch scoring</string>
-    <string name="player_karaoke_result_rhythm">Rhythm scoring</string>
-    <string name="player_karaoke_result_free">Free sing</string>
-    <string name="player_karaoke_result_track">Track: %1$s</string>
-    <string name="player_karaoke_result_no_track">No scoring track bound. This is a free-sing estimate.</string>
-    <string name="player_karaoke_result_rhythm_note">Generated from lyric timing. Pitch is not judged.</string>
-    <string name="player_karaoke_result_metric_hit">Hit rate</string>
-    <string name="player_karaoke_result_metric_rhythm">Rhythm hit</string>
-    <string name="player_karaoke_result_metric_participation">Participation</string>
-    <string name="player_karaoke_result_score_value">%1$d · %2$s</string>
-    <string name="player_karaoke_result_voice_coverage">Voice coverage</string>
-    <string name="player_karaoke_result_bonus">Performance bonus</string>
-    <string name="player_karaoke_result_perfect">Perfect hits</string>
-    <string name="player_karaoke_result_vibrato">Vibrato bonus</string>
-    <string name="player_karaoke_result_active_time">Active %1$d sec</string>
-    <string name="player_karaoke_result_best_combo">Combo %1$d sec</string>
-    <string name="player_karaoke_result_line_average">Line average</string>
-    <string name="player_karaoke_result_line_summary">Lines %1$d · Best %2$d%%</string>
-    <string name="player_karaoke_result_pitch_headline_high">Strong pitch control and steady delivery.</string>
-    <string name="player_karaoke_result_pitch_headline_mid">Good take. Keep the pitch centered for a higher score.</string>
-    <string name="player_karaoke_result_pitch_headline_low">Warm up the first notes and keep singing through each line.</string>
-    <string name="player_karaoke_result_no_track_short">Free-sing estimate</string>
-    <string name="player_karaoke_result_rhythm_note_short">Lyric rhythm scoring</string>
-    <string name="player_karaoke_result_pitch_headline_high_short">Strong take</string>
-    <string name="player_karaoke_result_pitch_headline_mid_short">Center the pitch</string>
-    <string name="player_karaoke_result_pitch_headline_low_short">Start steady, sing through</string>
-    <string name="player_karaoke_result_fun_note">Entertainment scoring includes pitch hits, perfect holds, combo, and vibrato bonuses.</string>
-    <string name="player_lyrics_offset">Lyric offset</string>
-    <string name="player_lyrics_rows">Lyric rows</string>
-    <string name="player_lyrics_size">Lyric size</string>
-    <string name="player_lyrics_source">Lyric source</string>
-    <string name="player_karaoke_mode">Karaoke mode</string>
-    <string name="player_audio_options">Playback options</string>
-    <string name="player_karaoke_mode_enabled">Currently enabled</string>
-    <string name="player_karaoke_mode_disabled">Currently disabled</string>
-    <string name="player_karaoke_difficulty">Karaoke difficulty</string>
-    <string name="player_karaoke_mic_delay">Mic delay</string>
-    <string name="player_karaoke_track">Scoring track</string>
-    <string name="player_karaoke_track_generate_pitch">Generate track</string>
-    <string name="player_karaoke_track_search">Search online</string>
-    <string name="player_karaoke_track_keyword">Scoring track keyword</string>
-    <string name="player_karaoke_track_import_file">Import file</string>
-    <string name="player_karaoke_track_import_url">Import URL</string>
-    <string name="player_karaoke_track_sources">Track sources</string>
-    <string name="player_karaoke_track_advanced">Advanced options</string>
-    <string name="player_karaoke_track_back">Back</string>
-    <string name="player_karaoke_track_basic_pitch_tflite">Basic Pitch: %1$s</string>
-    <string name="player_karaoke_track_option_enabled">Enabled</string>
-    <string name="player_karaoke_track_option_disabled">Disabled</string>
-    <string name="player_karaoke_track_sources_hint">One repo per line: owner/repo@branch or https://github.com/owner/repo/tree/branch</string>
-    <string name="player_karaoke_track_sources_saved">Scoring track sources saved</string>
-    <string name="player_karaoke_track_url_hint">UltraStar .txt URL, USDB ID, USDB detail URL, or append @Cookie=...</string>
-    <string name="player_karaoke_track_clear">Clear binding</string>
-    <string name="player_karaoke_track_searching">Searching scoring tracks...</string>
-    <string name="player_karaoke_track_not_found">No scoring track found</string>
-    <string name="player_karaoke_track_select">Select scoring track</string>
-    <string name="player_karaoke_track_source_login"> · login</string>
-    <string name="player_karaoke_track_result_item">%1$s\n%2$s - %3$s\n%4$s</string>
-    <string name="player_karaoke_track_imported">Scoring track imported</string>
-    <string name="player_karaoke_track_import_failed">Scoring track import failed</string>
-    <string name="player_karaoke_track_generated">Lightweight rhythm track generated</string>
-    <string name="player_karaoke_track_generating_pitch">Generating pitch scoring track...</string>
-    <string name="player_karaoke_track_generating_pitch_message">Analyzing the current audio locally and generating a pitch scoring track. Keep the player open until it finishes.</string>
-    <string name="player_karaoke_track_generating_pitch_progress">%1$d%% · %2$s · %3$s</string>
-    <string name="player_karaoke_track_generation_stop">Stop</string>
-    <string name="player_karaoke_track_generation_stopped">Scoring track generation stopped</string>
-    <string name="player_karaoke_track_pitch_stage_prepare">Preparing</string>
-    <string name="player_karaoke_track_pitch_stage_decode">Decoding audio</string>
-    <string name="player_karaoke_track_pitch_stage_analyze">Analyzing pitch</string>
-    <string name="player_karaoke_track_pitch_stage_write">Writing scoring track</string>
-    <string name="player_karaoke_track_pitch_stage_finish">Finishing</string>
-    <string name="player_karaoke_track_pitch_remaining_unknown">Remaining time estimating</string>
-    <string name="player_karaoke_track_pitch_remaining_seconds">About %1$d s left</string>
-    <string name="player_karaoke_track_pitch_remaining_minutes">About %1$d min %2$d s left</string>
-    <string name="player_karaoke_track_generated_pitch">Pitch scoring track generated</string>
-    <string name="player_karaoke_track_generated_pitch_message">Applied to the current song and karaoke mode is enabled.</string>
-    <string name="player_karaoke_track_generate_pitch_failed">Failed to generate pitch scoring track</string>
-    <string name="player_karaoke_track_generate_pitch_failed_message">No scoring track was generated: %1$s</string>
-    <string name="player_karaoke_track_generate_pitch_unsupported_source">The current media source cannot be analyzed directly. Try another line or quality, or use online search/import.</string>
-    <string name="player_karaoke_track_generate_failed">Failed to generate rhythm track</string>
-    <string name="player_karaoke_track_generate_no_lyrics">No timed lyrics available</string>
-    <string name="player_karaoke_track_cleared">Scoring track binding cleared</string>
-    <string name="player_karaoke_track_none">No scoring track binding</string>
-    <string name="player_desktop_lyrics">Desktop lyrics</string>
-    <string name="player_desktop_lyrics_permission">Allow display over other apps to show desktop lyrics</string>
-    <string name="player_lyrics_cache">Lyric cache</string>
-    <string name="player_lyrics_cache_value">%1$d items</string>
-    <string name="player_lyrics_cache_cleared">Lyric cache cleared</string>
-    <string name="player_lyrics_search">Search lyrics</string>
-    <string name="player_lyrics_reload">Search lyrics again</string>
-    <string name="player_lyrics_keyword">Lyric keyword</string>
-    <string name="player_lyrics_keyword_required">Enter a lyric keyword</string>
-    <string name="player_lyrics_searching">Searching lyrics...</string>
-    <string name="player_lyrics_not_found">No lyrics found</string>
-    <string name="player_lyrics_loaded">Lyrics loaded: %1$s</string>
-    <string name="player_lyrics_select">Select lyrics</string>
-    <string name="player_lyrics_word">Word</string>
-    <string name="player_lyrics_synced">Synced</string>
-    <string name="player_lyrics_plain">Plain</string>
-    <string name="player_audio_badge_audio">Audio</string>
-    <string name="player_audio_badge_lyrics">Lyrics</string>
-    <string name="player_audio_playlist">Playlist</string>
-    <string name="player_audio_playlist_results">Search results</string>
-    <string name="player_audio_playlist_search_hint">Search current source</string>
-    <string name="player_audio_playlist_search_required">Enter a search keyword</string>
-    <string name="player_audio_playlist_search_failed">Search failed</string>
-    <string name="player_audio_playlist_no_results">No results found</string>
-    <string name="player_audio_playlist_result_count">%1$d results found</string>
-    <string name="player_audio_playlist_adding">Adding %1$s...</string>
-    <string name="player_audio_playlist_add_failed">Add failed</string>
-    <string name="player_audio_playlist_add_empty">No playable item found</string>
-    <string name="player_audio_playlist_added">Added %1$d item(s)</string>
-    <string name="player_audio_playlist_exists">Already in playlist</string>
-    <string name="player_audio_playlist_empty">No songs in playlist</string>
-    <string name="player_audio_playlist_removed">Removed %1$s</string>
-    <string name="player_audio_playlist_keep_one">Keep at least one song in playlist</string>
-    <string name="player_audio_playlist_switch">Switch</string>
-    <string name="player_audio_playlist_create">New</string>
-    <string name="player_audio_playlist_name_hint">Playlist name</string>
-    <string name="player_audio_more">More</string>
-    <string name="player_audio_background">Background</string>
-    <string name="player_audio_background_decorated_on">Details on</string>
-    <string name="player_audio_background_decorated_off">Details off</string>
-    <string name="player_audio_background_light_effect_on">Light effect on</string>
-    <string name="player_audio_background_light_effect_off">Light effect off</string>
-    <string name="player_audio_background_decorated_turn_on">Show details</string>
-    <string name="player_audio_background_decorated_turn_off">Hide details</string>
-    <string name="player_audio_background_random_plain">New background</string>
-    <string name="player_audio_background_random_decoration">New details</string>
-    <string name="player_audio_background_random_plain_done">Plain background generated</string>
-    <string name="player_audio_background_random_decoration_done">Background details generated</string>
-    <string name="player_audio_background_random_mix_done">Background mix generated</string>
-    <string name="player_lyrics_unknown">Unknown</string>
-    <string name="player_lyrics_result_item">%1$s · %2$s · %3$d\n%4$s - %5$s</string>
-    <string name="player_lyrics_rows_value">%1$d rows</string>
+    <string name="setting_tmdb_source">TMDB data config</string>
+    <string name="setting_ai_recommendation">AI configuration</string>
+    <string name="setting_tmdb_match_mode">TMDB match mode</string>
+    <string name="setting_detail_open_mode">Detail page mode</string>
+    <string name="setting_detail_open_original">Original detail</string>
+    <string name="setting_detail_open_native">TMDB embedded enhancement</string>
+    <string name="setting_detail_open_original_enhanced">Native enhancement</string>
+    <string name="setting_detail_open_fusion">Immersive fusion</string>
+    <string name="setting_detail_open_enhanced">Colorful detail</string>
+    <string name="setting_detail_open_player">Detail direct play</string>
+    <string name="setting_detail_open_direct">Native playback</string>
+    <string name="setting_detail_open_cinema">Cinema stage</string>
+    <string name="setting_detail_theme_mode">Detail page theme</string>
+    <string name="setting_detail_theme_current">Current theme</string>
+    <string name="setting_detail_theme_native">Native dark</string>
+    <string name="setting_detail_theme_profile">Luminous color</string>
+    <string name="setting_detail_theme_cinema">Cinema stage</string>
+    <string name="setting_configured">Configured</string>
+    <string name="setting_unconfigured">Unconfigured</string>
+    <string name="detail_tmdb_need_key">Configure TMDB data first</string>
+    <string name="detail_tmdb_empty">No TMDB data</string>
+    <string name="detail_tmdb_match_title">Match TMDB title</string>
+    <string name="detail_tmdb_rematch">TMDB match</string>
+    <string name="tmdb_season_match_title">Match TMDB season</string>
+    <string name="tmdb_season_button">Season</string>
+    <string name="tmdb_season_match_current">Choose TMDB season. %1$s</string>
+    <string name="tmdb_season_auto">Automatic (clear manual binding)</string>
+    <string name="tmdb_season_auto_by_counts">Split by episode number keys</string>
+    <string name="tmdb_season_auto_by_counts_failed">Cannot safely auto-split this source with the current TMDB season counts</string>
+    <string name="tmdb_season_keep_original">Keep original episode list</string>
+    <string name="tmdb_season_ai_analyze">AI identify episodes / seasons</string>
+    <string name="tmdb_season_ai_analyzing">AI is analyzing episode structure...</string>
+    <string name="tmdb_season_ai_loading_title">AI episode / season analysis</string>
+    <string name="tmdb_season_ai_cancelled">AI analysis canceled</string>
+    <string name="tmdb_season_ai_config_required">Configure and enable AI first</string>
+    <string name="tmdb_season_ai_failed">AI analysis failed; the original episode list is unchanged</string>
+    <string name="tmdb_season_ai_preview_title">AI episode / season suggestion</string>
+    <string name="tmdb_season_ai_apply">Apply suggestion</string>
+    <string name="tmdb_season_ai_explicit_preview_only">Explicit per-episode mapping passed validation but is preview-only in this version.</string>
+    <string name="tmdb_season_special">Specials · %1$d episodes</string>
+    <string name="tmdb_season_option">Season %1$d · %2$d episodes</string>
+    <string name="tmdb_season_match_saved">TMDB season match saved</string>
+    <string name="detail_tmdb_match_saved">TMDB match saved</string>
+    <string name="detail_tmdb_current_match">Current match</string>
+    <string name="detail_tmdb_searching">Searching TMDB...</string>
+    <string name="detail_tmdb_search_hint">Search title</string>
+    <string name="detail_tmdb_search_action">Search</string>
+    <string name="detail_tmdb_result_count">%1$d results</string>
+    <string name="detail_tmdb_skip">Skip</string>
+    <string name="detail_tmdb_site_disabled">TMDB matching is disabled for this source</string>
+    <string name="dialog_tmdb_api_key_label">TMDB API Key or Access Token</string>
+    <string name="dialog_tmdb_api_key_hint">Enter API Key or v4 Access Token</string>
+    <string name="dialog_tmdb_api_key_tip">Get your free API key at: https://www.themoviedb.org/settings/api</string>
+    <string name="dialog_tmdb_language_label">TMDB language</string>
+    <string name="dialog_tmdb_language_hint">For example zh-CN</string>
+    <string name="dialog_tmdb_api_host_label">API host</string>
+    <string name="dialog_tmdb_api_host_hint">For example https://api.tmdb.org</string>
+    <string name="dialog_tmdb_image_host_label">Image host</string>
+    <string name="dialog_tmdb_image_host_hint">For example https://images.tmdb.org</string>
+    <string name="dialog_tmdb_section_data">Data source</string>
+    <string name="dialog_tmdb_section_ratings">Ratings</string>
+    <string name="dialog_tmdb_section_rules">Source rules</string>
+    <string name="dialog_omdb_api_key_label">OMDb API Key (Optional, for IMDB ratings)</string>
+    <string name="dialog_omdb_api_key_hint">Enter OMDb API Key</string>
+    <string name="dialog_omdb_api_key_tip">Get free API Key (1000/day): https://www.omdbapi.com/apikey.aspx</string>
+    <string name="dialog_tmdb_enable_label">Enable TMDB metadata</string>
+    <string name="dialog_tmdb_enable_tip">This dialog only configures TMDB data, language, image host, and source rules. Detail page mode controls whether TMDB is used.</string>
+    <string name="dialog_tmdb_enabled_sites_label">Enabled sources</string>
+    <string name="dialog_tmdb_disabled_sites_label">Exclude rules</string>
+    <string name="dialog_tmdb_add_rule_hint">Add keyword or source…</string>
+    <string name="dialog_tmdb_add_disabled_rule_hint">Add excluded keyword or source…</string>
+    <string name="dialog_tmdb_add">Add</string>
+    <string name="dialog_tmdb_all_sites">All sources</string>
+    <string name="dialog_tmdb_site_manage">Select sources</string>
+    <string name="dialog_tmdb_reset_default">Reset to default</string>
+    <string name="tmdb_cast_label">Cast</string>
+    <string name="tmdb_loading_detail">Loading details…</string>
+    <string name="tmdb_loading_episodes">Loading episodes...</string>
+    <string name="tmdb_powered_by">Powered by TMDB</string>
+    <string name="tmdb_photos_label">Backdrops</string>
+    <string name="tmdb_posters_label">Posters</string>
+    <string name="tmdb_crew_label">Crew</string>
+    <string name="tmdb_recommendations_label">You May Like</string>
+    <string name="tmdb_related_videos_label">Related Videos</string>
+    <string name="tmdb_personal_recommendations_tmdb_label">Personal Picks - TMDB</string>
+    <string name="tmdb_personal_recommendations_douban_label">Personal Picks - Douban</string>
+    <string name="tmdb_personal_recommendations_ai_label">Personal Picks - Smart</string>
+    <string name="dialog_ai_enable">Enable AI service</string>
+    <string name="dialog_ai_title_extraction">AI real title recognition</string>
+    <string name="dialog_ai_section_service">Service</string>
+    <string name="dialog_ai_section_connection">Connection</string>
+    <string name="dialog_ai_section_model">Model settings</string>
+    <string name="dialog_ai_protocol_label">Protocol type</string>
+    <string-array name="dialog_ai_protocol_labels">
+        <item>OpenAI Responses API</item>
+        <item>OpenAI Chat Completions</item>
+        <item>Anthropic Messages</item>
+        <item>Gemini Native generateContent</item>
+    </string-array>
+    <string name="dialog_ai_endpoint_label">API endpoint / base URL</string>
+    <string name="dialog_ai_endpoint_hint">https://api.openai.com/v1/responses</string>
+    <string name="dialog_ai_api_key_label">API key</string>
+    <string name="dialog_ai_api_key_hint">sk-...</string>
+    <string name="dialog_ai_model_label">Model</string>
+    <string name="dialog_ai_model_hint">gpt-4.1-mini</string>
+    <string name="dialog_ai_fetch_models">Fetch</string>
+    <string name="dialog_ai_fetch_models_running">Fetching model list...</string>
+    <string name="dialog_ai_fetch_models_success">Fetched %1$d model(s)</string>
+    <string name="dialog_ai_fetch_models_empty">No available models found</string>
+    <string name="dialog_ai_fetch_models_failed">Failed to fetch models: %1$s</string>
+    <string name="dialog_ai_user_agent_label">Custom User-Agent</string>
+    <string name="dialog_ai_user_agent_hint">Optional, for UA-restricted providers</string>
+    <string name="dialog_ai_prompt_config">AI prompt configuration</string>
+    <string name="dialog_ai_recommend_prompt_label">Recommendation prompt</string>
+    <string name="dialog_ai_title_extraction_prompt_label">Title extraction prompt</string>
+    <string name="dialog_ai_viewing_report_prompt_label">Viewing report prompt</string>
+    <string name="dialog_ai_ad_detection_prompt_label">Ad detection prompt</string>
+    <string name="dialog_ai_group_rule_prompt_label">Group rule prompt</string>
+    <string name="dialog_ai_prompt_reset">Reset default</string>
+    <string name="dialog_ai_test">Test configuration</string>
+    <string name="dialog_ai_test_running">Testing AI configuration...</string>
+    <string name="dialog_ai_test_success">AI test passed: %1$s (time %2$s)</string>
+    <string name="dialog_ai_test_failed">AI test failed: %1$s (time %2$s)</string>
+    <string name="ai_recommendation_info_title">Recommendation details</string>
+    <string name="ai_recommendation_reason_label">Recommendation reason</string>
+    <string name="recommendation_not_interested">Not interested</string>
+    <string name="recommendation_feedback_title">Not interested management</string>
+    <string name="recommendation_feedback_summary">These titles are temporarily excluded from personal recommendations and automatically restored after 90 days. Select a title to restore it now.</string>
+    <string name="recommendation_feedback_empty">No hidden titles</string>
+    <string name="recommendation_feedback_remaining_days">About %1$d days remaining</string>
+    <string name="recommendation_feedback_restore_hint">Select to restore</string>
+    <string name="recommendation_feedback_restore_all">Restore all</string>
+    <string name="recommendation_feedback_restored">Restored to recommendations</string>
+    <string name="recommendation_feedback_restored_all">All titles restored</string>
+    <string name="recommendation_not_interested_recorded">Hidden for 90 days; restore anytime in Personal settings</string>
+    <string name="recommendation_overview_label">Overview</string>
+    <string name="recommendation_overview_unavailable">No synopsis is available in the current cache.</string>
+    <string name="recommendation_source_ai">Smart recommendation</string>
+    <string name="recommendation_source_tmdb">Personalized · TMDB</string>
+    <string name="recommendation_source_douban">Personalized · Douban</string>
+    <string name="recommendation_source_related">You may also like</string>
+    <string name="recommendation_data_tmdb">TMDB #%1$d</string>
+    <string name="recommendation_data_douban_matched">Douban rating matched</string>
+    <string name="recommendation_data_douban_unavailable">No Douban rating match</string>
+    <string name="recommendation_data_douban_only">Douban item matched</string>
+    <string name="recommendation_data_metadata_only">Basic recommendation metadata only</string>
+    <string name="recommendation_data_no_poster">No usable poster</string>
+    <string name="ai_recommendation_reason_preview">Reason: %1$s</string>
+    <string name="detail_work_searching">Searching current source for %1$s...</string>
+    <string name="detail_work_global_searching">No current-source result. Searching all sites for %1$s...</string>
+    <string name="detail_image_save">Save</string>
+    <string name="detail_image_saving">Saving image...</string>
+    <string name="detail_image_save_success">Saved to: %1$s</string>
+    <string name="detail_image_save_failed">Image save failed</string>
+    <string name="detail_external_open_failed">Unable to open external link</string>
+    <string name="detail_image_permission_denied">Storage permission denied</string>
 
+    <string name="detail_tmdb_photos">Stills</string>
+    <string name="detail_tmdb_posters">Posters</string>
+    <string name="detail_no_overview">No overview</string>
+    <string name="detail_image_rotate">Rotate</string>
+    <string name="tmdb_external_links_label">External links</string>
+    <string name="tmdb_ratings_label">Ratings</string>
+    <string name="tmdb_ratings_votes">Votes</string>
+    <string name="control_display">Display</string>
+    <string name="display_time">Time</string>
+    <string name="display_traffic">Speed</string>
+    <string name="display_size">Resolution</string>
+    <string name="display_progress">Progress</string>
+    <string name="display_mini">Mini</string>
+    <string name="display_title">Title</string>
+    <string name="play_decode_idle">Decode</string>
+    <string name="detail_close">Close</string>
+    <string name="detail_expand">Read more</string>
+    <string name="detail_collapse">Collapse</string>
+    <string name="detail_flag">Line</string>
+    <string name="detail_quality">Quality</string>
+    <string name="detail_play_now">Play now</string>
+    <string name="detail_play_resume">Resume - %1$s</string>
+    <string name="detail_score">Score %1$s</string>
+    <string name="detail_runtime_format">%1$d min</string>
+    <string name="detail_season_format">Season %1$d</string>
+    <string name="detail_season">Season</string>
+    <string name="detail_season_other">Unmatched</string>
+    <string name="detail_media_movie">Movie</string>
+    <string name="detail_media_tv">Series</string>
+    <string name="detail_media_unknown">Detail</string>
+    <string name="tmdb_episode_complete">All %1$d episodes</string>
+    <string name="tmdb_episode_total">%1$d episodes</string>
+    <string name="tmdb_episode_ongoing">Aired through episode %1$d</string>
+    <string name="tmdb_episode_ongoing_total">Aired %1$d of %2$d episodes</string>
+    <string name="tmdb_episode_series_ongoing">Aired through S%1$dE%2$d</string>
+    <string name="tmdb_episode_series_ongoing_total">Aired through S%1$dE%2$d · %3$d episodes</string>
+    <string name="tmdb_episode_season_complete">Season %1$d · all %2$d episodes</string>
+    <string name="tmdb_episode_season_total">Season %1$d · %2$d episodes</string>
+    <string name="tmdb_episode_season_ongoing">Season %1$d · episode %2$d</string>
+    <string name="tmdb_episode_season_ongoing_total">Season %1$d · %2$d of %3$d episodes</string>
+    <string name="tmdb_episode_planned">Upcoming</string>
+    <string name="tmdb_episode_planned_total">Upcoming · %1$d episodes planned</string>
+    <string name="tmdb_episode_canceled">Canceled · %1$d episodes</string>
+    <string name="tmdb_episode_compact_total">TMDB %1$d eps</string>
+    <string name="tmdb_episode_compact_progress">TMDB %1$d/%2$d eps</string>
+    <string name="tmdb_episode_compact_episode">TMDB E%1$d</string>
+    <string name="tmdb_episode_compact_series">TMDB S%1$dE%2$d</string>
+    <string name="tmdb_episode_compact_series_total">TMDB S%1$dE%2$d · %3$d eps</string>
+    <string name="tmdb_episode_compact_season">TMDB S%1$d · %2$d eps</string>
+    <string name="tmdb_episode_compact_season_progress">TMDB S%1$d %2$d/%3$d eps</string>
+    <string name="tmdb_episode_compact_planned">TMDB upcoming</string>
+    <string name="detail_source_current">Current source: %1$s</string>
+    <string name="detail_source_route_chip">Switch · %1$s</string>
+    <string name="detail_source_route_chip_entry">Same site · %1$s</string>
+    <string name="detail_source_empty">No available source</string>
+    <string name="detail_source_episode_empty">No available episodes or source</string>
+    <string name="detail_source_searching">Searching sources...</string>
+    <string name="detail_theme_dark">Dark</string>
+    <string name="detail_theme_light">Light</string>
+    <string name="detail_tmdb_cast">Cast</string>
+    <string name="detail_tmdb_creators">Creators</string>
+    <string name="detail_tmdb_works">You Might Like</string>
+    <string name="detail_tmdb_loading_detail">Loading TMDB details...</string>
+    <string name="detail_episode_detail_title">Episode %1$d · %2$s</string>
+    <string name="detail_episode_guests">Guest Cast</string>
+    <string name="detail_episode_crew">Crew</string>
+    <string name="detail_episode_original_name">Original: %1$s</string>
+    <string name="detail_person_biography">Biography</string>
+    <string name="detail_person_empty">No person information</string>
+    <string name="detail_person_info">Personal Info</string>
+    <string name="detail_person_photos">Photos</string>
+    <string name="detail_person_works">Works</string>
+    <string name="detail_person_work_count">%1$d works</string>
+    <string name="detail_person_score_title">Overall Score</string>
+    <string name="detail_person_score_value">%1$d</string>
+    <string name="detail_person_score_meta">Focus: %1$s\nCast %2$d · Director %3$d · Crew %4$d\nWork avg %5$s</string>
+    <string name="detail_filter_all">All</string>
+    <string name="detail_filter_cast">Cast</string>
+    <string name="detail_filter_crew">Crew</string>
+    <string name="detail_filter_director">Director</string>
+    <string name="detail_filter_movie">Movies</string>
+    <string name="detail_filter_tv">TV</string>
+    <string name="detail_image_previous">Previous</string>
+    <string name="detail_image_next">Next</string>
+    <string name="detail_image_close">Close</string>
 
-    <string-array name="select_lyrics_size">
+    <!-- Viewing Report -->
+    <string name="menu_viewing_report">Viewing Report</string>
+    <string name="viewing_report_title">🎬 Your Viewing Report</string>
+    <string name="viewing_report_select_range">Select Report Range</string>
+    <string name="viewing_report_generate">Generate Report</string>
+    <string name="viewing_report_refresh">Refresh</string>
+    <string name="viewing_report_refreshing">Refreshing report...</string>
+    <string name="viewing_report_loading_local">Loading cached report...</string>
+    <string name="viewing_report_generating">Generating report...</string>
+    <string name="viewing_report_ai_analyzing">AI analyzing...</string>
+    <string name="viewing_report_empty">No viewing records in this time range</string>
+    <string name="viewing_report_unit_hours">hours</string>
+    <string name="viewing_report_unit_vods">titles</string>
+    <string name="viewing_report_unit_episodes">episodes</string>
+    <string name="viewing_report_unit_minutes">minutes</string>
+    <string name="viewing_report_unit_times">times</string>
+    <string name="viewing_report_watched">Watched</string>
+    <string name="viewing_report_completion_rate">Completion Rate</string>
+    <string name="viewing_report_overview_watch">Total Watch Time</string>
+    <string name="viewing_report_time_pattern">⏰ Time Pattern</string>
+    <string name="viewing_report_top_time_slot">Favorite Time</string>
+    <string name="viewing_report_weekend_ratio">Weekend Ratio</string>
+    <string name="viewing_report_avg_watch">Avg. Session</string>
+    <string name="viewing_report_late_night">Late Night</string>
+    <string name="viewing_report_content_preference">🎭 Content Preference</string>
+    <string name="viewing_report_tv_movie_ratio">TV / Movie</string>
+    <string name="viewing_report_people_preference">👤 People Preference</string>
+    <string name="viewing_report_top_actors">Top Actors</string>
+    <string name="viewing_report_top_directors">Top Directors</string>
+    <string name="viewing_report_ai_persona">✨ Your Viewing Persona</string>
+    <string name="viewing_report_badges">🏆 Achievements</string>
+
+    <!-- AI 智能去广 -->
+    <string name="setting_ai_ad_detection">AI ad detection</string>
+    <string name="setting_ad_rule_manage">Ad rule manager</string>
+    <string name="ad_rule_add_manual">Add rule manually</string>
+    <string name="ad_rule_import_candidates">Source rules pending review (%d)</string>
+    <string name="ad_rule_import_title">Import ad rules from source</string>
+    <string name="ad_rule_import_action">Import (disabled by default)</string>
+    <string name="ad_rule_ignore_all">Ignore all</string>
+    <string name="ad_rule_import_empty">No source rules pending review</string>
+    <string name="ad_rule_section_custom">Custom rules</string>
+    <string name="ad_rule_section_server">Rules from source config</string>
+    <string name="ad_rule_empty">No rules</string>
+    <string name="ad_rule_delete_confirm">Delete rule</string>
+    <string name="ad_rule_delete_message">Delete “%1$s”? Imported source rules can be re-imported from the pending review list.</string>
+    <string name="ad_rule_server_empty">From config · none</string>
+    <string name="ad_rule_server_summary">From config · %d rules (read-only)</string>
+    <string name="ad_rule_edit_title">Edit rule</string>
+    <string name="ad_rule_field_name">Rule name (optional)</string>
+    <string name="ad_rule_field_hosts">Hosts (one per line)</string>
+    <string name="ad_rule_field_hosts_hint">Applies only to these hosts. Leave empty to match all.</string>
+    <string name="ad_rule_field_regex">Ad patterns (one regex per line)</string>
+    <string name="ad_rule_field_regex_hint">Matching URLs are blocked</string>
+    <string name="ad_rule_field_exclude">Allowlist (one regex per line)</string>
+    <string name="ad_rule_field_exclude_hint">Matching URLs are never blocked</string>
+    <string name="ad_rule_empty_input">Fill in at least one field</string>
+    <string name="ad_rule_invalid_regex">Invalid regular expression: %s</string>
+    <string name="ad_rule_count">%d rules</string>
+    <string name="ad_rule_count_with_pending">%1$d rules · %2$d pending review</string>
+    <string name="play_ad_feedback">Report ad</string>
+    <string name="ad_feedback_analyzing">AI is analyzing ad patterns…</string>
+    <string name="ad_feedback_no_url">No playback URL available to analyze</string>
+    <string name="ad_feedback_ai_disabled">Turn on AI and ad detection in Ad blocking settings first</string>
+    <string name="ad_feedback_failed">Analysis failed: %s</string>
+    <string name="ad_feedback_empty_result">AI found no clear ad patterns</string>
+    <string name="ad_feedback_preview_title">AI ad analysis</string>
+    <string name="ad_feedback_confidence">Confidence %d%%</string>
+    <string name="ad_feedback_reasoning">Reasoning</string>
+    <string name="ad_feedback_apply">Apply and block</string>
+    <string name="ad_feedback_applied">Ad rule added</string>
+    <string name="ad_feedback_low_confidence">Low confidence. Review manually before applying.</string>
+    <string name="ad_feedback_no_ad">AI found no clear ad patterns</string>
+    <string name="ad_feedback_saved">Ad rule added</string>
+    <string name="ad_rule_preview_title">AI ad analysis</string>
+    <string name="ad_rule_confidence_value">Confidence: %d%%</string>
+    <string name="ad_rule_low_confidence_warning">Low confidence and weak evidence. Review manually before applying.</string>
+    <string name="ad_rule_preview_hosts">Blocked hosts</string>
+    <string name="ad_rule_preview_regex">Ad patterns (regex)</string>
+    <string name="ad_block_stats">Ad blocking stats</string>
+    <string name="ad_block_total">Total blocked</string>
+    <string name="ad_feedback_count">AI reports</string>
+    <string name="ad_ai_success_rate">AI success rate</string>
+    <string name="ad_site_rank">Top blocked sites</string>
+    <string name="ad_rule_rank">Top matching rules</string>
+    <string name="ad_stats_reset">Reset stats</string>
+    <string name="ad_stats_reset_confirm">Reset all statistics?</string>
+    <string name="ad_stats_empty">No statistics yet</string>
+    <string name="ad_stats_overview">Overview</string>
+    <string name="ad_stats_times">times</string>
+    <string name="ad_stats_percent">%.1f%%</string>
+    <string name="ad_stats_site_name">Site</string>
+    <string name="ad_stats_rule_name">Rule</string>
+    <string name="ad_stats_count">Count</string>
+    <string name="ad_stats_source">Source</string>
+    <string name="ad_stats_source_default">Default</string>
+    <string name="ad_stats_source_ai">AI</string>
+    <string name="ad_stats_source_manual">Manual</string>
+    <string name="ad_stats_source_unknown">Unknown</string>
+    <string name="ad_rule_preview_exclude">Allowlist (regex)</string>
+    <string name="ad_rule_preview_none">(none)</string>
+    <string name="ad_rule_preview_confirm">Apply and block</string>
+    <string name="ad_interval_title">Ad interval %1$s – %2$s</string>
+    <string name="ad_interval_duration">Length %1$.1fs</string>
+    <string name="ad_interval_skipped">Skipped for this playback</string>
+    <string name="ad_interval_recorded">Recorded. The interval already played, so nothing was skipped.</string>
+    <string name="ad_interval_origin_marked">start: marked by you</string>
+    <string name="ad_interval_origin_discontinuity">start: inferred from segment discontinuity</string>
+    <string name="ad_interval_origin_cross_domain">start: inferred from a cross-domain segment switch</string>
+    <string name="ad_interval_origin_audio">start: reused from an audio detection</string>
+    <string name="ad_interval_origin_window">start: estimated by rewinding %1$ds</string>
+    <string name="ad_interval_analyzing">Analyzing…</string>
+    <string name="ad_interval_plan_hls">Add an HLS segment rule</string>
+    <string name="ad_interval_plan_host">Block the ad domain</string>
+    <string name="ad_interval_plan_regex">Add a URL pattern rule</string>
+    <string name="ad_interval_plan_enable">Turn on an existing rule</string>
+    <string name="ad_interval_plan_none">No reusable rule could be derived</string>
+    <string name="ad_interval_risk_low">risk: low</string>
+    <string name="ad_interval_risk_medium">risk: medium</string>
+    <string name="ad_interval_risk_high">risk: high</string>
+    <string name="ad_interval_evidence">Evidence</string>
+    <string name="ad_interval_diagnostics">Diagnostics</string>
+    <string name="ad_interval_save">Save rule</string>
+    <string name="ad_interval_dismiss">Close</string>
+    <string name="ad_interval_mark_start">Ad start marked. Press again at the end.</string>
+    <string name="ad_interval_mark_cancelled">Marking cancelled</string>
+    <string name="ad_interval_invalid">Cannot report an ad at this position</string>
+    <string name="ad_interval_rule_saved">Rule saved and active</string>
+    <string name="ad_interval_rule_skipped">Nothing to save for this interval</string>
+    <string name="ad_interval_rule_failed">Could not save the rule</string>
+    <string name="ad_rule_section_summary">AI/custom %1$d · source config %2$d · built-in HLS %3$d</string>
+    <string name="ad_rule_hls_builtin_summary">Built-in HLS · v%1$d · %2$s</string>
+    <string name="ad_rule_hls_enabled">Enabled</string>
+    <string name="ad_rule_hls_disabled">Off by default</string>
+    <string name="ad_rule_hls_invalid">Invalid rule: %1$s</string>
+    <string name="ad_rule_detail_hint">View full rule</string>
+    <string name="ad_rule_detail_hosts">Applies to hosts</string>
+    <string name="ad_rule_detail_regex">Match patterns</string>
+    <string name="ad_rule_detail_script">Automation script</string>
+    <string name="ad_rule_detail_exclude">Allowlist / content protection</string>
+    <string name="ad_rule_detail_json">Full rule (JSON)</string>
+    <string name="ad_rule_detail_id">Rule ID: %1$s</string>
+    <string name="ad_rule_detail_source">Source: %1$s</string>
+    <string name="ad_rule_default_disable_confirm">Temporarily disable this source config rule?\nSome ads may stop being filtered. You can re-enable it at any time.</string>
+    <string name="ad_rule_imported_disable_confirm">Temporarily disable this imported source rule?\nYou can re-enable it at any time, and re-import it from the pending review list after deleting.</string>
+    <string name="ad_rule_ai_disable_confirm">Temporarily disable this AI rule?\nYou can re-enable it at any time.</string>
+    <string name="ad_rule_manual_disable_confirm">Temporarily disable this manual rule?\nYou can re-enable it at any time.</string>
+    <string name="ad_rule_default_enable_confirm">Re-enable this default rule?</string>
+
+<string name="player_karaoke_status_free">Karaoke · Free sing</string>
+
+<string name="player_karaoke_status_free_score_grade">Karaoke · Fun %1$d · %2$s</string>
+
+<string name="player_karaoke_status_score">Karaoke · %1$d</string>
+
+<string name="player_karaoke_status_score_grade">Karaoke · %1$d · %2$s</string>
+
+<string name="player_karaoke_status_rhythm_score">Karaoke · Rhythm %1$d</string>
+
+<string name="player_karaoke_status_rhythm_score_grade">Karaoke · Rhythm %1$d · %2$s</string>
+
+<string name="player_karaoke_need_permission">Microphone permission required</string>
+
+<string name="player_karaoke_mic_unavailable">Microphone unavailable</string>
+
+<string name="player_karaoke_no_voice">Sing closer to the microphone</string>
+
+<string name="player_karaoke_pitch">Pitch %1$s</string>
+
+<string name="player_karaoke_pitch_score">Pitch %1$s · %2$s</string>
+
+<string name="player_karaoke_pitch_hit">Hit</string>
+
+<string name="player_karaoke_pitch_perfect">Perfect</string>
+
+<string name="player_karaoke_pitch_vibrato">Vibrato</string>
+
+<string name="player_karaoke_pitch_miss">Off %1$.1f st</string>
+
+<string name="player_karaoke_free_detail">Pitch %1$s · Participation %2$d%%</string>
+
+<string name="player_karaoke_rhythm_detail">Rhythm hit %1$d%%</string>
+
+<string name="player_karaoke_combo">Combo %1$d sec</string>
+
+<string name="player_karaoke_line_score">Line %1$d%%</string>
+
+<string name="player_karaoke_result_title">Karaoke result</string>
+
+<string name="player_karaoke_result_scoring">Pitch scoring</string>
+
+<string name="player_karaoke_result_rhythm">Rhythm scoring</string>
+
+<string name="player_karaoke_result_free">Free sing</string>
+
+<string name="player_karaoke_result_track">Track: %1$s</string>
+
+<string name="player_karaoke_result_no_track">No scoring track bound. This is a free-sing estimate.</string>
+
+<string name="player_karaoke_result_rhythm_note">Generated from lyric timing. Pitch is not judged.</string>
+
+<string name="player_karaoke_result_metric_hit">Hit rate</string>
+
+<string name="player_karaoke_result_metric_rhythm">Rhythm hit</string>
+
+<string name="player_karaoke_result_metric_participation">Participation</string>
+
+<string name="player_karaoke_result_score_value">%1$d · %2$s</string>
+
+<string name="player_karaoke_result_voice_coverage">Voice coverage</string>
+
+<string name="player_karaoke_result_bonus">Performance bonus</string>
+
+<string name="player_karaoke_result_perfect">Perfect hits</string>
+
+<string name="player_karaoke_result_vibrato">Vibrato bonus</string>
+
+<string name="player_karaoke_result_active_time">Active %1$d sec</string>
+
+<string name="player_karaoke_result_best_combo">Combo %1$d sec</string>
+
+<string name="player_karaoke_result_line_average">Line average</string>
+
+<string name="player_karaoke_result_line_summary">Lines %1$d · Best %2$d%%</string>
+
+<string name="player_karaoke_result_pitch_headline_high">Strong pitch control and steady delivery.</string>
+
+<string name="player_karaoke_result_pitch_headline_mid">Good take. Keep the pitch centered for a higher score.</string>
+
+<string name="player_karaoke_result_pitch_headline_low">Warm up the first notes and keep singing through each line.</string>
+
+<string name="player_karaoke_result_no_track_short">Free-sing estimate</string>
+
+<string name="player_karaoke_result_rhythm_note_short">Lyric rhythm scoring</string>
+
+<string name="player_karaoke_result_pitch_headline_high_short">Strong take</string>
+
+<string name="player_karaoke_result_pitch_headline_mid_short">Center the pitch</string>
+
+<string name="player_karaoke_result_pitch_headline_low_short">Start steady, sing through</string>
+
+<string name="player_karaoke_result_fun_note">Entertainment scoring includes pitch hits, perfect holds, combo, and vibrato bonuses.</string>
+
+<string name="player_lyrics_offset">Lyric offset</string>
+
+<string name="player_lyrics_rows">Lyric rows</string>
+
+<string name="player_lyrics_size">Lyric size</string>
+
+<string name="player_lyrics_source">Lyric source</string>
+
+<string name="player_karaoke_mode">Karaoke mode</string>
+
+<string name="player_audio_options">Playback options</string>
+
+<string name="player_karaoke_mode_enabled">Currently enabled</string>
+
+<string name="player_karaoke_mode_disabled">Currently disabled</string>
+
+<string name="player_karaoke_difficulty">Karaoke difficulty</string>
+
+<string name="player_karaoke_mic_delay">Mic delay</string>
+
+<string name="player_karaoke_track">Scoring track</string>
+
+<string name="player_karaoke_track_generate_pitch">Generate track</string>
+
+<string name="player_karaoke_track_search">Search online</string>
+
+<string name="player_karaoke_track_keyword">Scoring track keyword</string>
+
+<string name="player_karaoke_track_import_file">Import file</string>
+
+<string name="player_karaoke_track_import_url">Import URL</string>
+
+<string name="player_karaoke_track_sources">Track sources</string>
+
+<string name="player_karaoke_track_advanced">Advanced options</string>
+
+<string name="player_karaoke_track_back">Back</string>
+
+<string name="player_karaoke_track_basic_pitch_tflite">Basic Pitch: %1$s</string>
+
+<string name="player_karaoke_track_option_enabled">Enabled</string>
+
+<string name="player_karaoke_track_option_disabled">Disabled</string>
+
+<string name="player_karaoke_track_sources_hint">One repo per line: owner/repo@branch or https://github.com/owner/repo/tree/branch</string>
+
+<string name="player_karaoke_track_sources_saved">Scoring track sources saved</string>
+
+<string name="player_karaoke_track_url_hint">UltraStar .txt URL, USDB ID, USDB detail URL, or append @Cookie=...</string>
+
+<string name="player_karaoke_track_clear">Clear binding</string>
+
+<string name="player_karaoke_track_searching">Searching scoring tracks...</string>
+
+<string name="player_karaoke_track_not_found">No scoring track found</string>
+
+<string name="player_karaoke_track_select">Select scoring track</string>
+
+<string name="player_karaoke_track_source_login"> · login</string>
+
+<string name="player_karaoke_track_result_item">%1$s\n%2$s - %3$s\n%4$s</string>
+
+<string name="player_karaoke_track_imported">Scoring track imported</string>
+
+<string name="player_karaoke_track_import_failed">Scoring track import failed</string>
+
+<string name="player_karaoke_track_generated">Lightweight rhythm track generated</string>
+
+<string name="player_karaoke_track_generating_pitch">Generating pitch scoring track...</string>
+
+<string name="player_karaoke_track_generating_pitch_message">Analyzing the current audio locally and generating a pitch scoring track. Keep the player open until it finishes.</string>
+
+<string name="player_karaoke_track_generating_pitch_progress">%1$d%% · %2$s · %3$s</string>
+
+<string name="player_karaoke_track_generation_stop">Stop</string>
+
+<string name="player_karaoke_track_generation_stopped">Scoring track generation stopped</string>
+
+<string name="player_karaoke_track_pitch_stage_prepare">Preparing</string>
+
+<string name="player_karaoke_track_pitch_stage_decode">Decoding audio</string>
+
+<string name="player_karaoke_track_pitch_stage_analyze">Analyzing pitch</string>
+
+<string name="player_karaoke_track_pitch_stage_write">Writing scoring track</string>
+
+<string name="player_karaoke_track_pitch_stage_finish">Finishing</string>
+
+<string name="player_karaoke_track_pitch_remaining_unknown">Remaining time estimating</string>
+
+<string name="player_karaoke_track_pitch_remaining_seconds">About %1$d s left</string>
+
+<string name="player_karaoke_track_pitch_remaining_minutes">About %1$d min %2$d s left</string>
+
+<string name="player_karaoke_track_generated_pitch">Pitch scoring track generated</string>
+
+<string name="player_karaoke_track_generated_pitch_message">Applied to the current song and karaoke mode is enabled.</string>
+
+<string name="player_karaoke_track_generate_pitch_failed">Failed to generate pitch scoring track</string>
+
+<string name="player_karaoke_track_generate_pitch_failed_message">No scoring track was generated: %1$s</string>
+
+<string name="player_karaoke_track_generate_pitch_unsupported_source">The current media source cannot be analyzed directly. Try another line or quality, or use online search/import.</string>
+
+<string name="player_karaoke_track_generate_failed">Failed to generate rhythm track</string>
+
+<string name="player_karaoke_track_generate_no_lyrics">No timed lyrics available</string>
+
+<string name="player_karaoke_track_cleared">Scoring track binding cleared</string>
+
+<string name="player_karaoke_track_none">No scoring track binding</string>
+
+<string name="player_desktop_lyrics">Desktop lyrics</string>
+
+<string name="player_desktop_lyrics_permission">Allow display over other apps to show desktop lyrics</string>
+
+<string name="player_lyrics_cache">Lyric cache</string>
+
+<string name="player_lyrics_cache_value">%1$d items</string>
+
+<string name="player_lyrics_cache_cleared">Lyric cache cleared</string>
+
+<string name="player_lyrics_search">Search lyrics</string>
+
+<string name="player_lyrics_reload">Search lyrics again</string>
+
+<string name="player_lyrics_keyword">Lyric keyword</string>
+
+<string name="player_lyrics_keyword_required">Enter a lyric keyword</string>
+
+<string name="player_lyrics_searching">Searching lyrics...</string>
+
+<string name="player_lyrics_not_found">No lyrics found</string>
+
+<string name="player_lyrics_loaded">Lyrics loaded: %1$s</string>
+
+<string name="player_lyrics_select">Select lyrics</string>
+
+<string name="player_lyrics_word">Word</string>
+
+<string name="player_lyrics_synced">Synced</string>
+
+<string name="player_lyrics_plain">Plain</string>
+
+<string name="player_audio_badge_audio">Audio</string>
+
+<string name="player_audio_badge_lyrics">Lyrics</string>
+
+<string name="player_audio_playlist">Playlist</string>
+
+<string name="player_audio_playlist_results">Search results</string>
+
+<string name="player_audio_playlist_search_hint">Search current source</string>
+
+<string name="player_audio_playlist_search_required">Enter a search keyword</string>
+
+<string name="player_audio_playlist_search_failed">Search failed</string>
+
+<string name="player_audio_playlist_no_results">No results found</string>
+
+<string name="player_audio_playlist_result_count">%1$d results found</string>
+
+<string name="player_audio_playlist_adding">Adding %1$s...</string>
+
+<string name="player_audio_playlist_add_failed">Add failed</string>
+
+<string name="player_audio_playlist_add_empty">No playable item found</string>
+
+<string name="player_audio_playlist_added">Added %1$d item(s)</string>
+
+<string name="player_audio_playlist_exists">Already in playlist</string>
+
+<string name="player_audio_playlist_empty">No songs in playlist</string>
+
+<string name="player_audio_playlist_removed">Removed %1$s</string>
+
+<string name="player_audio_playlist_keep_one">Keep at least one song in playlist</string>
+
+<string name="player_audio_playlist_switch">Switch</string>
+
+<string name="player_audio_playlist_create">New</string>
+
+<string name="player_audio_playlist_name_hint">Playlist name</string>
+
+<string name="player_audio_more">More</string>
+
+<string name="player_audio_background">Background</string>
+
+<string name="player_audio_background_decorated_on">Details on</string>
+
+<string name="player_audio_background_decorated_off">Details off</string>
+
+<string name="player_audio_background_light_effect_on">Light effect on</string>
+
+<string name="player_audio_background_light_effect_off">Light effect off</string>
+
+<string name="player_audio_background_decorated_turn_on">Show details</string>
+
+<string name="player_audio_background_decorated_turn_off">Hide details</string>
+
+<string name="player_audio_background_random_plain">New background</string>
+
+<string name="player_audio_background_random_decoration">New details</string>
+
+<string name="player_audio_background_random_plain_done">Plain background generated</string>
+
+<string name="player_audio_background_random_decoration_done">Background details generated</string>
+
+<string name="player_audio_background_random_mix_done">Background mix generated</string>
+
+<string name="player_lyrics_unknown">Unknown</string>
+
+<string name="player_lyrics_result_item">%1$s · %2$s · %3$d\n%4$s - %5$s</string>
+
+<string name="player_lyrics_rows_value">%1$d rows</string>
+
+<string-array name="select_lyrics_size">
         <item>Small</item>
         <item>Default</item>
         <item>Large</item>
         <item>Extra large</item>
     </string-array>
 
-
-
-
-    <string-array name="select_lyrics_source">
+<string-array name="select_lyrics_source">
         <item>Auto</item>
         <item>Local</item>
         <item>AMLL TTML</item>
@@ -1470,16 +2577,111 @@
         <item>Migu</item>
     </string-array>
 
-
-
-
-    <string-array name="select_karaoke_difficulty">
+<string-array name="select_karaoke_difficulty">
         <item>Easy</item>
         <item>Standard</item>
         <item>Strict</item>
     </string-array>
 
+<string name="player_audio_badge_queue">Queue</string>
 
-    <string name="player_audio_badge_queue">Queue</string>
-    <string name="player_audio_repeat">Repeat</string>
-</resources>
+<string name="player_audio_repeat">Repeat</string>
+
+    <string name="web_theme_detail_loading">Loading details…</string>
+    <string name="ad_audio_candidate_title">Suspected advertisement</string>
+    <string name="ad_audio_match_title">Audio advertisement matched</string>
+    <string name="ad_audio_candidate_message">Rule %1$s matched. Skip about %2$d seconds?</string>
+    <string name="ad_audio_skip">Skip</string>
+    <string name="ad_audio_ignore">Ignore</string>
+    <string name="ad_audio_skipped_title">Advertisement skipped</string>
+    <string name="ad_audio_skipped_message">You can undo within %1$d seconds.</string>
+    <string name="ad_audio_undo">Undo</string>
+    <string name="setting_ad_audio_title">Audio fingerprint ad skipping (experimental)</string>
+    <string name="setting_ad_audio_no_rules">No rules</string>
+    <string name="setting_ad_audio_rule_error">Rule error</string>
+    <string name="setting_ad_audio_rule_count">Rules %1$d · %2$s</string>
+    <string name="setting_ad_audio_import">Import rule JSON</string>
+    <string name="setting_ad_audio_clear">Clear rules</string>
+    <string name="setting_ad_audio_clear_confirm">Clear the imported audio fingerprint rules?</string>
+    <string name="setting_ad_audio_imported">Imported %1$d rules · %2$s</string>
+    <string name="setting_ad_audio_import_failed">Rule import failed; the previous rules were kept.</string>
+    <string name="setting_ad_audio_clear_done">Audio fingerprint rules cleared</string>
+
+    <string name="download">Download</string>
+    <string name="download_play_first">Play the episode before downloading</string>
+    <string name="download_success">Downloaded: %s</string>
+    <string name="download_failed">Download failed</string>
+    <string name="download_canceled">Download canceled</string>
+    <string name="download_added">Added %d to download queue</string>
+    <string name="download_exist">Already in download queue</string>
+    <string name="download_pause">Pause</string>
+    <string name="download_pause_all">Pause all</string>
+    <string name="download_resume">Resume</string>
+    <string name="download_paused">Paused</string>
+    <string name="download_retry">Retry</string>
+    <string name="download_list">Downloads</string>
+    <string name="download_notify_text">%d task(s) downloading</string>
+    <string name="download_select_episode">Select episodes to download</string>
+    <string name="download_select_all">Select all</string>
+    <string name="download_select_none">Deselect all</string>
+    <string name="download_no_episode">No episodes available</string>
+    <string name="download_waiting">Waiting…</string>
+    <string name="download_queued">Queued</string>
+    <string name="download_done">Completed</string>
+    <string name="download_active">Downloading</string>
+    <string name="download_play">Play</string>
+    <string name="download_cancel">Cancel</string>
+    <string name="download_cancel_all">Cancel all</string>
+    <string name="download_remove">Remove</string>
+    <string name="download_empty">No downloads yet</string>
+    <string name="download_clear_finished">Clear completed</string>
+    <string name="download_delete_episode">Delete this episode?</string>
+    <string name="download_delete_group">Delete all downloaded episodes of this drama?</string>
+    <string name="download_long_press_tip">Tap to pause or resume, long press to delete</string>
+    <string name="speech_ad_enabled">Speech ad recognition</string>
+    <string name="speech_ad_keywords">Ad keywords</string>
+    <string name="speech_ad_keyword_count">%1$d keywords</string>
+    <string name="speech_ad_skip_seconds">Skip duration</string>
+    <string name="speech_ad_skip_seconds_value">%1$d seconds</string>
+    <string name="speech_ad_skip_mode">Skip mode</string>
+    <string name="speech_ad_skip_mode_prompt">Confirm before skipping</string>
+    <string name="speech_ad_skip_mode_auto">Auto skip</string>
+    <string name="speech_ad_skip_seconds_invalid">Enter a whole number from 1 to 120.</string>
+    <string name="speech_ad_model_not_ready">model not ready</string>
+    <string name="ad_audio_speech_candidate_title">Speech advertisement detected</string>
+    <string name="ad_audio_speech_candidate_message">Speech keywords matched. Skip about %1$d seconds?</string>
+    <string name="node_title">Preparing cat source</string>
+    <string name="node_prepare">Preparing…</string>
+    <string name="node_hint">First run only: the Node runtime is downloaded once and reused afterwards.</string>
+    <string name="node_downloading">Downloading Node runtime</string>
+    <string name="node_extracting">Extracting…</string>
+    <string name="node_bundle">Checking cat source bundle…</string>
+    <string name="node_starting">Starting service…</string>
+    <string name="node_waiting">Waiting for service to be ready…</string>
+    <string name="node_ready">Cat source ready</string>
+    <string name="node_stopping">Stopping previous cat source…</string>
+    <string name="node_switch_restart">Switching cat source…</string>
+    <string name="node_background">Run in background</string>
+    <string name="node_speed">%1$s/s</string>
+    <string name="node_size_pair">%1$s / %2$s</string>
+    <string name="setting_ad">Ad blocking</string>
+    <string name="setting_ad_summary">Master switch, rules, audio fingerprint, intro skip</string>
+    <string name="setting_ad_group_basic">Basic</string>
+    <string name="setting_ad_group_rule">Rules and stats</string>
+    <string name="setting_ad_group_audio">Audio detection</string>
+    <string name="setting_ad_group_segment">Segment skipping</string>
+    <string name="setting_ad_master">Ad blocking master switch</string>
+    <string name="setting_ad_audio_auto_skip">Skip automatically</string>
+    <string name="setting_ad_probe_source">Community rule source</string>
+    <string name="setting_ad_probe_source_hint">Must be an https address. Rules are unsigned, so only use a source you trust.</string>
+    <string name="setting_ad_probe_source_default">Default</string>
+    <string name="setting_ad_probe_source_off">Off</string>
+    <string name="setting_ad_probe_refresh">Refresh rules now</string>
+    <string name="setting_ad_probe_refreshing">Refreshing…</string>
+    <string name="setting_ad_probe_refreshed">Updated: %1$s · %2$d rules</string>
+    <string name="setting_ad_probe_unchanged">Already up to date, %1$d rules</string>
+    <string name="setting_ad_probe_failed">Refresh failed: %1$s</string>
+    <string name="setting_ad_probe_revision">Revision %1$d · %2$d rules</string>
+    <string name="setting_ad_probe_never">Never fetched</string>
+    <string name="setting_ad_probe_url_invalid">The rule source must start with https://</string>
+    <string name="setting_ad_probe_source_disabled">Set a community rule source first</string></resources>

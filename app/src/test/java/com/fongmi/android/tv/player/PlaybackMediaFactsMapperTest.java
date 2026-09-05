@@ -154,4 +154,70 @@ public class PlaybackMediaFactsMapperTest {
                 .setHeight(height)
                 .build();
     }
+
+    // --- decodeModeFact: single source of truth for soft/hard decode across all kernels ---
+
+    @Test
+    public void engineReportedKindWinsOverTheName() {
+        // IJK reports via FFP_PROPV_DECODER_*, MPV via hwdec. That is authoritative and must
+        // not be second-guessed by name parsing.
+        assertEquals(PlaybackAutoContext.DecodeMode.HARDWARE,
+                decodeMode(PlayerEngine.DecoderKind.HARDWARE, "ffmpegLavc63.3.100-hevc"));
+        assertEquals(PlaybackAutoContext.DecodeMode.SOFTWARE,
+                decodeMode(PlayerEngine.DecoderKind.SOFTWARE, "c2.mtk.hevc.decoder"));
+    }
+
+    @Test
+    public void exoFfmpegRendererIsClassifiedSoftwareByName() {
+        // The real case that motivated this: Exo passes DecoderKind.UNKNOWN plus the analytics
+        // decoder name, and the panel must not keep claiming hardware.
+        assertEquals(PlaybackAutoContext.DecodeMode.SOFTWARE,
+                decodeMode(PlayerEngine.DecoderKind.UNKNOWN, "ffmpegLavc63.3.100-hevc"));
+    }
+
+    @Test
+    public void platformSoftwareDecodersAreClassifiedSoftwareByName() {
+        for (String name : new String[]{
+                "OMX.google.h264.decoder", "c2.android.hevc.decoder",
+                "OMX.ffmpeg.hevc.decoder", "libgav1-av1", "libvpx-vp9", "dav1d", "avcodec-hevc"}) {
+            assertEquals(name, PlaybackAutoContext.DecodeMode.SOFTWARE,
+                    decodeMode(PlayerEngine.DecoderKind.UNKNOWN, name));
+        }
+    }
+
+    @Test
+    public void vendorHardwareNamesAreNotClassifiedSoftware() {
+        // Guards the substring tokens against a false software claim.
+        for (String name : new String[]{
+                "c2.mtk.hevc.decoder", "OMX.amlogic.hevc.decoder", "c2.qti.avc.decoder",
+                "OMX.SEC.hevc.dec", "c2.rk.hevc.decoder", "OMX.qcom.video.decoder.vp9"}) {
+            PlaybackAutoContext.DecodeMode mode =
+                    decodeMode(PlayerEngine.DecoderKind.UNKNOWN, name);
+            assertFalse(name, mode == PlaybackAutoContext.DecodeMode.SOFTWARE);
+        }
+    }
+
+    @Test
+    public void unresolvableNameStaysUnknownRatherThanGuessing() {
+        // Unknown must not be reported as hardware: the label logic treats only a positive
+        // SOFTWARE result as a mismatch, so an unknown name simply produces no claim.
+        PlaybackAutoContext.Fact<PlaybackAutoContext.DecodeMode> fact =
+                PlaybackMediaFactsMapper.decodeModeFact(
+                        PlayerEngine.DecoderKind.UNKNOWN, "", 100);
+        assertFalse(fact.hasValue());
+        assertEquals(PlaybackAutoContext.DecodeMode.UNKNOWN, fact.value());
+    }
+
+    @Test
+    public void nameClassificationIsCaseInsensitive() {
+        assertEquals(PlaybackAutoContext.DecodeMode.SOFTWARE,
+                decodeMode(PlayerEngine.DecoderKind.UNKNOWN, "FFMPEGLavc63-HEVC"));
+        assertEquals(PlaybackAutoContext.DecodeMode.SOFTWARE,
+                decodeMode(PlayerEngine.DecoderKind.UNKNOWN, "OMX.GOOGLE.h264.decoder"));
+    }
+
+    private static PlaybackAutoContext.DecodeMode decodeMode(
+            PlayerEngine.DecoderKind kind, String decoderName) {
+        return PlaybackMediaFactsMapper.decodeModeFact(kind, decoderName, 100).value();
+    }
 }

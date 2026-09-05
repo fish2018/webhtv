@@ -4,7 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black_20">
+    android:background="@color/black_20"
+    android:clickable="false"
+    android:focusable="false">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/top"
@@ -67,8 +69,27 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/play_cast"
                 android:scaleType="center"
                 android:src="@drawable/ic_control_cast" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/nightMode"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/play_night_mode"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_night_mode_off" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/keep"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/keep"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_keep_off" />
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/info"
@@ -77,14 +98,6 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:scaleType="center"
                 android:src="@drawable/ic_control_info" />
-
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/keep"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:scaleType="center"
-                android:src="@drawable/ic_control_keep_off" />
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/osdDiagnostics"
@@ -104,6 +117,45 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:scaleType="center"
                 android:src="@drawable/ic_control_setting" />
+
+            <!-- 短剧竖屏专用图标入口：action 栏在竖屏全屏下整条隐藏，那里的文字按钮
+                 (change2/actionQuality/episodes) 与 dock 中 48dp 图标混排会很突兀。
+                 这三个只在短剧会话里搬进右侧 dock，其余场景保持 GONE。
+                 id 必须带 shortDrama 前缀：本布局被 activity_video.xml include，
+                 与其中的 @id/quality(RecyclerView)、action 栏的 @id/episodes 同处一棵视图树，
+                 重名会让 ViewBinding.bind() 的 findViewById 命中错误类型并抛 ClassCastException。 -->
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/shortDramaChangeSource"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/play_change"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_change_source"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/shortDramaQuality"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/detail_quality"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_quality"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/shortDramaEpisodes"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/detail_episode"
+                android:scaleType="center"
+                android:src="@drawable/ic_control_episodes"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.appcompat.widget.LinearLayoutCompat>
@@ -171,7 +223,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:layout_marginEnd="4dp" />
+        android:layout_marginEnd="4dp"
+        android:visibility="gone" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:id="@+id/bottom"

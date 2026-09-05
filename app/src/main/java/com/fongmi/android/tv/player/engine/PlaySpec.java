@@ -2,6 +2,7 @@ package com.fongmi.android.tv.player.engine;
 
 import android.net.Uri;
 
+import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 
 import com.fongmi.android.tv.bean.Danmaku;
@@ -107,6 +108,13 @@ public class PlaySpec {
         return copy;
     }
 
+    public PlaySpec copyForPlayback(String playbackUrl, Map<String, String> playbackHeaders) {
+        PlaySpec copy = new PlaySpec(key, playbackUrl, playbackHeaders, format, drm, subs, danmakus, metadata)
+                .setSource(parseResult, parseSource, parseUseParse);
+        copy.playbackTraceId = playbackTraceId;
+        return copy;
+    }
+
     public PlaybackRoute.Resolution getPlaybackRoute() {
         return playbackRoute;
     }
@@ -168,13 +176,26 @@ public class PlaySpec {
 
     public PlaySpec checkUa() {
         if (headers == null) headers = new HashMap<>();
-        if (headers.keySet().stream().noneMatch(HttpHeaders.USER_AGENT::equalsIgnoreCase)) headers.put(HttpHeaders.USER_AGENT, Setting.getUa().isEmpty() ? PlayerHelper.getDefaultUa() : Setting.getUa());
+        if (headers.keySet().stream().noneMatch(HttpHeaders.USER_AGENT::equalsIgnoreCase)) headers.put(HttpHeaders.USER_AGENT, PlayerHelper.getUa());
         return this;
     }
 
     public void setSub(Sub sub) {
         if (subs == null) subs = new ArrayList<>();
-        if (sub != null && !subs.contains(sub)) subs.add(0, sub);
+        if (sub == null) return;
+        subs.remove(sub);
+        subs.forEach(item -> item.setFlag(nonDefaultSelectionFlag(item.getRawFlag())));
+        sub.setFlag(defaultSelectionFlag(sub.getRawFlag()));
+        subs.add(0, sub);
+    }
+
+    private int defaultSelectionFlag(int flag) {
+        return flag == 0 ? C.SELECTION_FLAG_DEFAULT : flag | C.SELECTION_FLAG_DEFAULT;
+    }
+
+    private int nonDefaultSelectionFlag(int flag) {
+        int result = (flag == 0 ? C.SELECTION_FLAG_AUTOSELECT : flag) & ~C.SELECTION_FLAG_DEFAULT;
+        return result == 0 ? C.SELECTION_FLAG_AUTOSELECT : result;
     }
 
     public void setDanmaku(Danmaku item) {

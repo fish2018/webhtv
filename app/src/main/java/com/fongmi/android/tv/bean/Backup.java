@@ -6,9 +6,9 @@ import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.LiveConfig;
+import com.fongmi.android.tv.api.config.HlsRuleConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.api.config.WallConfig;
-import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
@@ -23,7 +23,9 @@ import com.google.gson.ToNumberPolicy;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,7 +35,7 @@ public class Backup {
     public static final String PREF_WEB_HOME_EXTENSION = "web_home_extension";
     public static final String PREF_WEB_HOME_EXTENSION_SOURCES = "web_home_extension_user_sources";
 
-    private static final Set<String> APP_PREFS = Set.of("doh", "ua", "wall", "wall_type", "reset", "site_mode", "site_block_keys", "search_column", "sync_mode", "sync_paths", "incognito", "drive_check", "drive_check_cache", "compact_episode_title", "web_home_fullscreen", "viewing_record_sync_enabled", "viewing_record_sync_local_write", "playback_remote_sync_config", "playback_webhook_config", "playback_webhook_privacy_accepted", "shell_proxy", "shell_proxy_rules", "shell_proxy_url", "shell_proxy_hosts", "update", "update_source", "update_github_proxy", "update_github_proxy_url", "update_github_proxy_mode", "update_oci_mirror", "update_oci_mirror_url", "adblock", "zhuyin", "theme_color", "wall_color", "crash", "render", "pad_live_mode", "size", "scale", "buffer", "buffer_bytes", "back_buffer", "play_cache", "preload", "preload_threads", "preload_size", "preload_time", "player_auto_change", "background", "speed", "play_speed", "caption", "tunnel", "exo_4k_compat", "playback_performance_profile", "playback_performance_initialized", "perf_codec_async_queueing", "perf_dynamic_scheduling", "perf_video_duration_progress", "perf_late_drop_input", "perf_track_limit", "perf_adaptive_downgrade", "perf_load_only_selected_tracks", "perf_surface_fixed_size", "perf_decoder_fallback", "perf_soft_video_tune", "perf_high_buffer", "perf_bandwidth_meter", "perf_exo_network_protection_mode", "player_button_order", "player_button_hidden", "audio_prefer", "video_prefer", "prefer_aac", "subtitle_text_size", "subtitle_position", "player_osd_title", "player_osd_resolution", "player_osd_time", "player_osd_progress", "player_osd_traffic", "player_osd_mini", "player_osd_diagnostics", "boot_live", "across", "change", "invert", "scale_live", "live_epg_url", "live_epg_history");
+    private static final Set<String> APP_PREFS = Set.of("doh", "ua", "wall", "wall_type", "reset", "site_mode", "site_block_keys", "site_names", "search_column", "sync_mode", "sync_paths", "incognito", "drive_check", "drive_check_cache", "compact_episode_title", "web_home_fullscreen", "web_home_theme_enabled", "web_home_theme_url", "audio_config", "short_drama_config", "tmdb_enabled", "tmdb_config", "tmdb_model", "ai_config", "ai_title_extraction", "ai_ad_detection", "user_ad_rules", "user_group_rules", "disabled_group_rule_ids", "disabled_default_rule_ids", "builtin_hls_rule_overrides", "subtitle_ai_max_concurrency", "subtitle_ai_chunk_count", "detail_open_mode", "detail_interaction_mode", "detail_theme_mode", "tmdb_detail_theme", "tmdb_detail_backdrop_slide", "personal_recommendation", "episode_history", "global_history_mode", "history_aggregation_by_tmdb", "ai_recommendation", "auto_skip_intro_outro", "viewing_record_sync_enabled", "viewing_record_sync_local_write", "playback_remote_sync_config", "playback_webhook_config", "playback_webhook_privacy_accepted", "shell_proxy", "shell_proxy_rules", "shell_proxy_url", "shell_proxy_hosts", "github_proxy", "github_proxy_enabled", "github_proxy_mode", "update", "adblock", "zhuyin", "theme_color", "wall_color", "crash", "render", "ffmpeg_mode", "pad_live_mode", "size", "scale", "custom_aspect_width", "custom_aspect_height", "buffer", "buffer_bytes", "back_buffer", "play_cache", "preload", "preload_threads", "preload_size", "preload_time", "player_auto_change", "player_failure_fallback", "background", "speed", "play_speed", "caption", "tunnel", "exo_4k_compat", "playback_performance_profile", "playback_performance_initialized", "perf_codec_async_queueing", "perf_dynamic_scheduling", "perf_video_duration_progress", "perf_late_drop_input", "perf_track_limit", "perf_adaptive_downgrade", "perf_load_only_selected_tracks", "perf_surface_fixed_size", "perf_decoder_fallback", "perf_soft_video_tune", "perf_high_buffer", "perf_bandwidth_meter", "perf_exo_network_protection_mode", "player_button_order", "player_button_hidden", "audio_prefer", "video_prefer", "prefer_aac", "subtitle_text_size", "subtitle_position", "display_time", "display_traffic", "display_size", "display_progress", "display_mini", "display_title", "player_osd_title", "player_osd_resolution", "player_osd_time", "player_osd_progress", "player_osd_traffic", "player_osd_mini", "player_osd_diagnostics", "boot_live", "across", "change", "invert", "scale_live", "live_epg_url", "live_epg_history");
 
     @SerializedName("site")
     private List<Site> site;
@@ -45,6 +47,8 @@ public class Backup {
     private List<Config> config;
     @SerializedName("history")
     private List<History> history;
+    @SerializedName("tmdbSeasonProgress")
+    private List<TmdbSeasonProgress> tmdbSeasonProgress;
     @SerializedName("track")
     private List<Track> track;
     @SerializedName("device")
@@ -60,6 +64,7 @@ public class Backup {
         backup.setKeep(AppDatabase.get().getKeepDao().findAll());
         backup.setConfig(AppDatabase.get().getConfigDao().findAll());
         backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
+        backup.setTmdbSeasonProgress(AppDatabase.get().getTmdbSeasonProgressDao().findAll());
         backup.setTrack(AppDatabase.get().getTrackDao().findAll());
         backup.setDevice(AppDatabase.get().getDeviceDao().findAll());
         return backup;
@@ -73,7 +78,10 @@ public class Backup {
             backup.setConfig(AppDatabase.get().getConfigDao().findAll());
         }
         if (options.isKeep()) backup.setKeep(AppDatabase.get().getKeepDao().findAll());
-        if (options.isHistory()) backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
+        if (options.isHistory()) {
+            backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
+            backup.setTmdbSeasonProgress(AppDatabase.get().getTmdbSeasonProgressDao().findAll());
+        }
         backup.setPrefers(filter(Prefers.getPrefers().getAll(), options));
         return backup;
     }
@@ -99,6 +107,7 @@ public class Backup {
         AppDatabase.get().getKeepDao().insertOrUpdate(getKeep());
         AppDatabase.get().getConfigDao().insertOrUpdate(getConfig());
         AppDatabase.get().getHistoryDao().insertOrUpdate(getHistory());
+        restoreTmdbSeasonProgress(Collections.emptyMap());
         AppDatabase.get().getTrackDao().insertOrUpdate(getTrack());
         AppDatabase.get().getDeviceDao().insertOrUpdate(getDevice());
         restorePrefers(getPrefers(), true, preserveMissingWebHomePrefs);
@@ -123,11 +132,12 @@ public class Backup {
         }
         if (options.isHistory()) {
             if (force) AppDatabase.get().getHistoryDao().delete();
+            if (force) AppDatabase.get().getTmdbSeasonProgressDao().deleteAll();
             for (History item : getHistory()) if (cids.containsKey(item.getCid())) item.setCid(cids.get(item.getCid()));
             AppDatabase.get().getHistoryDao().insertOrUpdate(getHistory());
+            restoreTmdbSeasonProgress(cids);
         }
         restorePrefers(filter(getPrefers(), options), false, false);
-        if (options.isConfig() || options.isSpider() || options.isWebHome() || options.isLoginState()) BaseLoader.get().clear();
         if (options.isConfig() || options.isSpider() || options.isWebHome() || options.isLoginState()) reloadConfig();
         if (options.isWebHome()) refreshWebHomeExtensions();
         if (options.isKeep()) RefreshEvent.keep();
@@ -136,7 +146,7 @@ public class Backup {
     }
 
     private void reloadConfig() {
-        VodConfig.get().clear().init().load(new Callback());
+        VodConfig.get().clear("sync-restore").init().load(new Callback());
         LiveConfig.get().clear().init().load();
         WallConfig.get().init().load();
         ConfigEvent.common();
@@ -154,6 +164,56 @@ public class Backup {
             if (source > 0) cids.put(source, item.getId());
         }
         return cids;
+    }
+
+    private void restoreTmdbSeasonProgress(Map<Integer, Integer> cids) {
+        List<TmdbSeasonProgress> items = sanitizeTmdbSeasonProgress(getTmdbSeasonProgress());
+        if (!items.isEmpty()) {
+            for (TmdbSeasonProgress item : items) {
+                if (cids.containsKey(item.cid)) item.cid = cids.get(item.cid);
+            }
+            AppDatabase.get().getTmdbSeasonProgressDao().insertOrUpdate(items);
+            return;
+        }
+        AppDatabase.get().getTmdbSeasonProgressDao().insertOrUpdate(
+                latestTmdbSeasonProgress(getHistory()));
+    }
+
+    static List<TmdbSeasonProgress> latestTmdbSeasonProgress(List<History> histories) {
+        Map<String, TmdbSeasonProgress> latest = new LinkedHashMap<>();
+        if (histories == null) return List.of();
+        for (History history : histories) {
+            TmdbSeasonProgress progress = com.fongmi.android.tv.playback.TmdbSeasonProgressStore.fromHistory(history);
+            if (progress == null) continue;
+            TmdbSeasonProgress previous = latest.get(progress.identityKey());
+            if (previous == null || progress.updatedAt > previous.updatedAt) {
+                latest.put(progress.identityKey(), progress);
+            }
+        }
+        return new ArrayList<>(latest.values());
+    }
+
+    private static void normalize(TmdbSeasonProgress item) {
+        if (item == null) return;
+        item.mediaType = TmdbSeasonProgress.normalizeMediaType(item.mediaType);
+        if (item.sourceFlag == null) item.sourceFlag = "";
+        if (item.sourceEpisodeName == null) item.sourceEpisodeName = "";
+        if (item.sourceEpisodeUrl == null) item.sourceEpisodeUrl = "";
+        if (item.sourceHistoryKey == null) item.sourceHistoryKey = "";
+        if (item.sourceBindingKey == null) item.sourceBindingKey = "";
+    }
+
+    static List<TmdbSeasonProgress> sanitizeTmdbSeasonProgress(List<TmdbSeasonProgress> source) {
+        List<TmdbSeasonProgress> result = new ArrayList<>();
+        if (source == null) return result;
+        for (TmdbSeasonProgress item : source) {
+            if (item == null) continue;
+            normalize(item);
+            if (!"tv".equals(item.mediaType) || item.tmdbId <= 0 || item.seasonNumber < 0
+                    || item.episodeNumber <= 0 || item.sourceHistoryKey.isEmpty()) continue;
+            result.add(item);
+        }
+        return result;
     }
 
     private static Map<String, ?> filter(Map<String, ?> source, SyncOptions options) {
@@ -177,8 +237,9 @@ public class Backup {
         }
         if (key.startsWith("remote_trust_")) return false;
         if (isWebHomeExtensionPref(key)) return options.isWebHome();
-        if (key.startsWith("cache_")) return options.isWebHome() || options.isSpider();
+        if (key.startsWith("cache_")) return false;
         if (key.startsWith("config_")) return options.isConfig();
+        if ("site_names".equals(key)) return options.isConfig() || options.isSettings();
         if ("keyword".equals(key) || "hot".equals(key) || key.startsWith("hot_")) return options.isSearch();
         if ("git_cloud_accounts".equals(key)) return options.isSpider() || options.isSettings() || options.isLoginState();
         if (key.startsWith("login_state_")) return options.isLoginState();
@@ -191,7 +252,12 @@ public class Backup {
     }
 
     private static boolean isAppPref(String key) {
-        return APP_PREFS.contains(key) || key.startsWith("danmaku_") || key.startsWith("playback_performance_") || key.startsWith("perf_exo_") || key.startsWith("perf_mpv_") || key.startsWith("perf_ijk_") || key.startsWith("perf_kernel_");
+        return APP_PREFS.contains(key)
+                // 三个 update_github_proxy* 是已废弃的旧键，但必须继续随「设置」备份走：
+                // 从旧版备份恢复时它们要落盘，Setting.migrateLegacyGithubProxy() 才会触发
+                // 并把用户当年的代理选择迁到 github_proxy。剔掉它们等于把那个选择丢弃而非迁移。
+                || Set.of("update_source", "update_github_proxy", "update_github_proxy_url", "update_github_proxy_mode", "update_oci_mirror", "update_oci_mirror_url").contains(key)
+                || key.startsWith("danmaku_") || key.startsWith("playback_performance_") || key.startsWith("perf_exo_") || key.startsWith("perf_mpv_") || key.startsWith("perf_ijk_") || key.startsWith("perf_kernel_");
     }
 
     private static void restorePrefers(Map<String, ?> values, boolean clear, boolean preserveMissingWebHomePrefs) {
@@ -209,6 +275,7 @@ public class Backup {
         putPrefers(editor, preserved);
         putPrefers(editor, values);
         editor.commit();
+        HlsRuleConfig.invalidate();
     }
 
     private static boolean containsPlaybackPerformanceProfile(
@@ -295,6 +362,14 @@ public class Backup {
 
     public void setHistory(List<History> history) {
         this.history = history;
+    }
+
+    public List<TmdbSeasonProgress> getTmdbSeasonProgress() {
+        return tmdbSeasonProgress == null ? Collections.emptyList() : tmdbSeasonProgress;
+    }
+
+    public void setTmdbSeasonProgress(List<TmdbSeasonProgress> progress) {
+        this.tmdbSeasonProgress = progress;
     }
 
     public List<Track> getTrack() {

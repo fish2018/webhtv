@@ -116,4 +116,9 @@
         <item name="android:textSize">15sp</item>
     </style>
 
+    <style name="ToolbarWhiteText" parent="">
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:textColorPrimary">@color/white</item>
+    </style>
+
 </resources>

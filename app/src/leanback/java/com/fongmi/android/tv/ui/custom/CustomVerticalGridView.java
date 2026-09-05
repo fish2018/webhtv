@@ -12,7 +12,6 @@ import androidx.leanback.widget.OnChildViewHolderSelectedListener;
 import androidx.leanback.widget.VerticalGridView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.utils.KeyUtil;
 
 import java.util.Arrays;
@@ -21,6 +20,12 @@ import java.util.Objects;
 
 public class CustomVerticalGridView extends VerticalGridView {
 
+    public interface HeaderVisibilityListener {
+
+        void onHeaderVisibilityChanged(boolean visible);
+    }
+
+    private HeaderVisibilityListener headerVisibilityListener;
     private List<View> views;
     private boolean pressDown;
     private boolean pressUp;
@@ -59,33 +64,51 @@ public class CustomVerticalGridView extends VerticalGridView {
         this.moveTop = moveTop;
     }
 
+    public void setHeaderVisibilityListener(@Nullable HeaderVisibilityListener listener) {
+        this.headerVisibilityListener = listener;
+    }
+
     public void hideHeader() {
-        if (views != null) for (View view : views) view.setVisibility(View.GONE);
+        setHeaderVisibility(View.GONE);
     }
 
     public void showHeader() {
-        if (views != null) for (View view : views) view.setVisibility(View.VISIBLE);
+        setHeaderVisibility(View.VISIBLE);
+    }
+
+    private void setHeaderVisibility(int visibility) {
+        if (views == null || views.isEmpty()) return;
+        for (View view : views) view.setVisibility(visibility);
+        boolean visible = visibility == View.VISIBLE;
+        if (headerVisibilityListener != null) headerVisibilityListener.onHeaderVisibilityChanged(visible);
     }
 
     public boolean isHeaderVisible() {
-        if (views != null) for (View view : views) if (view.getId() == R.id.recycler && view.getVisibility() == View.VISIBLE) return true;
-        return false;
+        return views != null && !views.isEmpty() && views.get(0).getVisibility() == View.VISIBLE;
     }
 
     @Override
     public boolean dispatchKeyEvent(@NonNull KeyEvent event) {
         if (!KeyUtil.isActionDown(event)) return super.dispatchKeyEvent(event);
         if (KeyUtil.isBackKey(event)) return moveTop && moveToTop();
+        if (KeyUtil.isUpKey(event) && focusHeader()) return true;
         pressUp = KeyUtil.isUpKey(event);
         pressDown = KeyUtil.isDownKey(event);
         return super.dispatchKeyEvent(event);
     }
 
+    private boolean focusHeader() {
+        if (views == null || getSelectedPosition() != 0) return false;
+        showHeader();
+        for (View view : views) if (view.requestFocus()) return true;
+        return false;
+    }
+
     public boolean moveToTop() {
         if (views == null || getSelectedPosition() == 0 || getAdapter() == null || getAdapter().getItemCount() == 0) return false;
-        for (View view : views) if (view.getId() == R.id.recycler) view.requestFocus();
-        scrollToPosition(0);
         showHeader();
+        for (View view : views) if (view.requestFocus()) break;
+        scrollToPosition(0);
         return true;
     }
 }

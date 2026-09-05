@@ -3,6 +3,7 @@
 .vscode/
 .gradle/
 build/
+.cxx/
 dist/
 out/
 !third_party/mpv-native-overrides/aimagereader-stable/video/out/
@@ -27,6 +28,12 @@ nostr_副本*.html
 __pycache__/
 *.pyc
 third_party/sources/
+app/signing/
+.gradle-user-home/
 plans/
-/docs/
+.tokensave
+.codebase-memory
+graphify-out/
 .codex/task-state/
+
+参考/*

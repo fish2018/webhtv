@@ -12,6 +12,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -39,7 +40,12 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.DanmakuApi;
 import com.fongmi.android.tv.bean.Danmaku;
+import com.fongmi.android.tv.bean.DanmakuMatchCache;
+import com.fongmi.android.tv.bean.DanmakuTitle;
 import com.fongmi.android.tv.player.PlayerManager;
+import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.title.MediaTitleLearningExample;
+import com.fongmi.android.tv.title.MediaTitleLearningStore;
 import com.fongmi.android.tv.ui.custom.CustomRecyclerView;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.Notify;
@@ -78,6 +84,10 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
     private boolean selected;
     private boolean restoreParent;
     private String selectedSource;
+    private String siteKey;
+    private String vodId;
+    private String rawTitle;
+    private String episodeName;
 
     public static DanmakuSearchInputDialog create() {
         return new DanmakuSearchInputDialog();
@@ -95,6 +105,14 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
 
     public DanmakuSearchInputDialog restoreParent(boolean restoreParent) {
         this.restoreParent = restoreParent;
+        return this;
+    }
+
+    public DanmakuSearchInputDialog identity(String siteKey, String vodId, String rawTitle, String episodeName) {
+        this.siteKey = clean(siteKey);
+        this.vodId = clean(vodId);
+        this.rawTitle = clean(rawTitle);
+        this.episodeName = clean(episodeName);
         return this;
     }
 
@@ -140,7 +158,7 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
         super.onDismiss(dialog);
         FragmentActivity activity = getActivity();
         if (selected || !restoreParent || activity == null || activity.isFinishing()) return;
-        DanmakuDialog.create().player(player).show(activity);
+        DanmakuDialog.create().player(player).identity(siteKey, vodId, rawTitle, episodeName).show(activity);
     }
 
     @Override
@@ -153,8 +171,17 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
     private void onItemClick(Danmaku item) {
         selected = true;
         if (SpiderDebug.isEnabled()) SpiderDebug.log("danmaku", "search dialog item click selected=%s name=%s url=%s", item.isSelected(), item.getName(), item.getUrl());
+        if (!item.isSelected()) rememberManualDanmaku(item);
         player.setDanmaku(item.isSelected() ? Danmaku.empty() : item);
         dismiss();
+    }
+
+    private void rememberManualDanmaku(Danmaku item) {
+        if (TextUtils.isEmpty(siteKey) || TextUtils.isEmpty(vodId) || item == null || item.isEmpty()) return;
+        DanmakuMatchCache cache = Setting.getDanmakuMatchCache();
+        MediaTitleLearningExample example = cache.put(siteKey, vodId, first(episodeName, getEpisode()), getKeyword(), first(rawTitle, getTitle()), item);
+        Setting.putDanmakuMatchCache(cache);
+        if (example != null) MediaTitleLearningStore.load().put(example);
     }
 
     private TextInputEditText createInput() {
@@ -341,6 +368,23 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
         return episode == null ? "" : episode.toString().trim();
     }
 
+    private String getTitle() {
+        CharSequence title = player == null || player.getMetadata() == null ? "" : player.getMetadata().title;
+        return title == null ? "" : title.toString().trim();
+    }
+
+    private String getKeyword() {
+        return input == null || input.getText() == null ? "" : input.getText().toString().trim();
+    }
+
+    private String first(String first, String second) {
+        return !TextUtils.isEmpty(first) ? first : clean(second);
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
     private void showProgress() {
         selectedSource = null;
         groups.clear();
@@ -441,13 +485,14 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
         }
         empty.setVisibility(GONE);
         recycler.setVisibility(VISIBLE);
-        adapter.addAll(items);
+        adapter.addAll(items, input.getText() == null ? "" : input.getText().toString().trim());
         focusResult();
     }
 
     private boolean focusResult() {
         if (recycler == null || recycler.getVisibility() != VISIBLE || adapter.getItemCount() == 0) return false;
         recycler.scrollToPosition(adapter.getSelected());
+        recycler.requestFocus();
         return true;
     }
 
@@ -537,8 +582,11 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
 
     private static final class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.ViewHolder> {
 
+        private static final int TYPE_HEADER = 0;
+        private static final int TYPE_ITEM = 1;
+
         private final OnClickListener listener;
-        private final List<Danmaku> items;
+        private final List<Object> rows;
 
         private interface OnClickListener {
 
@@ -547,24 +595,64 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
 
         private ResultAdapter(OnClickListener listener) {
             this.listener = listener;
-            this.items = new ArrayList<>();
+            this.rows = new ArrayList<>();
         }
 
         private void clear() {
-            int size = items.size();
-            items.clear();
+            int size = rows.size();
+            rows.clear();
             notifyItemRangeRemoved(0, size);
         }
 
-        private void addAll(List<Danmaku> values) {
+        /**
+         * 按剧名二次分组装配列表：同一剧名≥2条折叠成一个 Header（默认折叠），
+         * 单条或解析不出剧名的直接作为普通项平铺。含已选中弹幕的分组默认展开。
+         * 分组头按关键词相似度排序，子项按集数排序。
+         */
+        private void addAll(List<Danmaku> values, String keyword) {
             if (values == null) return;
-            int start = items.size();
-            items.addAll(values);
-            notifyItemRangeInserted(start, values.size());
+            LinkedHashMap<String, List<Danmaku>> grouped = new LinkedHashMap<>();
+            List<Danmaku> ungrouped = new ArrayList<>();
+            for (Danmaku item : values) {
+                String key = DanmakuTitle.titleKey(item);
+                if (key == null) {
+                    ungrouped.add(item);
+                } else {
+                    grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+                }
+            }
+            // 组内按集数排序
+            for (List<Danmaku> items : grouped.values()) DanmakuTitle.sortByEpisode(items);
+            DanmakuTitle.sortByEpisode(ungrouped);
+            // 分组头按关键词相似度排序
+            List<String> titleKeys = new ArrayList<>(grouped.keySet());
+            DanmakuTitle.sortByKeyword(titleKeys, keyword);
+            for (String key : titleKeys) {
+                List<Danmaku> items = grouped.get(key);
+                if (items.size() < 2) {
+                    ungrouped.addAll(items);
+                } else {
+                    boolean hasSelected = false;
+                    for (Danmaku item : items) if (item.isSelected()) { hasSelected = true; break; }
+                    Header header = new Header(key, items, hasSelected);
+                    rows.add(header);
+                    if (hasSelected) rows.addAll(items);
+                }
+            }
+            rows.addAll(ungrouped);
+            if (!rows.isEmpty()) notifyItemRangeInserted(0, rows.size());
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return rows.get(position) instanceof Header ? TYPE_HEADER : TYPE_ITEM;
         }
 
         private int getSelected() {
-            for (int i = 0; i < items.size(); i++) if (items.get(i).isSelected()) return i;
+            for (int i = 0; i < rows.size(); i++) {
+                Object row = rows.get(i);
+                if (row instanceof Danmaku && ((Danmaku) row).isSelected()) return i;
+            }
             return 0;
         }
 
@@ -575,25 +663,82 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
             RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(parent.getContext(), 42));
             params.setMargins(0, 0, 0, dp(parent.getContext(), 8));
             button.setLayoutParams(params);
-            return new ViewHolder(button);
+            return viewType == TYPE_HEADER ? new HeaderHolder(button) : new ItemHolder(button);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Danmaku item = items.get(position);
-            holder.bind(item);
+            Object row = rows.get(position);
+            if (holder instanceof HeaderHolder) ((HeaderHolder) holder).bind((Header) row);
+            else ((ItemHolder) holder).bind((Danmaku) row);
         }
 
         @Override
         public int getItemCount() {
-            return items.size();
+            return rows.size();
         }
 
-        private final class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        private void toggleHeader(int position) {
+            Header header = (Header) rows.get(position);
+            header.expanded = !header.expanded;
+            notifyItemChanged(position);
+            if (header.expanded) {
+                rows.addAll(position + 1, header.items);
+                notifyItemRangeInserted(position + 1, header.items.size());
+            } else {
+                int count = header.items.size();
+                for (int i = 0; i < count; i++) rows.remove(position + 1);
+                notifyItemRangeRemoved(position + 1, count);
+            }
+        }
+
+        private abstract static class ViewHolder extends RecyclerView.ViewHolder {
+            ViewHolder(@NonNull MaterialTextView button) {
+                super(button);
+            }
+        }
+
+        /** 剧名折叠分组头 */
+        private final class HeaderHolder extends ViewHolder implements View.OnClickListener {
 
             private final MaterialTextView button;
 
-            private ViewHolder(@NonNull MaterialTextView button) {
+            private HeaderHolder(@NonNull MaterialTextView button) {
+                super(button);
+                this.button = button;
+                this.button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+                this.button.setMinHeight(dp(button.getContext(), 42));
+                this.button.setMinimumHeight(dp(button.getContext(), 42));
+                this.button.setPadding(dp(button.getContext(), 12), 0, dp(button.getContext(), 12), 0);
+                this.button.setSingleLine(true);
+                this.button.setEllipsize(TextUtils.TruncateAt.END);
+                this.button.setTextSize(14);
+                this.button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                this.button.setClickable(true);
+                this.button.setFocusable(true);
+                this.button.setOnClickListener(this);
+            }
+
+            private void bind(Header header) {
+                button.setText(DanmakuTitle.headerTitle(header.title, header.items.size(), header.expanded));
+                button.setTextColor(Color.parseColor("#174EA6"));
+                button.setBackground(headerBackground(button.getContext()));
+            }
+
+            @Override
+            public void onClick(View view) {
+                int position = getBindingAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return;
+                toggleHeader(position);
+            }
+        }
+
+        /** 普通弹幕项 */
+        private final class ItemHolder extends ViewHolder implements View.OnClickListener {
+
+            private final MaterialTextView button;
+
+            private ItemHolder(@NonNull MaterialTextView button) {
                 super(button);
                 this.button = button;
                 this.button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
@@ -621,7 +766,20 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
             public void onClick(View view) {
                 int position = getBindingAdapterPosition();
                 if (position == RecyclerView.NO_POSITION) return;
-                listener.onItemClick(items.get(position));
+                Object row = rows.get(position);
+                if (row instanceof Danmaku) listener.onItemClick((Danmaku) row);
+            }
+        }
+
+        private static final class Header {
+            final String title;
+            final List<Danmaku> items;
+            boolean expanded;
+
+            Header(String title, List<Danmaku> items, boolean expanded) {
+                this.title = title;
+                this.items = items;
+                this.expanded = expanded;
             }
         }
 
@@ -645,6 +803,14 @@ public final class DanmakuSearchInputDialog extends DialogFragment implements Ca
             drawable.setCornerRadius(dp(context, 8));
             drawable.setStroke(dp(context, strokeWidth), stroke);
             return drawable;
+        }
+
+        private static Drawable headerBackground(Context context) {
+            GradientDrawable content = new GradientDrawable();
+            content.setColor(Color.parseColor("#EAF2FF"));
+            content.setCornerRadius(dp(context, 8));
+            content.setStroke(dp(context, 1), Color.parseColor("#AECBFA"));
+            return new RippleDrawable(ColorStateList.valueOf(Color.parseColor("#1A0B57D0")), content, null);
         }
 
         private static int dp(Context context, int value) {

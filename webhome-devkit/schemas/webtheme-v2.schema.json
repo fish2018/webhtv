@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://webhtv.local/schemas/webtheme-v2.schema.json",
+  "title": "WebHTV WebTheme V2 Manifest",
+  "description": "Strict authoring schema for WebTheme V2 manifests supported by Host API 3.",
+  "x-webhtv-maxBytes": 131072,
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "minHostApi", "pages", "permissions"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32
+    },
+    "minHostApi": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["mobile", "leanback"]
+      }
+    },
+    "pages": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "home": {
+          "$ref": "#/$defs/homePage"
+        },
+        "detail": {
+          "$ref": "#/$defs/detailPage"
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "home": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "vod.home",
+              "vod.category",
+              "navigation.openDetail",
+              "app.search",
+              "app.openVod",
+              "app.openSite",
+              "app.openSetting"
+            ]
+          }
+        },
+        "detail": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "vod.detail",
+              "favorite.read",
+              "favorite.write",
+              "history.read",
+              "player.playVod",
+              "app.search",
+              "person.open",
+              "image.preview",
+              "image.save",
+              "recommendation.open",
+              "recommendation.info",
+              "recommendation.feedback",
+              "external.open",
+              "episode.info"
+            ]
+          }
+        }
+      }
+    },
+    "player": {
+      "type": "object",
+      "description": "Reserved for a future native player presentation contract. Host API 3 ignores its contents.",
+      "x-webhtv-status": "reserved",
+      "maxProperties": 32,
+      "additionalProperties": true
+    },
+    "tokens": {
+      "type": "object",
+      "description": "Reserved for a future native semantic design-token contract. Host API 3 ignores its contents.",
+      "x-webhtv-status": "reserved",
+      "maxProperties": 128,
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "pages": {
+            "required": ["home"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "permissions": {
+            "required": ["home"],
+            "properties": {
+              "home": {
+                "contains": {
+                  "const": "vod.home"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "pages": {
+            "required": ["detail"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "permissions": {
+            "required": ["detail"],
+            "properties": {
+              "detail": {
+                "contains": {
+                  "const": "vod.detail"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "homePage": {
+      "type": "object",
+      "required": ["entry", "contract"],
+      "additionalProperties": false,
+      "properties": {
+        "entry": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "format": "uri-reference"
+        },
+        "contract": {
+          "const": "vod.home@1"
+        },
+        "fallback": {
+          "const": "native"
+        }
+      }
+    },
+    "detailPage": {
+      "type": "object",
+      "required": ["entry", "contract"],
+      "additionalProperties": false,
+      "properties": {
+        "entry": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "format": "uri-reference"
+        },
+        "contract": {
+          "const": "vod.detail@1"
+        },
+        "fallback": {
+          "const": "native"
+        }
+      }
+    }
+  }
+}

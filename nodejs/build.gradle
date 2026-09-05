@@ -1,0 +1,53 @@
+plugins {
+    alias libs.plugins.android.library
+}
+
+android {
+    namespace = 'com.fongmi.android.tv.nodejs'
+
+    compileSdk libs.versions.compileSdk.get().toInteger()
+    ndkVersion = '28.2.13676358'
+
+    defaultConfig {
+        minSdk libs.versions.minSdk.get().toInteger()
+        targetSdk libs.versions.targetSdk.get().toInteger()
+        externalNativeBuild {
+            cmake {
+                // libnode.so 是运行时下载的，编译期不链接，只用 dlopen/dlsym
+                //
+                // 必须静态链接 STL。c++_shared 会让本模块把自己那份 libc++_shared.so
+                // 打进 APK 的 lib/<abi>/（链接器默认命名空间搜索路径），而本模块的 NDK
+                // 与 third_party/mpv-native-lock.json 锁定的 29.0.14206865 不同：NDK 28
+                // 那份不导出 libmpv.so 需要的 std::__ndk1::__from_chars_floating_point
+                // <double>/<float>。libcnode.so 先载入就会占住 libc++_shared.so 这个
+                // soname，MPV 随后按绝对路径载自己那份也无法改变 DT_NEEDED 的 soname
+                // 解析结果，libmpv.so 因缺符号而 dlopen 失败——现象是几乎所有片源都报
+                // 「MPV 加载媒体失败」。本 shim 只用到 17 个基础运行时符号（operator
+                // new/delete 与 __cxa_* 异常桩），静态链接的体积代价很小。
+                //
+                // 注意：运行时下载的 libnode.so 自身 DT_NEEDED 仍需要 libc++_shared.so，
+                // 由 app/src/*/jniLibs 提供 NDK 29 那份（它是三方符号需求的超集）。
+                arguments '-DANDROID_STL=c++_static'
+                cppFlags '-std=c++17 -fexceptions'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file('src/main/cpp/CMakeLists.txt')
+            version = '3.22.1'
+        }
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    implementation project(':catvod')
+    coreLibraryDesugaring libs.desugar
+}

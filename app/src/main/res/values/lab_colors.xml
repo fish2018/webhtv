@@ -1,0 +1,9 @@
+<resources>
+<color name="blue_500">#2196F3</color>
+<color name="accent">@color/blue_500</color>
+
+<!-- 实验室弹窗明/暗文字与背景色（跟随系统，避免落到 Activity 主题的白色覆盖） -->
+<color name="lab_surface">#FFFFFF</color>
+<color name="lab_text_primary">#1C1B1F</color>
+<color name="lab_text_secondary">#5C5C66</color>
+</resources>

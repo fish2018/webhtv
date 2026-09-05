@@ -10,6 +10,11 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/action_scope"
+        android:title="@string/search_scope_all"
+        app:showAsAction="always|withText" />
+
+    <item
         android:id="@+id/action_site"
         android:icon="@drawable/ic_action_site"
         android:title="@string/menu_site"

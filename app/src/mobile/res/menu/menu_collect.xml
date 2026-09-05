@@ -3,6 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_group"
+        android:title="@string/search_scope_all"
+        android:visible="false"
+        app:showAsAction="always|withText" />
+
+    <item
+        android:id="@+id/action_similarity"
+        android:title="@string/search_filter_similarity"
+        app:showAsAction="always|withText" />
+
+    <item
         android:id="@+id/action_column"
         android:icon="@drawable/ic_site_double_column"
         android:title="@string/search_column"

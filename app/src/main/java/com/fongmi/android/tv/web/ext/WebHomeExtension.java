@@ -3,6 +3,7 @@ package com.fongmi.android.tv.web.ext;
 import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.utils.GithubProxy;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
@@ -239,7 +240,7 @@ public class WebHomeExtension {
         File file = cache(prefix + Util.md5(url) + suffix);
         String cached = Path.read(file);
         try {
-            String text = OkHttp.string(url);
+            String text = OkHttp.string(GithubProxy.apply(url));
             if (!TextUtils.isEmpty(text)) {
                 Path.write(file, text.getBytes(StandardCharsets.UTF_8));
                 SpiderDebug.log("webhome-ext", "fetch ok url=%s bytes=%s", url, text.length());

@@ -1,0 +1,6 @@
+<resources>
+<!-- 暗色模式：深色背景 + 浅色文字 -->
+<color name="lab_surface">#1C1B1F</color>
+<color name="lab_text_primary">#E6E1E5</color>
+<color name="lab_text_secondary">#C4C4CC</color>
+</resources>

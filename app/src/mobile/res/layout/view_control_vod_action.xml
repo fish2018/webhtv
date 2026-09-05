@@ -15,6 +15,16 @@
         android:orientation="horizontal">
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/change2"
+            style="@style/Control"
+            android:text="@string/play_change" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/fullscreen"
+            style="@style/Control"
+            android:text="@string/play_fullscreen" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/player"
             style="@style/Control"
             android:text="@string/play_exo" />
@@ -28,6 +38,15 @@
             android:id="@+id/playParams"
             style="@style/Control"
             android:text="@string/play_params" />
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/multiThreadProxy"
+            style="@style/Control"
+            android:text="@string/multi_thread_proxy_button" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/codecCapability"
+            style="@style/Control"
+            android:text="@string/codec_capability_short" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/speed"
@@ -39,6 +58,13 @@
             android:id="@+id/scale"
             style="@style/Control"
             android:text="@string/play_scale" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/actionQuality"
+            style="@style/Control"
+            android:text="@string/detail_quality"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/lut"
@@ -60,6 +86,11 @@
             android:id="@+id/repeat"
             style="@style/Control"
             android:text="@string/play_repeat" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/text"
@@ -93,6 +124,13 @@
             android:id="@+id/danmaku"
             style="@style/Control"
             android:text="@string/danmaku"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/adFeedback"
+            style="@style/Control"
+            android:text="@string/play_ad_feedback"
             android:visibility="gone"
             tools:visibility="visible" />
 

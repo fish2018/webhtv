@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.update;
 
+import com.fongmi.android.tv.utils.GithubProxy;
+
 import static org.junit.Assert.assertEquals;
 
 import java.util.List;
@@ -15,7 +17,7 @@ public class UpdateRoutePlannerTest {
             "sha256:" + "1".repeat(64),
             "sha256:" + "2".repeat(64),
             1024);
-    private final GithubProxy.Config direct = GithubProxy.resolve(GithubProxy.DIRECT, "", GithubProxy.MODE_FULL_URL);
+    private final GithubProxy.Config direct = GithubProxy.config("", GithubProxy.MODE_FULL_URL, false);
 
     @Test
     public void ociTriesOciThenGithub() {

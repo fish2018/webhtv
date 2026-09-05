@@ -1,0 +1,38 @@
+<resources>
+<style name="Theme.App.Lab.DayNight.Dialog" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:windowNoTitle">true</item>
+        <item name="colorSurface">@color/lab_surface</item>
+        <item name="colorOnSurface">@color/lab_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/lab_text_secondary</item>
+        <item name="android:textColorPrimary">@color/lab_text_primary</item>
+        <item name="android:textColorSecondary">@color/lab_text_secondary</item>
+        <item name="android:textColorHint">@color/lab_text_secondary</item>
+        <item name="colorPrimary">@color/accent</item>
+    </style>
+<style name="Theme.App.Lab.Dialog" parent="Theme.Material3.Dark.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/shape_lab_dialog</item>
+        <item name="android:colorBackground">#1B1B1F</item>
+        <item name="android:colorBackgroundFloating">#1B1B1F</item>
+    </style>
+<style name="Theme.App.Lab" parent="Theme.App">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackground">#111318</item>
+        <item name="android:textColorPrimary">#FFFFFFFF</item>
+        <item name="android:textColorSecondary">#B3FFFFFF</item>
+        <item name="android:textColorHint">#66FFFFFF</item>
+        <item name="android:statusBarColor">#111318</item>
+        <item name="android:navigationBarColor">#111318</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorSurface">#111318</item>
+        <item name="colorOnSurface">#FFFFFFFF</item>
+        <item name="colorSurfaceContainer">#1B1B1F</item>
+        <item name="colorSurfaceContainerHigh">#232327</item>
+        <item name="colorSurfaceContainerHighest">#2A2A2E</item>
+        <item name="colorSurfaceContainerLow">#141418</item>
+        <item name="colorSurfaceContainerLowest">#0E0E12</item>
+        <item name="colorOnSurfaceVariant">#C4C4CC</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="isLightTheme">false</item>
+    </style>
+</resources>

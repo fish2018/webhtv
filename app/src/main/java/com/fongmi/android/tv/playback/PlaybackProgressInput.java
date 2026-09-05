@@ -11,6 +11,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class PlaybackProgressInput {
 
@@ -28,10 +29,20 @@ public class PlaybackProgressInput {
     public String vodPic;
     @SerializedName("flag")
     public String flag;
+    @SerializedName("sourceBindingKey")
+    public String sourceBindingKey;
     @SerializedName("episodeName")
     public String episodeName;
     @SerializedName("episodeUrl")
     public String episodeUrl;
+    @SerializedName("mediaType")
+    public String mediaType;
+    @SerializedName("tmdbId")
+    public int tmdbId;
+    @SerializedName("seasonNumber")
+    public int seasonNumber = -1;
+    @SerializedName("tmdbEpisodeNumber")
+    public int episodeNumber = -1;
     @SerializedName("positionMs")
     public long positionMs;
     @SerializedName("durationMs")
@@ -40,6 +51,8 @@ public class PlaybackProgressInput {
     public double progress;
     @SerializedName("speed")
     public float speed;
+    @SerializedName("speedOverride")
+    public Boolean speedOverride;
     @SerializedName("completed")
     public boolean completed;
     @SerializedName("updatedAt")
@@ -62,8 +75,13 @@ public class PlaybackProgressInput {
         vodName = safe(vodName);
         vodPic = safe(vodPic);
         flag = safe(flag);
+        sourceBindingKey = safe(sourceBindingKey);
         episodeName = safe(episodeName);
         episodeUrl = safe(episodeUrl);
+        mediaType = safe(mediaType).toLowerCase(Locale.ROOT);
+        if (!"tv".equals(mediaType) && !"movie".equals(mediaType)) mediaType = "";
+        if (seasonNumber < 0) seasonNumber = -1;
+        if (episodeNumber <= 0) episodeNumber = -1;
         configKey = PlaybackConfigIdentity.normalizeKey(configKey);
         configName = safe(configName);
         configUrl = safe(configUrl);
@@ -132,8 +150,13 @@ public class PlaybackProgressInput {
         input.vodName = firstString(input.vodName, object, "name", "title", "vod_name");
         input.vodPic = firstString(input.vodPic, object, "pic", "poster", "vodPic", "vod_pic");
         input.flag = firstString(input.flag, object, "vodFlag", "line", "source");
+        input.sourceBindingKey = firstString(input.sourceBindingKey, object, "flagKey", "source_binding_key");
         input.episodeName = firstString(input.episodeName, object, "episode", "episodeTitle", "vodRemarks", "remarks");
         input.episodeUrl = firstString(input.episodeUrl, object, "url", "playUrl", "episode_url");
+        input.mediaType = firstString(input.mediaType, object, "media_type", "type");
+        input.tmdbId = firstInt(input.tmdbId, object, "tmdb_id", "tmdb");
+        input.seasonNumber = firstInt(input.seasonNumber, object, "season", "season_number", "tmdbSeasonNumber");
+        input.episodeNumber = firstInt(input.episodeNumber, object, "episodeNumber", "episode_number", "tmdb_episode_number");
         input.positionMs = firstLong(input.positionMs, object, "position", "position_ms", "pos");
         input.durationMs = firstLong(input.durationMs, object, "duration", "duration_ms");
         input.updatedAt = firstLong(input.updatedAt, object, "timestamp", "updateTime", "updated_at");
@@ -184,6 +207,23 @@ public class PlaybackProgressInput {
             }
         }
         return current;
+    }
+
+    private static int firstInt(int current, JsonObject object, String... keys) {
+        if (current > 0) return current;
+        for (String key : keys) {
+            try {
+                JsonElement value = object.get(key);
+                if (value != null && !value.isJsonNull()) return value.getAsInt();
+            } catch (Exception ignored) {
+            }
+        }
+        return current;
+    }
+
+    public boolean hasTmdbEpisodeIdentity() {
+        normalize();
+        return "tv".equals(mediaType) && tmdbId > 0 && seasonNumber >= 0 && episodeNumber > 0;
     }
 
     private static String part(String key, int index) {

@@ -18,6 +18,7 @@ public class VodOvalHolder extends BaseVodHolder {
         super(binding.getRoot());
         this.binding = binding;
         this.listener = listener;
+        binding.name.setSelected(true);
     }
 
     public VodOvalHolder size(int[] size) {

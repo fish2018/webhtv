@@ -45,7 +45,7 @@
                 android:textColor="#202124"
                 android:textSize="22sp"
                 android:textStyle="bold"
-                tools:text="确定退出应用？" />
+                tools:text="退出应用" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/message"
@@ -56,7 +56,7 @@
                 android:text="@string/exit_confirm_message"
                 android:textColor="#5F6368"
                 android:textSize="14sp"
-                tools:text="当前页面将关闭；如果正在播放，会继续留在后台。" />
+                tools:text="应用将关闭，播放和后台服务也会停止。" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -88,9 +88,27 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:gravity="center"
-            android:nextFocusRight="@id/positive"
             android:singleLine="true"
             android:text="@string/dialog_negative"
+            android:textColor="@color/exit_confirm_secondary_text"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/backgroundPlay"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:background="@drawable/selector_exit_confirm_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
+            android:nextFocusLeft="@id/negative"
+            android:nextFocusRight="@id/positive"
+            android:singleLine="true"
+            android:text="@string/exit_confirm_background"
             android:textColor="@color/exit_confirm_secondary_text"
             android:textSize="15sp"
             android:textStyle="bold" />
@@ -105,7 +123,6 @@
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:gravity="center"
-            android:nextFocusLeft="@id/negative"
             android:singleLine="true"
             android:text="@string/exit_confirm_positive"
             android:textColor="#FFFFFF"

@@ -449,15 +449,16 @@ const value = await fm.cache.get("key", "rule"); // 不存在返回 ""
 await fm.cache.del("key", "rule");
 ```
 
-实际存储 key 为 `cache_<rule>_<key>`。扩展建议直接用 `GM_getValue/GM_setValue`（自动带扩展隔离前缀），手写 `rule` 时注意避免与其它扩展/页面冲突。
+逻辑缓存 key 为 `cache_<rule>_<key>`，底层存放在应用缓存目录，用户清理缓存时会一并删除。扩展建议直接用 `GM_getValue/GM_setValue`（自动带扩展隔离前缀），手写 `rule` 时注意避免与其它扩展/页面冲突。
 
 ### 7.5 App 能力
 
 | 接口 | 说明 |
 | --- | --- |
 | `fm.search(keyword, { direct, pic, wallPic })` | 打开原生搜索；`direct: true` 直达结果列表，`pic`/`wallPic` 会带入后续搜索结果播放链路 |
+| `fm.openVod()` / `fm.openSite()` | 返回原生点播首页 / 打开内容源选择器 |
 | `fm.openLive()` / `fm.openKeep()` / `fm.openSetting()` | 打开直播 / 收藏 / 设置 |
-| `fm.history()` | 最近 60 天观看记录数组（字段见主文档 19.3），可用于"从播放页返回后补偿进度" |
+| `fm.history()` | 观看记录数组（字段见主文档 19.3），可用于"从播放页返回后补偿进度" |
 
 ### 7.6 信息
 

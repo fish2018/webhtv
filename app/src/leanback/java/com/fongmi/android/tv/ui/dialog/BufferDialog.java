@@ -20,7 +20,7 @@ public class BufferDialog extends BaseAlertDialog {
     private DialogBufferBinding binding;
 
     public static void show(FragmentActivity activity) {
-        String[] items = new String[10];
+        String[] items = new String[15];
         for (int i = 0; i < items.length; i++) items[i] = (i + 1) + activity.getString(R.string.times);
         ChoiceDialog.showSingle(activity, R.string.player_buffer, items, PlayerSetting.getBuffer() - 1, which -> ((BufferListener) activity).setBuffer(which + 1));
     }

@@ -19,6 +19,12 @@
             android:visibility="gone" />
 
         <View
+            android:id="@+id/videoContextScrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/shape_video_context_scrim" />
+
+        <View
             android:id="@+id/statusBar"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -560,6 +566,7 @@
                     </androidx.appcompat.widget.LinearLayoutCompat>
 
                     <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/flagTitleBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
@@ -568,6 +575,7 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/flagText"
                             style="@style/Video.ContextText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -623,6 +631,7 @@
                         tools:visibility="visible" />
 
                     <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/episodeTitleBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
@@ -631,6 +640,7 @@
                         android:gravity="center_vertical">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/episodeTitle"
                             style="@style/Video.ContextText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -638,20 +648,53 @@
                             android:textColor="@color/white"
                             android:textSize="16sp" />
 
-                        <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/reverse"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="8dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_action_reverse"
-                            android:visibility="gone"
-                            tools:visibility="visible" />
-
                         <View
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_weight="1" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/reverse"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:contentDescription="@string/detail_episode_reverse"
+                            android:focusable="true"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_action_sort_asc"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/episodeFileName"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:contentDescription="@string/detail_episode_file_name_scraped_action"
+                            android:focusable="true"
+                            android:padding="8dp"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_action_name_full"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/episodeViewMode"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="8dp"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_site_list"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/more"
@@ -697,6 +740,87 @@
                         app:spanCount="6"
                         tools:itemCount="36"
                         tools:listitem="@layout/adapter_episode_grid" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tmdbPersonalTmdbRecommendationsLabel"
+                        style="@style/Video.ContextText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:text="@string/tmdb_personal_recommendations_tmdb_label"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/tmdbPersonalTmdbRecommendations"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tmdbPersonalDoubanRecommendationsLabel"
+                        style="@style/Video.ContextText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:text="@string/tmdb_personal_recommendations_douban_label"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/tmdbPersonalDoubanRecommendations"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tmdbPersonalAiRecommendationsLabel"
+                        style="@style/Video.ContextText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:text="@string/tmdb_personal_recommendations_ai_label"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/tmdbPersonalAiRecommendations"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:visibility="gone"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/quick"

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background" android:height="4dp" android:gravity="center_vertical" android:drawable="@drawable/shape_audio_seek_bg" />
+    <item android:id="@android:id/progress" android:height="4dp" android:gravity="center_vertical" android:drawable="@drawable/shape_audio_seek_progress" />
+</layer-list>

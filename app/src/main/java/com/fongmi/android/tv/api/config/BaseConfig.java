@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
@@ -50,14 +51,18 @@ abstract class BaseConfig {
     protected void onLoadSuccess() {
     }
 
-    public synchronized void ensureLoaded() {
+    public void ensureLoaded() {
         try {
             if (isLoaded()) return;
-            beforeLoad();
-            if (config == null) config = defaultConfig();
-            Server.get().start();
-            load(config);
-            onLoadSuccess();
+            BaseLoader.get().awaitClear();
+            synchronized (this) {
+                if (isLoaded()) return;
+                beforeLoad();
+                if (config == null) config = defaultConfig();
+                Server.get().start();
+                load(config);
+                onLoadSuccess();
+            }
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -97,6 +102,7 @@ abstract class BaseConfig {
 
     protected void loadConfig(int id, Config config, Callback callback) {
         try {
+            BaseLoader.get().awaitClear();
             Server.get().start();
             OkHttp.cancel(getTag());
             load(config);

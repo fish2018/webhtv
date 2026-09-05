@@ -7,6 +7,9 @@ import android.os.Bundle;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.playback.HistoryResumePayload;
 import com.fongmi.android.tv.databinding.ActivitySearchBinding;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.fragment.CollectFragment;
@@ -53,6 +56,26 @@ public class SearchActivity extends BaseActivity {
         activity.startActivity(intent);
     }
 
+    public static void directFromHistory(Activity activity, History history) {
+        directFromHistory(activity, history, history.getVodName(), VodConfig.getCid());
+    }
+
+    public static void directFromHistory(Activity activity, History history, String keyword) {
+        directFromHistory(activity, history, keyword, VodConfig.getCid());
+    }
+
+    public static void directFromHistory(Activity activity, History history, String keyword, int targetCid) {
+        Intent intent = new Intent(activity, SearchActivity.class);
+        intent.putExtra("keyword", keyword == null || keyword.isEmpty() ? history.getVodName() : keyword);
+        intent.putExtra("pic", history.getVodPic());
+        intent.putExtra("wallPic", history.getWallPic());
+        intent.putExtra("direct", true);
+        intent.putExtra("historyResumeCid", history.getCid());
+        intent.putExtra("historyResumeKey", HistoryResumePayload.encode(history));
+        intent.putExtra("historyResumeTargetCid", targetCid);
+        activity.startActivity(intent);
+    }
+
     private String getKeyword() {
         return getIntent().getStringExtra("keyword");
     }
@@ -73,6 +96,18 @@ public class SearchActivity extends BaseActivity {
         return getIntent().getStringExtra("wallPic");
     }
 
+    private int getHistoryResumeCid() {
+        return getIntent().getIntExtra("historyResumeCid", -1);
+    }
+
+    private String getHistoryResumeKey() {
+        return getIntent().getStringExtra("historyResumeKey");
+    }
+
+    private int getHistoryResumeTargetCid() {
+        return getIntent().getIntExtra("historyResumeTargetCid", -1);
+    }
+
     @Override
     protected ViewBinding getBinding() {
         return ActivitySearchBinding.inflate(getLayoutInflater());
@@ -81,7 +116,7 @@ public class SearchActivity extends BaseActivity {
     @Override
     protected void initView(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
-            if (isDirect()) getSupportFragmentManager().beginTransaction().replace(R.id.container, CollectFragment.newInstance(getKeyword(), getSiteKey(), getPic(), getWallPic()), CollectFragment.class.getSimpleName()).commit();
+            if (isDirect()) getSupportFragmentManager().beginTransaction().replace(R.id.container, CollectFragment.newInstance(getKeyword(), getSiteKey(), "", getPic(), getWallPic(), getHistoryResumeCid(), getHistoryResumeKey(), getHistoryResumeTargetCid()), CollectFragment.class.getSimpleName()).commit();
             else getSupportFragmentManager().beginTransaction().replace(R.id.container, SearchFragment.newInstance(getKeyword(), getSiteKey(), getPic(), getWallPic()), SearchFragment.class.getSimpleName()).commit();
         }
     }

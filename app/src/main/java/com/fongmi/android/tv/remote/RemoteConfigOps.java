@@ -136,6 +136,7 @@ public final class RemoteConfigOps {
             JsonObject item = new JsonObject();
             item.addProperty("key", site.getKey());
             item.addProperty("name", site.getName());
+            item.addProperty("displayName", site.getDisplayName());
             item.addProperty("homePage", site.hasHomePage());
             item.addProperty("selected", TextUtils.equals(site.getKey(), VodConfig.get().getHome().getKey()));
             sites.add(item);

@@ -18,6 +18,8 @@ public class VodRectHolder extends BaseVodHolder {
         super(binding.getRoot());
         this.binding = binding;
         this.listener = listener;
+        binding.name.setSelected(true);
+        binding.remark.setSelected(true);
     }
 
     public VodRectHolder size(int[] size) {

@@ -2,6 +2,7 @@ lxml
 ujson
 pyquery
 requests
+certifi
 cachetools
 pycryptodome
 beautifulsoup4

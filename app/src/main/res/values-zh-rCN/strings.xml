@@ -1,7 +1,12 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">影视</string>
+    <string name="app_name">默影视</string>
+   <string name="setting_app_branding">APP 图标</string>
+    <string name="app_branding_icon_current">默认图标</string>
+    <string name="app_branding_icon_history">原版图标</string>
+    <string name="app_branding_icon_select">选择图标</string>
+    <string name="app_exit_confirm">再按一次退出应用</string>
 
     <!-- Live -->
     <string name="live_pass">密码</string>
@@ -19,14 +24,28 @@
     <string name="detail_actor">演员：<xliff:g name="name">%s</xliff:g></string>
     <string name="detail_content">简介：<xliff:g name="name">%s</xliff:g></string>
     <string name="detail_desc">简介</string>
+    <string name="detail_episode">选集</string>
+    <string name="detail_episode_season_context">选集 · 第 %1$d 季</string>
+    <string name="detail_episode_reverse">倒序</string>
+    <string name="detail_episode_forward">正序</string>
+    <string name="detail_episode_view_grid">网格</string>
+    <string name="detail_episode_view_list">列表</string>
+    <string name="detail_episode_view_grid_action">切换到网格</string>
+    <string name="detail_episode_view_list_action">切换到列表</string>
+    <string name="detail_episode_file_name_original">原文件名</string>
+    <string name="detail_episode_file_name_scraped">刮削文件名</string>
+    <string name="detail_episode_file_name_original_action">切换到原文件名</string>
+    <string name="detail_episode_file_name_scraped_action">切换到刮削文件名</string>
 
     <!-- Keep -->
     <string name="keep">收藏</string>
-    <string name="keep_add">已加入收藏</string>
+    <string name="keep_add">已收藏</string>
     <string name="keep_del">已取消收藏</string>
-    <string name="exit_confirm_title">确定退出应用？</string>
-    <string name="exit_confirm_message">当前页面将关闭；如果正在播放，会继续留在后台。</string>
-    <string name="exit_confirm_positive">确认退出</string>
+    <string name="exit_confirm_title">退出应用</string>
+    <string name="exit_confirm_message">应用将关闭，播放和后台服务也会停止。</string>
+    <string name="exit_confirm_playing_message">当前正在播放；后台播放会继续播放，完全退出会停止播放和后台服务。</string>
+    <string name="exit_confirm_background">后台播放</string>
+    <string name="exit_confirm_positive">完全退出</string>
 
     <!-- Play -->
     <string name="play">播放</string>
@@ -82,9 +101,16 @@
     <string name="play_switch_flag">正在切换线路至「<xliff:g name="name">%s</xliff:g>」</string>
     <string name="play_switch_site">正在切换站源至「<xliff:g name="name">%s</xliff:g>」</string>
     <string name="play_switch_parse">正在切换解析至「<xliff:g name="name">%s</xliff:g>」</string>
+    <string name="play_night_mode">夜间护眼</string>
+    <string name="night_mode_off">护眼关闭</string>
+    <string name="night_mode_low">轻度护眼</string>
+    <string name="night_mode_medium">中度护眼</string>
+    <string name="night_mode_high">重度护眼</string>
 
     <!-- Danmaku Setting -->
     <string name="danmaku">弹幕</string>
+    <string name="danmaku_show_on">弹幕已开启</string>
+    <string name="danmaku_show_off">弹幕已关闭</string>
     <string name="danmaku_select">选择弹幕</string>
     <string name="danmaku_setting">弹幕设置</string>
     <string name="danmaku_text_size">字体缩放</string>
@@ -153,7 +179,114 @@
     <string name="setting_builtin_wall">内置壁纸</string>
     <string name="setting_player">播放设置</string>
     <string name="setting_danmaku">弹幕设置</string>
+    <string name="setting_subtitle">字幕设置</string>
     <string name="setting_enhance">增强功能</string>
+    <string name="setting_tmdb">TMDB</string>
+    <string name="setting_ai">AI 服务</string>
+    <string name="setting_ai_group_recommendation">推荐</string>
+    <string name="setting_ai_group_detection">内容识别</string>
+    <string name="setting_ai_group_subtitle">字幕</string>
+    <string name="setting_personal">个性设置</string>
+    <string name="setting_group_rule">分组规则</string>
+    <string name="setting_group_rule_summary">已启用 %1$d / %2$d</string>
+    <string name="group_rule_add">新增规则</string>
+    <string name="group_rule_edit">编辑规则</string>
+    <string name="group_rule_manage">管理</string>
+    <string name="group_rule_delete">删除</string>
+    <string name="group_rule_name">规则名称</string>
+    <string name="group_rule_regex">正则表达式</string>
+    <string name="group_rule_regex_hint">第 1 个捕获组作为分组名。多个已启用规则为或关系，命中即独立分组。</string>
+    <string name="group_rule_regex_required">请填写正则表达式</string>
+    <string name="group_rule_regex_invalid">正则表达式无效</string>
+    <string name="group_rule_empty_custom">暂无自定义或接口规则</string>
+    <string name="group_rule_edit_item">编辑 · %1$s\n%2$s</string>
+    <string name="group_rule_interface_item">接口 · %1$s\n%2$s</string>
+    <string name="group_rule_ai_identify">AI 识别</string>
+    <string name="group_rule_ai_reidentify">AI 重识别</string>
+    <string name="group_rule_ai_privacy_title">使用 AI 识别分组</string>
+    <string name="group_rule_ai_privacy_message">将把当前点播接口中可见的源名称发送到你配置的 AI 服务；源较多时可能自动拆分为多次请求（最多 8 次）。接口地址、源 API、扩展配置、播放记录和 AI 密钥不会写入分析内容。</string>
+    <string name="group_rule_ai_start">开始识别</string>
+    <string name="group_rule_ai_config_incomplete">AI 服务配置不完整，请先到“增强功能 → AI 通用配置”补全端点、API key 和模型。</string>
+    <string name="group_rule_ai_no_sources">当前点播接口没有可分析的可见源名称。</string>
+    <string name="group_rule_ai_analyzing_title">AI 正在识别分组</string>
+    <string name="group_rule_ai_analyzing_message">正在分析 %1$d 个源名称…候选规则会先在本地验证，再进入预览。</string>
+    <string name="group_rule_ai_preview_title">AI 分组预览</string>
+    <string name="group_rule_ai_preview_summary">%1$d 个源 · %2$d 条候选规则 · 最终覆盖 %3$d/%4$d（%5$d%%）</string>
+    <string name="group_rule_ai_groups_title">提取后的分组</string>
+    <string name="group_rule_ai_rules_title">生成的规则</string>
+    <string name="group_rule_ai_rule_summary">%1$s\n%2$s\n命中 %3$d 个源 · %4$d 个分组 · 新增覆盖 %5$d 个 · 稳定覆盖 %6$d 个</string>
+    <string name="group_rule_ai_unmatched">未分组 · %1$d 个源</string>
+    <string name="group_rule_ai_more_groups">……还有 %1$d 个分组</string>
+    <string name="group_rule_ai_preview_note">应用后只替换当前点播接口的 AI 规则，内置规则、接口规则和手动规则不会改变。</string>
+    <string name="group_rule_ai_retry">重试</string>
+    <string name="group_rule_ai_apply">应用规则</string>
+    <string name="group_rule_ai_select_required">请至少保留一条候选规则后再应用。</string>
+    <string name="group_rule_ai_saved">已为“%2$s”保存 %1$d 条 AI 分组规则</string>
+    <string name="group_rule_ai_failed_title">AI 识别失败</string>
+    <string name="group_rule_ai_error_http">AI 服务返回 HTTP %1$s。</string>
+    <string name="group_rule_ai_error_invalid_response">AI 返回的规则内容无效，可以点击重试。</string>
+    <string name="group_rule_ai_error_no_valid_rules">AI 没有生成安全且有效的分组规则。</string>
+    <string name="group_rule_ai_error_timeout">AI 识别请求超时。</string>
+    <string name="group_rule_ai_error_network">无法连接 AI 服务。</string>
+    <string name="group_rule_ai_error_too_many_sources">源名称数量过多，无法在安全请求范围内完成分析，请精简当前接口后重试。</string>
+    <string name="group_rule_ai_error_prompt_too_large">自定义分组规则提示词过长，请在 AI 提示词配置中精简。</string>
+    <string name="group_rule_ai_error_generic">AI 识别失败。</string>
+    <string name="group_rule_ai_config_changed">识别期间点播接口已切换，请重新识别。</string>
+    <string name="group_rule_ai_label">AI · %1$s\n%2$s</string>
+    <string name="group_rule_ai_current_interface">当前点播接口</string>
+
+    <string name="setting_home_vod_auto_load">默认加载点播</string>
+    <string name="setting_home_site_lock">首页源锁定</string>
+    <string name="setting_auto_backup">自动备份</string>
+    <string name="setting_fullscreen_menu_key">全屏菜单键</string>
+    <string name="setting_home_menu_key">首页菜单键</string>
+    <string name="setting_play_back_to_detail">播放返回详情</string>
+    <string name="setting_play_speed">播放倍速</string>
+    <string name="setting_episode_history">记录分集进度</string>
+    <string name="setting_history_aggregation">历史记录跨源聚合</string>
+    <string name="setting_history_aggregation_hint">基于 TMDB 匹配统一不同源的历史记录</string>
+    <string name="setting_global_history">全局历史续播</string>
+    <string name="history_other_config">其他配置</string>
+    <string name="history_source_unavailable">接口已失效</string>
+    <string name="history_source_searching">正在匹配可续播播放源…</string>
+    <string name="history_source_not_found">未找到可可靠续播的播放源</string>
+    <string name="history_source_open_search">打开全局搜索</string>
+    <string name="history_source_episode_missing">该播放源与历史记录不匹配或缺少对应集数</string>
+    <string name="history_source_load_failed">播放源加载失败</string>
+    <string name="history_record_missing">历史记录已不存在</string>
+    <string name="history_config_changed">点播配置已切换，请重新操作</string>
+    <string name="dialog_delete_global_history">确定删除所有点播配置的历史记录吗？</string>
+    <string name="setting_home_history">首页最近观看</string>
+    <string name="setting_personal_recommendation">个性推荐</string>
+    <string name="setting_recommendation_feedback">不感兴趣管理</string>
+    <string name="setting_recommendation_feedback_count">%1$d 项 · 90 天后自动恢复</string>
+    <string name="setting_recommendation_feedback_empty">暂无 · 90 天后自动恢复</string>
+    <string name="setting_tmdb_episode_file_size">TMDB 剧集保留文件大小</string>
+    <string name="setting_auto_skip_intro_outro">自动跳过片头片尾</string>
+    <string name="intro_skip_confirm_title">跳过片头/片尾？</string>
+    <string name="intro_skip_confirm_intro">跳过片头</string>
+    <string name="intro_skip_confirm_recap">跳过前情提要</string>
+    <string name="intro_skip_confirm_outro">跳过片尾</string>
+    <string name="intro_skip_confirm_preview">跳过下集预告</string>
+    <!-- 控制栏上显示的自动探测值（非用户手设），%1$s 为时间 -->
+    <string name="intro_skip_detected_value">~%1$s</string>
+    <string name="intro_skip_kind_recap">前情回顾</string>
+    <string name="intro_skip_kind_intro">片头</string>
+    <string name="intro_skip_kind_outro">片尾</string>
+    <string name="intro_skip_kind_preview">下集预告</string>
+    <string name="setting_intro_skip_kinds">跳过的片段类型</string>
+    <string name="intro_skip_kinds_none">未选择</string>
+    <string name="intro_skip_kinds_all">全部</string>
+    <!-- 自动跳过后的提示，%1$s 为片段类型 -->
+    <string name="intro_skip_notice_seeked">已跳过%1$s</string>
+    <string name="intro_skip_notice_ended">%1$s已跳过，进入下一集</string>
+    <string name="personal_recommendation_confirm_title">启用个性推荐</string>
+    <string name="personal_recommendation_confirm_message">个性推荐会读取本机观看历史中的影片名称，并可能将当前影片名和历史影片名作为搜索关键词发送到 TMDB 或豆瓣，用于生成相关作品列表。\n\n不会发送播放地址、账号信息、站源配置或播放进度。你可以随时关闭此功能。</string>
+    <string name="setting_search_thread">搜索线程</string>
+    <string name="setting_search_ui">搜索布局</string>
+    <string name="setting_search_column">搜索结果列数</string>
+    <string name="setting_site_column">站点展示模式</string>
+    <string name="setting_search_result_sort">搜索结果模式</string>
     <string name="repo_github">GitHub 仓库</string>
     <string name="repo_cnb">CNB 仓库</string>
     <string name="setting_debug_log">调试日志</string>
@@ -371,7 +504,73 @@
     <string name="setting_site_health_enable">启用站点健康排序</string>
     <string name="setting_site_health_dialog_sort">站点弹窗排序</string>
     <string name="site_health_clear_done">站点健康记录已清空</string>
+    <string name="site_health_report_view">查看报表</string>
+    <string name="site_health_report_title">播放链路健康报表</string>
+    <string name="site_health_report_empty">暂无站点健康样本</string>
+    <string name="site_health_report_filter_empty">当前筛选暂无站点样本</string>
+    <string name="site_health_filter_all">全部</string>
+    <string name="site_health_filter_bad">异常</string>
+    <string name="site_health_filter_warn">降级</string>
+    <string name="site_health_sort_failures">失败</string>
+    <string name="site_health_sort_recent">最近</string>
+    <string name="site_health_sort_rate">成功率</string>
+    <string name="site_health_sort_samples">样本</string>
+    <string name="site_health_report_summary">%1$d 个站点 · %2$d 条样本 · %3$d 次失败 · %4$d 个降级</string>
+    <string name="site_health_report_summary_reason">%1$d 个站点 · %2$d 条样本 · %3$d 次失败 · %4$d 个降级 · 主要原因 %5$s x%6$d</string>
+    <string name="site_health_report_setting_summary">%1$d 个站点 · %2$d 条样本</string>
+    <string name="site_health_report_row_meta">%1$d 条样本 · %2$d 次失败</string>
+    <string name="site_health_report_stage">%1$s · %2$s · %3$d/%4$d</string>
+    <string name="site_health_report_rate">%1$d%%</string>
+    <string name="site_health_report_no_data">暂无数据</string>
+    <string name="site_health_report_empty_count">空结果 %1$d</string>
+    <string name="site_health_report_cost">%1$dms</string>
+    <string name="site_health_report_reason">原因：%1$s x%2$d</string>
+    <string name="site_health_report_reason_tag">%1$s x%2$d</string>
+    <string name="site_health_report_recent_errors">最近错误</string>
+    <string name="site_health_report_recent_error">%1$s：%2$s</string>
+    <string name="site_health_report_recent_error_time">%1$s · %2$s · %3$s</string>
+    <string name="site_health_clear_site">清空本站</string>
+    <string name="site_health_clear_site_title">清空站点统计？</string>
+    <string name="site_health_clear_site_message">清空“%1$s”的健康样本？</string>
+    <string name="site_health_stage_search">搜索</string>
+    <string name="site_health_stage_detail">详情</string>
+    <string name="site_health_stage_parse">解析</string>
+    <string name="site_health_stage_play">播放</string>
+    <string name="site_health_status_good">健康</string>
+    <string name="site_health_status_warn">降级</string>
+    <string name="site_health_status_bad">异常</string>
+    <string name="site_health_status_unknown">未知</string>
+    <string name="site_health_reason_empty_result">搜索无结果</string>
+    <string name="site_health_reason_timeout">请求超时</string>
+    <string name="site_health_reason_http_403">HTTP 403</string>
+    <string name="site_health_reason_http_404">HTTP 404</string>
+    <string name="site_health_reason_http_429">HTTP 429</string>
+    <string name="site_health_reason_http_5xx">HTTP 5xx</string>
+    <string name="site_health_reason_network">网络错误</string>
+    <string name="site_health_reason_parse_failed">解析失败</string>
+    <string name="site_health_reason_vip_required">需要会员</string>
+    <string name="site_health_reason_geo_blocked">地区限制</string>
+    <string name="site_health_reason_drm_or_encrypted">加密或 DRM</string>
+    <string name="site_health_reason_manifest_failed">播放清单异常</string>
+    <string name="site_health_reason_codec_unsupported">解码不支持</string>
+    <string name="site_health_reason_cors_blocked">CORS 拦截</string>
+    <string name="site_health_reason_search_failed">搜索失败</string>
+    <string name="site_health_reason_detail_failed">详情失败</string>
+    <string name="site_health_reason_play_failed">播放失败</string>
     <string name="setting_web_home_extension">WebHome 扩展</string>
+    <string name="setting_web_home_theme">全局 WebHome 皮肤</string>
+    <string name="setting_web_home_theme_eclipse">Eclipse（内置）</string>
+    <string name="setting_web_home_theme_custom">自定义网址</string>
+    <string name="setting_web_home_theme_url_hint">https://example.com/webhome.html</string>
+    <string name="setting_web_home_theme_invalid_url">请输入 HTTPS WebHome 网址</string>
+    <string name="setting_web_home_theme_remote_warning_title">信任这个远程主题吗？</string>
+    <string name="setting_web_home_theme_remote_warning_message">来自 %1$s 的远程主题会运行网站代码，并可请求媒体库数据或触发获准的应用操作。仅在信任提供方时继续。</string>
+    <string name="setting_web_home_theme_recovery">版本恢复</string>
+    <string name="setting_web_home_theme_recovery_unavailable">暂无可恢复的主题版本</string>
+    <string name="setting_web_home_theme_rollback_message">回退到上一个已验证的主题版本？当前版本会保留，之后仍可重试。</string>
+    <string name="setting_web_home_theme_retry_message">重试已回退的主题版本？如果首次加载再次失败，将自动恢复稳定版本。</string>
+    <string name="setting_web_home_theme_recovery_success">主题版本已更新</string>
+    <string name="setting_web_home_theme_recovery_failed">无法更新主题版本</string>
     <string name="setting_web_home_fullscreen">WebHome 主页全屏</string>
     <string name="setting_csp_warmup">CSP预热</string>
     <string name="setting_csp_warmup_default">默认</string>
@@ -464,6 +663,7 @@
         <item>总时长，单位毫秒。</item>
         <item>进度比例，范围 0 到 1。</item>
         <item>播放倍速。</item>
+        <item>播放倍速是否显式覆盖个人默认值。</item>
         <item>是否视为完播。</item>
         <item>当前集原始 URL，可能包含源站参数。</item>
         <item>当前集序号，可识别时返回。</item>
@@ -664,6 +864,21 @@
     <string name="setting_one_key_sync">一键同步</string>
     <string name="setting_incognito">无痕模式</string>
     <string name="setting_drive_check">网盘检测</string>
+    <string name="setting_audio_source">音频源配置</string>
+    <string name="setting_novel_source">小说源配置</string>
+    <string name="setting_comic_source">漫画源配置</string>
+    <string name="setting_local_reader">本地小说漫画阅读</string>
+    <string name="setting_local_reader_summary">支持多种格式</string>
+    <string name="setting_site_name">站源名称与分组</string>
+    <string name="setting_site_name_summary">已自定义 %1$d 个</string>
+    <string name="site_name_custom">自定义名称</string>
+    <string name="site_name_original">原始名称：%1$s</string>
+    <string name="site_name_key">站源 Key：%1$s</string>
+    <string name="site_name_group_hint">在自定义名称中使用 [标签] 创建分组，也可在个性设置中配置正则分组规则</string>
+    <string name="site_name_empty">当前接口暂无可用站源</string>
+    <string name="site_name_reset_title">重置自定义站源名称？</string>
+    <string name="site_name_reset_message">将清除当前接口的全部自定义名称和分组。</string>
+    <string name="setting_short_drama_source">短剧源配置</string>
     <string name="setting_theme_color">主题色彩</string>
     <string name="setting_appearance">外观与语言</string>
     <string name="setting_appearance_summary">4 项</string>
@@ -681,6 +896,8 @@
     <string name="setting_about">关于</string>
     <string name="setting_version">版本</string>
     <string name="setting_choose">选择</string>
+    <string name="setting_choose_dir">文件夹</string>
+    <string name="setting_reset">重置</string>
     <string name="setting_delete">删除</string>
     <string name="setting_disable">禁用</string>
     <string name="setting_enable">启用</string>
@@ -696,6 +913,19 @@
     <string name="about_disclaimer">WebHomeTV 是基于开源生态二次开发的技术学习与研究项目，软件本体完全免费，不提供任何付费服务、影视内容、直播源、接口源、资源存储或内容分发能力。\n\n本软件仅供技术学习、研究和个人测试使用，请在下载、安装或试用后 24 小时内自行卸载。继续使用本软件所产生的一切行为及后果，由使用者自行承担。\n\n本软件不内置、不售卖、不传播任何影视资源，不对用户自行添加的接口、站源、插件、脚本、链接、网盘资源或第三方服务内容负责。使用者应遵守所在地法律法规，尊重版权方和内容提供方的合法权益，不得将本软件用于任何侵权、盗版、传播非法内容或其他违法违规用途。\n\n严禁任何个人或组织以本软件名义进行售卖、引流、收费维护、会员服务、广告变现、盒子预装、电视盒子捆绑销售或其他任何形式的获益行为。对于将本软件内置于电视盒子、机顶盒、付费套餐或商业服务中进行销售、推广的行为，项目方明确反对并予以谴责。\n\n如你不同意以上声明，请立即停止使用并卸载本软件。</string>
     <string name="about_check_update">检查更新</string>
     <string name="about_acknowledge">我已知悉</string>
+    <string name="setting_github_proxy">GitHub 加速源</string>
+    <string name="setting_github_proxy_short">加速源</string>
+    <string name="setting_github_proxy_hint">输入加速源 URL</string>
+    <string name="setting_github_proxy_message">点选列表中的源作为当前加速源，可在下方添加自定义源。关闭加速后 GitHub Raw/Release 使用直连。</string>
+    <string name="setting_github_proxy_enabled">使用 GitHub 加速</string>
+    <string name="setting_github_proxy_add">添加</string>
+    <string name="setting_github_proxy_remove">移除</string>
+    <string name="setting_github_proxy_reset">重置默认</string>
+    <string name="setting_github_proxy_invalid">请输入有效的 http/https 地址</string>
+    <string name="setting_github_proxy_probe">探测延迟</string>
+    <string name="setting_github_proxy_latency">%1$d ms</string>
+    <string name="setting_github_proxy_latency_failed">失败</string>
+    <string name="setting_github_proxy_latency_testing">测试中</string>
 
     <!-- Backup & Restore -->
     <string name="restore_select">选择备份</string>
@@ -703,6 +933,7 @@
     <string name="restore_fail">恢复失败</string>
     <string name="backup_success">备份成功</string>
     <string name="backup_fail">备份失败</string>
+    <string name="backup_permission_denied">需要存储权限才能备份或恢复数据</string>
 
     <!-- Device Sync -->
     <string name="device_select">选择设备</string>
@@ -803,25 +1034,33 @@
     <string name="sync_select_device_first">请先选择设备</string>
     <string name="sync_failed_with_reason">同步失败：%1$s</string>
     <string name="sync_receive_success">已接收同步数据</string>
-    <string name="apk_push_url_busy">已有 APK 链接下载任务正在进行</string>
-    <string name="apk_push_url_schedule_failed">无法启动 APK 链接下载</string>
-    <string name="apk_push_url_downloading">已收到 APK 链接，正在本机下载…</string>
-    <string name="apk_push_url_install_ready">APK 已下载，请确认安装</string>
-    <string name="apk_push_url_download_failed">APK 链接下载失败：%1$s</string>
-    <string name="apk_push_url_progress_title">正在接收 APK</string>
-    <string name="apk_push_url_progress_hint">正在下载局域网设备推送的 APK，完成后仍需在 Android 系统界面确认安装。</string>
-    <string name="apk_push_url_progress_known">正在接收 %1$d%% · %2$s / %3$s</string>
-    <string name="apk_push_url_progress_unknown">已接收 %1$s</string>
-    <string name="apk_push_url_progress_detail_remaining">%1$s/s · 剩余 %2$s · 已用 %3$s</string>
-    <string name="apk_push_url_progress_detail">%1$s/s · 已用 %2$s</string>
-    <string name="apk_push_url_cancel">取消下载</string>
-    <string name="apk_push_url_canceled">已取消 APK 下载</string>
 
     <!-- Player -->
     <string name="player">播放核心</string>
+    <string name="player_default">默认播放核心</string>
     <string name="player_render">渲染方式</string>
+    <string name="multi_thread_proxy_button">多线程</string>
+    <string name="multi_thread_proxy_title">多线程播放加速</string>
+    <string name="multi_thread_proxy_enable">启用多线程播放（实验功能）</string>
+    <string name="multi_thread_proxy_enable_hint">仅对直连 HTTP(S) 渐进式媒体使用本地代理。</string>
+    <string name="multi_thread_proxy_threads">全局并行线程数</string>
+    <string name="multi_thread_proxy_shards">全局分片数</string>
+    <string name="multi_thread_proxy_domain_rules">按域名覆盖</string>
+    <string name="multi_thread_proxy_domain_rules_hint">每行一条：example.com,cdn.example.com=6,12</string>
+    <string name="multi_thread_proxy_domain_rules_help">一条规则可填写多个域名，所有域名共用同一组线程数和分片数；同时匹配其子域名。未匹配的域名使用全局设置。</string>
+    <string name="multi_thread_proxy_saved">多线程设置已保存。</string>
+    <string name="multi_thread_proxy_save_failed">多线程设置应用失败</string>
+    <string name="multi_thread_proxy_extract_domain">提取当前域名</string>
+    <string name="multi_thread_proxy_domain_added">已添加当前域名：%1$s</string>
+    <string name="multi_thread_proxy_domain_unavailable">当前播放地址无法提取有效域名</string>
+    <string name="multi_thread_proxy_domain_exists">当前域名已存在于覆盖规则中</string>
+    <string name="multi_thread_proxy_apply_title">应用多线程设置</string>
+    <string name="multi_thread_proxy_apply_message">是否立即重新加载当前视频以应用新设置？将尽量保留当前播放位置。</string>
+    <string name="multi_thread_proxy_apply_now">立即生效</string>
+    <string name="multi_thread_proxy_apply_later">下次播放</string>
+    <string name="multi_thread_proxy_applied">已重新加载当前视频并应用多线程设置。</string>
     <string name="player_button_config">播放器按钮</string>
-    <string name="player_button_config_summary">显示 %1$d/%2$d</string>
+    <string name="player_button_config_summary">全局启用 %1$d/%2$d，各模式按支持与可用状态显示</string>
     <string name="player_pad_live">平板直播</string>
     <string name="player_button_up">上移</string>
     <string name="player_button_down">下移</string>
@@ -833,6 +1072,7 @@
     <string name="player_performance_auto">自动</string>
     <string name="player_performance_compatible">兼容</string>
     <string name="player_performance_lightweight">轻量</string>
+    <string name="player_performance_original">原版</string>
     <string name="player_performance_help">说明</string>
     <string name="player_performance_help_title">播放性能参数说明</string>
     <string name="player_performance_help_close">关闭</string>
@@ -916,9 +1156,12 @@
     <string name="pan_diagnostic_entry">链路诊断</string>
     <string name="pan_diagnostic_title">播放链路诊断</string>
     <string name="player_kernel">播放器内核</string>
+    <string name="player_kernel_external">外调</string>
     <string name="player_scale">缩放比例</string>
     <string name="player_lut">LUT 调色</string>
     <string name="player_mpv_config">MPV 配置管理</string>
+    <string name="player_mpv_render">MPV 渲染后端</string>
+    <string name="mpv_render_native_unavailable">当前不可用</string>
     <string name="mpv_config_target">%1$s · %2$s</string>
     <string name="mpv_config_default">默认</string>
     <string name="mpv_config_local">本地 mpv.conf</string>
@@ -985,8 +1228,11 @@
     <string name="player_audio_decode">音频软解</string>
     <string name="player_audio_passthrough">音频直通</string>
     <string name="player_video_decode">视频软解</string>
+    <string name="player_ffmpeg_mode">FFmpeg模式</string>
     <string name="player_aac_track">AAC优先</string>
-    <string name="player_adblock">智能去广</string>
+    <string name="player_music_notification">音乐后台通知</string>
+    <string name="player_audio_book_notification">有声书后台通知</string>
+    <string name="player_adblock">去广告</string>
     <string name="player_tunnel">隧道模式</string>
     <string name="player_buffer">前向缓冲目标</string>
     <string name="player_buffer_bytes">内存缓冲上限</string>
@@ -1006,9 +1252,86 @@
     <string name="player_preload_pause_always">始终</string>
     <string name="player_auto_play">自动播放</string>
     <string name="player_auto_change">自动换源</string>
+    <string name="player_remember_brightness">记住播放亮度</string>
+    <string name="player_failure_fallback">播放失败回退</string>
     <string name="player_speed">长按倍速</string>
     <string name="player_ua">User-Agent</string>
     <string name="player_osd">屏显设置</string>
+    <string name="player_subtitle_auto_match">自动匹配字幕</string>
+    <string name="player_subtitle_language">字幕偏好语言</string>
+    <string name="player_subtitle_assrt_token">射手网 Token</string>
+    <string name="player_subtitle_ai_max_concurrency">AI字幕最大并发数</string>
+    <string name="player_subtitle_ai_chunk_count">AI字幕分块数量</string>
+    <string name="subtitle_auto_match_hit">已自动匹配字幕：%1$s</string>
+    <string name="subtitle_auto_match_hit_not_applied">已找到字幕但未应用：%1$s</string>
+    <string name="subtitle_auto_match_empty">未找到匹配字幕</string>
+    <string name="subtitle_auto_match_provider_unavailable">请先配置字幕源</string>
+    <string name="subtitle_auto_match_failed">字幕匹配失败：%1$s</string>
+    <string name="subtitle_auto_match_unknown_reason">未知错误</string>
+    <string name="subtitle_manual_search">搜索字幕</string>
+    <string name="subtitle_manual_searching">正在搜索字幕...</string>
+    <string name="subtitle_manual_select_title">选择字幕（%1$d）</string>
+    <string name="subtitle_manual_search_empty">未搜索到字幕</string>
+    <string name="subtitle_manual_search_failed">字幕搜索失败</string>
+    <string name="subtitle_manual_resolving">正在加载字幕...</string>
+    <string name="subtitle_manual_applied">已应用字幕：%1$s</string>
+    <string name="subtitle_manual_apply_failed">已找到字幕但无法应用</string>
+    <string name="subtitle_manual_inactive">请先开始播放再搜索字幕</string>
+    <string name="player_subtitle_realtime_model">实时识别语言</string>
+    <string name="subtitle_realtime_source_language">原声识别语言</string>
+    <string name="subtitle_realtime_model_status">%1$s · %2$s</string>
+    <string name="subtitle_realtime_model_select_title">选择音频原语言</string>
+    <string name="subtitle_realtime_model_delete_action">删除模型</string>
+    <string name="subtitle_realtime_model_missing">未下载（点击下载）</string>
+    <string name="subtitle_realtime_model_ready">已下载（点击删除）</string>
+    <string name="subtitle_realtime_model_downloading">下载中...</string>
+    <string name="subtitle_realtime_model_downloading_progress">正在下载 %1$d%%</string>
+    <string name="subtitle_realtime_model_deleting">删除中...</string>
+    <string name="subtitle_realtime_model_download_success">实时字幕模型下载完成</string>
+    <string name="subtitle_realtime_model_download_failed">模型下载失败：%1$s</string>
+    <string name="subtitle_realtime_model_delete_title">删除实时字幕模型</string>
+    <string name="subtitle_realtime_model_delete_message">删除已下载的模型并关闭实时 AI 字幕？</string>
+    <string name="subtitle_realtime_model_delete_success">实时字幕模型已删除</string>
+    <string name="subtitle_realtime_model_delete_failed">模型删除失败：%1$s</string>
+    <string name="subtitle_realtime_action">实时 AI 字幕</string>
+    <string name="subtitle_realtime_preparing">正在准备所选实时字幕模型...</string>
+    <string name="subtitle_realtime_preparing_progress">正在准备字幕模型 %1$d%%</string>
+    <string name="subtitle_realtime_on">实时 AI 字幕已开启</string>
+    <string name="subtitle_realtime_off">实时 AI 字幕已关闭</string>
+    <string name="subtitle_realtime_failed">实时字幕失败：%1$s</string>
+    <string name="subtitle_realtime_pcm_title">关闭冲突的音频模式</string>
+    <string name="subtitle_realtime_pcm_required">实时 AI 字幕需要获取 PCM 音频，因此必须关闭音频直通和隧道模式。是否立即关闭并继续开启？</string>
+    <string name="subtitle_realtime_speed_title">恢复正常播放速度</string>
+    <string name="subtitle_realtime_speed_required">同步实时字幕目前需要 1 倍速播放。是否恢复为 1 倍速后继续？</string>
+    <string name="subtitle_realtime_speed_disabled">播放速度已变化，实时字幕已关闭</string>
+    <string name="subtitle_realtime_model_delete_error">无法删除字幕模型</string>
+    <string name="subtitle_realtime_model_directory_error">无法创建字幕模型目录</string>
+    <string name="subtitle_realtime_model_partial_error">无法替换未完成的模型文件</string>
+    <string name="subtitle_realtime_model_incomplete">模型文件不完整：%1$s</string>
+    <string name="subtitle_realtime_model_checksum_error">模型文件校验失败：%1$s</string>
+    <string name="subtitle_realtime_model_install_error">无法安装模型文件：%1$s</string>
+    <string name="subtitle_realtime_model_memory_low">该模型至少需要 %1$d MB 设备内存</string>
+    <string name="subtitle_realtime_model_memory_available_low">当前可用内存不足，请关闭后台应用后重试</string>
+    <string name="subtitle_realtime_model_storage_low">至少需要 %1$d MB 可用存储空间</string>
+    <string name="subtitle_ai_translate_title">AI 字幕翻译</string>
+    <string name="subtitle_ai_translate_message">使用当前 AI 配置将该字幕翻译为中文字幕？</string>
+    <string name="subtitle_ai_translate_action">AI 翻译为中文</string>
+    <string name="subtitle_ai_regenerate_action">重新生成 AI 字幕</string>
+    <string name="subtitle_ai_translating">正在翻译字幕...</string>
+    <string name="subtitle_ai_preparing">正在准备 AI 字幕翻译...</string>
+    <string name="subtitle_ai_regenerating">正在重新生成 AI 字幕...</string>
+    <string name="subtitle_ai_progress">AI 正在翻译：%1$d/%2$d 分块</string>
+    <string name="subtitle_ai_progress_eta">AI 正在翻译：%1$d/%2$d 分块，约剩 %3$s</string>
+    <string name="subtitle_ai_cache_hit">已命中 AI 字幕缓存，正在应用...</string>
+    <string name="subtitle_ai_applied">已应用 AI 中文字幕：%1$s</string>
+    <string name="subtitle_ai_apply_failed">已生成 AI 字幕但无法应用</string>
+    <string name="subtitle_ai_failed">AI 字幕翻译失败：%1$s</string>
+    <string name="subtitle_ai_config_required">请先启用并配置 AI</string>
+    <string name="subtitle_ai_no_selected_subtitle">请先选择一个字幕</string>
+    <string name="subtitle_ai_local_srt_required">请先选择一个本地 SRT 字幕</string>
+    <string name="subtitle_ai_unsupported_format">AI 字幕翻译暂时仅支持 SRT</string>
+    <string name="subtitle_ai_stale_result">播放内容已切换，已忽略本次 AI 字幕结果</string>
+    <string name="subtitle_ai_unknown_reason">未知错误</string>
     <string name="lut_original">原色</string>
     <string name="lut_missing">预设不存在</string>
     <string name="lut_summary">%1$s · %2$d%%</string>
@@ -1026,7 +1349,7 @@
     <string name="lut_imported">LUT 预设已导入</string>
     <string name="lut_directory_selected">LUT 目录已选择</string>
     <string name="lut_import_failed">LUT 导入失败</string>
-    <string name="lut_favorited">已加入收藏</string>
+    <string name="lut_favorited">已收藏</string>
     <string name="lut_unfavorited">已取消收藏</string>
     <string name="lut_empty_presets">暂无 LUT 预设</string>
     <string name="lut_empty_favorites">暂无收藏 LUT</string>
@@ -1046,10 +1369,22 @@
     <string name="danmaku_api_invalid">弹幕接口地址无效</string>
     <string name="danmaku_auto_load">自动搜索</string>
     <string name="danmaku_spider_first">爬虫优先</string>
+    <string name="danmaku_search_title">弹幕搜索</string>
+    <string name="danmaku_search_empty">没有找到匹配的弹幕</string>
+    <string name="danmaku_source_default">弹幕</string>
+    <string name="danmaku_source_count">%1$d 条</string>
 
     <!-- Search -->
     <string name="search_keyword">关键字…</string>
     <string name="site_search_hint">搜索站点…</string>
+    <string name="site_group_all">全部</string>
+    <string name="site_group_sort_desc">%1$s，长按拖动排序</string>
+    <string name="site_group_sort_tv_desc">%1$s，长按确定键排序</string>
+    <string name="site_group_sort_tv_hint">在分组上长按确定键可调整顺序</string>
+    <string name="site_group_sort_tv_active">排序中：左右移动，确定保存，返回取消</string>
+    <string name="site_group_sort_tv_active_desc">%1$s，正在排序。左右移动，确定保存，返回取消</string>
+    <string name="site_group_sort_saved">分组顺序已保存</string>
+    <string name="site_group_sort_cancelled">已取消分组排序</string>
     <string name="search_record">历史</string>
     <string name="search_suggest">建议</string>
     <string name="search_hot">热搜</string>
@@ -1064,11 +1399,27 @@
     <string name="dialog_edit">修改</string>
     <string name="dialog_positive">确定</string>
     <string name="dialog_negative">取消</string>
+    <string name="setting_reset_app">重置APP</string>
+    <string name="dialog_reset_app">重置App?</string>
+    <string name="dialog_reset_app_data">所有数据将会被重置，App即将被关闭.</string>
+    <string name="reset_app_failed">重置失败，请重试。</string>
+
+    <string name="dialog_audio_site_rules">音频源规则:关联站源或关键词,用 ; 分隔。默认:[音];[听]</string>
+    <string name="dialog_audio_site_manage">选择音频源</string>
+    <string name="dialog_audio_site_default">默认 [音]/[听]</string>
+    <string name="dialog_audio_playback_style">音频播放风格</string>
+    <string name="dialog_audio_playback_style_immersive">沉浸音频（上游合并版）</string>
+    <string name="dialog_audio_playback_style_built_in">标准音频（自研版）</string>
+    <string name="dialog_short_drama_site_rules">短剧源规则:关联站源或关键词,用 ; 分隔。默认:[短];短剧</string>
+    <string name="dialog_short_drama_site_manage">选择短剧源</string>
+    <string name="dialog_short_drama_site_default">默认 [短]/短剧</string>
     <string name="dialog_reset">重置</string>
     <string name="setting_show">显示</string>
     <string name="setting_hide">隐藏</string>
     <string name="dialog_select_title">选择章节</string>
     <string name="dialog_config_hint">请输入配置…</string>
+    <string name="dialog_config_choose_dir">选择文件夹（猫源本地包）</string>
+    <string name="dialog_config_choose_failed">读不到所选内容，请重新选择包目录或 zip</string>
     <string name="dialog_config_name">请输入名称…</string>
     <string name="dialog_config_url">请输入地址…</string>
 
@@ -1101,6 +1452,9 @@
     <string name="error_play_stage_unknown">播放失败，请重试或切换播放器</string>
     <string name="error_play_flag">暂无线路数据</string>
     <string name="error_play_timeout">连接超时</string>
+    <string name="error_play_fallback">%1$s 播放失败，已切换到 %2$s</string>
+    <string name="error_play_ijk_unavailable">当前设备不可用 IJK 内核</string>
+    <string name="error_play_ijk_unavailable_switch">当前设备不可用 IJK 内核，已切换到 %1$s</string>
     <string name="error_play_tvbus">错误代码：<xliff:g name="name">%s</xliff:g></string>
     <string name="error_detail">暂无播放数据</string>
     <string name="error_empty">这里什麽都没有 👀</string>
@@ -1120,8 +1474,6 @@
     <string name="update_download_incomplete">更新包下载不完整，请重试。</string>
     <string name="update_download_checksum">更新包校验失败，请重试。</string>
     <string name="update_download_invalid">更新包无效，请重试。</string>
-    <string name="update_download_identity">更新包的应用身份或签名与当前应用不一致。</string>
-    <string name="update_download_source_unavailable">当前版本不支持所选下载源。</string>
     <string name="update_confirm">更新</string>
     <string name="update_confirm_channel">更新%1$s</string>
     <string name="update_cancel">取消更新</string>
@@ -1136,6 +1488,14 @@
     <string name="update_status_unavailable">暂无</string>
     <string name="update_expand">展开</string>
     <string name="update_collapse">收起</string>
+    <string name="update_backup_title">更新前备份</string>
+    <string name="update_backup_message">建议在更新前备份当前配置，以便更新后出现问题时可以恢复。是否先备份？</string>
+    <string name="update_backup_positive">备份并更新</string>
+    <string name="update_backup_negative">直接更新</string>
+    <string name="update_backup_running">正在备份…</string>
+    <string name="update_backup_done">备份完成，开始更新</string>
+    <string name="update_backup_failed">备份失败，仍将继续更新</string>
+    <string name="update_backup_permission_denied">未授予存储权限，无法备份，仍将继续更新</string>
     <string name="update_settings">更新设置</string>
     <string name="update_settings_title">更新设置</string>
     <string name="update_settings_source">更新方式</string>
@@ -1153,12 +1513,28 @@
     <string name="update_proxy_invalid">请输入不含账号、密码和路径的有效 HTTPS 地址。</string>
     <string name="update_settings_save">保存</string>
     <string name="update_settings_saved">更新设置已保存</string>
+    <string name="apk_push_url_busy">已有 APK 链接下载任务正在进行</string>
+    <string name="apk_push_url_schedule_failed">无法启动 APK 链接下载</string>
+    <string name="apk_push_url_downloading">已收到 APK 链接，正在本机下载…</string>
+    <string name="apk_push_url_install_ready">APK 已下载，请确认安装</string>
+    <string name="apk_push_url_download_failed">APK 链接下载失败：%1$s</string>
+    <string name="apk_push_url_progress_title">正在接收 APK</string>
+    <string name="apk_push_url_progress_hint">正在下载局域网设备推送的 APK，完成后仍需在 Android 系统界面确认安装。</string>
+    <string name="apk_push_url_progress_known">正在接收 %1$d%% · %2$s / %3$s</string>
+    <string name="apk_push_url_progress_unknown">已接收 %1$s</string>
+    <string name="apk_push_url_progress_detail_remaining">%1$s/s · 剩余 %2$s · 已用 %3$s</string>
+    <string name="apk_push_url_progress_detail">%1$s/s · 已用 %2$s</string>
+    <string name="apk_push_url_cancel">取消下载</string>
+    <string name="apk_push_url_canceled">已取消 APK 下载</string>
+    <string name="update_download_identity">更新包身份或签名与当前应用不匹配。</string>
+    <string name="update_download_source_unavailable">此版本没有可用的更新来源。</string>
 
     <!-- Crash -->
     <string name="crash_info">发生意外错误\n抱歉给您带来不便</string>
     <string name="crash_restart">重新启动</string>
     <string name="crash_details">错误信息</string>
     <string name="crash_details_title">错误信息</string>
+    <string name="crash_details_message">应用版本：%1$s\n\n%2$s</string>
     <string name="crash_details_close">关闭</string>
 
     <!-- Hint -->
@@ -1196,15 +1572,52 @@
     <string name="times">倍</string>
     <string name="lines">行</string>
 
+    <!-- SEARCH -->
+    <string name="search_scope_all">全部</string>
+    <string name="search_scope_current">当前站</string>
+    <string name="search_scope_current_hint">当前站：%1$s</string>
+    <string name="search_scope_group_hint">分组：%1$s</string>
+    <string name="search_result_all">%1$s 的搜索结果</string>
+    <string name="search_result_current">当前站搜索：%1$s</string>
+    <string name="search_result_group">%1$s 搜索：%2$s</string>
+    <string name="search_filter_similarity">相似度</string>
+    <string name="search_filter_similarity_unlimited">不限</string>
+    <string name="search_filter_similarity_value">相似 %d%%</string>
+    <string name="search_filter_similarity_exact">精确</string>
+    <string name="search_filter_similarity_hint">调整搜索结果的匹配宽松度，100为精确匹配，0为不限</string>
+    <string name="search_filter_similarity_description">%1$s，%2$s</string>
+    <string name="search_filter_empty">暂无达到 %1$d%% 相似度的结果，可降低相似度查看更多</string>
+    <string name="search_filter_empty_exact">暂无精确匹配结果，可降低相似度查看更多</string>
+    <string name="detail_site_not_searchable">当前站源不支持搜索</string>
+
+    <string-array name="select_player">
+        <item>EXO</item>
+        <item>IJK</item>
+        <item>系统</item>
+        <item>MPV</item>
+    </string-array>
+
     <string-array name="select_decode">
         <item>软解</item>
         <item>硬解</item>
     </string-array>
 
+    <string-array name="select_player_failure_fallback">
+        <item>软解后切核心</item>
+        <item>仅切软硬解</item>
+        <item>仅切播放核心</item>
+        <item>关闭</item>
+    </string-array>
+
     <string-array name="select_player_kernel">
         <item>EXO</item>
         <item>IJK</item>
+        <item>系统</item>
         <item>MPV</item>
+    </string-array>
+    <string-array name="select_mpv_render">
+        <item>OpenGL</item>
+        <item>Vulkan</item>
     </string-array>
     <string-array name="select_buffer_bytes">
         <item>自动</item>
@@ -1233,6 +1646,64 @@
         <item>特大</item>
     </string-array>
 
+    <string-array name="select_fullscreen_menu_key">
+        <item>控制栏</item>
+        <item>选集</item>
+    </string-array>
+
+    <string-array name="select_home_menu_key">
+        <item>选项弹窗</item>
+        <item>切换站源</item>
+        <item>切换线路</item>
+        <item>直播页面</item>
+        <item>历史页面</item>
+        <item>搜索页面</item>
+        <item>推送页面</item>
+        <item>投屏页面</item>
+        <item>收藏页面</item>
+        <item>设置页面</item>
+    </string-array>
+
+    <string-array name="select_search_ui">
+        <item>横屏</item>
+        <item>竖屏</item>
+    </string-array>
+
+    <string-array name="select_search_column">
+        <item>自适应</item>
+        <item>1个</item>
+        <item>2个</item>
+    </string-array>
+
+    <string-array name="select_tmdb_match_mode">
+        <item>严格</item>
+        <item>智能</item>
+        <item>严格 + 弹窗</item>
+        <item>智能 + 弹窗</item>
+    </string-array>
+
+    <string-array name="select_global_history_mode">
+        <item>关闭</item>
+        <item>自动匹配播放源</item>
+        <item>搜索后选择播放源</item>
+    </string-array>
+
+    <string-array name="select_auto_skip_intro_outro">
+        <item>关闭</item>
+        <item>自动跳过</item>
+        <item>弹框确认</item>
+    </string-array>
+
+    <string-array name="select_site_column">
+        <item>单行</item>
+        <item>双行</item>
+    </string-array>
+
+    <string-array name="select_search_result_sort">
+        <item>动态模式（谁快谁在前）</item>
+        <item>固定模式（按配置顺序）</item>
+    </string-array>
+
     <string-array name="select_ui_scale">
         <item>跟随系统</item>
         <item>标准</item>
@@ -1248,12 +1719,20 @@
         <item>繁体中文</item>
     </string-array>
 
+    <string name="aspect_ratio_title">自定义画面比例</string>
+    <string name="aspect_ratio_width">宽</string>
+    <string name="aspect_ratio_height">高</string>
+    <string name="aspect_ratio_hint">可输入 2560:1080 或 64:27</string>
+    <string name="aspect_ratio_invalid">请输入有效的画面比例</string>
     <string-array name="select_scale">
         <item>原始</item>
         <item>16:9</item>
         <item>4:3</item>
         <item>填充</item>
         <item>裁剪</item>
+        <item>21:9</item>
+        <item>自适应</item>
+        <item>自定义</item>
     </string-array>
 
     <string-array name="select_reset">
@@ -1266,14 +1745,72 @@
         <item>系统</item>
     </string-array>
 
+    <string-array name="select_realtime_subtitle_model">
+        <item>普通话（约 31 MB）</item>
+        <item>粤语（约 135 MB）</item>
+        <item>英语（约 45 MB）</item>
+        <item>德语（约 71 MB）</item>
+        <item>法语（约 71 MB）</item>
+        <item>西班牙语（约 156 MB）</item>
+        <item>日语（约 73 MB）</item>
+        <item>中英混合（约 199 MB）</item>
+    </string-array>
+    <string-array name="select_realtime_subtitle_model_value">
+        <item>zh</item>
+        <item>yue</item>
+        <item>en</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ja</item>
+        <item>zh-en</item>
+    </string-array>
+    <string-array name="select_realtime_subtitle_language">
+        <item>普通话</item>
+        <item>粤语</item>
+        <item>英语</item>
+        <item>德语</item>
+        <item>法语</item>
+        <item>西班牙语</item>
+        <item>日语</item>
+        <item>中英混合</item>
+    </string-array>
+    <string-array name="select_subtitle_language">
+        <item>中文优先</item>
+        <item>简体中文</item>
+        <item>繁体中文</item>
+        <item>英语</item>
+        <item>日语</item>
+        <item>韩语</item>
+        <item>不限制</item>
+    </string-array>
+
+    <string-array name="select_subtitle_language_value">
+        <item>zh</item>
+        <item>zh-Hans</item>
+        <item>zh-Hant</item>
+        <item>en</item>
+        <item>ja</item>
+        <item>ko</item>
+        <item>any</item>
+    </string-array>
+
     <string-array name="select_player_osd">
-        <item>标题</item>
-        <item>分辨率</item>
-        <item>时间</item>
-        <item>进度</item>
-        <item>网速</item>
-        <item>迷你</item>
+        <item>@string/display_time</item>
+        <item>@string/display_traffic</item>
+        <item>@string/display_size</item>
+        <item>@string/display_progress</item>
+        <item>@string/display_mini</item>
+        <item>@string/display_title</item>
         <item>播放参数</item>
+    </string-array>
+
+    <string-array name="select_live_player_osd">
+        <item>@string/display_time</item>
+        <item>@string/display_traffic</item>
+        <item>@string/display_size</item>
+        <item>@string/display_title</item>
+        <item>@string/play_params</item>
     </string-array>
 
     <string-array name="select_track">
@@ -1283,174 +1820,600 @@
     </string-array>
     <string name="select_secondary_subtitle_track">选择第二字幕</string>
 
-    <string name="player_karaoke_status_free">K歌 · 自由唱</string>
-    <string name="player_karaoke_status_free_score_grade">K歌 · 娱乐 %1$d 分 · %2$s</string>
-    <string name="player_karaoke_status_score">K歌 · %1$d 分</string>
-    <string name="player_karaoke_status_score_grade">K歌 · %1$d 分 · %2$s</string>
-    <string name="player_karaoke_status_rhythm_score">K歌 · 节奏 %1$d 分</string>
-    <string name="player_karaoke_status_rhythm_score_grade">K歌 · 节奏 %1$d 分 · %2$s</string>
-    <string name="player_karaoke_need_permission">需要麦克风权限</string>
-    <string name="player_karaoke_mic_unavailable">麦克风不可用</string>
-    <string name="player_karaoke_no_voice">请靠近麦克风演唱</string>
-    <string name="player_karaoke_pitch">音高 %1$s</string>
-    <string name="player_karaoke_pitch_score">音高 %1$s · %2$s</string>
-    <string name="player_karaoke_pitch_hit">命中</string>
-    <string name="player_karaoke_pitch_perfect">完美</string>
-    <string name="player_karaoke_pitch_vibrato">颤音</string>
-    <string name="player_karaoke_pitch_miss">偏差 %1$.1f 半音</string>
-    <string name="player_karaoke_free_detail">音高 %1$s · 参与 %2$d%%</string>
-    <string name="player_karaoke_rhythm_detail">节奏命中 %1$d%%</string>
-    <string name="player_karaoke_combo">连击 %1$d 秒</string>
-    <string name="player_karaoke_line_score">本句 %1$d 分</string>
-    <string name="player_karaoke_result_title">K歌结果</string>
-    <string name="player_karaoke_result_scoring">音准评分</string>
-    <string name="player_karaoke_result_rhythm">节奏评分</string>
-    <string name="player_karaoke_result_free">自由唱</string>
-    <string name="player_karaoke_result_track">评分谱：%1$s</string>
-    <string name="player_karaoke_result_no_track">未绑定评分谱，当前是自由唱娱乐估算。</string>
-    <string name="player_karaoke_result_rhythm_note">根据歌词时间轴自动生成，不判断真实音高。</string>
-    <string name="player_karaoke_result_metric_hit">命中率</string>
-    <string name="player_karaoke_result_metric_rhythm">节奏命中</string>
-    <string name="player_karaoke_result_metric_participation">参与度</string>
-    <string name="player_karaoke_result_score_value">%1$d 分 · %2$s</string>
-    <string name="player_karaoke_result_voice_coverage">演唱覆盖</string>
-    <string name="player_karaoke_result_bonus">表现加成</string>
-    <string name="player_karaoke_result_perfect">完美命中</string>
-    <string name="player_karaoke_result_vibrato">颤音奖励</string>
-    <string name="player_karaoke_result_active_time">有效 %1$d 秒</string>
-    <string name="player_karaoke_result_best_combo">连击 %1$d 秒</string>
-    <string name="player_karaoke_result_line_average">逐句平均</string>
-    <string name="player_karaoke_result_line_summary">逐句 %1$d 句 · 最佳 %2$d%%</string>
-    <string name="player_karaoke_result_pitch_headline_high">音准和稳定度都不错，表现很完整。</string>
-    <string name="player_karaoke_result_pitch_headline_mid">这次表现可以，音高再稳一点分数会更好。</string>
-    <string name="player_karaoke_result_pitch_headline_low">先把每句开头唱稳，并尽量完整唱完。</string>
-    <string name="player_karaoke_result_no_track_short">自由唱估算</string>
-    <string name="player_karaoke_result_rhythm_note_short">歌词节奏评分</string>
-    <string name="player_karaoke_result_pitch_headline_high_short">表现完整</string>
-    <string name="player_karaoke_result_pitch_headline_mid_short">音高再稳一点</string>
-    <string name="player_karaoke_result_pitch_headline_low_short">唱稳开头，完整唱完</string>
-    <string name="player_karaoke_result_fun_note">娱乐评分包含音准命中、完美保持、连击和颤音奖励。</string>
-    <string name="player_lyrics_offset">歌词偏移</string>
-    <string name="player_lyrics_rows">歌词行数</string>
-    <string name="player_lyrics_size">歌词字号</string>
-    <string name="player_lyrics_source">歌词来源</string>
-    <string name="player_karaoke_mode">K歌模式</string>
-    <string name="player_audio_options">播放选项</string>
-    <string name="player_karaoke_mode_enabled">当前已开启</string>
-    <string name="player_karaoke_mode_disabled">当前已关闭</string>
-    <string name="player_karaoke_difficulty">K歌难度</string>
-    <string name="player_karaoke_mic_delay">麦克风延迟</string>
-    <string name="player_karaoke_track">评分谱</string>
-    <string name="player_karaoke_track_generate_pitch">生成评分谱</string>
-    <string name="player_karaoke_track_search">在线搜索</string>
-    <string name="player_karaoke_track_keyword">评分谱关键词</string>
-    <string name="player_karaoke_track_import_file">本地导入</string>
-    <string name="player_karaoke_track_import_url">链接导入</string>
-    <string name="player_karaoke_track_sources">谱源管理</string>
-    <string name="player_karaoke_track_advanced">高级选项</string>
-    <string name="player_karaoke_track_back">返回</string>
-    <string name="player_karaoke_track_basic_pitch_tflite">Basic Pitch：%1$s</string>
-    <string name="player_karaoke_track_option_enabled">已开启</string>
-    <string name="player_karaoke_track_option_disabled">已关闭</string>
-    <string name="player_karaoke_track_sources_hint">每行一个仓库：owner/repo@branch 或 https://github.com/owner/repo/tree/branch</string>
-    <string name="player_karaoke_track_sources_saved">评分谱源已保存</string>
-    <string name="player_karaoke_track_url_hint">UltraStar .txt 链接、USDB ID、USDB 详情页，或追加 @Cookie=...</string>
-    <string name="player_karaoke_track_clear">清除绑定</string>
-    <string name="player_karaoke_track_searching">正在搜索评分谱...</string>
-    <string name="player_karaoke_track_not_found">未找到评分谱</string>
-    <string name="player_karaoke_track_select">选择评分谱</string>
-    <string name="player_karaoke_track_source_login"> · 需登录</string>
-    <string name="player_karaoke_track_result_item">%1$s\n%2$s - %3$s\n%4$s</string>
-    <string name="player_karaoke_track_imported">评分谱已导入</string>
-    <string name="player_karaoke_track_import_failed">评分谱导入失败</string>
-    <string name="player_karaoke_track_generated">轻量节奏评分谱已生成</string>
-    <string name="player_karaoke_track_generating_pitch">正在生成音高评分谱...</string>
-    <string name="player_karaoke_track_generating_pitch_message">正在本地分析当前音频并生成带音高的评分谱，完成前请勿关闭播放器。</string>
-    <string name="player_karaoke_track_generating_pitch_progress">%1$d%% · %2$s · %3$s</string>
-    <string name="player_karaoke_track_generation_stop">停止</string>
-    <string name="player_karaoke_track_generation_stopped">已停止生成评分谱</string>
-    <string name="player_karaoke_track_pitch_stage_prepare">准备中</string>
-    <string name="player_karaoke_track_pitch_stage_decode">解码音频</string>
-    <string name="player_karaoke_track_pitch_stage_analyze">分析音高</string>
-    <string name="player_karaoke_track_pitch_stage_write">写入评分谱</string>
-    <string name="player_karaoke_track_pitch_stage_finish">收尾中</string>
-    <string name="player_karaoke_track_pitch_remaining_unknown">正在估算剩余时间</string>
-    <string name="player_karaoke_track_pitch_remaining_seconds">剩余约 %1$d 秒</string>
-    <string name="player_karaoke_track_pitch_remaining_minutes">剩余约 %1$d 分 %2$d 秒</string>
-    <string name="player_karaoke_track_generated_pitch">音高评分谱已生成</string>
-    <string name="player_karaoke_track_generated_pitch_message">已应用到当前歌曲，K歌模式已开启。</string>
-    <string name="player_karaoke_track_generate_pitch_failed">音高评分谱生成失败</string>
-    <string name="player_karaoke_track_generate_pitch_failed_message">未生成评分谱：%1$s</string>
-    <string name="player_karaoke_track_generate_pitch_unsupported_source">当前媒体源无法直接分析音频，可尝试切换线路/清晰度，或使用在线搜索、本地导入评分谱。</string>
-    <string name="player_karaoke_track_generate_failed">轻量节奏评分谱生成失败</string>
-    <string name="player_karaoke_track_generate_no_lyrics">当前没有可用的歌词时间轴</string>
-    <string name="player_karaoke_track_cleared">评分谱绑定已清除</string>
-    <string name="player_karaoke_track_none">当前没有评分谱绑定</string>
-    <string name="player_desktop_lyrics">桌面歌词</string>
-    <string name="player_desktop_lyrics_permission">请允许显示在其他应用上层，用于显示桌面歌词</string>
-    <string name="player_lyrics_cache">歌词缓存</string>
-    <string name="player_lyrics_cache_value">%1$d 项</string>
-    <string name="player_lyrics_cache_cleared">歌词缓存已清理</string>
-    <string name="player_lyrics_search">搜索歌词</string>
-    <string name="player_lyrics_reload">重搜歌词</string>
-    <string name="player_lyrics_keyword">歌词关键词</string>
-    <string name="player_lyrics_keyword_required">请输入歌词关键词</string>
-    <string name="player_lyrics_searching">正在搜索歌词...</string>
-    <string name="player_lyrics_not_found">未找到歌词</string>
-    <string name="player_lyrics_loaded">已加载歌词：%1$s</string>
-    <string name="player_lyrics_select">选择歌词</string>
-    <string name="player_lyrics_word">逐字</string>
-    <string name="player_lyrics_synced">逐句</string>
-    <string name="player_lyrics_plain">文本</string>
-    <string name="player_audio_badge_audio">音频</string>
-    <string name="player_audio_badge_lyrics">歌词</string>
-    <string name="player_audio_playlist">歌单</string>
-    <string name="player_audio_playlist_results">搜索结果</string>
-    <string name="player_audio_playlist_search_hint">搜索当前站源</string>
-    <string name="player_audio_playlist_search_required">请输入搜索关键词</string>
-    <string name="player_audio_playlist_search_failed">搜索失败</string>
-    <string name="player_audio_playlist_no_results">未找到结果</string>
-    <string name="player_audio_playlist_result_count">找到 %1$d 个结果</string>
-    <string name="player_audio_playlist_adding">正在加入 %1$s...</string>
-    <string name="player_audio_playlist_add_failed">加入失败</string>
-    <string name="player_audio_playlist_add_empty">未找到可播放条目</string>
-    <string name="player_audio_playlist_added">已加入 %1$d 项</string>
-    <string name="player_audio_playlist_exists">已在歌单中</string>
-    <string name="player_audio_playlist_empty">歌单暂无歌曲</string>
-    <string name="player_audio_playlist_removed">已移除 %1$s</string>
-    <string name="player_audio_playlist_keep_one">歌单至少保留一首歌曲</string>
-    <string name="player_audio_playlist_switch">切换</string>
-    <string name="player_audio_playlist_create">新建</string>
-    <string name="player_audio_playlist_name_hint">歌单名称</string>
-    <string name="player_audio_more">更多</string>
-    <string name="player_audio_background">背景</string>
-    <string name="player_audio_background_decorated_on">装饰已开</string>
-    <string name="player_audio_background_decorated_off">装饰已关</string>
-    <string name="player_audio_background_light_effect_on">光效已开</string>
-    <string name="player_audio_background_light_effect_off">光效已关</string>
-    <string name="player_audio_background_decorated_turn_on">打开装饰</string>
-    <string name="player_audio_background_decorated_turn_off">关闭装饰</string>
-    <string name="player_audio_background_random_plain">换背景</string>
-    <string name="player_audio_background_random_decoration">换装饰</string>
-    <string name="player_audio_background_random_plain_done">已随机生成纯背景</string>
-    <string name="player_audio_background_random_decoration_done">已随机生成背景装饰</string>
-    <string name="player_audio_background_random_mix_done">已随机生成背景搭配</string>
-    <string name="player_lyrics_unknown">未知</string>
-    <string name="player_lyrics_result_item">%1$s · %2$s · %3$d\n%4$s - %5$s</string>
-    <string name="player_lyrics_rows_value">%1$d 行</string>
+    <string name="setting_tmdb_source">TMDB 数据配置</string>
+    <string name="setting_ai_recommendation">AI 通用配置</string>
+    <string name="setting_tmdb_match_mode">TMDB 匹配模式</string>
+    <string name="setting_detail_open_mode">详情页模式</string>
+    <string name="setting_detail_open_original">原始详情</string>
+    <string name="setting_detail_open_native">TMDB 内嵌增强</string>
+    <string name="setting_detail_open_original_enhanced">原生增强</string>
+    <string name="setting_detail_open_fusion">沉浸融合</string>
+    <string name="setting_detail_open_enhanced">炫彩详情</string>
+    <string name="setting_detail_open_player">详情直放</string>
+    <string name="setting_detail_open_direct">影视原生</string>
+    <string name="setting_detail_open_cinema">光影剧幕</string>
+    <string name="setting_detail_theme_mode">详情页主题</string>
+    <string name="setting_detail_theme_current">当前主题</string>
+    <string name="setting_detail_theme_native">原生暗色</string>
+    <string name="setting_detail_theme_profile">清透流彩</string>
+    <string name="setting_detail_theme_cinema">光影剧幕</string>
+    <string name="setting_configured">已配置</string>
+    <string name="setting_unconfigured">未配置</string>
+    <string name="detail_tmdb_need_key">请先配置 TMDB 数据</string>
+    <string name="detail_tmdb_empty">暂无 TMDB 数据</string>
+    <string name="detail_tmdb_match_title">匹配 TMDB 条目</string>
+    <string name="detail_tmdb_rematch">TMDB</string>
+    <string name="tmdb_season_match_title">匹配 TMDB 季度</string>
+    <string name="tmdb_season_button">季度</string>
+    <string name="tmdb_season_match_current">选择 TMDB 季度，%1$s</string>
+    <string name="tmdb_season_auto">自动判断（清除手动绑定）</string>
+    <string name="tmdb_season_auto_by_counts">按集号主键自动分季</string>
+    <string name="tmdb_season_auto_by_counts_failed">当前源集号或 TMDB 分季集数无法安全自动分季</string>
+    <string name="tmdb_season_keep_original">保持原始集列表</string>
+    <string name="tmdb_season_ai_analyze">AI 识别集数 / 分季</string>
+    <string name="tmdb_season_ai_analyzing">AI 正在分析集数结构…</string>
+    <string name="tmdb_season_ai_loading_title">AI 识别集数 / 分季</string>
+    <string name="tmdb_season_ai_cancelled">已取消 AI 分析</string>
+    <string name="tmdb_season_ai_config_required">请先配置并启用 AI</string>
+    <string name="tmdb_season_ai_failed">AI 分析失败，已保持原始集列表</string>
+    <string name="tmdb_season_ai_preview_title">AI 集数 / 分季建议</string>
+    <string name="tmdb_season_ai_apply">应用建议</string>
+    <string name="tmdb_season_ai_explicit_preview_only">逐集映射已通过校验，但当前版本仅支持预览，暂不写入。</string>
+    <string name="tmdb_season_special">特别篇 · %1$d 集</string>
+    <string name="tmdb_season_option">第 %1$d 季 · %2$d 集</string>
+    <string name="tmdb_season_match_saved">已保存 TMDB 季度匹配</string>
+    <string name="detail_tmdb_match_saved">已记录 TMDB 匹配</string>
+    <string name="detail_tmdb_current_match">当前匹配</string>
+    <string name="detail_tmdb_searching">正在搜索 TMDB...</string>
+    <string name="detail_tmdb_search_hint">搜索标题</string>
+    <string name="detail_tmdb_search_action">搜索</string>
+    <string name="detail_tmdb_result_count">共 %1$d 条</string>
+    <string name="detail_tmdb_skip">跳过</string>
+    <string name="detail_tmdb_site_disabled">当前站源未启用 TMDB 匹配</string>
+    <string name="dialog_tmdb_api_key_label">TMDB API Key 或 Access Token</string>
+    <string name="dialog_tmdb_api_key_hint">输入 API Key 或 v4 Access Token</string>
+    <string name="dialog_tmdb_api_key_tip">免费获取 API Key: https://www.themoviedb.org/settings/api</string>
+    <string name="dialog_tmdb_language_label">TMDB 语言</string>
+    <string name="dialog_tmdb_language_hint">例如 zh-CN</string>
+    <string name="dialog_tmdb_api_host_label">API 域名</string>
+    <string name="dialog_tmdb_api_host_hint">例如 https://api.tmdb.org</string>
+    <string name="dialog_tmdb_image_host_label">图片域名</string>
+    <string name="dialog_tmdb_image_host_hint">例如 https://images.tmdb.org</string>
+    <string name="dialog_tmdb_section_data">数据源</string>
+    <string name="dialog_tmdb_section_ratings">评分扩展</string>
+    <string name="dialog_tmdb_section_rules">站点规则</string>
+    <string name="dialog_omdb_api_key_label">OMDb API Key（可选，用于 IMDB 评分）</string>
+    <string name="dialog_omdb_api_key_hint">输入 OMDb API Key</string>
+    <string name="dialog_omdb_api_key_tip">免费获取 API Key（每天1000次）: https://www.omdbapi.com/apikey.aspx</string>
+    <string name="dialog_tmdb_enable_label">启用 TMDB 元数据增强</string>
+    <string name="dialog_tmdb_enable_tip">这里仅配置 TMDB 数据源、语言、图片域名与站点规则；启用状态在「详情页模式」中控制。</string>
+    <string name="dialog_tmdb_enabled_sites_label">启用站点规则</string>
+    <string name="dialog_tmdb_disabled_sites_label">排除规则</string>
+    <string name="dialog_tmdb_add_rule_hint">添加关键词或站点…</string>
+    <string name="dialog_tmdb_add_disabled_rule_hint">添加排除关键词或站点…</string>
+    <string name="dialog_tmdb_add">添加</string>
+    <string name="dialog_tmdb_all_sites">全部站点</string>
+    <string name="dialog_tmdb_site_manage">选择站点</string>
+    <string name="dialog_tmdb_reset_default">恢复默认</string>
+    <string name="tmdb_cast_label">演员</string>
+    <string name="tmdb_loading_detail">正在加载剧集信息...</string>
+    <string name="tmdb_loading_episodes">正在加载剧集信息...</string>
+    <string name="tmdb_powered_by">数据来源：TMDB</string>
+    <string name="tmdb_photos_label">剧照</string>
+    <string name="tmdb_posters_label">海报</string>
+    <string name="tmdb_crew_label">主创团队</string>
+    <string name="tmdb_recommendations_label">猜你喜欢</string>
+    <string name="tmdb_related_videos_label">相关视频</string>
+    <string name="tmdb_personal_recommendations_tmdb_label">个性推荐 · TMDB</string>
+    <string name="tmdb_personal_recommendations_douban_label">个性推荐 · 豆瓣</string>
+    <string name="tmdb_personal_recommendations_ai_label">个性推荐 · 智能</string>
+    <string name="dialog_ai_enable">启用 AI 服务</string>
+    <string name="dialog_ai_title_extraction">AI 真实剧名识别</string>
+    <string name="dialog_ai_section_service">服务</string>
+    <string name="dialog_ai_section_connection">连接参数</string>
+    <string name="dialog_ai_section_model">模型设置</string>
+    <string name="dialog_ai_protocol_label">协议类型</string>
+    <string-array name="dialog_ai_protocol_labels">
+        <item>OpenAI Responses API</item>
+        <item>OpenAI Chat Completions</item>
+        <item>Anthropic Messages</item>
+        <item>Gemini Native generateContent</item>
+    </string-array>
+    <string name="dialog_ai_endpoint_label">API 服务端点 / 基地址</string>
+    <string name="dialog_ai_endpoint_hint">https://api.openai.com/v1/responses</string>
+    <string name="dialog_ai_api_key_label">API key</string>
+    <string name="dialog_ai_api_key_hint">sk-...</string>
+    <string name="dialog_ai_model_label">模型</string>
+    <string name="dialog_ai_model_hint">gpt-4.1-mini</string>
+    <string name="dialog_ai_fetch_models">获取模型</string>
+    <string name="dialog_ai_fetch_models_running">正在获取模型列表...</string>
+    <string name="dialog_ai_fetch_models_success">已获取 %1$d 个模型</string>
+    <string name="dialog_ai_fetch_models_empty">未获取到可用模型</string>
+    <string name="dialog_ai_fetch_models_failed">模型获取失败：%1$s</string>
+    <string name="dialog_ai_user_agent_label">自定义 User-Agent</string>
+    <string name="dialog_ai_user_agent_hint">可选，用于有 UA 限制的供应商</string>
+    <string name="dialog_ai_prompt_config">AI 提示词配置</string>
+    <string name="dialog_ai_recommend_prompt_label">推荐提示词</string>
+    <string name="dialog_ai_title_extraction_prompt_label">名称提取提示词</string>
+    <string name="dialog_ai_viewing_report_prompt_label">观影报告提示词</string>
+    <string name="dialog_ai_ad_detection_prompt_label">广告检测提示词</string>
+    <string name="dialog_ai_group_rule_prompt_label">分组规则提示词</string>
+    <string name="dialog_ai_prompt_reset">重置默认</string>
+    <string name="dialog_ai_test">测试配置</string>
+    <string name="dialog_ai_test_running">正在测试 AI 配置...</string>
+    <string name="dialog_ai_test_success">AI 测试通过：%1$s（耗时 %2$s）</string>
+    <string name="dialog_ai_test_failed">AI 测试失败：%1$s（耗时 %2$s）</string>
+    <string name="ai_recommendation_info_title">推荐详情</string>
+    <string name="ai_recommendation_reason_label">推荐理由</string>
+    <string name="recommendation_not_interested">不感兴趣</string>
+    <string name="recommendation_feedback_title">不感兴趣管理</string>
+    <string name="recommendation_feedback_summary">这些作品暂不参与个性推荐，并会在 90 天后自动恢复。选择作品可立即恢复推荐。</string>
+    <string name="recommendation_feedback_empty">暂无不感兴趣记录</string>
+    <string name="recommendation_feedback_remaining_days">剩余约 %1$d 天</string>
+    <string name="recommendation_feedback_restore_hint">选择后恢复</string>
+    <string name="recommendation_feedback_restore_all">全部恢复</string>
+    <string name="recommendation_feedback_restored">已恢复推荐</string>
+    <string name="recommendation_feedback_restored_all">已全部恢复推荐</string>
+    <string name="recommendation_not_interested_recorded">已暂时隐藏 90 天，可在个性设置中恢复</string>
+    <string name="recommendation_overview_label">内容简介</string>
+    <string name="recommendation_overview_unavailable">当前缓存暂无内容简介</string>
+    <string name="recommendation_source_ai">智能推荐</string>
+    <string name="recommendation_source_tmdb">个性推荐 · TMDB</string>
+    <string name="recommendation_source_douban">个性推荐 · 豆瓣</string>
+    <string name="recommendation_source_related">猜你喜欢</string>
+    <string name="recommendation_data_tmdb">TMDB 条目 #%1$d</string>
+    <string name="recommendation_data_douban_matched">豆瓣评分已匹配</string>
+    <string name="recommendation_data_douban_unavailable">未匹配到豆瓣评分</string>
+    <string name="recommendation_data_douban_only">豆瓣条目已匹配</string>
+    <string name="recommendation_data_metadata_only">仅有推荐基础信息</string>
+    <string name="recommendation_data_no_poster">暂无可用海报</string>
+    <string name="ai_recommendation_reason_preview">推荐理由：%1$s</string>
+    <string name="detail_work_searching">正在当前站源搜索 %1$s...</string>
+    <string name="detail_work_global_searching">当前站源无结果，正在全局搜索 %1$s...</string>
+    <string name="detail_image_save">保存</string>
+    <string name="detail_image_saving">正在保存图片...</string>
+    <string name="detail_image_save_success">已保存至：%1$s</string>
+    <string name="detail_image_save_failed">图片保存失败</string>
+    <string name="detail_external_open_failed">无法打开外部链接</string>
+    <string name="detail_image_permission_denied">存储权限被拒绝</string>
 
+    <string name="detail_tmdb_photos">剧照</string>
+    <string name="detail_tmdb_posters">海报</string>
+    <string name="detail_no_overview">暂无简介</string>
+    <string name="detail_image_rotate">旋转</string>
+    <string name="tmdb_external_links_label">外部链接</string>
+    <string name="tmdb_ratings_label">评分与数据</string>
+    <string name="tmdb_ratings_votes">人评分</string>
+    <string name="control_display">屏显</string>
+    <string name="display_time">时间</string>
+    <string name="display_traffic">网速</string>
+    <string name="display_size">分辨率</string>
+    <string name="display_progress">进度</string>
+    <string name="display_mini">迷你</string>
+    <string name="display_title">标题</string>
+    <string name="play_decode_idle">解码</string>
+    <string name="detail_close">关闭</string>
+    <string name="detail_expand">展开</string>
+    <string name="detail_collapse">收起</string>
+    <string name="detail_flag">线路</string>
+    <string name="detail_quality">画质</string>
+    <string name="detail_play_now">立即播放</string>
+    <string name="detail_play_resume">继续播放 - %1$s</string>
+    <string name="detail_score">评分 %1$s</string>
+    <string name="detail_runtime_format">%1$d 分钟</string>
+    <string name="detail_season_format">第 %1$d 季</string>
+    <string name="detail_season">季度</string>
+    <string name="detail_season_other">未匹配</string>
+    <string name="detail_media_movie">电影</string>
+    <string name="detail_media_tv">剧集</string>
+    <string name="detail_media_unknown">详情</string>
+    <string name="tmdb_episode_complete">全 %1$d 集</string>
+    <string name="tmdb_episode_total">共 %1$d 集</string>
+    <string name="tmdb_episode_ongoing">更新至 %1$d 集</string>
+    <string name="tmdb_episode_ongoing_total">更新至 %1$d / 共 %2$d 集</string>
+    <string name="tmdb_episode_series_ongoing">更新至 S%1$dE%2$d</string>
+    <string name="tmdb_episode_series_ongoing_total">更新至 S%1$dE%2$d · 全剧 %3$d 集</string>
+    <string name="tmdb_episode_season_complete">第 %1$d 季 · 全 %2$d 集</string>
+    <string name="tmdb_episode_season_total">第 %1$d 季 · 共 %2$d 集</string>
+    <string name="tmdb_episode_season_ongoing">第 %1$d 季 · 更新至 %2$d 集</string>
+    <string name="tmdb_episode_season_ongoing_total">第 %1$d 季 · 更新至 %2$d / 共 %3$d 集</string>
+    <string name="tmdb_episode_planned">待播</string>
+    <string name="tmdb_episode_planned_total">待播 · 计划 %1$d 集</string>
+    <string name="tmdb_episode_canceled">已取消 · 共 %1$d 集</string>
+    <string name="tmdb_episode_compact_total">TMDB %1$d 集</string>
+    <string name="tmdb_episode_compact_progress">TMDB %1$d/%2$d 集</string>
+    <string name="tmdb_episode_compact_episode">TMDB 第 %1$d 集</string>
+    <string name="tmdb_episode_compact_series">TMDB S%1$dE%2$d</string>
+    <string name="tmdb_episode_compact_series_total">TMDB S%1$dE%2$d · %3$d 集</string>
+    <string name="tmdb_episode_compact_season">TMDB S%1$d · %2$d 集</string>
+    <string name="tmdb_episode_compact_season_progress">TMDB S%1$d %2$d/%3$d 集</string>
+    <string name="tmdb_episode_compact_planned">TMDB 待播</string>
+    <string name="detail_source_current">站源：%1$s</string>
+    <string name="detail_source_route_chip">换源·%1$s</string>
+    <string name="detail_source_route_chip_entry">同站·%1$s</string>
+    <string name="detail_source_empty">暂无可用站源</string>
+    <string name="detail_source_episode_empty">暂无可用选集或站源</string>
+    <string name="detail_source_searching">正在搜索站源...</string>
+    <string name="detail_theme_dark">深色</string>
+    <string name="detail_theme_light">浅色</string>
+    <string name="detail_tmdb_cast">演员</string>
+    <string name="detail_tmdb_creators">主创团队</string>
+    <string name="detail_tmdb_works">猜你喜欢</string>
+    <string name="detail_tmdb_loading_detail">正在加载 TMDB 详情...</string>
+    <string name="detail_episode_detail_title">第 %1$d 集 · %2$s</string>
+    <string name="detail_episode_guests">客串演员</string>
+    <string name="detail_episode_crew">职员</string>
+    <string name="detail_episode_original_name">原始名称：%1$s</string>
+    <string name="detail_person_biography">简介</string>
+    <string name="detail_person_empty">暂无人物信息</string>
+    <string name="detail_person_info">个人信息</string>
+    <string name="detail_person_photos">相册</string>
+    <string name="detail_person_works">参与作品</string>
+    <string name="detail_person_work_count">%1$d 部作品</string>
+    <string name="detail_person_score_title">综合得分</string>
+    <string name="detail_person_score_value">%1$d</string>
+    <string name="detail_person_score_meta">主攻：%1$s\n出演 %2$d · 导演 %3$d · 制作 %4$d\n作品均分 %5$s</string>
+    <string name="detail_filter_all">全部</string>
+    <string name="detail_filter_cast">出演</string>
+    <string name="detail_filter_crew">制作</string>
+    <string name="detail_filter_director">导演</string>
+    <string name="detail_filter_movie">电影</string>
+    <string name="detail_filter_tv">剧集</string>
+    <string name="detail_image_previous">上一张</string>
+    <string name="detail_image_next">下一张</string>
+    <string name="detail_image_close">关闭</string>
 
-    <string-array name="select_lyrics_size">
+    <string name="menu_viewing_report">观影报告</string>
+    <string name="viewing_report_title">观影报告</string>
+    <string name="viewing_report_select_range">选择报告时间范围</string>
+    <string name="viewing_report_generate">生成报告</string>
+    <string name="viewing_report_refresh">刷新</string>
+    <string name="viewing_report_loading_local">正在读取观看记录…</string>
+    <string name="viewing_report_generating">正在生成报告…</string>
+    <string name="viewing_report_ai_analyzing">AI 正在分析你的观影画像…</string>
+    <string name="viewing_report_empty">该时间段暂无观看记录</string>
+    <string name="viewing_report_overview_watch">累计观影</string>
+    <string name="viewing_report_ai_persona">AI 观影画像</string>
+    <string name="viewing_report_time_pattern">观影时间分布</string>
+    <string name="viewing_report_content_preference">内容偏好</string>
+    <string name="viewing_report_people_preference">人物偏好</string>
+    <string name="viewing_report_badges">成就徽章</string>
+    <string name="viewing_report_watched">观看了</string>
+    <string name="viewing_report_completion_rate">完播率</string>
+    <string name="viewing_report_top_time_slot">最常观影时段</string>
+    <string name="viewing_report_weekend_ratio">周末观影占比</string>
+    <string name="viewing_report_avg_watch">平均单次观看</string>
+    <string name="viewing_report_late_night">深夜观影次数</string>
+    <string name="viewing_report_tv_movie_ratio">剧集 / 电影占比</string>
+    <string name="viewing_report_top_actors">最爱演员</string>
+    <string name="viewing_report_top_directors">最爱导演</string>
+    <string name="viewing_report_unit_hours">小时</string>
+    <string name="viewing_report_unit_vods">部</string>
+    <string name="viewing_report_unit_episodes">集</string>
+    <string name="viewing_report_unit_minutes">分钟</string>
+    <string name="viewing_report_unit_times">次</string>
+
+    <string name="ad_rule_delete_confirm">删除规则</string>
+    <string name="ad_rule_delete_message">确定删除“%1$s”吗？接口导入规则删除后可在待审核规则中重新导入。</string>
+
+<string name="player_karaoke_status_free">K歌 · 自由唱</string>
+
+<string name="player_karaoke_status_free_score_grade">K歌 · 娱乐 %1$d 分 · %2$s</string>
+
+<string name="player_karaoke_status_score">K歌 · %1$d 分</string>
+
+<string name="player_karaoke_status_score_grade">K歌 · %1$d 分 · %2$s</string>
+
+<string name="player_karaoke_status_rhythm_score">K歌 · 节奏 %1$d 分</string>
+
+<string name="player_karaoke_status_rhythm_score_grade">K歌 · 节奏 %1$d 分 · %2$s</string>
+
+<string name="player_karaoke_need_permission">需要麦克风权限</string>
+
+<string name="player_karaoke_mic_unavailable">麦克风不可用</string>
+
+<string name="player_karaoke_no_voice">请靠近麦克风演唱</string>
+
+<string name="player_karaoke_pitch">音高 %1$s</string>
+
+<string name="player_karaoke_pitch_score">音高 %1$s · %2$s</string>
+
+<string name="player_karaoke_pitch_hit">命中</string>
+
+<string name="player_karaoke_pitch_perfect">完美</string>
+
+<string name="player_karaoke_pitch_vibrato">颤音</string>
+
+<string name="player_karaoke_pitch_miss">偏差 %1$.1f 半音</string>
+
+<string name="player_karaoke_free_detail">音高 %1$s · 参与 %2$d%%</string>
+
+<string name="player_karaoke_rhythm_detail">节奏命中 %1$d%%</string>
+
+<string name="player_karaoke_combo">连击 %1$d 秒</string>
+
+<string name="player_karaoke_line_score">本句 %1$d 分</string>
+
+<string name="player_karaoke_result_title">K歌结果</string>
+
+<string name="player_karaoke_result_scoring">音准评分</string>
+
+<string name="player_karaoke_result_rhythm">节奏评分</string>
+
+<string name="player_karaoke_result_free">自由唱</string>
+
+<string name="player_karaoke_result_track">评分谱：%1$s</string>
+
+<string name="player_karaoke_result_no_track">未绑定评分谱，当前是自由唱娱乐估算。</string>
+
+<string name="player_karaoke_result_rhythm_note">根据歌词时间轴自动生成，不判断真实音高。</string>
+
+<string name="player_karaoke_result_metric_hit">命中率</string>
+
+<string name="player_karaoke_result_metric_rhythm">节奏命中</string>
+
+<string name="player_karaoke_result_metric_participation">参与度</string>
+
+<string name="player_karaoke_result_score_value">%1$d 分 · %2$s</string>
+
+<string name="player_karaoke_result_voice_coverage">演唱覆盖</string>
+
+<string name="player_karaoke_result_bonus">表现加成</string>
+
+<string name="player_karaoke_result_perfect">完美命中</string>
+
+<string name="player_karaoke_result_vibrato">颤音奖励</string>
+
+<string name="player_karaoke_result_active_time">有效 %1$d 秒</string>
+
+<string name="player_karaoke_result_best_combo">连击 %1$d 秒</string>
+
+<string name="player_karaoke_result_line_average">逐句平均</string>
+
+<string name="player_karaoke_result_line_summary">逐句 %1$d 句 · 最佳 %2$d%%</string>
+
+<string name="player_karaoke_result_pitch_headline_high">音准和稳定度都不错，表现很完整。</string>
+
+<string name="player_karaoke_result_pitch_headline_mid">这次表现可以，音高再稳一点分数会更好。</string>
+
+<string name="player_karaoke_result_pitch_headline_low">先把每句开头唱稳，并尽量完整唱完。</string>
+
+<string name="player_karaoke_result_no_track_short">自由唱估算</string>
+
+<string name="player_karaoke_result_rhythm_note_short">歌词节奏评分</string>
+
+<string name="player_karaoke_result_pitch_headline_high_short">表现完整</string>
+
+<string name="player_karaoke_result_pitch_headline_mid_short">音高再稳一点</string>
+
+<string name="player_karaoke_result_pitch_headline_low_short">唱稳开头，完整唱完</string>
+
+<string name="player_karaoke_result_fun_note">娱乐评分包含音准命中、完美保持、连击和颤音奖励。</string>
+
+<string name="player_lyrics_offset">歌词偏移</string>
+
+<string name="player_lyrics_rows">歌词行数</string>
+
+<string name="player_lyrics_size">歌词字号</string>
+
+<string name="player_lyrics_source">歌词来源</string>
+
+<string name="player_karaoke_mode">K歌模式</string>
+
+<string name="player_audio_options">播放选项</string>
+
+<string name="player_karaoke_mode_enabled">当前已开启</string>
+
+<string name="player_karaoke_mode_disabled">当前已关闭</string>
+
+<string name="player_karaoke_difficulty">K歌难度</string>
+
+<string name="player_karaoke_mic_delay">麦克风延迟</string>
+
+<string name="player_karaoke_track">评分谱</string>
+
+<string name="player_karaoke_track_generate_pitch">生成评分谱</string>
+
+<string name="player_karaoke_track_search">在线搜索</string>
+
+<string name="player_karaoke_track_keyword">评分谱关键词</string>
+
+<string name="player_karaoke_track_import_file">本地导入</string>
+
+<string name="player_karaoke_track_import_url">链接导入</string>
+
+<string name="player_karaoke_track_sources">谱源管理</string>
+
+<string name="player_karaoke_track_advanced">高级选项</string>
+
+<string name="player_karaoke_track_back">返回</string>
+
+<string name="player_karaoke_track_basic_pitch_tflite">Basic Pitch：%1$s</string>
+
+<string name="player_karaoke_track_option_enabled">已开启</string>
+
+<string name="player_karaoke_track_option_disabled">已关闭</string>
+
+<string name="player_karaoke_track_sources_hint">每行一个仓库：owner/repo@branch 或 https://github.com/owner/repo/tree/branch</string>
+
+<string name="player_karaoke_track_sources_saved">评分谱源已保存</string>
+
+<string name="player_karaoke_track_url_hint">UltraStar .txt 链接、USDB ID、USDB 详情页，或追加 @Cookie=...</string>
+
+<string name="player_karaoke_track_clear">清除绑定</string>
+
+<string name="player_karaoke_track_searching">正在搜索评分谱...</string>
+
+<string name="player_karaoke_track_not_found">未找到评分谱</string>
+
+<string name="player_karaoke_track_select">选择评分谱</string>
+
+<string name="player_karaoke_track_source_login"> · 需登录</string>
+
+<string name="player_karaoke_track_result_item">%1$s\n%2$s - %3$s\n%4$s</string>
+
+<string name="player_karaoke_track_imported">评分谱已导入</string>
+
+<string name="player_karaoke_track_import_failed">评分谱导入失败</string>
+
+<string name="player_karaoke_track_generated">轻量节奏评分谱已生成</string>
+
+<string name="player_karaoke_track_generating_pitch">正在生成音高评分谱...</string>
+
+<string name="player_karaoke_track_generating_pitch_message">正在本地分析当前音频并生成带音高的评分谱，完成前请勿关闭播放器。</string>
+
+<string name="player_karaoke_track_generating_pitch_progress">%1$d%% · %2$s · %3$s</string>
+
+<string name="player_karaoke_track_generation_stop">停止</string>
+
+<string name="player_karaoke_track_generation_stopped">已停止生成评分谱</string>
+
+<string name="player_karaoke_track_pitch_stage_prepare">准备中</string>
+
+<string name="player_karaoke_track_pitch_stage_decode">解码音频</string>
+
+<string name="player_karaoke_track_pitch_stage_analyze">分析音高</string>
+
+<string name="player_karaoke_track_pitch_stage_write">写入评分谱</string>
+
+<string name="player_karaoke_track_pitch_stage_finish">收尾中</string>
+
+<string name="player_karaoke_track_pitch_remaining_unknown">正在估算剩余时间</string>
+
+<string name="player_karaoke_track_pitch_remaining_seconds">剩余约 %1$d 秒</string>
+
+<string name="player_karaoke_track_pitch_remaining_minutes">剩余约 %1$d 分 %2$d 秒</string>
+
+<string name="player_karaoke_track_generated_pitch">音高评分谱已生成</string>
+
+<string name="player_karaoke_track_generated_pitch_message">已应用到当前歌曲，K歌模式已开启。</string>
+
+<string name="player_karaoke_track_generate_pitch_failed">音高评分谱生成失败</string>
+
+<string name="player_karaoke_track_generate_pitch_failed_message">未生成评分谱：%1$s</string>
+
+<string name="player_karaoke_track_generate_pitch_unsupported_source">当前媒体源无法直接分析音频，可尝试切换线路/清晰度，或使用在线搜索、本地导入评分谱。</string>
+
+<string name="player_karaoke_track_generate_failed">轻量节奏评分谱生成失败</string>
+
+<string name="player_karaoke_track_generate_no_lyrics">当前没有可用的歌词时间轴</string>
+
+<string name="player_karaoke_track_cleared">评分谱绑定已清除</string>
+
+<string name="player_karaoke_track_none">当前没有评分谱绑定</string>
+
+<string name="player_desktop_lyrics">桌面歌词</string>
+
+<string name="player_desktop_lyrics_permission">请允许显示在其他应用上层，用于显示桌面歌词</string>
+
+<string name="player_lyrics_cache">歌词缓存</string>
+
+<string name="player_lyrics_cache_value">%1$d 项</string>
+
+<string name="player_lyrics_cache_cleared">歌词缓存已清理</string>
+
+<string name="player_lyrics_search">搜索歌词</string>
+
+<string name="player_lyrics_reload">重搜歌词</string>
+
+<string name="player_lyrics_keyword">歌词关键词</string>
+
+<string name="player_lyrics_keyword_required">请输入歌词关键词</string>
+
+<string name="player_lyrics_searching">正在搜索歌词...</string>
+
+<string name="player_lyrics_not_found">未找到歌词</string>
+
+<string name="player_lyrics_loaded">已加载歌词：%1$s</string>
+
+<string name="player_lyrics_select">选择歌词</string>
+
+<string name="player_lyrics_word">逐字</string>
+
+<string name="player_lyrics_synced">逐句</string>
+
+<string name="player_lyrics_plain">文本</string>
+
+<string name="player_audio_badge_audio">音频</string>
+
+<string name="player_audio_badge_lyrics">歌词</string>
+
+<string name="player_audio_playlist">歌单</string>
+
+<string name="player_audio_playlist_results">搜索结果</string>
+
+<string name="player_audio_playlist_search_hint">搜索当前站源</string>
+
+<string name="player_audio_playlist_search_required">请输入搜索关键词</string>
+
+<string name="player_audio_playlist_search_failed">搜索失败</string>
+
+<string name="player_audio_playlist_no_results">未找到结果</string>
+
+<string name="player_audio_playlist_result_count">找到 %1$d 个结果</string>
+
+<string name="player_audio_playlist_adding">正在加入 %1$s...</string>
+
+<string name="player_audio_playlist_add_failed">加入失败</string>
+
+<string name="player_audio_playlist_add_empty">未找到可播放条目</string>
+
+<string name="player_audio_playlist_added">已加入 %1$d 项</string>
+
+<string name="player_audio_playlist_exists">已在歌单中</string>
+
+<string name="player_audio_playlist_empty">歌单暂无歌曲</string>
+
+<string name="player_audio_playlist_removed">已移除 %1$s</string>
+
+<string name="player_audio_playlist_keep_one">歌单至少保留一首歌曲</string>
+
+<string name="player_audio_playlist_switch">切换</string>
+
+<string name="player_audio_playlist_create">新建</string>
+
+<string name="player_audio_playlist_name_hint">歌单名称</string>
+
+<string name="player_audio_more">更多</string>
+
+<string name="player_audio_background">背景</string>
+
+<string name="player_audio_background_decorated_on">装饰已开</string>
+
+<string name="player_audio_background_decorated_off">装饰已关</string>
+
+<string name="player_audio_background_light_effect_on">光效已开</string>
+
+<string name="player_audio_background_light_effect_off">光效已关</string>
+
+<string name="player_audio_background_decorated_turn_on">打开装饰</string>
+
+<string name="player_audio_background_decorated_turn_off">关闭装饰</string>
+
+<string name="player_audio_background_random_plain">换背景</string>
+
+<string name="player_audio_background_random_decoration">换装饰</string>
+
+<string name="player_audio_background_random_plain_done">已随机生成纯背景</string>
+
+<string name="player_audio_background_random_decoration_done">已随机生成背景装饰</string>
+
+<string name="player_audio_background_random_mix_done">已随机生成背景搭配</string>
+
+<string name="player_lyrics_unknown">未知</string>
+
+<string name="player_lyrics_result_item">%1$s · %2$s · %3$d\n%4$s - %5$s</string>
+
+<string name="player_lyrics_rows_value">%1$d 行</string>
+
+<string-array name="select_lyrics_size">
         <item>小</item>
         <item>默认</item>
         <item>大</item>
         <item>特大</item>
     </string-array>
 
-
-
-
-    <string-array name="select_lyrics_source">
+<string-array name="select_lyrics_source">
         <item>自动</item>
         <item>本地</item>
         <item>AMLL TTML</item>
@@ -1462,16 +2425,259 @@
         <item>咪咕</item>
     </string-array>
 
-
-
-
-    <string-array name="select_karaoke_difficulty">
+<string-array name="select_karaoke_difficulty">
         <item>轻松</item>
         <item>标准</item>
         <item>严格</item>
     </string-array>
 
+<string name="player_audio_badge_queue">队列</string>
 
-    <string name="player_audio_badge_queue">队列</string>
-    <string name="player_audio_repeat">循环</string>
-</resources>
+<string name="player_audio_repeat">循环</string>
+
+
+    <!-- Auto-generated missing translations -->
+    <string name="live_no_epg">00:00 - 23:59 暂无节目信息</string>
+    <string name="site_health_report_ad_blocked">广告拦截 · %1$d 次</string>
+    <string name="search_column">搜索布局</string>
+    <string name="dialog_audio_enabled_label">启用规则</string>
+    <string name="dialog_audio_add_hint">添加关键词或站点…</string>
+    <string name="dialog_audio_add">添加</string>
+    <string name="dialog_novel_enabled_label">启用规则</string>
+    <string name="dialog_novel_add_hint">添加关键词或站点…</string>
+    <string name="dialog_novel_add">添加</string>
+    <string name="dialog_novel_site_manage">选择小说源</string>
+    <string name="dialog_novel_site_default">默认 [书]/[小说]</string>
+    <string name="dialog_comic_enabled_label">启用规则</string>
+    <string name="dialog_comic_add_hint">添加关键词或站点…</string>
+    <string name="dialog_comic_add">添加</string>
+    <string name="dialog_comic_site_manage">选择漫画源</string>
+    <string name="dialog_comic_site_default">默认 [画]/[漫画]</string>
+    <string name="reader_chapter_failed">章节加载失败</string>
+    <string name="reader_opening">正在打开 %1$s</string>
+    <string name="reader_opening_default">正在打开阅读器</string>
+    <string name="cat_web_opening">正在打开设置中心</string>
+    <string name="cat_web_failed">页面加载失败：%1$s</string>
+    <string name="cat_web_external">已用浏览器打开</string>
+    <string name="cat_web_download">正在下载 %1$s 到「下载」目录</string>
+    <string name="cat_web_download_failed">下载失败</string>
+    <string name="dialog_short_drama_site_disabled">已排除：%1$s</string>
+    <string name="dialog_short_drama_enabled_label">启用规则</string>
+    <string name="dialog_short_drama_disabled_label">已排除</string>
+    <string name="dialog_short_drama_add_hint">添加关键词或站点…</string>
+    <string name="dialog_short_drama_add">添加</string>
+    <string name="viewing_report_refreshing">刷新报告中...</string>
+    <string name="setting_ai_ad_detection">AI 智能去广</string>
+    <string name="setting_ad_rule_manage">广告规则管理</string>
+    <string name="ad_rule_add_manual">手动添加规则</string>
+    <string name="ad_rule_import_candidates">待审核接口规则（%d）</string>
+    <string name="ad_rule_import_title">导入接口去广规则</string>
+    <string name="ad_rule_import_action">导入（默认停用）</string>
+    <string name="ad_rule_ignore_all">忽略全部</string>
+    <string name="ad_rule_import_empty">暂无待审核接口规则</string>
+    <string name="ad_rule_section_custom">自定义规则</string>
+    <string name="ad_rule_section_server">接口配置规则</string>
+    <string name="ad_rule_empty">暂无规则</string>
+    <string name="ad_rule_server_empty">来自配置 · 暂无</string>
+    <string name="ad_rule_server_summary">来自配置 · 共 %d 条（只读）</string>
+    <string name="ad_rule_edit_title">编辑规则</string>
+    <string name="ad_rule_field_name">规则名称（可选）</string>
+    <string name="ad_rule_field_hosts">域名列表（每行一个）</string>
+    <string name="ad_rule_field_hosts_hint">仅对这些域名生效，留空表示全局</string>
+    <string name="ad_rule_field_regex">广告规则（每行一个正则）</string>
+    <string name="ad_rule_field_regex_hint">匹配的 URL 会被屏蔽</string>
+    <string name="ad_rule_field_exclude">白名单（每行一个正则）</string>
+    <string name="ad_rule_field_exclude_hint">匹配的 URL 不会被屏蔽</string>
+    <string name="ad_rule_empty_input">至少填写一项</string>
+    <string name="ad_rule_invalid_regex">正则表达式无效：%s</string>
+    <string name="ad_rule_count">%d 条规则</string>
+    <string name="ad_rule_count_with_pending">%1$d 条规则 · %2$d 条待审核</string>
+    <string name="play_ad_feedback">有广告</string>
+    <string name="ad_feedback_analyzing">AI 正在分析广告特征…</string>
+    <string name="ad_feedback_no_url">当前没有可分析的播放地址</string>
+    <string name="ad_feedback_ai_disabled">请先在去广告设置中开启 AI 与 AI 智能去广</string>
+    <string name="ad_feedback_failed">分析失败：%s</string>
+    <string name="ad_feedback_empty_result">AI 未识别到明显的广告特征</string>
+    <string name="ad_feedback_preview_title">AI 广告分析结果</string>
+    <string name="ad_feedback_confidence">置信度 %d%%</string>
+    <string name="ad_feedback_reasoning">分析说明</string>
+    <string name="ad_feedback_apply">应用并屏蔽</string>
+    <string name="ad_feedback_applied">已添加去广规则</string>
+    <string name="ad_feedback_low_confidence">置信度较低，建议人工核对后再应用</string>
+    <string name="ad_feedback_no_ad">AI 未识别到明显的广告特征</string>
+    <string name="ad_feedback_saved">已添加去广规则</string>
+    <string name="ad_rule_preview_title">AI 广告分析结果</string>
+    <string name="ad_rule_confidence_value">置信度：%d%%</string>
+    <string name="ad_rule_low_confidence_warning">置信度较低，证据不足，建议人工核对后再应用</string>
+    <string name="ad_rule_preview_hosts">屏蔽域名</string>
+    <string name="ad_rule_preview_regex">广告规则（正则）</string>
+    <string name="ad_block_stats">广告拦截统计</string>
+    <string name="ad_block_total">总拦截次数</string>
+    <string name="ad_feedback_count">AI 反馈次数</string>
+    <string name="ad_ai_success_rate">AI 分析成功率</string>
+    <string name="ad_site_rank">站点拦截排行</string>
+    <string name="ad_rule_rank">规则命中排行</string>
+    <string name="ad_stats_reset">重置统计</string>
+    <string name="ad_stats_reset_confirm">确定重置所有统计数据吗？</string>
+    <string name="ad_stats_empty">暂无统计数据</string>
+    <string name="ad_stats_overview">统计概览</string>
+    <string name="ad_stats_times">次</string>
+    <string name="ad_stats_percent">%.1f%%</string>
+    <string name="ad_stats_site_name">站点</string>
+    <string name="ad_stats_rule_name">规则</string>
+    <string name="ad_stats_count">次数</string>
+    <string name="ad_stats_source">来源</string>
+    <string name="ad_stats_source_default">默认</string>
+    <string name="ad_stats_source_ai">AI</string>
+    <string name="ad_stats_source_manual">手动</string>
+    <string name="ad_stats_source_unknown">未知</string>
+    <string name="ad_rule_preview_exclude">白名单（正则）</string>
+    <string name="ad_rule_preview_none">（无）</string>
+    <string name="ad_rule_preview_confirm">应用并屏蔽</string>
+    <string name="ad_interval_title">广告区间 %1$s – %2$s</string>
+    <string name="ad_interval_duration">时长 %1$.1f 秒</string>
+    <string name="ad_interval_skipped">本次播放已跳过</string>
+    <string name="ad_interval_recorded">已记录。该区间已经播过，未执行跳过。</string>
+    <string name="ad_interval_origin_marked">起点：由你框选</string>
+    <string name="ad_interval_origin_discontinuity">起点：根据切片断点推断</string>
+    <string name="ad_interval_origin_cross_domain">起点：根据切片跨域切换推断</string>
+    <string name="ad_interval_origin_audio">起点：复用音频检测结果</string>
+    <string name="ad_interval_origin_window">起点：按回溯 %1$d 秒估算</string>
+    <string name="ad_interval_analyzing">正在分析…</string>
+    <string name="ad_interval_plan_hls">新增 HLS 切片规则</string>
+    <string name="ad_interval_plan_host">拉黑广告域名</string>
+    <string name="ad_interval_plan_regex">新增 URL 正则规则</string>
+    <string name="ad_interval_plan_enable">启用已有规则</string>
+    <string name="ad_interval_plan_none">未能归纳出可复用的规则</string>
+    <string name="ad_interval_risk_low">风险：低</string>
+    <string name="ad_interval_risk_medium">风险：中</string>
+    <string name="ad_interval_risk_high">风险：高</string>
+    <string name="ad_interval_evidence">证据</string>
+    <string name="ad_interval_diagnostics">诊断</string>
+    <string name="ad_interval_save">保存规则</string>
+    <string name="ad_interval_dismiss">关闭</string>
+    <string name="ad_interval_mark_start">已标记广告起点，到结束处再按一次</string>
+    <string name="ad_interval_mark_cancelled">已取消标记</string>
+    <string name="ad_interval_invalid">当前位置无法反馈广告</string>
+    <string name="ad_interval_rule_saved">规则已保存并生效</string>
+    <string name="ad_interval_rule_skipped">该区间没有可保存的规则</string>
+    <string name="ad_interval_rule_failed">规则保存失败</string>
+    <string name="ad_rule_section_summary">AI/自定义 %1$d 条 · 接口配置 %2$d 条 · 内置 HLS %3$d 条</string>
+    <string name="ad_rule_hls_builtin_summary">内置 HLS · v%1$d · %2$s</string>
+    <string name="ad_rule_hls_enabled">已启用</string>
+    <string name="ad_rule_hls_disabled">默认关闭</string>
+    <string name="ad_rule_hls_invalid">规则异常：%1$s</string>
+    <string name="ad_rule_detail_hint">查看完整规则</string>
+    <string name="ad_rule_detail_hosts">适用域名</string>
+    <string name="ad_rule_detail_regex">匹配规则</string>
+    <string name="ad_rule_detail_script">自动化脚本</string>
+    <string name="ad_rule_detail_exclude">白名单 / 正片保护</string>
+    <string name="ad_rule_detail_json">完整规则（JSON）</string>
+    <string name="ad_rule_detail_id">规则 ID：%1$s</string>
+    <string name="ad_rule_detail_source">来源：%1$s</string>
+    <string name="ad_rule_default_disable_confirm">临时停用此接口配置规则？\n可能导致部分广告无法过滤，可随时重新启用。</string>
+    <string name="ad_rule_imported_disable_confirm">临时停用此接口导入规则？\n可随时重新启用，删除后也可从待审核规则重新导入。</string>
+    <string name="ad_rule_ai_disable_confirm">临时停用此 AI 识别规则？\n可随时重新启用。</string>
+    <string name="ad_rule_manual_disable_confirm">临时停用此手动规则？\n可随时重新启用。</string>
+    <string name="ad_rule_default_enable_confirm">重新启用此默认规则？</string>
+    <string-array name="select_render">
+        <item>Surface</item>
+        <item>Texture</item>
+    </string-array>
+    <string name="ad_audio_candidate_title">疑似广告</string>
+    <string name="ad_audio_match_title">已匹配音频广告</string>
+    <string name="ad_audio_candidate_message">规则 %1$s 已匹配，是否跳过约 %2$d 秒？</string>
+    <string name="ad_audio_skip">跳过</string>
+    <string name="ad_audio_ignore">忽略</string>
+    <string name="ad_audio_skipped_title">已跳过广告</string>
+    <string name="ad_audio_skipped_message">可在 %1$d 秒内撤销。</string>
+    <string name="ad_audio_undo">撤销</string>
+    <string name="setting_ad_audio_title">音频指纹去广告（实验）</string>
+    <string name="setting_ad_audio_no_rules">无规则</string>
+    <string name="setting_ad_audio_rule_error">规则错误</string>
+    <string name="setting_ad_audio_rule_count">规则 %1$d · %2$s</string>
+    <string name="setting_ad_audio_import">导入规则 JSON</string>
+    <string name="setting_ad_audio_clear">清除规则</string>
+    <string name="setting_ad_audio_clear_confirm">确认清除已导入的音频指纹规则？</string>
+    <string name="setting_ad_audio_imported">已导入 %1$d 条规则 · %2$s</string>
+    <string name="setting_ad_audio_import_failed">规则导入失败，已保留原规则。</string>
+    <string name="setting_ad_audio_clear_done">已清除音频指纹规则</string>
+
+    <string name="download">下载</string>
+    <string name="download_play_first">请先播放该集后再下载</string>
+    <string name="download_success">下载完成：%s</string>
+    <string name="download_failed">下载失败</string>
+    <string name="download_canceled">已取消下载</string>
+    <string name="download_added">已加入下载队列 %d 项</string>
+    <string name="download_exist">已在下载队列中</string>
+    <string name="download_pause">暂停</string>
+    <string name="download_pause_all">全部暂停</string>
+    <string name="download_resume">继续</string>
+    <string name="download_paused">已暂停</string>
+    <string name="download_retry">重试</string>
+    <string name="download_list">下载列表</string>
+    <string name="download_notify_text">%d 个任务下载中</string>
+    <string name="download_select_episode">选择要下载的剧集</string>
+    <string name="download_select_all">全选</string>
+    <string name="download_select_none">取消全选</string>
+    <string name="download_no_episode">暂无可选剧集</string>
+    <string name="download_waiting">等待中</string>
+    <string name="download_queued">排队中</string>
+    <string name="download_done">下载完成</string>
+    <string name="download_active">下载中</string>
+    <string name="download_play">播放</string>
+    <string name="download_cancel">取消</string>
+    <string name="download_cancel_all">取消全部</string>
+    <string name="download_remove">移除</string>
+    <string name="download_empty">暂无下载任务</string>
+    <string name="download_clear_finished">清空已完成</string>
+    <string name="download_delete_episode">确定删除该集？</string>
+    <string name="download_delete_group">确定删除该剧全部已下载缓存？</string>
+    <string name="download_long_press_tip">点击可暂停/继续，长按删除</string>
+    <string name="speech_ad_enabled">语音广告识别</string>
+    <string name="speech_ad_keywords">广告关键词</string>
+    <string name="speech_ad_keyword_count">%1$d 个关键词</string>
+    <string name="speech_ad_skip_seconds">跳过时长</string>
+    <string name="speech_ad_skip_seconds_value">%1$d 秒</string>
+    <string name="speech_ad_skip_mode">跳过模式</string>
+    <string name="speech_ad_skip_mode_prompt">弹窗确认后跳过</string>
+    <string name="speech_ad_skip_mode_auto">自动跳过</string>
+    <string name="speech_ad_skip_seconds_invalid">请输入 1 到 120 之间的整数。</string>
+    <string name="speech_ad_model_not_ready">模型未就绪</string>
+    <string name="ad_audio_speech_candidate_title">检测到语音广告</string>
+    <string name="ad_audio_speech_candidate_message">命中广告关键词，跳过约 %1$d 秒？</string>
+    <string name="node_title">正在准备猫源</string>
+    <string name="node_prepare">准备中…</string>
+    <string name="node_hint">仅首次需要：Node 运行时下载一次后即可复用。</string>
+    <string name="node_downloading">下载 Node 运行时</string>
+    <string name="node_extracting">解压中…</string>
+    <string name="node_bundle">检查猫源 bundle…</string>
+    <string name="node_starting">启动服务…</string>
+    <string name="node_waiting">等待服务就绪…</string>
+    <string name="node_ready">猫源已就绪</string>
+    <string name="node_stopping">正在关闭旧猫源服务…</string>
+    <string name="node_switch_restart">正在切换猫源…</string>
+    <string name="node_background">后台继续</string>
+    <string name="node_speed">%1$s/s</string>
+    <string name="node_size_pair">%1$s / %2$s</string>
+    <string name="setting_ad">去广告</string>
+    <string name="setting_ad_summary">总开关、规则、音频识别、片头片尾</string>
+    <string name="setting_ad_group_basic">基础</string>
+    <string name="setting_ad_group_rule">规则与统计</string>
+    <string name="setting_ad_group_audio">音频识别</string>
+    <string name="setting_ad_group_segment">片段跳过</string>
+    <string name="setting_ad_master">去广告总开关</string>
+    <string name="setting_ad_audio_auto_skip">自动跳过</string>
+    <string name="setting_ad_probe_source">社区规则源</string>
+    <string name="setting_ad_probe_source_hint">必须是 https 地址。规则未签名，只填你信任的来源。</string>
+    <string name="setting_ad_probe_source_default">默认源</string>
+    <string name="setting_ad_probe_source_off">未启用</string>
+    <string name="setting_ad_probe_refresh">立即刷新规则</string>
+    <string name="setting_ad_probe_refreshing">正在刷新…</string>
+    <string name="setting_ad_probe_refreshed">已更新：%1$s · 共 %2$d 条规则</string>
+    <string name="setting_ad_probe_unchanged">已是最新，共 %1$d 条规则</string>
+    <string name="setting_ad_probe_failed">刷新失败：%1$s</string>
+    <string name="setting_ad_probe_revision">revision %1$d · %2$d 条规则</string>
+    <string name="setting_ad_probe_never">尚未拉取</string>
+    <string name="setting_ad_probe_url_invalid">规则源必须以 https:// 开头</string>
+    <string name="setting_ad_probe_source_disabled">请先填写社区规则源地址</string></resources>

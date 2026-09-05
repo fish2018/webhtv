@@ -1,11 +1,13 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home">首頁</string>
     <string name="home_vod">點播</string>
     <string name="home_live">直播</string>
     <string name="home_search">搜尋</string>
     <string name="home_keep">收藏</string>
     <string name="home_push">推送</string>
+    <string name="home_cast">投屏</string>
     <string name="home_setting">設定</string>
     <string name="control_speed">倍速</string>
     <string name="control_scale">縮放</string>
@@ -15,7 +17,12 @@
     <string name="control_compact_episode_title">精簡標題</string>
     <string name="control_track">軌道</string>
     <string name="home_history">最近觀看</string>
+    <string name="home_history_button">歷史</string>
     <string name="home_recommend">更新推薦</string>
+    <string name="setting_home_buttons">首頁按鈕</string>
+    <string name="home_buttons_reset">重置</string>
+    <string name="home_buttons_selected">已啟用 %1$d/%2$d</string>
+    <string name="detail_tmdb_rematch">TMDB</string>
 
     <!-- Collect -->
     <string name="collect_result">「<xliff:g name="name">%s</xliff:g>」的搜尋結果</string>

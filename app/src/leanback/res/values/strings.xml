@@ -1,11 +1,13 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home">Home</string>
     <string name="home_vod">Vod</string>
     <string name="home_live">Live</string>
     <string name="home_search">Search</string>
     <string name="home_keep">Keep</string>
     <string name="home_push">Push</string>
+    <string name="home_cast">Cast</string>
     <string name="home_setting">Setting</string>
     <string name="control_speed">Speed</string>
     <string name="control_scale">Scale</string>
@@ -15,7 +17,12 @@
     <string name="control_compact_episode_title">Compact title</string>
     <string name="control_track">Track</string>
     <string name="home_history">History</string>
+    <string name="home_history_button">History</string>
     <string name="home_recommend">Recommend</string>
+    <string name="setting_home_buttons">Home buttons</string>
+    <string name="home_buttons_reset">Reset</string>
+    <string name="home_buttons_selected">%1$d/%2$d enabled</string>
+    <string name="detail_tmdb_rematch">TMDB</string>
 
     <!-- Collect -->
     <string name="collect_result">Search results for <xliff:g name="name">%s</xliff:g></string>
@@ -33,4 +40,8 @@
     <string name="timer_60">1 hour</string>
     <string name="timer_delay">Delay 5 minutes</string>
     <string name="timer_cancel">Cancel timer</string>
+
+    <!-- Delete Dialog -->
+    <string name="dialog_delete_record">Delete all records?</string>
+    <string name="dialog_delete_history">All history records will be removed.</string>
 </resources>

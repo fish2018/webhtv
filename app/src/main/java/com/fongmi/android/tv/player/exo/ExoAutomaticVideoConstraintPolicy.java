@@ -322,7 +322,10 @@ final class ExoAutomaticVideoConstraintPolicy {
     enum Fault {
         NONE("none"),
         DROPPED_FRAMES("dropped-frames"),
-        CODEC_ERROR("codec-error");
+        CODEC_ERROR("codec-error"),
+        // 起播固定选约束内最高画质后，原生 ABR 不再提供吞吐保护，带宽不足只能表现为持续重缓冲。
+        // 解码器本身没有压力，掉帧和编解码错误都不会触发，因此需要独立的吞吐不足证据来降档。
+        THROUGHPUT("throughput");
 
         private final String label;
 

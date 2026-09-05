@@ -6,12 +6,40 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.fongmi.android.tv.ui.custom.ContextWallImageView
-        android:id="@+id/contextWall"
+    <!-- ProgressLayout 只管理这一层，保持内部 GONE 状态并让最终页面整体一次淡入。 -->
+    <RelativeLayout
+        android:id="@+id/videoPageContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <!-- TMDB背景幻灯片层 -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:importantForAccessibility="no"
-        android:visibility="gone" />
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true">
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/backdropPager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <com.fongmi.android.tv.ui.custom.ContextWallImageView
+            android:id="@+id/contextWall"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
+        <!-- 渐变遮罩 -->
+        <View
+            android:id="@+id/backdropMask"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_backdrop_gradient" />
+
+    </FrameLayout>
 
     <FrameLayout
         android:id="@+id/video"
@@ -45,6 +73,7 @@
             android:paddingTop="20dp"
             android:paddingEnd="44dp"
             android:paddingBottom="14dp"
+            android:saveEnabled="false"
             android:visibility="gone"
             tools:visibility="visible">
 
@@ -639,6 +668,27 @@
         android:textSize="16sp"
         tools:text="導演：FongMi" />
 
+    <!-- TMDB 简介：仅 TMDB 模式显示，撑满站源/导演行与底部按钮之间的空间 -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tmdbOverview"
+        style="@style/Video.ContextText"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/director"
+        android:layout_above="@+id/row2"
+        android:layout_alignStart="@+id/name"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="8dp"
+        android:ellipsize="end"
+        android:gravity="top"
+        android:paddingBottom="4dp"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:visibility="gone"
+        tools:text="简介：这是一段剧情简介……" />
+
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/actor"
         style="@style/Video.ContextText"
@@ -655,107 +705,148 @@
         android:textSize="16sp"
         tools:text="演員：FongMi" />
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <HorizontalScrollView
         android:id="@+id/row2"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignStart="@+id/name"
+        android:layout_alignParentEnd="true"
         android:layout_alignBottom="@+id/video"
-        android:orientation="horizontal">
+        android:layout_marginEnd="24dp"
+        android:fillViewport="false"
+        android:overScrollMode="never"
+        android:scrollbars="none">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/content"
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_video_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
             android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/detail_desc"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_desc" />
+            android:orientation="horizontal">
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/shortDisplay"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_video_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/play_short_display"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_short_display" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/tmdbCast"
+                android:singleLine="true"
+                android:text="@string/detail_desc"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:drawableStartCompat="@drawable/ic_detail_desc" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/search"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_video_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/play_search"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_action_search" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/shortDisplay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/flag"
+                android:singleLine="true"
+                android:text="@string/play_short_display"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:drawableStartCompat="@drawable/ic_detail_short_display" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/keep"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/selector_video_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/keep"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_keep_off" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/searchDetail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusRight="@id/keep"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/flag"
+                android:singleLine="true"
+                android:text="@string/play_search"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:drawableStartCompat="@drawable/ic_action_search" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/change1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/selector_video_item"
-            android:drawablePadding="6dp"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:gravity="center"
-            android:nextFocusRight="@id/change1"
-            android:nextFocusUp="@id/actor"
-            android:nextFocusDown="@id/flag"
-            android:singleLine="true"
-            android:text="@string/play_change"
-            android:textColor="@color/white"
-            android:textSize="16sp"
-            app:drawableStartCompat="@drawable/ic_detail_change" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/change1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusRight="@id/keep"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/tmdbCast"
+                android:singleLine="true"
+                android:text="@string/play_change"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:visibility="gone"
+                app:drawableStartCompat="@drawable/ic_detail_change" />
 
-    </androidx.appcompat.widget.LinearLayoutCompat>
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/keep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusLeft="@id/searchDetail"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/tmdbCast"
+                android:singleLine="true"
+                android:text="@string/keep"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:drawableStartCompat="@drawable/ic_detail_keep_off" />
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tmdbRematch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/selector_video_item"
+                android:drawablePadding="6dp"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:minWidth="96dp"
+                android:nextFocusLeft="@id/keep"
+                android:nextFocusUp="@id/actor"
+                android:nextFocusDown="@id/tmdbCast"
+                android:singleLine="true"
+                android:text="@string/detail_tmdb_rematch"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:visibility="gone"
+                app:drawableStartCompat="@drawable/ic_action_search" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </HorizontalScrollView>
+
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -763,54 +854,489 @@
         android:layout_alignParentBottom="true"
         android:clipChildren="true"
         android:clipToPadding="true"
-        android:orientation="vertical"
-        android:paddingBottom="8dp">
+        android:fillViewport="true"
+        android:paddingBottom="8dp"
+        android:scrollbars="none">
 
-        <androidx.leanback.widget.HorizontalGridView
-            android:id="@+id/flag"
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            android:orientation="vertical">
+
+            <!-- 线路选择 -->
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/flag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- 清晰度选择 -->
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/quality"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:nestedScrollingEnabled="false"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <!-- 数组解析 -->
+            <androidx.leanback.widget.HorizontalGridView
+                android:id="@+id/array"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/episodeHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:visibility="gone">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/episodeTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/selector_button"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:focusableInTouchMode="false"
+                    android:gravity="center"
+                    android:minHeight="40dp"
+                    android:minWidth="112dp"
+                    android:nextFocusRight="@id/episodeReverse"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/detail_episode"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/episodeReverse"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/selector_button"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:minWidth="76dp"
+                    android:nextFocusLeft="@id/episodeTitle"
+                    android:text="@string/detail_episode_reverse"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/episodeViewMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/selector_button"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:minWidth="76dp"
+                    android:text="@string/detail_episode_view_grid"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/episodeFileName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/selector_button"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:gravity="center"
+                    android:minWidth="76dp"
+                    android:text="@string/detail_episode_file_name_original"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <!-- 选集列表容器 - 支持TMDB加载动画 -->
+            <FrameLayout
+                android:id="@+id/episodeContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone">
+
+                <!-- 选集列表 - 改为横向滚动 -->
+                <androidx.leanback.widget.HorizontalGridView
+                    android:id="@+id/episode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/episodeGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:visibility="gone" />
+
+                <!-- TMDB加载指示器 -->
+                <LinearLayout
+                    android:id="@+id/episodeLoadingIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:visibility="gone">
+
+                    <ProgressBar
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:indeterminateTint="#FFFFFF" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/tmdb_loading_episodes"
+                        android:textColor="#CCCCCC"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+            <!-- TMDB 多来源评分（TMDB / IMDb / 烂番茄 / Metacritic 等），放在演员区上方 -->
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tmdbOmdbRatingsLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="24dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/tmdb_ratings_label"
+                android:textColor="@color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/tmdbOmdbRatings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:visibility="gone" />
+
+        <!-- TMDB 演员 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbCastLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_cast_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
 
         <androidx.leanback.widget.HorizontalGridView
-            android:id="@+id/quality"
+            android:id="@+id/tmdbCast"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="16dp"
             android:clipChildren="false"
             android:clipToPadding="false"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
-        <androidx.leanback.widget.HorizontalGridView
-            android:id="@+id/array"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbPhotos"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:visibility="gone" />
 
-        <androidx.leanback.widget.VerticalGridView
-            android:id="@+id/episode"
+        <!-- TMDB 剧照 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPhotosLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_photos_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbPhotos"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipChildren="true"
-            android:clipToPadding="true"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbPosters"
+            android:nextFocusUp="@id/tmdbCast"
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
-            android:paddingBottom="8dp"
+            android:visibility="gone" />
+
+        <!-- TMDB 海报 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPostersLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_posters_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbPosters"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbRelatedVideos"
+            android:nextFocusUp="@id/tmdbPhotos"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <!-- TMDB related videos -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbRelatedVideosLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_related_videos_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbRelatedVideos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbCrew"
+            android:nextFocusUp="@id/tmdbPosters"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+
+
+        <!-- TMDB 主创团队 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbCrewLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_crew_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbCrew"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbRecommendations"
+            android:nextFocusUp="@id/tmdbRelatedVideos"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <!-- TMDB 猜你喜欢 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbRecommendationsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_recommendations_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbRecommendations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbPersonalTmdbRecommendations"
+            android:nextFocusUp="@id/tmdbCrew"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <!-- 个性推荐 · TMDB -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPersonalTmdbRecommendationsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_personal_recommendations_tmdb_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbPersonalTmdbRecommendations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbPersonalDoubanRecommendations"
+            android:nextFocusUp="@id/tmdbRecommendations"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <!-- 个性推荐 · 豆瓣 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPersonalDoubanRecommendationsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_personal_recommendations_douban_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbPersonalDoubanRecommendations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/tmdbPersonalAiRecommendations"
+            android:nextFocusUp="@id/tmdbPersonalTmdbRecommendations"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <!-- 个性推荐 · 智能 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPersonalAiRecommendationsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/tmdb_personal_recommendations_ai_label"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/tmdbPersonalAiRecommendations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="true"
+            android:nextFocusDown="@id/quick"
+            android:nextFocusUp="@id/tmdbPersonalDoubanRecommendations"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tmdbPersonalAiReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="16dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="2"
+            android:textColor="#CCFFFFFF"
+            android:textSize="15sp"
             android:visibility="gone" />
 
         <androidx.leanback.widget.HorizontalGridView
@@ -835,5 +1361,10 @@
             android:paddingEnd="24dp"
             android:visibility="gone" />
 
-    </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.core.widget.NestedScrollView>
+
+    </RelativeLayout>
+
 </com.fongmi.android.tv.ui.custom.ProgressLayout>

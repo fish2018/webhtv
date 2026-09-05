@@ -66,7 +66,8 @@ class VodBrowse {
         VodConfig.get().ensureLoaded();
         String keyword = Trans.t2s(false, query);
         List<Site> sites = VodConfig.get().getSites().stream().filter(Site::isSearchable).toList();
-        List<ListenableFuture<List<MediaItem>>> futures = sites.stream().map(site -> Task.largeExecutor().submit(() -> searchSite(site, keyword))).toList();
+        Task.applySearchThread(Setting.getSearchThread());
+        List<ListenableFuture<List<MediaItem>>> futures = sites.stream().map(site -> Task.searchPoolExecutor().submit(() -> searchSite(site, keyword))).toList();
         List<MediaItem> items = collectResults(futures);
         items.sort((a, b) -> matchScore(b, keyword) - matchScore(a, keyword));
         searchCache = ImmutableList.copyOf(items.subList(0, Math.min(items.size(), SEARCH_LIMIT)));
@@ -261,8 +262,10 @@ class VodBrowse {
 
     private static void updateHistory(@NonNull Episode episode) {
         if (browseHistory == null) return;
+        boolean sameEpisode = episode.matchesPlayback(browseHistory.getEpisode());
         browseHistory.setVodRemarks(episode.getName());
         browseHistory.setEpisodeUrl(episode.getUrl());
+        if (episode.getTmdbEpisode() != null || !sameEpisode) browseHistory.setTmdbEpisodePosition(episode);
         PlaybackEventCollector.get().updateHistory(browseHistory);
     }
 

@@ -27,10 +27,6 @@
             android:theme="@style/Theme.Splash"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
             <meta-data
@@ -81,11 +77,44 @@
             </intent-filter>
         </activity>
 
+        <activity-alias
+            android:name=".ui.activity.HomeActivityCurrent"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:targetActivity=".ui.activity.HomeActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".ui.activity.HomeActivityHistory"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_history"
+            android:label="@string/app_name"
+            android:roundIcon="@drawable/ic_launcher_history"
+            android:targetActivity=".ui.activity.HomeActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <activity
             android:name=".ui.activity.SearchActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout"
             android:screenOrientation="fullUser"
             android:windowSoftInputMode="adjustPan" />
+
+        <activity
+            android:name=".ui.activity.AppBrandingActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+            android:screenOrientation="fullUser" />
 
         <activity
             android:name=".ui.activity.FileActivity"
@@ -103,7 +132,22 @@
             android:screenOrientation="fullUser" />
 
         <activity
+            android:name=".ui.activity.ViewingReportActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="fullUser" />
+
+        <activity
             android:name=".ui.activity.KeepActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.DownloadListActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.DownloadEpisodesActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout"
             android:screenOrientation="fullUser" />
 
@@ -128,6 +172,32 @@
             android:parentActivityName=".ui.activity.HomeActivity"
             android:screenOrientation="fullUser"
             android:supportsPictureInPicture="true" />
+
+        <activity
+            android:name=".ui.activity.TmdbDetailActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser"
+            android:supportsPictureInPicture="true" />
+
+        <activity
+            android:name=".ui.activity.WebThemeDetailActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:exported="false"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.TmdbPersonActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".ui.activity.AudioActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode|orientation"
+            android:parentActivityName=".ui.activity.HomeActivity"
+            android:screenOrientation="fullUser" />
 
         <receiver
             android:name=".receiver.ShortcutReceiver"

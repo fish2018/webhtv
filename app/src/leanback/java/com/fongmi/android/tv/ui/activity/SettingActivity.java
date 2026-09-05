@@ -116,8 +116,13 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         mBinding.cache.setOnClickListener(this::onCache);
         mBinding.backup.setOnClickListener(this::onBackup);
         mBinding.enhance.setOnClickListener(this::onEnhance);
+        mBinding.tmdb.setOnClickListener(this::onTmdb);
+        mBinding.ai.setOnClickListener(this::onAi);
+        mBinding.ad.setOnClickListener(this::onAd);
         mBinding.player.setOnClickListener(this::onPlayer);
         mBinding.danmaku.setOnClickListener(this::onDanmaku);
+        mBinding.subtitle.setOnClickListener(this::onSubtitle);
+        mBinding.personal.setOnClickListener(this::onPersonal);
         mBinding.restore.setOnClickListener(this::onRestore);
         mBinding.version.setOnClickListener(this::onVersion);
         mBinding.vod.setOnLongClickListener(this::onVodEdit);
@@ -241,8 +246,28 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         SettingEnhanceActivity.start(this);
     }
 
+    private void onTmdb(View view) {
+        SettingTmdbActivity.start(this);
+    }
+
+    private void onAi(View view) {
+        SettingAiActivity.start(this);
+    }
+
+    private void onAd(View view) {
+        SettingAdActivity.start(this);
+    }
+
     private void onDanmaku(View view) {
         SettingDanmakuActivity.start(this);
+    }
+
+    private void onSubtitle(View view) {
+        SettingSubtitleActivity.start(this);
+    }
+
+    private void onPersonal(View view) {
+        SettingPersonalActivity.start(this);
     }
 
     private void onVersion(View view) {
@@ -306,36 +331,46 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
 
     private void onBackup(View view) {
         PermissionUtil.requestFile(this, allGranted -> {
+            if (!allGranted) {
+                Notify.show(R.string.backup_permission_denied);
+                return;
+            }
             BackupProgressDialog progress = BackupProgressDialog.open(getSupportFragmentManager(), "备份应用数据");
             AppDatabase.backup(new Callback() {
-            @Override
-            public void success() {
-                progress.finish();
-                Notify.show(R.string.backup_success);
-            }
+                @Override
+                public void success() {
+                    progress.finish();
+                    Notify.show(R.string.backup_success);
+                }
 
-            @Override
-            public void error() {
-                progress.finish();
-                Notify.show(R.string.backup_fail);
-            }
+                @Override
+                public void error() {
+                    progress.finish();
+                    Notify.show(R.string.backup_fail);
+                }
             }, progress::update);
         });
     }
 
     private void onRestore(View view) {
-        PermissionUtil.requestFile(this, allGranted -> RestoreDialog.create().callback(new Callback() {
-            @Override
-            public void success() {
-                Notify.show(R.string.restore_success);
-                setOtherText();
+        PermissionUtil.requestFile(this, allGranted -> {
+            if (!allGranted) {
+                Notify.show(R.string.backup_permission_denied);
+                return;
             }
+            RestoreDialog.create().callback(new Callback() {
+                @Override
+                public void success() {
+                    Notify.show(R.string.restore_success);
+                    setOtherText();
+                }
 
-            @Override
-            public void error() {
-                Notify.show(R.string.restore_fail);
-            }
-        }).show(this));
+                @Override
+                public void error() {
+                    Notify.show(R.string.restore_fail);
+                }
+            }).show(this);
+        });
     }
 
     private void initConfig() {

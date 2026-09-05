@@ -25,7 +25,8 @@ public final class PlaybackRouteRegistry {
 
     public enum AppOwner {
         MAIN_SERVER("app-main-server"),
-        HLS_PROXY("app-hls-proxy");
+        HLS_PROXY("app-hls-proxy"),
+        MULTI_THREAD_PROXY("app-multi-thread-proxy");
 
         private final String label;
 

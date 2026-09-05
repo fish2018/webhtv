@@ -4,6 +4,10 @@ import android.text.TextUtils;
 
 import com.fongmi.android.tv.server.Nano;
 import com.fongmi.android.tv.server.impl.Process;
+import com.fongmi.android.tv.api.config.HlsRuleConfig;
+import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.utils.HlsManifestCleaner;
+import com.fongmi.android.tv.utils.HlsAdblockPipeline;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
 
@@ -14,6 +18,7 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,11 +87,19 @@ public class M3u8 implements Process {
             if (!upstream.isSuccessful()) return error(status(upstream.code()), "Playlist HTTP " + upstream.code());
             String text = body.string();
             if (!looksLikePlaylist(text)) return Nano.error(Response.Status.BAD_REQUEST, "Invalid playlist");
-            String rewritten = rewrite(upstream.request().url(), text);
+            HlsAdblockPipeline.Outcome clean = Setting.isAdblock()
+                    ? HlsAdblockPipeline.apply(upstream.request().url().toString(), text, hlsRules(), true)
+                    : new HlsAdblockPipeline.Outcome(text, false, false, 0, 0);
+            String rewritten = rewrite(upstream.request().url(), clean.manifest());
             byte[] bytes = rewritten.getBytes(StandardCharsets.UTF_8);
-            SpiderDebug.log(TAG, "playlist bytes=%s rewritten=%s url=%s", text.length(), bytes.length, shortUrl(upstream.request().url().toString()));
+            SpiderDebug.log(TAG, "playlist bytes=%s rewritten=%s removed=%s structured=%s legacy=%s url=%s",
+                    text.length(), bytes.length, clean.removedSegments(), clean.structured(), clean.legacy(), shortUrl(upstream.request().url().toString()));
             return noCache(NanoHTTPD.newFixedLengthResponse(Response.Status.OK, MIME_M3U8, new ByteArrayInputStream(bytes), bytes.length));
         }
+    }
+
+    private List<HlsManifestCleaner.Rule> hlsRules() {
+        return HlsRuleConfig.getRules();
     }
 
     private Response stream(okhttp3.Response upstream, ResponseBody body) {
