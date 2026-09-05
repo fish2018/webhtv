@@ -777,7 +777,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         DLNARendererService.stop(this);
         LiveConfig.get().clear();
         VodConfig.get().clear();
-        AppDatabase.backup();
+        AppDatabase.autoBackupOnExit();
         OkHttp.get().clear();
         if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();

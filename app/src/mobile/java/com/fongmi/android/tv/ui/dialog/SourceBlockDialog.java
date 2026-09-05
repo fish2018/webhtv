@@ -45,7 +45,14 @@ public class SourceBlockDialog extends BaseBottomSheetDialog {
 
     @Override
     protected void initView() {
-        binding.search.setVisibility(View.GONE);
+        binding.search.setVisibility(View.VISIBLE);
+        binding.search.setFocusable(false);
+        binding.search.setCursorVisible(false);
+        binding.search.setText(R.string.title_block_source);
+        binding.search.setTextSize(18);
+        binding.search.setTypeface(null, android.graphics.Typeface.BOLD);
+        binding.search.setTextColor(getResources().getColor(R.color.black));
+        binding.search.setPadding(48,32,48,16);
         binding.count.setVisibility(View.GONE);
         adapter = new SourceCheckAdapter();
         binding.recycler.setAdapter(adapter);

@@ -39,43 +39,40 @@
             android:alpha="0.55"
             android:textSize="12sp" />
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/select_all"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/selector_control_sheet_button"
-            android:gravity="center"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="6dp"
+            android:layout_height="40dp"
             android:text="@string/select_all"
-            android:textColor="@color/dialog_outlined_button_text"
-            android:textSize="12sp" />
+            android:textSize="14sp"
+            app:cornerRadius="8dp"
+            android:textColor="@android:color/black"
+            app:strokeColor="@android:color/darker_gray"/>
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/select_none"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginStart="6dp"
-            android:background="@drawable/selector_control_sheet_button"
-            android:gravity="center"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="6dp"
             android:text="@string/select_none"
-            android:textColor="@color/dialog_outlined_button_text"
-            android:textSize="12sp" />
+            android:textSize="14sp"
+            app:cornerRadius="8dp"
+            android:textColor="@android:color/black"
+            app:strokeColor="@android:color/darker_gray"/>
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/select_invert"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginStart="6dp"
-            android:background="@drawable/selector_control_sheet_button"
-            android:gravity="center"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="6dp"
             android:text="@string/select_invert"
-            android:textColor="@color/dialog_outlined_button_text"
-            android:textSize="12sp" />
+            android:textSize="14sp"
+            app:cornerRadius="8dp"
+            android:textColor="@android:color/black"
+            app:strokeColor="@android:color/darker_gray"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -96,19 +93,16 @@
         android:gravity="end"
         android:orientation="horizontal">
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/confirm"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/selector_control_sheet_button"
-            android:gravity="center"
-            android:minWidth="96dp"
-            android:paddingHorizontal="20dp"
-            android:paddingVertical="10dp"
+            android:layout_height="40dp"
             android:text="@string/confirm"
-            android:textColor="@color/dialog_outlined_button_text"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            app:cornerRadius="8dp"
+            android:textColor="@android:color/black"
+            app:strokeColor="@android:color/darker_gray"/>
     </LinearLayout>
 
 </LinearLayout>

@@ -105,6 +105,7 @@
     <string name="dialog_delete_record">刪除全部紀錄？</string>
     <string name="dialog_delete_keep">收藏紀錄將會全部刪除。</string>
     <string name="dialog_delete_history">觀看紀錄將會全部刪除。</string>
+    <string name="title_block_source">選擇要遮蔽的站源來源</string>
 
     <!-- Timer -->
     <string name="timer_5">5 分鐘</string>

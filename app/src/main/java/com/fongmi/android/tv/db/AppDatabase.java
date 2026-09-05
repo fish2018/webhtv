@@ -39,6 +39,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public static final int VERSION = 38;
     public static final String NAME = "tv";
     public static final String SYMBOL = "@@@";
+    public static final String AUTO_PREFIX = "bak-auto-";
 
     private static volatile AppDatabase instance;
 
@@ -64,10 +65,34 @@ public abstract class AppDatabase extends RoomDatabase {
                     callback.success();
                     if (result.hasWarning()) Notify.show(result.warning);
                 });
-                cleanOld();
             } catch (Exception e) {
                 SpiderDebug.log("backup", "local create failed error=%s", e.getMessage());
                 App.post(callback::error);
+            }
+        });
+    }
+
+    private static void cleanAutoOnly() {
+        File[] files = Path.tv().listFiles();
+        if (files == null) return;
+        for (File file : files) {
+            if (file.isFile() && file.getName().startsWith(AUTO_PREFIX)) {
+                Path.clear(file);
+            }
+        }
+    }
+    
+    public static void autoBackupOnExit() {
+        Task.execute(() -> {
+            cleanAutoOnly();
+            String timePart = AppBackup.fileName().substring(AppBackup.PREFIX.length());
+            String fileName = AUTO_PREFIX + timePart;
+            File file = new File(Path.tv(), fileName);
+            try {
+                AppBackup.CreateResult result = AppBackup.create(file, null);
+                SpiderDebug.log("backup", "auto exit backup complete file=%s", file.getAbsolutePath());
+            } catch (Exception e) {
+                SpiderDebug.log("backup", "auto exit backup failed error=%s", e.getMessage());
             }
         });
     }
@@ -89,15 +114,6 @@ public abstract class AppDatabase extends RoomDatabase {
                 App.post(callback::error);
             }
         });
-    }
-
-    private static void cleanOld() {
-        List<File> items = new ArrayList<>();
-        File[] files = Path.tv().listFiles();
-        if (files == null) files = new File[0];
-        for (File file : files) if (AppBackup.isBackup(file)) items.add(file);
-        if (!items.isEmpty()) items.sort((f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
-        if (items.size() > 7) for (int i = 7; i < items.size(); i++) Path.clear(items.get(i));
     }
 
     private static AppDatabase create(Context context) {

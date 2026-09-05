@@ -374,11 +374,11 @@
     <string name="setting_source_block_count">Blocked %1$d / %2$d</string>
     <string name="source_vod_url">Vod URL</string>
     <string name="source_live_url">Live URL</string>
-    <string name="source_sites_json">sites-json</string>
-    <string name="source_sites_js">sites-js</string>
-    <string name="source_sites_py">sites-py</string>
-    <string name="source_sites_raw">sites</string>
-    <string name="source_lives_file">lives files</string>
+    <string name="source_sites_json">Folder: /tvbox/sites-json/</string>
+    <string name="source_sites_js">Folder: /tvbox/sites-js/</string>
+    <string name="source_sites_py">Folder: /tvbox/sites-py/</string>
+    <string name="source_sites_raw">Folder: /tvbox/sites/ </string>
+    <string name="source_lives_file">Folder: /tvbox/lives/ </string>
     <string name="setting_site_health_sort">Site health ranking</string>
     <string name="setting_site_health_enable">Enable site health ranking</string>
     <string name="setting_site_health_dialog_sort">Sort site dialog</string>

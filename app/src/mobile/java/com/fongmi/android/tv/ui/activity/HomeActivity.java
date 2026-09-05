@@ -438,7 +438,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (mChrome != null) mChrome.destroy();
         LiveConfig.get().clear();
         VodConfig.get().clear();
-        AppDatabase.backup();
+        AppDatabase.autoBackupOnExit();
         OkHttp.get().clear();
         if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();

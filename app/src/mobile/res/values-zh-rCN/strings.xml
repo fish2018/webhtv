@@ -105,6 +105,7 @@
     <string name="dialog_delete_record">删除全部纪录？</string>
     <string name="dialog_delete_keep">收藏纪录将会全部删除。</string>
     <string name="dialog_delete_history">观看纪录将会全部删除。</string>
+    <string name="title_block_source">选择要屏蔽的站源来源</string>
 
     <!-- Timer -->
     <string name="timer_5">5 分钟</string>
