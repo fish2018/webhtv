@@ -7,6 +7,7 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
@@ -97,7 +98,53 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(true);
         attachSortTouchHelper();
-        binding.recycler.post(() -> binding.recycler.scrollToPosition(0));
+        binding.recycler.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (binding.recycler.getViewTreeObserver().isAlive()) {
+                    binding.recycler.getViewTreeObserver().removeOnPreDrawListener(this);
+                }
+                List<Site> showList = adapter.getItems();
+                Site active = VodConfig.get().getHome();
+                int targetPos = -1;
+                for (int i = 0; i < showList.size(); i++) {
+                    if (showList.get(i).getKey().equals(active.getKey())) {
+                        targetPos = i;
+                        break;
+                    }
+                }
+                if (targetPos < 0) {
+                    binding.recycler.scrollToPosition(0);
+                    return true;
+                }
+                RecyclerView.LayoutManager lm = binding.recycler.getLayoutManager();
+                final int finalTargetPos = targetPos;
+                if (lm instanceof LinearLayoutManager llm) {
+                    llm.scrollToPosition(finalTargetPos);
+                    final LinearLayoutManager finalLlm = llm;
+                    binding.recycler.post(() -> {
+                        View itemView = finalLlm.findViewByPosition(finalTargetPos);
+                        if (itemView == null) return;
+                        int rvHeight = binding.recycler.getHeight();
+                        int itemHeight = itemView.getHeight();
+                        int desiredOffset = rvHeight / 2 - itemHeight / 2;
+                        finalLlm.scrollToPositionWithOffset(finalTargetPos, desiredOffset);
+                    });
+                } else if (lm instanceof GridLayoutManager glm) {
+                    glm.scrollToPosition(finalTargetPos);
+                    final GridLayoutManager finalGlm = glm;
+                    binding.recycler.post(() -> {
+                        View itemView = finalGlm.findViewByPosition(finalTargetPos);
+                        if (itemView == null) return;
+                        int rvHeight = binding.recycler.getHeight();
+                        int itemHeight = itemView.getHeight();
+                        int desiredOffset = rvHeight / 2 - itemHeight / 2;
+                        finalGlm.scrollToPositionWithOffset(finalTargetPos, desiredOffset);
+                    });
+                }
+                return true;
+            }
+        });
     }
 
     private void attachSortTouchHelper() {

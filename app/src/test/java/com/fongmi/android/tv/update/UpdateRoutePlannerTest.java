@@ -10,7 +10,7 @@ public class UpdateRoutePlannerTest {
 
     private final OciArtifact artifact = new OciArtifact(
             "registry-1.docker.io",
-            "fish2018/webhtv-apk",
+            "llb0/webhtv-apk",
             "v1-mobile-arm64_v8a",
             "sha256:" + "1".repeat(64),
             "sha256:" + "2".repeat(64),
@@ -21,7 +21,7 @@ public class UpdateRoutePlannerTest {
     public void ociTriesOciThenGithub() {
         List<UpdateTarget> routes = UpdateRoutePlanner.plan(
                 UpdateSource.OCI,
-                "https://github.com/fish2018/webhtv/releases/download/v1/app.apk",
+                "https://github.com/llb0/webhtv/releases/download/v1/app.apk",
                 artifact,
                 direct,
                 "https://dockerproxy.net");
@@ -34,7 +34,7 @@ public class UpdateRoutePlannerTest {
     public void githubFallsBackToOci() {
         List<UpdateTarget> routes = UpdateRoutePlanner.plan(
                 UpdateSource.GITHUB,
-                "https://github.com/fish2018/webhtv/releases/download/v1/app.apk",
+                "https://github.com/llb0/webhtv/releases/download/v1/app.apk",
                 artifact,
                 direct,
                 "https://dockerproxy.net");
@@ -47,7 +47,7 @@ public class UpdateRoutePlannerTest {
     public void legacyAutoNormalizesToOci() {
         List<UpdateTarget> routes = UpdateRoutePlanner.plan(
                 "auto",
-                "https://github.com/fish2018/webhtv/releases/download/v1/app.apk",
+                "https://github.com/llb0/webhtv/releases/download/v1/app.apk",
                 artifact,
                 direct,
                 "https://dockerproxy.net");
@@ -60,7 +60,7 @@ public class UpdateRoutePlannerTest {
     public void missingOciMetadataFallsBackToGithub() {
         List<UpdateTarget> routes = UpdateRoutePlanner.plan(
                 UpdateSource.OCI,
-                "https://github.com/fish2018/webhtv/releases/download/v1/app.apk",
+                "https://github.com/llb0/webhtv/releases/download/v1/app.apk",
                 null,
                 direct,
                 "https://dockerproxy.net");

@@ -7,15 +7,15 @@ import org.junit.Test;
 
 public class GithubProxyTest {
 
-    private static final String ASSET = "https://github.com/fish2018/webhtv/releases/download/v1/mobile-arm64_v8a.apk";
+    private static final String ASSET = "https://github.com/llb0/webhtv/releases/download/v1/mobile-armeabi_v7a.apk";
 
     @Test
     public void rewritesKnownProxyModes() {
         assertEquals(
-                "https://github.chenc.dev/github.com/fish2018/webhtv/releases/download/v1/mobile-arm64_v8a.apk",
+                "https://github.chenc.dev/github.com/llb0/webhtv/releases/download/v1/mobile-armeabi_v7a.apk",
                 GithubProxy.resolve("github_chenc", "", "").rewrite(ASSET));
         assertEquals(
-                "https://gh.acmsz.top/https://github.com/fish2018/webhtv/releases/download/v1/mobile-arm64_v8a.apk",
+                "https://gh.acmsz.top/https://github.com/llb0/webhtv/releases/download/v1/mobile-armeabi_v7a.apk",
                 GithubProxy.resolve("gh_acmsz", "", "").rewrite(ASSET));
     }
 

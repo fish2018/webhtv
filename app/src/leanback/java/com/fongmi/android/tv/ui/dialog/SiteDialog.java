@@ -11,6 +11,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 import java.io.File;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -184,6 +185,24 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         runAfterFirstPreDraw("list preDraw", () -> {
             if (adapter != null) adapter.showAll();
             log("list expanded total=%sms items=%s", cost(), adapter == null ? -1 : adapter.getItemCount());
+            if (adapter == null || binding == null) return;
+            List<Site> showList = adapter.getItems();
+            Site active = VodConfig.get().getHome();
+            int targetPos = -1;
+            for (int i = 0; i < showList.size(); i++) {
+                if (showList.get(i).getKey().equals(active.getKey())) {
+                    targetPos = i;
+                    break;
+                }
+            }
+            RecyclerView.LayoutManager lm = binding.recycler.getLayoutManager();
+            if (targetPos < 0) {
+                binding.recycler.scrollToPosition(0);
+            } else if (lm instanceof GridLayoutManager glm) {
+                int recyclerHeight = binding.recycler.getHeight();
+                int offset = recyclerHeight / 2;
+                glm.scrollToPositionWithOffset(targetPos, offset);
+            }
         });
     }
 

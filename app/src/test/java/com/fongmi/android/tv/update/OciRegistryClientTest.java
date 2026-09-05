@@ -29,7 +29,7 @@ public class OciRegistryClientTest {
 
     private final OciArtifact artifact = new OciArtifact(
             "registry-1.docker.io",
-            "fish2018/webhtv-apk",
+            "llb0/webhtv-apk",
             "v1-mobile-arm64_v8a",
             "sha256:" + "1".repeat(64),
             "sha256:" + "2".repeat(64),
@@ -62,7 +62,7 @@ public class OciRegistryClientTest {
         String layerDigest = digest(apk);
         OciArtifact provisional = new OciArtifact(
                 "registry-1.docker.io",
-                "fish2018/webhtv-apk",
+                "llb0/webhtv-apk",
                 "v1-mobile-arm64_v8a",
                 "sha256:" + "0".repeat(64),
                 layerDigest,
