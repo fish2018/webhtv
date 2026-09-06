@@ -128,32 +128,6 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             binding = null;
             this.activity = null;
         });
-
-        directDialog.setOnShowListener(dialogInterface -> {
-            if (binding == null || adapter == null) return;
-            binding.recycler.post(() -> {
-                binding.recycler.post(() -> {
-                    List<Site> showList = adapter.getItems();
-                    Site active = VodConfig.get().getHome();
-                    int targetPos = -1;
-                    for (int i = 0; i < showList.size(); i++) {
-                        if (showList.get(i).getKey().equals(active.getKey())) {
-                            targetPos = i;
-                            break;
-                        }
-                    }
-                    if (targetPos < 0) return;
-                    RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(targetPos);
-                    if (holder != null && holder.itemView != null) {
-                        boolean ret = holder.itemView.requestFocus();
-                        log("onShow real request focus pos=%d ret=%b", targetPos, ret);
-                    } else {
-                        log("onShow holder null pos=%d", targetPos);
-                    }
-                });
-            });
-        });
-
         runAfterFirstPreDraw("shell preDraw", () -> loadList(false));
         long showDialogStart = System.currentTimeMillis();
         log("show call start total=%sms", cost());
@@ -228,6 +202,20 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
                 int recyclerHeight = binding.recycler.getHeight();
                 int offset = recyclerHeight / 2;
                 glm.scrollToPositionWithOffset(targetPos, offset);
+                binding.recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                        super.onScrollStateChanged(recyclerView, newState);
+                        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                            recyclerView.removeOnScrollListener(this);
+                            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(targetPos);
+                            if (holder != null && holder.itemView != null) {
+                                holder.itemView.requestFocus();
+                                log("scroll idle request focus pos=" + targetPos);
+                            }
+                        }
+                    }
+                });
             }
         });
     }
