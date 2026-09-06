@@ -44,11 +44,12 @@ public class PlayerFocusContainer extends LinearLayout {
             if (parent == this) {
                 return curr;
             }
-            curr = parent;
+            curr = (View) curr.getParent();
         }
         return null;
     }
 
+    // ========== 原来这两个函数系统不会自动调用，保留备用 ==========
     @Override
     public int getNextFocusLeftId() {
         View directFocus = getDirectFocusChild();
@@ -56,7 +57,6 @@ public class PlayerFocusContainer extends LinearLayout {
         if (directFocus == null || children.size() <= 1) {
             return super.getNextFocusLeftId();
         }
-
         int idx = children.indexOf(directFocus);
         if (idx <= 0) {
             if (mEnableCircularHorizontal) {
@@ -76,7 +76,6 @@ public class PlayerFocusContainer extends LinearLayout {
         if (directFocus == null || children.size() <= 1) {
             return super.getNextFocusRightId();
         }
-
         int idx = children.indexOf(directFocus);
         if (idx >= children.size() - 1) {
             if (mEnableCircularHorizontal) {
@@ -87,5 +86,37 @@ public class PlayerFocusContainer extends LinearLayout {
         } else {
             return children.get(idx + 1).getId();
         }
+    }
+
+    // ========= 遥控器左右按键真正入口，必须重写focusSearch =========
+    @Override
+    public View focusSearch(View focused, int direction) {
+        if (!mEnableCircularHorizontal) {
+            return super.focusSearch(focused, direction);
+        }
+        View directFocus = getDirectFocusChild();
+        List<View> children = getFocusableDirectChildren();
+        if (directFocus == null || children.size() <= 1) {
+            return super.focusSearch(focused, direction);
+        }
+
+        int idx = children.indexOf(directFocus);
+        if (direction == FOCUS_LEFT) {
+            if (idx <= 0) {
+                // 最左边，环形跳到最后一个
+                return children.get(children.size() -1);
+            } else {
+                return children.get(idx - 1);
+            }
+        } else if (direction == FOCUS_RIGHT) {
+            if (idx >= children.size() - 1) {
+                // 最右边，环形跳到第一个
+                return children.get(0);
+            } else {
+                return children.get(idx + 1);
+            }
+        }
+        //上下方向交给系统原生处理，不拦截
+        return super.focusSearch(focused, direction);
     }
 }
