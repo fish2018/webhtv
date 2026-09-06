@@ -128,32 +128,6 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             binding = null;
             this.activity = null;
         });
-
-        directDialog.setOnShowListener(dialogInterface -> {
-            if (binding == null || adapter == null) return;
-            binding.recycler.post(() -> {
-                binding.recycler.post(() -> {
-                    List<Site> showList = adapter.getItems();
-                    Site active = VodConfig.get().getHome();
-                    int targetPos = -1;
-                    for (int i = 0; i < showList.size(); i++) {
-                        if (showList.get(i).getKey().equals(active.getKey())) {
-                            targetPos = i;
-                            break;
-                        }
-                    }
-                    if (targetPos < 0) return;
-                    RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(targetPos);
-                    if (holder != null && holder.itemView != null) {
-                        boolean ret = holder.itemView.requestFocus();
-                        log("onShow real request focus pos=%d ret=%b", targetPos, ret);
-                    } else {
-                        log("onShow holder null pos=%d", targetPos);
-                    }
-                });
-            });
-        });
-
         runAfterFirstPreDraw("shell preDraw", () -> loadList(false));
         long showDialogStart = System.currentTimeMillis();
         log("show call start total=%sms", cost());
@@ -225,9 +199,24 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             if (targetPos < 0) {
                 binding.recycler.scrollToPosition(0);
             } else if (lm instanceof GridLayoutManager glm) {
-                int recyclerHeight = binding.recycler.getHeight();
-                int offset = recyclerHeight / 2;
-                glm.scrollToPositionWithOffset(targetPos, offset);
+                final int finalTargetPos = targetPos;
+                glm.scrollToPositionWithOffset(targetPos, binding.recycler.getHeight() / 2);
+                binding.recycler.postDelayed(new Runnable() {
+                    private int retry = 0;
+                    @Override
+                    public void run() {
+                        if (binding == null || adapter == null || retry > 8) return;
+                        RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(finalTargetPos);
+                        if (holder != null && holder.itemView != null) {
+                            holder.itemView.requestFocus();
+                            holder.itemView.requestFocusFromTouch();
+                            log("success request focus pos=" + finalTargetPos);
+                        } else {
+                            retry++;
+                            binding.recycler.postDelayed(this, 30);
+                        }
+                    }
+                }, 120);
             }
         });
     }

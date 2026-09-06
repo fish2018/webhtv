@@ -859,9 +859,9 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.DANMAKU, mBinding.control.action.danmaku);
         addActionButton(PlayerButtonSetting.TITLE, mBinding.control.action.title);
         addActionButton(PlayerButtonSetting.REPEAT, mBinding.control.action.repeat);
+        addActionButton(PlayerButtonSetting.TIMER, mBinding.control.action.timer);
+        addActionButton(PlayerButtonSetting.PDS, mBinding.control.action.panDiagnostic);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
-        placePanDiagnosticAction();
-        updatePanDiagnosticAction();
     }
 
     private void addActionButton(String id, View view) {
@@ -872,21 +872,6 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (mActionButtons != null) PlayerButtonSetting.applyVisibility(mActionButtons);
         mBinding.control.action.cast.setVisibility(isFullscreen() ? View.GONE : View.VISIBLE);
         updateImmersiveAudioAction();
-        updatePanDiagnosticAction();
-    }
-
-    private void placePanDiagnosticAction() {
-        ViewGroup container = mBinding.control.action.container;
-        View diagnostic = mBinding.control.action.panDiagnostic;
-        View anchor = mBinding.control.action.playParams;
-        if (diagnostic.getParent() != container || anchor.getParent() != container) return;
-        container.removeView(diagnostic);
-        container.addView(diagnostic, Math.min(container.getChildCount(), container.indexOfChild(anchor) + 1));
-    }
-
-    private void updatePanDiagnosticAction() {
-        if (mBinding == null) return;
-        mBinding.control.action.panDiagnostic.setVisibility(isFullscreen() && canRunPanDiagnostic() ? View.VISIBLE : View.GONE);
     }
 
     private boolean canRunPanDiagnostic() {

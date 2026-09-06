@@ -767,6 +767,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     private void confirmExitHome() {
+        AppDatabase.autoBackupOnExit();
         if (PlaybackService.isRunning()) Util.moveToBackground(this);
         else super.onBackInvoked();
     }
@@ -777,7 +778,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         DLNARendererService.stop(this);
         LiveConfig.get().clear();
         VodConfig.get().clear();
-        AppDatabase.autoBackupOnExit();
         OkHttp.get().clear();
         if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();
