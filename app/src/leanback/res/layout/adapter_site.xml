@@ -5,7 +5,7 @@
     android:layout_height="46dp"
     android:background="@drawable/selector_site_item"
     android:focusable="true"
-    android:focusableInTouchMode="false"
+    android:focusableInTouchMode="true"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
