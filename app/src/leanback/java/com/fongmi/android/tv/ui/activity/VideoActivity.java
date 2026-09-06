@@ -859,6 +859,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.DANMAKU, mBinding.control.action.danmaku);
         addActionButton(PlayerButtonSetting.TITLE, mBinding.control.action.title);
         addActionButton(PlayerButtonSetting.REPEAT, mBinding.control.action.repeat);
+        addActionButton(PlayerButtonSetting.TIMER, mBinding.control.action.timer);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
         placePanDiagnosticAction();
         updatePanDiagnosticAction();
