@@ -40,6 +40,7 @@ public class PlayerButtonSetting {
     public static final String EPISODES = "episodes";
     public static final String FULLSCREEN = "fullscreen";
     public static final String CHANGE = "change";
+    public static final String TIMER = "timer";
 
     private static final String ORDER = "player_button_order";
     private static final String HIDDEN = "player_button_hidden";
@@ -64,7 +65,9 @@ public class PlayerButtonSetting {
             new Item(NEXT, R.string.play_next),
             new Item(EPISODES, R.string.play_episodes),
             new Item(FULLSCREEN, R.string.play_fullscreen),
-            new Item(CHANGE, R.string.play_change));
+            new Item(CHANGE, R.string.play_change),
+            new Item(TIMER, R.string.play_timer)
+    );
 
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
