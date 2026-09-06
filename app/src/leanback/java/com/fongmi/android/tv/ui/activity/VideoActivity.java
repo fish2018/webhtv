@@ -862,7 +862,6 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.TIMER, mBinding.control.action.timer);
         addActionButton(PlayerButtonSetting.PDS, mBinding.control.action.panDiagnostic);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
-        placePanDiagnosticAction();
     }
 
     private void addActionButton(String id, View view) {
@@ -873,15 +872,6 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (mActionButtons != null) PlayerButtonSetting.applyVisibility(mActionButtons);
         mBinding.control.action.cast.setVisibility(isFullscreen() ? View.GONE : View.VISIBLE);
         updateImmersiveAudioAction();
-    }
-
-    private void placePanDiagnosticAction() {
-        ViewGroup container = mBinding.control.action.container;
-        View diagnostic = mBinding.control.action.panDiagnostic;
-        View anchor = mBinding.control.action.playParams;
-        if (diagnostic.getParent() != container || anchor.getParent() != container) return;
-        container.removeView(diagnostic);
-        container.addView(diagnostic, Math.min(container.getChildCount(), container.indexOfChild(anchor) + 1));
     }
 
     private boolean canRunPanDiagnostic() {
