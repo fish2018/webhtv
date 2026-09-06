@@ -67,7 +67,7 @@ public class PlayerButtonSetting {
             new Item(EPISODES, R.string.play_episodes),
             new Item(FULLSCREEN, R.string.play_fullscreen),
             new Item(CHANGE, R.string.play_change),
-            new Item(TIMER, R.string.play_timer)
+            new Item(TIMER, R.string.play_timer),
             new Item(PDS, R.string.pan_diagnostic_entry)
     );
 
