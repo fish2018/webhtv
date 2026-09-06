@@ -49,7 +49,6 @@ public class PlayerFocusContainer extends LinearLayout {
         return null;
     }
 
-    // ========== 原来这两个函数系统不会自动调用，保留备用 ==========
     @Override
     public int getNextFocusLeftId() {
         View directFocus = getDirectFocusChild();
@@ -88,7 +87,6 @@ public class PlayerFocusContainer extends LinearLayout {
         }
     }
 
-    // ========= 遥控器左右按键真正入口，必须重写focusSearch =========
     @Override
     public View focusSearch(View focused, int direction) {
         if (!mEnableCircularHorizontal) {
@@ -102,21 +100,46 @@ public class PlayerFocusContainer extends LinearLayout {
 
         int idx = children.indexOf(directFocus);
         if (direction == FOCUS_LEFT) {
+            //已经第一个，环形跳到末尾，直接返回，不让父ScrollView接管
             if (idx <= 0) {
-                // 最左边，环形跳到最后一个
-                return children.get(children.size() -1);
+                return children.get(children.size() - 1);
             } else {
                 return children.get(idx - 1);
             }
         } else if (direction == FOCUS_RIGHT) {
+            //已经最后一个，环形跳到第一个，直接返回，不让父ScrollView接管
             if (idx >= children.size() - 1) {
-                // 最右边，环形跳到第一个
                 return children.get(0);
             } else {
                 return children.get(idx + 1);
             }
         }
-        //上下方向交给系统原生处理，不拦截
+        //上下交给系统
         return super.focusSearch(focused, direction);
+    }
+
+    // 关键！阻止HorizontalScrollView抢夺焦点搜索，把焦点搜索拦截在本容器
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        //只处理左右方向键
+        if (event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
+            int dir;
+            if (event.getKeyCode() == android.view.KeyEvent.KEYCODE_DPAD_LEFT) {
+                dir = View.FOCUS_LEFT;
+            } else if (event.getKeyCode() == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
+                dir = View.FOCUS_RIGHT;
+            } else {
+                return super.dispatchKeyEvent(event);
+            }
+            View directFocus = getDirectFocusChild();
+            if (directFocus != null && mEnableCircularHorizontal) {
+                View next = focusSearch(directFocus, dir);
+                if (next != null) {
+                    next.requestFocus();
+                    return true;
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event);
     }
 }
