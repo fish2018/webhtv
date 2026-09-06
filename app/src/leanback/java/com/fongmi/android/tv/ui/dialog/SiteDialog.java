@@ -201,6 +201,7 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             } else if (lm instanceof GridLayoutManager glm) {
                 int recyclerHeight = binding.recycler.getHeight();
                 int offset = recyclerHeight / 2;
+                final int finalTargetPos = targetPos;
                 glm.scrollToPositionWithOffset(targetPos, offset);
                 binding.recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
                     @Override
@@ -208,10 +209,15 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
                         super.onScrollStateChanged(recyclerView, newState);
                         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                             recyclerView.removeOnScrollListener(this);
-                            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(targetPos);
+                            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(finalTargetPos);
                             if (holder != null && holder.itemView != null) {
                                 holder.itemView.requestFocus();
-                                log("scroll idle request focus pos=" + targetPos);
+                                log("scroll idle request focus pos=" + finalTargetPos);
+                            } else {
+                                 recyclerView.post(() -> {
+                                     RecyclerView.ViewHolder h = recyclerView.findViewHolderForAdapterPosition(finalTargetPos);
+                                     if (h != null) h.itemView.requestFocus();
+                                 });
                             }
                         }
                     }
