@@ -9,15 +9,22 @@ import java.util.List;
 
 public class PlayerFocusContainer extends LinearLayout {
 
+    private boolean mEnableCircularHorizontal;
+
     public PlayerFocusContainer(Context context) {
         super(context);
     }
 
     public PlayerFocusContainer(Context context, AttributeSet attrs) {
         super(context, attrs);
+        if (attrs != null) {
+            var ta = context.obtainStyledAttributes(attrs, com.fongmi.android.tv.R.styleable.PlayerFocusContainer);
+            mEnableCircularHorizontal = ta.getBoolean(com.fongmi.android.tv.R.styleable.PlayerFocusContainer_enableCircularHorizontal, false);
+            ta.recycle();
+        }
     }
 
-    private List<View> getFocusableChildren() {
+    private List<View> getFocusableDirectChildren() {
         List<View> list = new ArrayList<>();
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
@@ -28,16 +35,35 @@ public class PlayerFocusContainer extends LinearLayout {
         return list;
     }
 
+    private View getDirectFocusChild() {
+        View focused = findFocus();
+        if (focused == null) return null;
+        View curr = focused;
+        while (curr != null && curr != this) {
+            View parent = (View) curr.getParent();
+            if (parent == this) {
+                return curr;
+            }
+            curr = parent;
+        }
+        return null;
+    }
+
     @Override
     public int getNextFocusLeftId() {
-        View focused = findFocus();
-        List<View> children = getFocusableChildren();
-        if (focused == null || children.size() <= 1) return super.getNextFocusLeftId();
+        View directFocus = getDirectFocusChild();
+        List<View> children = getFocusableDirectChildren();
+        if (directFocus == null || children.size() <= 1) {
+            return super.getNextFocusLeftId();
+        }
 
-        int idx = children.indexOf(focused);
+        int idx = children.indexOf(directFocus);
         if (idx <= 0) {
-            // 到最左侧，环形跳转；想要焦点停留在当前按钮就 return focused.getId();
-            return children.get(children.size()-1).getId();
+            if (mEnableCircularHorizontal) {
+                return children.get(children.size() - 1).getId();
+            } else {
+                return super.getNextFocusLeftId();
+            }
         } else {
             return children.get(idx - 1).getId();
         }
@@ -45,14 +71,19 @@ public class PlayerFocusContainer extends LinearLayout {
 
     @Override
     public int getNextFocusRightId() {
-        View focused = findFocus();
-        List<View> children = getFocusableChildren();
-        if (focused == null || children.size() <= 1) return super.getNextFocusLeftId();
+        View directFocus = getDirectFocusChild();
+        List<View> children = getFocusableDirectChildren();
+        if (directFocus == null || children.size() <= 1) {
+            return super.getNextFocusRightId();
+        }
 
-        int idx = children.indexOf(focused);
+        int idx = children.indexOf(directFocus);
         if (idx >= children.size() - 1) {
-            // 到最右侧，环形跳转；想要焦点停留在当前按钮就 return focused.getId();
-            return children.get(0).getId();
+            if (mEnableCircularHorizontal) {
+                return children.get(0).getId();
+            } else {
+                return super.getNextFocusRightId();
+            }
         } else {
             return children.get(idx + 1).getId();
         }
