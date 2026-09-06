@@ -199,29 +199,24 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             if (targetPos < 0) {
                 binding.recycler.scrollToPosition(0);
             } else if (lm instanceof GridLayoutManager glm) {
-                int recyclerHeight = binding.recycler.getHeight();
-                int offset = recyclerHeight / 2;
                 final int finalTargetPos = targetPos;
-                glm.scrollToPositionWithOffset(targetPos, offset);
-                binding.recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                glm.scrollToPositionWithOffset(targetPos, binding.recycler.getHeight() / 2);
+                binding.recycler.postDelayed(new Runnable() {
+                    private int retry = 0;
                     @Override
-                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                        super.onScrollStateChanged(recyclerView, newState);
-                        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                            recyclerView.removeOnScrollListener(this);
-                            RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(finalTargetPos);
-                            if (holder != null && holder.itemView != null) {
-                                holder.itemView.requestFocus();
-                                log("scroll idle request focus pos=" + finalTargetPos);
-                            } else {
-                                 recyclerView.post(() -> {
-                                     RecyclerView.ViewHolder h = recyclerView.findViewHolderForAdapterPosition(finalTargetPos);
-                                     if (h != null) h.itemView.requestFocus();
-                                 });
-                            }
+                    public void run() {
+                        if (binding == null || adapter == null || retry > 8) return;
+                        RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(finalTargetPos);
+                        if (holder != null && holder.itemView != null) {
+                            holder.itemView.requestFocus();
+                            holder.itemView.requestFocusFromTouch();
+                            log("success request focus pos=" + finalTargetPos);
+                        } else {
+                            retry++;
+                            binding.recycler.postDelayed(this, 30);
                         }
                     }
-                });
+                }, 120);
             }
         });
     }
