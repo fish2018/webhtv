@@ -9,10 +9,10 @@ public class OciAuthChallengeTest {
 
     @Test
     public void parsesDockerBearerChallenge() {
-        OciAuthChallenge challenge = OciAuthChallenge.parse("Bearer realm=\"https://auth.docker.io/token\",service=\"registry.docker.io\",scope=\"repository:fish2018/webhtv-apk:pull\"");
+        OciAuthChallenge challenge = OciAuthChallenge.parse("Bearer realm=\"https://auth.docker.io/token\",service=\"registry.docker.io\",scope=\"repository:llb0/webhtv-apk:pull\"");
         assertEquals("https://auth.docker.io/token", challenge.realm);
         assertEquals("registry.docker.io", challenge.service);
-        assertEquals("repository:fish2018/webhtv-apk:pull", challenge.scope);
+        assertEquals("repository:llb0/webhtv-apk:pull", challenge.scope);
     }
 
     @Test

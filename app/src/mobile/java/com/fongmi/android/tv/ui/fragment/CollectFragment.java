@@ -40,6 +40,7 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.utils.MobileWindow;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.SearchModeStore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -148,13 +149,7 @@ public class CollectFragment extends BaseFragment implements MenuProvider, Colle
     }
 
     private void setSites() {
-        String siteKey = getSiteKey();
-        mSites = new ArrayList<>();
-        for (Site site : VodConfig.get().getSites()) {
-            if (!site.isSearchable()) continue;
-            if (!TextUtils.isEmpty(siteKey) && !site.getKey().equals(siteKey)) continue;
-            mSites.add(site);
-        }
+        mSites = new ArrayList<>(SearchModeStore.filterSites(VodConfig.get().getSites(), getSiteKey()));
         SiteHealthStore.sortSites(mSites);
     }
 

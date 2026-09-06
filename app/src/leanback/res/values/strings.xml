@@ -1,6 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home_refresh">Refresh</string>
     <string name="home_vod">Vod</string>
     <string name="home_live">Live</string>
     <string name="home_search">Search</string>
@@ -33,4 +34,9 @@
     <string name="timer_60">1 hour</string>
     <string name="timer_delay">Delay 5 minutes</string>
     <string name="timer_cancel">Cancel timer</string>
+
+    <!-- Site Delete -->
+    <string name="setting_site_delete_title">Delete file site</string>
+    <string name="setting_site_delete_message">Delete %1$s and its source file? This cannot be undone.</string>
+    <string name="setting_site_delete_done">Deleted %1$s</string>
 </resources>

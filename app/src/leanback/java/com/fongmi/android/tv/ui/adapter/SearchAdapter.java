@@ -13,6 +13,7 @@ import com.bumptech.glide.RequestBuilder;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
@@ -116,7 +117,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ViewHolder holder = new ViewHolder(AdapterSearchBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
         holder.binding.getRoot().getLayoutParams().width = width;
-        holder.binding.getRoot().getLayoutParams().height = height + ResUtil.dp2px(34);
+        holder.binding.getRoot().getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
         holder.binding.image.getLayoutParams().height = height;
         return holder;
     }
@@ -147,19 +148,17 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
         ViewHolder(@NonNull AdapterSearchBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-            binding.name.setSingleLine(true);
-            binding.name.setHorizontallyScrolling(true);
-            binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
         }
 
         private void bindName(String name) {
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
             binding.name.setText(name);
             setMarquee(binding.getRoot().hasFocus());
         }
 
         private void setMarquee(boolean focused) {
-            binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
             binding.name.setSelected(focused);
         }
     }

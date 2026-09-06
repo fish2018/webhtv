@@ -1086,10 +1086,12 @@ public class LoginStateSync {
 
     private static String normalize(String path) {
         if (path == null) return "";
+        File localFile = com.github.catvod.utils.Path.local(path);
+        String absolute = localFile != null ? localFile.getAbsolutePath() : path;
         String appRoot = appRoot().getAbsolutePath().replace('\\', '/');
         String dataRoot = new File(App.get().getApplicationInfo().dataDir).getAbsolutePath().replace('\\', '/');
         String sdcardRoot = sdcardRoot().getAbsolutePath().replace('\\', '/');
-        String value = path.trim().replace('\\', '/').replace("file://", "");
+        String value = absolute.trim().replace('\\', '/');
         if (value.startsWith(appRoot)) value = ROOT_APP + "/" + value.substring(appRoot.length());
         else if (value.startsWith(dataRoot)) value = ROOT_APP + "/" + value.substring(dataRoot.length());
         else if (value.startsWith(sdcardRoot)) value = ROOT_SDCARD + "/" + value.substring(sdcardRoot.length());

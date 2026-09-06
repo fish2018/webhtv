@@ -234,6 +234,7 @@ public class WebHomeExtension {
 
     private static String readCached(String url, String prefix, String suffix) {
         if (TextUtils.isEmpty(url)) return "";
+        url = url.replace("clan://", "file://tvbox/");
         if ("file".equals(UrlUtil.scheme(url))) return Path.read(Path.local(url.substring("file://".length())));
         if ("local".equals(UrlUtil.scheme(url))) return Path.read(Path.files(url.substring("local://".length())));
         File file = cache(prefix + Util.md5(url) + suffix);

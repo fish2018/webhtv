@@ -1,6 +1,8 @@
 package com.fongmi.android.tv;
 
 import android.content.Context;
+import android.os.Build;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.startup.Initializer;
@@ -30,7 +32,14 @@ public class Startup implements Initializer<Void> {
         Logger.addLogAdapter(new AndroidLogAdapter(PrettyFormatStrategy.newBuilder().methodCount(0).showThreadInfo(false).tag("TV").build()));
         EventBus.builder().addIndex(new EventIndex()).installDefaultEventBus();
         OkHttp.dns().setDoh(() -> Doh.objectFrom(Setting.getDoh()));
+        pinOverlayPermission(context);
         return null;
+    }
+
+    private void pinOverlayPermission(@NonNull Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(context);
+        }
     }
 
     @NonNull

@@ -249,21 +249,22 @@ public class Config {
     }
 
     public Config insert() {
-        if (isEmpty()) return this;
         setId(Math.toIntExact(AppDatabase.get().getConfigDao().insert(this)));
         return this;
     }
 
     public Config save() {
-        if (isEmpty()) return this;
-        AppDatabase.get().getConfigDao().insertOrUpdate(this);
+        setTime(System.currentTimeMillis());
+        if (id == 0) {
+            setId(Math.toIntExact(AppDatabase.get().getConfigDao().insert(this)));
+        } else {
+            AppDatabase.get().getConfigDao().update(this);
+        }
+        Prefers.put("config_" + getType(), getUrl());
         return this;
     }
 
     public Config update() {
-        if (isEmpty()) return this;
-        setTime(System.currentTimeMillis());
-        Prefers.put("config_" + getType(), getUrl());
         return save();
     }
 

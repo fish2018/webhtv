@@ -30,19 +30,32 @@ public class Loader {
     }
 
     private String source(String api, String name) {
-        if (!api.startsWith("http")) return api;
-        File cache = Path.py(name);
-        try (Response response = OkHttp.newCall(OkHttp.client(15000), api).execute()) {
-            if (!response.isSuccessful()) throw new IllegalStateException("HTTP " + response.code());
-            String source = response.body().string();
-            if (TextUtils.isEmpty(source)) throw new IllegalStateException("Empty python script");
-            Path.write(cache, source.getBytes(StandardCharsets.UTF_8));
-            return source;
-        } catch (Exception e) {
-            String cached = Path.read(cache);
-            if (!TextUtils.isEmpty(cached)) return cached;
-            throw new IllegalStateException("Unable to download python script: " + api, e);
+        if (api.startsWith("http")) {
+            File cache = Path.py(name);
+            try (Response response = OkHttp.newCall(OkHttp.client(15000), api).execute()) {
+                if (!response.isSuccessful()) throw new IllegalStateException("HTTP " + response.code());
+                String source = response.body().string();
+                if (TextUtils.isEmpty(source)) throw new IllegalStateException("Empty python script");
+                Path.write(cache, source.getBytes(StandardCharsets.UTF_8));
+                return source;
+            } catch (Exception e) {
+                String cached = Path.read(cache);
+                if (!TextUtils.isEmpty(cached)) return cached;
+                throw new IllegalStateException("Unable to download python script: " + api, e);
+            }
         }
+        File local = local(api);
+        if (local != null) return Path.read(local);
+        return api;
+    }
+
+    private File local(String api) {
+        if (api == null) return null;
+        api = api.replace("clan://", "file://tvbox/");
+        if (api.startsWith("file://")) return new File(api.replace("file://", ""));
+        if (api.startsWith("file:/")) return new File(api.replace("file:/", ""));
+        if (api.startsWith("/")) return new File(api);
+        return null;
     }
 
     private String scriptName(String api) {

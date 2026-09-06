@@ -513,9 +513,14 @@ public class Updater implements UpdateTransfer.Callback, UpdateListener {
             if (installed.signingInfo.hasMultipleSigners() || archive.signingInfo.hasMultipleSigners()) {
                 return fingerprints(installed.signingInfo.getApkContentsSigners()).equals(fingerprints(archive.signingInfo.getApkContentsSigners()));
             }
-            Set<String> current = fingerprints(installed.signingInfo.getApkContentsSigners());
-            Set<String> candidateHistory = fingerprints(archive.signingInfo.getSigningCertificateHistory());
-            return !current.isEmpty() && candidateHistory.containsAll(current);
+            Set<String> currentInstall = fingerprints(installed.signingInfo.getApkContentsSigners());
+            Set<String> newApkHistory = fingerprints(archive.signingInfo.getSigningCertificateHistory());
+            Set<String> newApkCurrent = fingerprints(archive.signingInfo.getApkContentsSigners());
+            if (!newApkHistory.isEmpty()) {
+                return !currentInstall.isEmpty() && newApkHistory.containsAll(currentInstall);
+            } else {
+                return currentInstall.equals(newApkCurrent);
+            }
         }
         return fingerprints(installed.signatures).equals(fingerprints(archive.signatures));
     }

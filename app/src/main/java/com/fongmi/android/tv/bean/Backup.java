@@ -148,12 +148,10 @@ public class Backup {
         Map<Integer, Integer> cids = new HashMap<>();
         for (Config item : getConfig()) {
             int source = item.getId();
-            Config current = AppDatabase.get().getConfigDao().find(item.getUrl(), item.getType());
-            item.setId(current == null ? 0 : current.getId());
+            AppDatabase.get().getConfigDao().delete(item.getUrl(), item.getType());
+            item.setId(0);
             long id = AppDatabase.get().getConfigDao().insert(item);
-            if (id == -1) AppDatabase.get().getConfigDao().update(item);
-            else item.setId(Math.toIntExact(id));
-            if (source > 0) cids.put(source, item.getId());
+            if (source > 0) cids.put(source, Math.toIntExact(id));
         }
         return cids;
     }

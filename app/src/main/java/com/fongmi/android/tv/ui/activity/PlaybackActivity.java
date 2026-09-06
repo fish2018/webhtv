@@ -266,7 +266,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             player().parse(key, result, useParse, metadata, PlayerSetting.isAutoPlay(), startPositionMs);
         } else {
             attachSurface();
-            player().start(PlaySpec.from(result, key, metadata), timeout, PlayerSetting.isAutoPlay(), startPositionMs);
+            player().start(PlaySpec.from(result, key, metadata, PlayerSetting.getPlayer()), timeout, PlayerSetting.isAutoPlay(), startPositionMs);
         }
     }
 

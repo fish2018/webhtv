@@ -77,6 +77,7 @@ import com.fongmi.android.tv.web.HomeWebController;
 import com.fongmi.android.tv.web.WebHomeViewport;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
+import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Json;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
@@ -156,7 +157,10 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     private void initAfterFirstFrame() {
         SpiderDebug.log("startup", "home first frame cost=%sms", System.currentTimeMillis() - App.time());
         App.post(this::initConfig, 80);
-        App.post(() -> PermissionUtil.requestFile(this, allGranted -> PermissionUtil.requestNotify(this)), 1800);
+        App.post(() -> PermissionUtil.requestFile(this, allGranted -> {
+            PermissionUtil.requestNotify(this);
+            if (allGranted) initConfig();
+        }), 1800);
         App.post(() -> DLNARendererService.start(this), 2500);
     }
 
@@ -462,7 +466,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void setFunc() {
         List<Func> items = new ArrayList<>();
-        if (LiveConfig.hasUrl()) items.add(Func.create(R.string.home_live));
+        if (LiveConfig.hasLoadedLives()) items.add(Func.create(R.string.home_live));
         items.add(Func.create(R.string.home_search));
         items.add(Func.create(R.string.home_keep));
         items.add(Func.create(R.string.home_push));
@@ -655,29 +659,12 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     public void onRefresh() {
-        if (mWeb != null && mWeb.isVisible()) mWeb.reload();
-        else getVideo();
+        initConfig();
     }
 
     @Override
     public void reloadConfig() {
-        VodConfig.get().clear().config(getConfig()).load(new Callback() {
-            @Override
-            public void start() {
-                mBinding.progressLayout.showProgress();
-            }
-
-            @Override
-            public void success() {
-                showContent();
-            }
-
-            @Override
-            public void error(String msg) {
-                Notify.show(msg);
-                showContent();
-            }
-        });
+        onRefresh();
     }
 
     @Override
@@ -790,8 +777,9 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         DLNARendererService.stop(this);
         LiveConfig.get().clear();
         VodConfig.get().clear();
-        AppDatabase.backup();
+        AppDatabase.autoBackupOnExit();
         OkHttp.get().clear();
+        if (Setting.isAutoClearCache()) Path.clear(Path.cache());
         Source.get().exit();
         Server.get().stop();
         super.onDestroy();

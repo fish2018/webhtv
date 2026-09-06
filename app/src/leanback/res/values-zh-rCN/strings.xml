@@ -1,6 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home_refresh">刷新</string>
     <string name="home_vod">点播</string>
     <string name="home_live">直播</string>
     <string name="home_search">搜索</string>
@@ -18,7 +19,7 @@
     <string name="home_recommend">更新推荐</string>
 
     <!-- Collect -->
-    <string name="collect_result">“<xliff:g name="name">%s</xliff:g>”的搜索结果</string>
+    <string name="collect_result">"<xliff:g name="name">%s</xliff:g>"的搜索结果</string>
 
     <!-- Push -->
     <string name="push_clip">推送剪贴板内容</string>

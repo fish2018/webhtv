@@ -7,9 +7,12 @@ import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Toast;
+import java.io.File;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.LinearLayoutCompat;
@@ -35,6 +38,7 @@ import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.github.catvod.utils.Path;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +98,53 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         binding.recycler.setItemAnimator(null);
         binding.recycler.setHasFixedSize(true);
         attachSortTouchHelper();
-        binding.recycler.post(() -> binding.recycler.scrollToPosition(0));
+        binding.recycler.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                if (binding.recycler.getViewTreeObserver().isAlive()) {
+                    binding.recycler.getViewTreeObserver().removeOnPreDrawListener(this);
+                }
+                List<Site> showList = adapter.getItems();
+                Site active = VodConfig.get().getHome();
+                int targetPos = -1;
+                for (int i = 0; i < showList.size(); i++) {
+                    if (showList.get(i).getKey().equals(active.getKey())) {
+                        targetPos = i;
+                        break;
+                    }
+                }
+                if (targetPos < 0) {
+                    binding.recycler.scrollToPosition(0);
+                    return true;
+                }
+                RecyclerView.LayoutManager lm = binding.recycler.getLayoutManager();
+                final int finalTargetPos = targetPos;
+                if (lm instanceof LinearLayoutManager llm) {
+                    llm.scrollToPosition(finalTargetPos);
+                    final LinearLayoutManager finalLlm = llm;
+                    binding.recycler.post(() -> {
+                        View itemView = finalLlm.findViewByPosition(finalTargetPos);
+                        if (itemView == null) return;
+                        int rvHeight = binding.recycler.getHeight();
+                        int itemHeight = itemView.getHeight();
+                        int desiredOffset = rvHeight / 2 - itemHeight / 2;
+                        finalLlm.scrollToPositionWithOffset(finalTargetPos, desiredOffset);
+                    });
+                } else if (lm instanceof GridLayoutManager glm) {
+                    glm.scrollToPosition(finalTargetPos);
+                    final GridLayoutManager finalGlm = glm;
+                    binding.recycler.post(() -> {
+                        View itemView = finalGlm.findViewByPosition(finalTargetPos);
+                        if (itemView == null) return;
+                        int rvHeight = binding.recycler.getHeight();
+                        int itemHeight = itemView.getHeight();
+                        int desiredOffset = rvHeight / 2 - itemHeight / 2;
+                        finalGlm.scrollToPositionWithOffset(finalTargetPos, desiredOffset);
+                    });
+                }
+                return true;
+            }
+        });
     }
 
     private void attachSortTouchHelper() {
@@ -276,6 +326,40 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         adapter.getItems().forEach(site -> site.setChangeable(result).save());
         adapter.notifyItemRangeChanged(0, adapter.getItemCount());
         return true;
+    }
+
+    @Override
+    public void onDeleteClick(int position, Site item) {
+        new MaterialAlertDialogBuilder(requireActivity(), R.style.ThemeOverlay_WebHTV_LightDialog)
+                .setTitle(R.string.setting_site_delete_title)
+                .setMessage(getString(R.string.setting_site_delete_message, item.getName()))
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> deleteFileSite(position, item))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void deleteFileSite(int position, Site item) {
+        String type = item.getFileType();
+        String fileName = item.getFileName();
+        if (fileName.isEmpty()) return;
+        String subDir = switch (type) {
+            case "XBPQ" -> "sites-json";
+            case "JS" -> "sites-js/api";
+            case "PY" -> "sites-py";
+            case "RAW" -> "sites";
+            default -> "";
+        };
+        if (subDir.isEmpty()) return;
+        File file = new File(Path.root() + "/tvbox/" + subDir, fileName);
+        boolean deleted = file.exists() && file.delete();
+        if (!deleted && file.exists()) {
+            Toast.makeText(requireActivity(), R.string.remote_trust_delete_device_done, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        adapter.getItems().remove(position);
+        adapter.notifyItemRemoved(position);
+        adapter.notifyItemRangeChanged(position, adapter.getItemCount());
+        Toast.makeText(requireActivity(), getString(R.string.setting_site_delete_done, item.getName()), Toast.LENGTH_SHORT).show();
     }
 
     @Override

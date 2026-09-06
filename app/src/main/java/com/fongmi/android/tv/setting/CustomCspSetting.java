@@ -230,6 +230,7 @@ public class CustomCspSetting {
         if (TextUtils.isEmpty(api)) return false;
         try {
             String value = api.trim();
+            value = value.replace("clan://", "file://tvbox/");
             String path;
             if (value.startsWith("file://")) path = value.substring("file://".length());
             else {

@@ -46,10 +46,12 @@ public class Server {
     }
 
     public String getAddress(boolean local) {
+        if (Proxy.getPort()==-1) startManage();
         return "http://" + (local ? "127.0.0.1" : Util.getIp()) + ":" + Proxy.getPort();
     }
 
     public synchronized void startManage() {
+        if (manage) return;
         manage = true;
         start();
     }

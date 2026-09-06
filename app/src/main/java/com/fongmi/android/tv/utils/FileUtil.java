@@ -142,7 +142,9 @@ public class FileUtil {
     }
 
     public static Uri getShareUri(String path) {
-        return getShareUri(new File(path.replace("file://", "")));
+        if (path == null) return null;
+        File file = com.github.catvod.utils.Path.local(path);
+        return file != null ? getShareUri(file) : null;
     }
 
     public static Uri getShareUri(File file) {

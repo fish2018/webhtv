@@ -9,6 +9,9 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Toast;
+import java.io.File;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,14 +28,16 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.databinding.DialogSiteBinding;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.impl.SiteListener;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.ui.adapter.SiteAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.github.catvod.utils.Path;
 import com.github.catvod.crawler.SpiderDebug;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickListener {
+public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickListener, SiteAdapter.OnDeleteListener {
 
     private static final int GRID_COUNT = 3;
     private static final String TAG = "site_dialog";
@@ -123,6 +128,32 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
             binding = null;
             this.activity = null;
         });
+
+        directDialog.setOnShowListener(dialogInterface -> {
+            if (binding == null || adapter == null) return;
+            binding.recycler.post(() -> {
+                binding.recycler.post(() -> {
+                    List<Site> showList = adapter.getItems();
+                    Site active = VodConfig.get().getHome();
+                    int targetPos = -1;
+                    for (int i = 0; i < showList.size(); i++) {
+                        if (showList.get(i).getKey().equals(active.getKey())) {
+                            targetPos = i;
+                            break;
+                        }
+                    }
+                    if (targetPos < 0) return;
+                    RecyclerView.ViewHolder holder = binding.recycler.findViewHolderForAdapterPosition(targetPos);
+                    if (holder != null && holder.itemView != null) {
+                        boolean ret = holder.itemView.requestFocus();
+                        log("onShow real request focus pos=%d ret=%b", targetPos, ret);
+                    } else {
+                        log("onShow holder null pos=%d", targetPos);
+                    }
+                });
+            });
+        });
+
         runAfterFirstPreDraw("shell preDraw", () -> loadList(false));
         long showDialogStart = System.currentTimeMillis();
         log("show call start total=%sms", cost());
@@ -180,6 +211,24 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         runAfterFirstPreDraw("list preDraw", () -> {
             if (adapter != null) adapter.showAll();
             log("list expanded total=%sms items=%s", cost(), adapter == null ? -1 : adapter.getItemCount());
+            if (adapter == null || binding == null) return;
+            List<Site> showList = adapter.getItems();
+            Site active = VodConfig.get().getHome();
+            int targetPos = -1;
+            for (int i = 0; i < showList.size(); i++) {
+                if (showList.get(i).getKey().equals(active.getKey())) {
+                    targetPos = i;
+                    break;
+                }
+            }
+            RecyclerView.LayoutManager lm = binding.recycler.getLayoutManager();
+            if (targetPos < 0) {
+                binding.recycler.scrollToPosition(0);
+            } else if (lm instanceof GridLayoutManager glm) {
+                int recyclerHeight = binding.recycler.getHeight();
+                int offset = recyclerHeight / 2;
+                glm.scrollToPositionWithOffset(targetPos, offset);
+            }
         });
     }
 
@@ -273,6 +322,35 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         dismiss();
     }
 
+    @Override
+    public void onDelete(Site item) {
+        if (!item.isFile()) return;
+        new MaterialAlertDialogBuilder(getDialogActivity())
+                .setTitle(R.string.setting_site_delete_title)
+                .setMessage(getString(R.string.setting_site_delete_message, item.getName()))
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> deleteFileSite(item))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void deleteFileSite(Site item) {
+        String type = item.getFileType();
+        String fileName = item.getFileName();
+        if (fileName.isEmpty()) return;
+        String subDir = switch (type) {
+            case "XBPQ" -> "sites-json";
+            case "JS" -> "sites-js/api";
+            case "PY" -> "sites-py";
+            case "RAW" -> "sites";
+            default -> "";
+        };
+        if (subDir.isEmpty()) return;
+        File file = new File(Path.root() + "/tvbox/" + subDir, fileName);
+        if (file.exists()) file.delete();
+        if (activity != null) Toast.makeText(activity, getString(R.string.setting_site_delete_done, item.getName()), Toast.LENGTH_SHORT).show();
+        dismiss();
+    }
+
     private void loadConfig(FragmentActivity activity, Config config) {
         if (config.getUrl().equals(VodConfig.getUrl())) return;
         VodConfig.load(config, new Callback() {
@@ -350,6 +428,6 @@ public class SiteDialog extends BaseAlertDialog implements SiteAdapter.OnClickLi
         super.onStart();
         Window window = getDialog() == null ? null : getDialog().getWindow();
         applyWindow(window);
-        if (adapter.getItemCount() == 0) dismiss();
+        if (adapter != null && adapter.getItemCount() == 0) dismiss();
     }
 }

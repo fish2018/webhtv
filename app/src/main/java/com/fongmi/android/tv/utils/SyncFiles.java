@@ -23,7 +23,7 @@ import java.util.zip.ZipOutputStream;
 
 public class SyncFiles {
 
-    public static final String DEFAULT_PATHS = "TV\nTVBox\nTVData";
+    public static final String DEFAULT_PATHS = "";
     public static final String CUSTOM_CSP_PATH = "TV/CustomCsp";
     public static final String PART_NAME = "syncFiles";
 
@@ -215,9 +215,10 @@ public class SyncFiles {
 
     public static String normalize(String path) {
         if (path == null) return "";
+        File localFile = com.github.catvod.utils.Path.local(path);
+        String absolute = localFile != null ? localFile.getAbsolutePath() : path;
         String root = Path.root().getAbsolutePath().replace('\\', '/');
-        String value = path.trim().replace('\\', '/');
-        value = value.replace("file://", "");
+        String value = absolute.trim().replace('\\', '/');
         if (value.startsWith(root)) value = value.substring(root.length());
         if (value.startsWith("/sdcard/")) value = value.substring("/sdcard/".length());
         return normalizeRelative(value);

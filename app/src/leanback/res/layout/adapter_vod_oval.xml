@@ -23,9 +23,8 @@
         android:layout_alignStart="@+id/image"
         android:layout_alignEnd="@+id/image"
         android:layout_marginTop="4dp"
-        android:ellipsize="marquee"
+        android:ellipsize="end"
         android:gravity="center"
-        android:singleLine="true"
         android:textColor="@color/white"
         android:textSize="16sp"
         tools:text="蜘蛛人" />

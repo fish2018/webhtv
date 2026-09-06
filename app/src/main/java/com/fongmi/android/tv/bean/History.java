@@ -62,6 +62,10 @@ public class History implements Diffable<History> {
     private long position;
     @SerializedName("duration")
     private long duration;
+    @SerializedName("playerType")
+    private Integer playerType;
+    @SerializedName("player")
+    private String player;
     @SerializedName("speed")
     private float speed;
     @SerializedName("scale")
@@ -96,6 +100,8 @@ public class History implements Diffable<History> {
         item.ending = ending;
         item.position = position;
         item.duration = duration;
+        item.playerType = playerType;
+        item.player = player;
         item.speed = speed;
         item.scale = scale;
         item.cid = cid;
@@ -271,6 +277,22 @@ public class History implements Diffable<History> {
 
     public void setDuration(long duration) {
         this.duration = duration;
+    }
+
+    public Integer getPlayerType() {
+        return playerType;
+    }
+
+    public void setPlayerType(Integer playerType) {
+        this.playerType = playerType;
+    }
+
+    public String getPlayer() {
+        return player;
+    }
+
+    public void setPlayer(String player) {
+        this.player = player;
     }
 
     public float getSpeed() {

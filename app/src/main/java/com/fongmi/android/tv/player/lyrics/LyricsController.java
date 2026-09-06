@@ -399,6 +399,8 @@ public class LyricsController {
                 || lower.contains("聽歌") || lower.contains("听歌")
                 || lower.contains("有声") || lower.contains("有聲")
                 || lower.contains("听书") || lower.contains("聽書")
+                || lower.contains("[听]") || lower.contains("[聽]")
+                || lower.contains("【听】") || lower.contains("【聽】")
                 || lower.contains("audiobook") || lower.contains("audio book")
                 || lower.contains("podcast") || lower.contains("播客")
                 || lower.contains("电台") || lower.contains("電台") || lower.contains("radio");

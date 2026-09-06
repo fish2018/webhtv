@@ -375,6 +375,24 @@ public class Site implements Parcelable {
         this.selected = item.equals(this);
     }
 
+    public boolean isFile() {
+        return getKey().endsWith("_file");
+    }
+
+    public String getFileName() {
+        if (!isFile()) return "";
+        String raw = getKey().substring(0, getKey().length() - 5);
+        int idx = raw.indexOf('_');
+        return idx >= 0 ? raw.substring(idx + 1) : raw;
+    }
+
+    public String getFileType() {
+        if (!isFile()) return "";
+        String raw = getKey().substring(0, getKey().length() - 5);
+        int idx = raw.indexOf('_');
+        return idx >= 0 ? raw.substring(0, idx) : raw;
+    }
+
     public boolean isHide() {
         return getHide() == 1;
     }

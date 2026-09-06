@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.databinding.AdapterVodRectBinding;
 import com.fongmi.android.tv.ui.base.BaseVodHolder;
 import com.fongmi.android.tv.ui.presenter.VodPresenter;
@@ -28,6 +29,7 @@ public class VodRectHolder extends BaseVodHolder {
 
     @Override
     public void initView(Vod item) {
+        Setting.applyTitleMaxLines(binding.name);
         binding.name.setText(item.getName());
         binding.year.setText(item.getYear());
         binding.site.setText(item.getSiteName());

@@ -11,19 +11,26 @@ import com.fongmi.android.tv.bean.Depot;
 import com.fongmi.android.tv.bean.Parse;
 import com.fongmi.android.tv.bean.Rule;
 import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.bean.Style;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.setting.CustomCspSetting;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.web.ext.WebHomeExtensionRegistry;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.bean.Header;
 import com.github.catvod.bean.Proxy;
 import com.github.catvod.utils.Json;
+import com.github.catvod.utils.Path;
+import com.github.catvod.utils.Util;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +80,7 @@ public class VodConfig extends BaseConfig {
     }
 
     public VodConfig init() {
-        return config(Config.vod());
+        return clear().config(Config.vod());
     }
 
     public VodConfig config(Config config) {
@@ -115,8 +122,23 @@ public class VodConfig extends BaseConfig {
 
     @Override
     protected void load(Config config) throws Throwable {
-        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
-        checkJson(config, Json.parse(json).getAsJsonObject());
+        if (config.isEmpty()) {
+            try {
+                initSites(config, "", new JsonObject());
+            } catch (Throwable ignored) {}
+            return;
+        }
+        String globalSpider = "";
+        try {
+            String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
+            JsonObject object = Json.parse(json).getAsJsonObject();
+            globalSpider = Json.safeString(object, "spider");
+            checkJson(config, object);
+            return;
+        } catch (Throwable ignored) {}
+        try {
+            initSites(config, globalSpider, new JsonObject());
+        } catch (Throwable ignored) {}
     }
 
     @Override
@@ -192,9 +214,19 @@ public class VodConfig extends BaseConfig {
     }
 
     private void initSite(Config config, JsonObject object) {
-        String spider = Json.safeString(object, "spider");
+        initSites(config, "", object);
+    }
+
+    private void initSites(Config config, String globalSpider, JsonObject object) {
+        String spider = TextUtils.isEmpty(globalSpider) ? UrlUtil.convert("./jars/XBPQ.jar") : globalSpider;
         BaseLoader.get().parseJar(spider, true);
-        setSites(Json.safeListElement(object, "sites").stream().map(e -> Site.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
+        List<Site> sites = new ArrayList<>();
+        if (Setting.isSourceAllowed(Setting.SOURCE_VOD_URL)) {
+            sites.addAll(Json.safeListElement(object, "sites").stream().map(e -> Site.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
+        }
+        List<Site> fileSites = loadFileSites(spider);
+        sites.addAll(0, fileSites);
+        setSites(sites);
         Map<String, Site> items = Site.findAll().stream().collect(Collectors.toMap(Site::getKey, Function.identity()));
         getSites().forEach(site -> site.sync(items.get(site.getKey())));
         CustomCspSetting.Result custom = CustomCspSetting.inject(getSites());
@@ -307,6 +339,191 @@ public class VodConfig extends BaseConfig {
         config.setParse(parse.getName());
         getParses().forEach(item -> item.setSelected(parse));
         if (save) config.save();
+    }
+
+    // ==================== 文件站点加载器 ====================
+
+    private static final String CLAN_ROOT = Path.root() + "/tvbox/";
+    private static final String XBPQ_JAR = UrlUtil.convert("./jars/XBPQ.jar");
+
+    private List<Site> loadFileSites(String globalSpider) {
+        List<Site> result = new ArrayList<>();
+        if (Setting.isSourceAllowed(Setting.SOURCE_SITES_JSON)) {
+            try { result.addAll(loadXbpqSites(globalSpider)); } catch (Throwable ignored) {}
+        }
+        if (Setting.isSourceAllowed(Setting.SOURCE_SITES_JS)) {
+            try { result.addAll(loadJsSites(globalSpider)); } catch (Throwable ignored) {}
+        }
+        if (Setting.isSourceAllowed(Setting.SOURCE_SITES_PY)) {
+            try { result.addAll(loadPySites(globalSpider)); } catch (Throwable ignored) {}
+        }
+        if (Setting.isSourceAllowed(Setting.SOURCE_SITES_RAW)) {
+            try { result.addAll(loadRawSites(globalSpider)); } catch (Throwable ignored) {}
+        }
+        return result;
+    }
+
+    private List<Site> loadXbpqSites(String globalSpider) {
+        File dir = new File(CLAN_ROOT + "sites-json");
+        List<Site> result = new ArrayList<>();
+        if (!dir.exists() || !dir.isDirectory()) return result;
+        List<File> files = listSorted(dir);
+        if (files.isEmpty()) return result;
+        String jar;
+        if (!TextUtils.isEmpty(globalSpider)
+                && globalSpider.toLowerCase().contains("xbpq")
+                && Path.local(globalSpider) != null
+                && Path.local(globalSpider).exists()) {
+            jar = globalSpider;
+        } else {
+            jar = XBPQ_JAR;
+            BaseLoader.get().parseJar(jar, true);
+        }
+        for (File file : files) {
+            FileMeta meta = parseFileMeta(file.getName());
+            if (meta.name.isEmpty()) continue;
+            Site site = Site.get("XBPQ_" + file.getName() + "_file", meta.name);
+            site.setType(3);
+            site.setApi("csp_XBPQ");
+            site.setExt(UrlUtil.convert("clan://sites-json/" + file.getName()));
+            site.setJar(jar);
+            site.setName(meta.name + " | PQ");
+            meta.apply(site);
+            result.add(site);
+        }
+        return result;
+    }
+
+    private List<Site> loadJsSites(String globalSpider) {
+        File dir = new File(CLAN_ROOT + "sites-js", "api");
+        List<Site> result = new ArrayList<>();
+        if (!dir.exists() || !dir.isDirectory()) return result;
+        List<File> files = listSorted(dir);
+        for (File file : files) {
+            FileMeta meta = parseFileMeta(file.getName());
+            if (meta.name.isEmpty()) continue;
+            Site site = Site.get("JS_" + file.getName() + "_file", meta.name);
+            site.setType(3);
+            site.setApi(UrlUtil.convert("clan://sites-js/api/" + file.getName()));
+            site.setJar(globalSpider);
+            site.setName(meta.name + " | JS");
+            meta.apply(site);
+            result.add(site);
+        }
+        return result;
+    }
+
+    private List<Site> loadPySites(String globalSpider) {
+        File dir = new File(CLAN_ROOT + "sites-py");
+        List<Site> result = new ArrayList<>();
+        if (!dir.exists() || !dir.isDirectory()) return result;
+        List<File> files = listSorted(dir);
+        for (File file : files) {
+            FileMeta meta = parseFileMeta(file.getName());
+            if (meta.name.isEmpty()) continue;
+            Site site = Site.get("PY_" + file.getName() + "_file", meta.name);
+            site.setType(3);
+            site.setApi(UrlUtil.convert("clan://sites-py/" + file.getName()));
+            site.setJar(globalSpider);
+            site.setName(meta.name + " | PY");
+            meta.apply(site);
+            result.add(site);
+        }
+        return result;
+    }
+
+    private List<Site> loadRawSites(String globalSpider) {
+        File dir = new File(CLAN_ROOT + "sites");
+        List<Site> result = new ArrayList<>();
+        if (!dir.exists() || !dir.isDirectory()) return result;
+        List<File> files = listSorted(dir);
+        for (File file : files) {
+            FileMeta meta = parseFileMeta(file.getName());
+            String content = Path.read(file);
+            if (content.isEmpty()) continue;
+            try {
+                JsonElement element = Json.parse(content);
+                if (element.isJsonObject()) {
+                    Site site = Site.objectFrom(element, globalSpider);
+                    if (site.getName().isEmpty()) site.setName(meta.name);
+                    site.setKey("RAW_" + file.getName() + "_file");
+                    meta.apply(site);
+                    result.add(site);
+                }
+            } catch (Throwable ignored) {}
+        }
+        return result;
+    }
+
+    private List<File> listSorted(File dir) {
+        File[] files = dir.listFiles(f -> f.isFile() && !f.getName().startsWith("."));
+        if (files == null) return Collections.emptyList();
+        Arrays.sort(files, (a, b) -> {
+            FileMeta ma = parseFileMeta(a.getName());
+            FileMeta mb = parseFileMeta(b.getName());
+            int c = Integer.compare(ma.order, mb.order);
+            if (c != 0) return c;
+            return ma.name.compareToIgnoreCase(mb.name);
+        });
+        return Arrays.asList(files);
+    }
+
+    private FileMeta parseFileMeta(String fileName) {
+        FileMeta meta = new FileMeta();
+        if (fileName == null) return meta;
+    
+        String stem = fileName;
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) stem = fileName.substring(0, lastDot);
+    
+        if (stem.matches("^\\d+_.*")) {
+            int sep = stem.indexOf('_');
+            meta.order = Integer.parseInt(stem.substring(0, sep));
+            stem = stem.substring(sep + 1);
+        }
+    
+        int firstDot = stem.indexOf('.');
+        if (firstDot > 0) {
+            String func = stem.substring(firstDot + 1);
+            String upper = func.toUpperCase();
+    
+            boolean isFunc = upper.startsWith("N") || upper.startsWith("S") || func.contains("-");
+    
+            if (isFunc) {
+                stem = stem.substring(0, firstDot);
+    
+                if (upper.startsWith("N")) { meta.searchable = 0; meta.quickSearch = 0; }
+                else if (upper.startsWith("S")) { meta.hide = 1; }
+    
+                int dash = func.lastIndexOf('-');
+                if (dash >= 0 && dash < func.length() - 1) {
+                    String tail = func.substring(dash + 1);
+                    if (tail.equalsIgnoreCase("H")) meta.ratio = 1.33f;
+                    else if (tail.equalsIgnoreCase("S")) meta.ratio = 1.0f;
+                    else { try { meta.ratio = Float.parseFloat(tail); }
+                    catch (NumberFormatException ignored) {} }
+                }
+            }
+        }
+    
+        meta.name = stem.trim();
+        return meta;
+    }
+
+    private static class FileMeta {
+        int order = Integer.MAX_VALUE;
+        String name = "";
+        Integer searchable;
+        Integer quickSearch;
+        Integer hide;
+        float ratio = 0;
+
+        void apply(Site site) {
+            if (searchable != null) site.setSearchable(searchable);
+            if (quickSearch != null) site.setQuickSearch(quickSearch);
+            if (hide != null) site.setHide(hide);
+            if (ratio > 0) site.setStyle(new Style("rect", ratio));
+        }
     }
 
     private void setHome(Config config, Site site, boolean save) {

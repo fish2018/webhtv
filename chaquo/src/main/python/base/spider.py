@@ -8,7 +8,7 @@ from com.github.catvod import Proxy
 from com.chaquo.python import Python
 from abc import abstractmethod, ABCMeta
 from importlib.machinery import SourceFileLoader
-
+from com.github.catvod.crawler import SpiderDebug
 
 class Spider(metaclass=ABCMeta):
     _instance = None
@@ -116,9 +116,11 @@ class Spider(metaclass=ABCMeta):
 
     def log(self, msg):
         if isinstance(msg, dict) or isinstance(msg, list):
-            print(json.dumps(msg, ensure_ascii=False))
+            text = json.dumps(msg, ensure_ascii=False)
         else:
-            print(f'{msg}')
+            text = str(msg)
+        SpiderDebug.log("python-spider", text)
+        print(text)
 
     def getCache(self, key):
         value = self.fetch(f'http://127.0.0.1:{Proxy.getPort()}/cache?do=get&key={key}', timeout=5).text

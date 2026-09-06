@@ -118,6 +118,7 @@ public class ProxySetting {
     private static String localPath(String source) {
         String value = source == null ? "" : source.trim();
         if (TextUtils.isEmpty(value)) return "";
+        value = value.replace("clan://", "file://tvbox/");
         if (value.startsWith("file://")) return value.substring("file://".length());
         Uri uri = Uri.parse(value);
         String path = uri.getPath();

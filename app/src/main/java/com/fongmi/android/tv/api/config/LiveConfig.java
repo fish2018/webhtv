@@ -18,13 +18,17 @@ import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.setting.CustomCspSetting;
 import com.fongmi.android.tv.setting.LiveSetting;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.bean.Header;
 import com.github.catvod.bean.Proxy;
 import com.github.catvod.utils.Json;
+import com.github.catvod.utils.Path;
 import com.google.gson.JsonObject;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +74,12 @@ public class LiveConfig extends BaseConfig {
     }
 
     public static boolean hasLoadedLives() {
-        return !get().getLives().isEmpty();
+        if (!get().getLives().isEmpty()) return true;
+        if (!Setting.isSourceAllowed(Setting.SOURCE_LIVES_FILE)) return false;
+        File dir = new File(Path.root() + "/tvbox/lives/");
+        if (!dir.exists() || !dir.isDirectory()) return false;
+        File[] files = dir.listFiles(f -> f.isFile() && !f.getName().startsWith("."));
+        return files != null && files.length > 0;
     }
 
     public static boolean hasUrl() {
@@ -120,12 +129,19 @@ public class LiveConfig extends BaseConfig {
     @Override
     protected void load(Config config) throws Throwable {
         if (config.isEmpty()) {
-            initLive(config, new JsonObject());
+            parseConfig(config, new JsonObject());
             return;
         }
-        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
-        if (Json.isObj(json)) checkJson(config, Json.parse(json).getAsJsonObject());
-        else parseText(config, json);
+        try {
+            String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG);
+            if (Json.isObj(json)) {
+                checkJson(config, Json.parse(json).getAsJsonObject());
+            } else {
+                parseText(config, json);
+            }
+            return;
+        } catch (Throwable ignored) {}
+        parseConfig(config, new JsonObject());
     }
 
     @Override
@@ -151,8 +167,18 @@ public class LiveConfig extends BaseConfig {
     }
 
     private void parseText(Config config, String text) {
-        Live live = new Live(UrlUtil.getName(config.getUrl()), config.getUrl()).sync();
-        lives = new ArrayList<>(List.of(live));
+        initList(new JsonObject());
+        List<Live> lives = new ArrayList<>();
+        if (Setting.isSourceAllowed(Setting.SOURCE_LIVE_URL)) {
+            Live live = new Live(UrlUtil.getName(config.getUrl()), config.getUrl()).sync();
+            lives.add(live);
+        }
+        if (Setting.isSourceAllowed(Setting.SOURCE_LIVES_FILE)) {
+            lives.addAll(loadFileLives());
+        }
+        setLives(lives);
+        Live live = lives.isEmpty() ? new Live() : lives.get(0);
+        if (live.isEmpty()) return;
         LiveParser.text(live, text);
         finishLive(config, "");
     }
@@ -197,8 +223,41 @@ public class LiveConfig extends BaseConfig {
     private void initLive(Config config, JsonObject object) {
         String spider = Json.safeString(object, "spider");
         BaseLoader.get().parseJar(spider, false);
-        setLives(Json.safeListElement(object, "lives").stream().map(e -> Live.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
+        List<Live> lives = new ArrayList<>();
+        if (Setting.isSourceAllowed(Setting.SOURCE_LIVE_URL)) {
+            lives.addAll(Json.safeListElement(object, "lives").stream().map(e -> Live.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
+        }
+        if (Setting.isSourceAllowed(Setting.SOURCE_LIVES_FILE)) {
+            lives.addAll(0, loadFileLives());
+        }
+        setLives(lives);
         finishLive(config, spider);
+    }
+
+    // ==================== 文件直播源加载器 ====================
+
+    private static final String CLAN_LIVE_ROOT = Path.root() + "/tvbox/lives/";
+
+    private List<Live> loadFileLives() {
+        List<Live> result = new ArrayList<>();
+        if (!Setting.isSourceAllowed(Setting.SOURCE_LIVES_FILE)) return result;
+        File dir = new File(CLAN_LIVE_ROOT);
+        if (!dir.exists() || !dir.isDirectory()) return result;
+        File[] files = dir.listFiles(f -> f.isFile() && !f.getName().startsWith("."));
+        if (files == null || files.length == 0) return result;
+        Arrays.sort(files, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        for (File file : files) {
+            try {
+                String name = file.getName();
+                int dot = name.lastIndexOf('.');
+                if (dot > 0) name = name.substring(0, dot);
+                if (name.isEmpty()) continue;
+                Live live = new Live(name, UrlUtil.convert("clan://lives/" + file.getName()));
+                LiveParser.start(live);
+                if (!live.getGroups().isEmpty()) result.add(live);
+            } catch (Throwable ignored) {}
+        }
+        return result;
     }
 
     private void finishLive(Config config, String spider) {
@@ -207,6 +266,13 @@ public class LiveConfig extends BaseConfig {
         Map<String, Live> items = Live.findAll().stream().collect(Collectors.toMap(Live::getName, Function.identity()));
         getLives().forEach(live -> live.sync(items.get(live.getName())));
         setHome(config, getLives().isEmpty() ? new Live() : getLives().stream().filter(item -> item.getName().equals(config.getHome())).findFirst().orElse(getLives().get(0)), false);
+        if (getLives().isEmpty() && Setting.isSourceAllowed(Setting.SOURCE_LIVES_FILE)) {
+            List<Live> files = loadFileLives();
+            if (!files.isEmpty()) {
+                setLives(files);
+                setHome(config, files.stream().filter(item -> item.getName().equals(config.getHome())).findFirst().orElse(files.get(0)), false);
+            }
+        }
     }
 
     public void setKeep(Channel channel) {

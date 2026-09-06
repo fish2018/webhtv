@@ -11,6 +11,7 @@ import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
 import com.fongmi.android.tv.databinding.AdapterVodRectBinding;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder> {
@@ -79,11 +80,12 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
             super(binding.getRoot());
             this.binding = binding;
             binding.getRoot().setFocusable(true);
-            binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
         }
 
         private void initView(Vod item) {
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
             binding.name.setText(item.getName());
             setMarquee(binding.getRoot().hasFocus());
             binding.site.setText(item.getSiteName());
@@ -95,11 +97,10 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         }
 
         private void setMarquee(boolean focused) {
-            binding.name.setSingleLine(focused);
-            if (!focused) binding.name.setMaxLines(3);
-            binding.name.setHorizontallyScrolling(focused);
-            binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
-            binding.name.setSelected(focused);
+            if (Setting.resolveTitleMaxLines() <= 1) {
+                binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
+                binding.name.setSelected(focused);
+            }
         }
     }
 
@@ -111,15 +112,14 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
             super(binding.getRoot());
             this.binding = binding;
             binding.getRoot().setFocusable(true);
-            binding.name.setSingleLine(true);
-            binding.name.setHorizontallyScrolling(true);
-            binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
             applySize();
         }
 
         private void initView(Vod item) {
             applySize();
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
             binding.name.setText(item.getName());
             setMarquee(binding.getRoot().hasFocus());
             binding.site.setText(item.getSiteName());
@@ -146,8 +146,10 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         }
 
         private void setMarquee(boolean focused) {
-            binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
-            binding.name.setSelected(focused);
+            if (Setting.resolveTitleMaxLines() <= 1) {
+                binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
+                binding.name.setSelected(focused);
+            }
         }
     }
 }

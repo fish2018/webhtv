@@ -49,12 +49,28 @@ public class Setting {
     public static final int CSP_WARMUP_CUSTOM = 2;
 
     public static final int UI_SCALE_FOLLOW_SYSTEM = 0;
+    public static final int UI_SCALE_MILD_RELAXED = 6;
     public static final int UI_SCALE_STANDARD = 1;
     public static final int UI_SCALE_COMPACT = 2;
     public static final int UI_SCALE_SMALLER = 3;
     public static final int UI_SCALE_MILD_COMPACT = 4;
     public static final int UI_SCALE_MORE_COMPACT = 5;
-    private static final int[] UI_SCALE_OPTIONS = {UI_SCALE_FOLLOW_SYSTEM, UI_SCALE_STANDARD, UI_SCALE_MILD_COMPACT, UI_SCALE_COMPACT, UI_SCALE_MORE_COMPACT, UI_SCALE_SMALLER};
+    private static final int[] UI_SCALE_OPTIONS = {UI_SCALE_FOLLOW_SYSTEM, UI_SCALE_MILD_RELAXED, UI_SCALE_STANDARD, UI_SCALE_MILD_COMPACT, UI_SCALE_COMPACT, UI_SCALE_MORE_COMPACT, UI_SCALE_SMALLER};
+
+    public static final int TITLE_LINES_OFF = 0;
+    public static final int TITLE_LINES_2 = 1;
+    public static final int TITLE_LINES_3 = 2;
+    public static final int TITLE_LINES_UNLIMITED = 3;
+    private static final int[] TITLE_LINES_OPTIONS = {TITLE_LINES_OFF, TITLE_LINES_2, TITLE_LINES_3, TITLE_LINES_UNLIMITED};
+
+        public static final int SOURCE_VOD_URL = 1 << 0;
+    public static final int SOURCE_LIVE_URL = 1 << 1;
+    public static final int SOURCE_SITES_JSON = 1 << 2;
+    public static final int SOURCE_SITES_JS = 1 << 3;
+    public static final int SOURCE_SITES_PY = 1 << 4;
+    public static final int SOURCE_SITES_RAW = 1 << 5;
+    public static final int SOURCE_LIVES_FILE = 1 << 6;
+    public static final int[] SOURCE_ALL = {SOURCE_VOD_URL, SOURCE_LIVE_URL, SOURCE_SITES_JSON, SOURCE_SITES_JS, SOURCE_SITES_PY, SOURCE_SITES_RAW, SOURCE_LIVES_FILE};
 
     public static final int WALL_CINEMA = 5;
     public static final int WALL_CINEMA_WARM = 6;
@@ -306,7 +322,7 @@ public class Setting {
     }
 
     public static String getSyncPaths() {
-        return Prefers.getString("sync_paths", "TV\nTVBox\nTVData");
+        return Prefers.getString("sync_paths", "");
     }
 
     public static void putSyncPaths(String paths) {
@@ -351,6 +367,14 @@ public class Setting {
 
     public static void putIncognito(boolean incognito) {
         Prefers.put("incognito", incognito);
+    }
+
+    public static boolean isFileSites() {
+        return Prefers.getBoolean("file_sites", true);
+    }
+
+    public static void putFileSites(boolean fileSites) {
+        Prefers.put("file_sites", fileSites);
     }
 
     public static int getLanguage() {
@@ -405,7 +429,7 @@ public class Setting {
     }
 
     public static int getUiScale() {
-        int scale = Prefers.getInt("ui_scale", UI_SCALE_FOLLOW_SYSTEM);
+        int scale = Prefers.getInt("ui_scale", UI_SCALE_MILD_RELAXED);
         return isUiScale(scale) ? scale : UI_SCALE_FOLLOW_SYSTEM;
     }
 
@@ -446,6 +470,7 @@ public class Setting {
 
     private static float getUiScaleFactor(int scale) {
         return switch (scale) {
+            case UI_SCALE_MILD_RELAXED -> 0.9f;
             case UI_SCALE_STANDARD -> 0.8f;
             case UI_SCALE_MILD_COMPACT -> 0.75f;
             case UI_SCALE_COMPACT -> 0.7f;
@@ -457,6 +482,52 @@ public class Setting {
 
     private static int pxToDp(int px, int densityDpi) {
         return Math.max(1, Math.round(px * (float) DisplayMetrics.DENSITY_DEFAULT / densityDpi));
+    }
+
+    public static int getTitleLines() {
+        int lines = Prefers.getInt("title_lines", TITLE_LINES_UNLIMITED);
+        return isTitleLines(lines) ? lines : TITLE_LINES_OFF;
+    }
+
+    public static void putTitleLines(int lines) {
+        Prefers.put("title_lines", isTitleLines(lines) ? lines : TITLE_LINES_OFF);
+    }
+
+    public static int getTitleLinesIndex() {
+        int lines = getTitleLines();
+        for (int i = 0; i < TITLE_LINES_OPTIONS.length; i++) if (TITLE_LINES_OPTIONS[i] == lines) return i;
+        return 0;
+    }
+
+    public static void putTitleLinesIndex(int index) {
+        putTitleLines(index >= 0 && index < TITLE_LINES_OPTIONS.length ? TITLE_LINES_OPTIONS[index] : TITLE_LINES_OFF);
+    }
+
+    private static boolean isTitleLines(int lines) {
+        for (int option : TITLE_LINES_OPTIONS) if (option == lines) return true;
+        return false;
+    }
+
+    public static int resolveTitleMaxLines() {
+        return switch (getTitleLines()) {
+            case TITLE_LINES_2 -> 2;
+            case TITLE_LINES_3 -> 3;
+            case TITLE_LINES_UNLIMITED -> Integer.MAX_VALUE;
+            default -> 1;
+        };
+    }
+
+    public static void applyTitleMaxLines(android.widget.TextView textView) {
+        int maxLines = resolveTitleMaxLines();
+        if (maxLines <= 1) {
+            textView.setSingleLine(true);
+            textView.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
+            textView.setMarqueeRepeatLimit(-1);
+        } else {
+            textView.setSingleLine(false);
+            textView.setMaxLines(maxLines);
+            textView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        }
     }
 
     public static boolean isDriveCheck() {
@@ -719,6 +790,14 @@ public class Setting {
         Prefers.put("zhuyin", zhuyin);
     }
 
+    public static boolean isAutoClearCache() {
+        return Prefers.getBoolean("auto_clear_cache");
+    }
+
+    public static void putAutoClearCache(boolean auto) {
+        Prefers.put("auto_clear_cache", auto);
+    }
+
     public static int getThemeColor() {
         return Prefers.getInt("theme_color", -1);
     }
@@ -749,5 +828,34 @@ public class Setting {
     public static boolean hasFileManager() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false;
         return new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + App.get().getPackageName())).resolveActivity(App.get().getPackageManager()) != null || new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).resolveActivity(App.get().getPackageManager()) != null;
+    }
+    public static int getSourceBlockMask() {
+        return Prefers.getInt("source_block_mask", 0);
+    }
+
+    public static void putSourceBlockMask(int mask) {
+        Prefers.put("source_block_mask", mask);
+    }
+
+    public static boolean isSourceBlocked(int source) {
+        return (getSourceBlockMask() & source) != 0;
+    }
+
+    public static boolean isSourceAllowed(int source) {
+        return !isSourceBlocked(source);
+    }
+
+    public static void setSourceBlocked(int source, boolean blocked) {
+        int mask = getSourceBlockMask();
+        if (blocked) mask |= source;
+        else mask &= ~source;
+        putSourceBlockMask(mask);
+    }
+
+    public static int getSourceBlockedCount() {
+        int mask = getSourceBlockMask();
+        int count = 0;
+        for (int source : SOURCE_ALL) if ((mask & source) != 0) count++;
+        return count;
     }
 }

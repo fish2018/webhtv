@@ -1,5 +1,5 @@
-<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
-
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    
     <!-- App -->
     <string name="app_name">影視</string>
 
@@ -367,6 +367,16 @@
     <string name="remote_trust_send_server_done">已保存到對方設備</string>
     <string name="remote_trust_send_server_failed">保存到對方設備失敗：%1$s</string>
     <string name="setting_login_state">登入狀態學習</string>
+    <string name="setting_file_sites">來源屏蔽</string>
+    <string name="setting_source_block_dialog_title">選擇要屏蔽的站源來源</string>
+    <string name="setting_source_block_count">已屏蔽 %1$d / %2$d</string>
+    <string name="source_vod_url">點播接口</string>
+    <string name="source_live_url">直播接口</string>
+    <string name="source_sites_json">資料夾：/tvbox/sites-json/</string>
+    <string name="source_sites_js">資料夾：/tvbox/sites-js/</string>
+    <string name="source_sites_py">資料夾：/tvbox/sites-py/</string>
+    <string name="source_sites_raw">資料夾：/tvbox/sites/ </string>
+    <string name="source_lives_file">資料夾：/tvbox/lives/ </string>
     <string name="setting_site_health_sort">站點健康排序</string>
     <string name="setting_site_health_enable">啟用站點健康排序</string>
     <string name="setting_site_health_dialog_sort">站點彈窗排序</string>
@@ -656,9 +666,14 @@
     <string name="setting_language">語言</string>
     <string name="setting_size">圖片尺寸</string>
     <string name="setting_ui_scale">介面大小</string>
+    <string name="setting_title_lines">標題換行</string>
+    <string name="setting_site_delete_title">刪除文件站點</string>
+    <string name="setting_site_delete_message">確定刪除 %1$s 及其源文件？此操作不可恢復。</string>
+    <string name="setting_site_delete_done">已刪除 %1$s</string>
     <string name="dialog_close">關閉</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">退出自動清除快取</string>
     <string name="setting_cache">暫存</string>
     <string name="setting_backup">備份</string>
     <string name="setting_restore">還原</string>
@@ -720,8 +735,8 @@
     <string name="sync_item_remote_relay">中轉服務配置</string>
     <string name="sync_paths_title">同步目錄</string>
     <string name="sync_paths_edit">編輯</string>
-    <string name="sync_paths_desc">每行一個外置儲存相對路徑，預設同步 TV、TVBox、TVData。可加入本地包目錄；目錄內容會隨 Jar/腳本保存資料一起同步。</string>
-    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+    <string name="sync_paths_desc">每行一個外置儲存相對路徑，不預設同步任何目錄，需自行勾選。目錄內容會隨 Jar/腳本保存資料一起同步。</string>
+    <string name="sync_paths_hint"></string>
     <string name="sync_paths_up">收起</string>
     <string name="sync_paths_refresh">刷新</string>
     <string name="sync_paths_enter">打開目錄</string>
@@ -1267,11 +1282,19 @@
 
     <string-array name="select_ui_scale">
         <item>跟隨系統</item>
+        <item>稍寬鬆</item>
         <item>標準</item>
         <item>較緊湊</item>
         <item>緊湊</item>
         <item>更緊湊</item>
         <item>更小</item>
+    </string-array>
+
+    <string-array name="select_title_lines">
+        <item>關閉</item>
+        <item>最多2行</item>
+        <item>最多3行</item>
+        <item>不限行數</item>
     </string-array>
 
     <string-array name="select_language">
@@ -1506,4 +1529,18 @@
 
     <string name="player_audio_badge_queue">佇列</string>
     <string name="player_audio_repeat">循環</string>
+
+    <string name="setting">設定</string>
+    <string name="confirm">確定</string>
+    <string name="search_sites">搜尋站點…</string>
+    <string name="select_all">全選</string>
+    <string name="select_none">全清</string>
+    <string name="select_invert">反選</string>
+    <string name="search_source_all">全部來源</string>
+    <string name="search_source_home">首頁來源</string>
+    <string name="search_source_tag">標籤來源</string>
+    <string name="search_source_white">白名單</string>
+    <string name="search_source_black">黑名單</string>
+    <string name="search_site_count">%d 個站點</string>
+    <string name="search_site_count_of">已選 %d / %d</string>
 </resources>

@@ -5,8 +5,10 @@ import android.util.Base64;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Json;
+import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Util;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +25,11 @@ public class Decoder {
     private static final Pattern JS_URI = Pattern.compile("\"(\\.|\\.\\.)/(.?|.+?)\\.js\\?(.?|.+?)\"");
 
     public static String getJson(String url, String tag) throws Exception {
+        File local = UrlUtil.toLocalFile(url);
+        if (local != null) {
+            if (!local.exists()) throw new Exception("Config file not found: " + url);
+            return verify(url, Path.read(local));
+        }
         try (Response res = OkHttp.newCall(url, tag).execute()) {
             HttpUrl httpUrl = res.request().url();
             int size = HttpUrl.parse(url).querySize();

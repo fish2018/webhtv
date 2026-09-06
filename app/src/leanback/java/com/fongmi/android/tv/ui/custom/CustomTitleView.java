@@ -14,6 +14,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.impl.SiteListener;
+import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.textview.MaterialTextView;
@@ -43,7 +44,7 @@ public class CustomTitleView extends MaterialTextView {
         this.listener = listener;
         setOnClickListener(v -> listener.showDialog());
         setOnLongClickListener(v -> {
-            listener.reloadConfig();
+            if(listener != null) listener.onRefresh();
             return true;
         });
     }
@@ -74,7 +75,7 @@ public class CustomTitleView extends MaterialTextView {
 
     private void onKeyUp() {
         App.post(() -> coolDown = false, 3000);
-        listener.onRefresh();
+        if(listener != null) listener.onRefresh();
         coolDown = true;
     }
 

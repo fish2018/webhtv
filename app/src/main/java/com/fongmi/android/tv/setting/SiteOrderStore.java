@@ -25,7 +25,11 @@ public class SiteOrderStore {
         if (keys.isEmpty()) return;
         Map<String, Integer> indexes = new HashMap<>();
         for (int i = 0; i < keys.size(); i++) indexes.put(keys.get(i), i);
-        sites.sort((a, b) -> Integer.compare(indexes.getOrDefault(a.getKey(), Integer.MAX_VALUE), indexes.getOrDefault(b.getKey(), Integer.MAX_VALUE)));
+        sites.sort((a, b) -> {
+            int ai = indexes.getOrDefault(a.getKey(), a.isFile() ? -1 : Integer.MAX_VALUE);
+            int bi = indexes.getOrDefault(b.getKey(), b.isFile() ? -1 : Integer.MAX_VALUE);
+            return Integer.compare(ai, bi);
+        });
     }
 
     public static void save(List<Site> sites) {

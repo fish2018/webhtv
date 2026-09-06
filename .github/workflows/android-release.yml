@@ -34,7 +34,6 @@ on:
         description: "Publish APKs as OCI artifacts when Registry variables and secrets are configured"
         required: false
         default: true
-        type: boolean
 
 permissions:
   contents: write
@@ -148,19 +147,30 @@ jobs:
           STORE_PASSWORD="${RELEASE_STORE_PASSWORD:-$KEY_PASSWORD}"
           ALIAS="${RELEASE_KEY_ALIAS:-$KEY_ALIAS}"
           KEY_PASS="${RELEASE_KEY_PASSWORD:-$STORE_PASSWORD}"
-          if [ -z "$KS_BASE64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$ALIAS" ]; then
-            echo "::error title=Release signing not configured::Configure RELEASE_KEYSTORE_BASE64, RELEASE_KEY_ALIAS and RELEASE_STORE_PASSWORD in repository secrets."
-            exit 1
-          fi
           mkdir -p app/signing
-          printf '%s' "$KS_BASE64" | base64 --decode > app/signing/release.jks
+          if [ -z "$KS_BASE64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$ALIAS" ]; then
+            echo "No signing secrets found, generating debug keystore..."
+            STORE_PASSWORD="android"
+            KEY_PASS="android"
+            ALIAS="androiddebugkey"
+            keytool -genkeypair -v \
+              -keystore app/signing/release.jks \
+              -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$STORE_PASSWORD" \
+              -keypass "$KEY_PASS" \
+              -dname "CN=Android Debug,O=Android,C=US"
+          else
+            echo "Using provided release signing key"
+            printf '%s' "$KS_BASE64" | base64 --decode > app/signing/release.jks
+          fi
           {
             echo "storeFile=$GITHUB_WORKSPACE/app/signing/release.jks"
             echo "keyAlias=$ALIAS"
             echo "storePassword=$STORE_PASSWORD"
             echo "keyPassword=$KEY_PASS"
           } > local.properties
-          echo "Release signing configured"
+          echo "Signing configured (alias=$ALIAS)"
 
       - name: Build four release APKs
         env:
@@ -170,9 +180,7 @@ jobs:
           chmod +x ./gradlew
           rm -rf Release/apk
           ./gradlew \
-            :app:assembleMobileArm64_v8aRelease \
             :app:assembleMobileArmeabi_v7aRelease \
-            :app:assembleLeanbackArm64_v8aRelease \
             :app:assembleLeanbackArmeabi_v7aRelease \
             --no-daemon
 

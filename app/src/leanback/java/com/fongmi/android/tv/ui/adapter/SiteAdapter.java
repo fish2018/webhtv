@@ -49,6 +49,10 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         void onItemClick(Site item);
     }
 
+    public interface OnDeleteListener {
+        void onDelete(Site item);
+    }
+
     public void setType(int type) {
         int oldViewType = getViewType();
         this.type = type;
@@ -213,6 +217,10 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
                 actionBinding.check.setChecked(getChecked(item));
                 actionBinding.text.setSelected(item.isSelected());
                 actionBinding.getRoot().setSelected(item.isSelected());
+                actionBinding.delete.setVisibility(item.isFile() && type != 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+                actionBinding.delete.setOnClickListener(v -> {
+                    if (listener instanceof OnDeleteListener) ((OnDeleteListener) listener).onDelete(item);
+                });
             } else {
                 switchBinding.text.setText(item.getName());
                 switchBinding.health.setBackgroundTintList(ColorStateList.valueOf(SiteHealthStore.getColor(item)));

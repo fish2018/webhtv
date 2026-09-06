@@ -24,7 +24,7 @@ android {
     ndkVersion "29.0.14206865"
 
     defaultConfig {
-        applicationId "com.fongmi.android.tv"
+        applicationId "com.fongmi.android"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
         versionCode 560
@@ -76,6 +76,9 @@ android {
                 keyAlias localProps['keyAlias']
                 keyPassword releaseKeyPassword
                 storePassword localProps['storePassword']
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player.engine;
 
 import android.net.Uri;
+import android.text.TextUtils;
 
 import androidx.media3.common.MediaMetadata;
 
@@ -33,6 +34,7 @@ public class PlaySpec {
     private String playbackTraceId = PlaybackTrace.NONE;
     private String url;
     private Drm drm;
+    private Integer forcedPlayer;
     private boolean parseSource;
     private boolean parseUseParse;
 
@@ -41,7 +43,54 @@ public class PlaySpec {
     }
 
     public static PlaySpec from(Result result, String key, MediaMetadata metadata) {
-        return new PlaySpec(key, result.getRealUrl(), result.getHeader(), result.getFormat(), result.getDrm(), result.getSubs(), result.getDanmaku(), metadata).setSource(result, false, false);
+        return from(result, key, metadata, -1);
+    }
+
+    public static PlaySpec from(Result result, String key, MediaMetadata metadata, int defaultPlayer) {
+        PlaySpec spec = new PlaySpec(
+                key,
+                result.getRealUrl(),
+                result.getHeader(),
+                result.getFormat(),
+                result.getDrm(),
+                result.getSubs(),
+                result.getDanmaku(),
+                metadata
+        ).setSource(result, false, false);
+        spec.forcedPlayer = null;
+        if (defaultPlayer != -1) {
+            int targetPlayer = defaultPlayer;
+            Integer srcInt = result.getPlayerType();
+            String srcStr = result.getPlayer();
+            if (srcInt != null) {
+                switch (srcInt) {
+                    case 0:
+                        targetPlayer = 2;
+                        break;
+                    case 1:
+                        targetPlayer = 1;
+                        break;
+                    case 2:
+                        targetPlayer = 0;
+                        break;
+                    default:
+                        targetPlayer = defaultPlayer;
+                        break;
+                }
+            } else if (!TextUtils.isEmpty(srcStr)) {
+                if ("exo".equalsIgnoreCase(srcStr)) {
+                    targetPlayer = 0;
+                } else if ("ijk".equalsIgnoreCase(srcStr)) {
+                    targetPlayer = 1;
+                } else if ("mpv".equalsIgnoreCase(srcStr)) {
+                    targetPlayer = 2;
+                }
+            }
+            if (targetPlayer != defaultPlayer) {
+                spec.forcedPlayer = targetPlayer;
+            }
+        }
+        return spec;
     }
 
     public static PlaySpec fromParse(Result result, String key, MediaMetadata metadata) {
@@ -125,6 +174,10 @@ public class PlaySpec {
 
     public Drm getDrm() {
         return drm;
+    }
+
+    public Integer getForcedPlayer() {
+        return forcedPlayer;
     }
 
     public List<Sub> getSubs() {

@@ -1,5 +1,5 @@
-<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
-
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    
     <!-- App -->
     <string name="app_name">TV</string>
 
@@ -369,6 +369,16 @@
     <string name="remote_trust_send_server_failed">Failed to save on the other device: %1$s</string>
     <string name="remote_trust_config_select">Select</string>
     <string name="setting_login_state">Login state learning</string>
+    <string name="setting_file_sites">Source blocking</string>
+    <string name="setting_source_block_dialog_title">Select sources to block</string>
+    <string name="setting_source_block_count">Blocked %1$d / %2$d</string>
+    <string name="source_vod_url">Vod URL</string>
+    <string name="source_live_url">Live URL</string>
+    <string name="source_sites_json">Folder: /tvbox/sites-json/</string>
+    <string name="source_sites_js">Folder: /tvbox/sites-js/</string>
+    <string name="source_sites_py">Folder: /tvbox/sites-py/</string>
+    <string name="source_sites_raw">Folder: /tvbox/sites/ </string>
+    <string name="source_lives_file">Folder: /tvbox/lives/ </string>
     <string name="setting_site_health_sort">Site health ranking</string>
     <string name="setting_site_health_enable">Enable site health ranking</string>
     <string name="setting_site_health_dialog_sort">Sort site dialog</string>
@@ -674,9 +684,14 @@
     <string name="setting_language">Language</string>
     <string name="setting_size">Image size</string>
     <string name="setting_ui_scale">Interface size</string>
+    <string name="setting_title_lines">Title wrapping</string>
+    <string name="setting_site_delete_title">Delete file site</string>
+    <string name="setting_site_delete_message">Delete %1$s and its source file? This cannot be undone.</string>
+    <string name="setting_site_delete_done">Deleted %1$s</string>
     <string name="dialog_close">Close</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">Auto‑clear on exit</string>
     <string name="setting_cache">Cache</string>
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
@@ -767,8 +782,8 @@
     <string name="apk_push_url_canceled">APK download canceled</string>
     <string name="sync_paths_title">Sync folders</string>
     <string name="sync_paths_edit">Edit</string>
-    <string name="sync_paths_desc">One external-storage relative path per line. TV, TVBox and TVData are synced by default. You can add local package folders; folder contents are synced with Jar/script saved data.</string>
-    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+    <string name="sync_paths_desc">One external-storage relative path per line. Select folders in the directory tree below; folder contents are synced with Jar/script saved data.</string>
+    <string name="sync_paths_hint"></string>
     <string name="sync_paths_up">Collapse</string>
     <string name="sync_paths_refresh">Refresh</string>
     <string name="sync_paths_enter">Open folder</string>
@@ -1291,11 +1306,19 @@
 
     <string-array name="select_ui_scale">
         <item>Follow system</item>
+        <item>Slightly relaxed</item>
         <item>Standard</item>
         <item>Mild compact</item>
         <item>Compact</item>
         <item>More compact</item>
         <item>Smaller</item>
+    </string-array>
+
+    <string-array name="select_title_lines">
+        <item>Off</item>
+        <item>Up to 2 lines</item>
+        <item>Up to 3 lines</item>
+        <item>Unlimited</item>
     </string-array>
 
     <string-array name="select_language">
@@ -1530,4 +1553,18 @@
 
     <string name="player_audio_badge_queue">Queue</string>
     <string name="player_audio_repeat">Repeat</string>
+
+    <string name="setting">Config</string>
+    <string name="confirm">OK</string>
+    <string name="search_sites">Search sites…</string>
+    <string name="select_all">Select all</string>
+    <string name="select_none">Select none</string>
+    <string name="select_invert">Invert</string>
+    <string name="search_source_all">All sources</string>
+    <string name="search_source_home">Home source</string>
+    <string name="search_source_tag">Tag source</string>
+    <string name="search_source_white">Whitelist</string>
+    <string name="search_source_black">Blacklist</string>
+    <string name="search_site_count">%d site(s)</string>
+    <string name="search_site_count_of">Selected %d / %d</string>
 </resources>

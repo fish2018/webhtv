@@ -16,6 +16,7 @@ import androidx.viewbinding.ViewBinding;
 
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Collect;
@@ -31,6 +32,7 @@ import com.fongmi.android.tv.ui.adapter.SearchAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.SearchModeStore;
 import com.github.catvod.crawler.SpiderDebug;
 import com.google.gson.reflect.TypeToken;
 
@@ -178,13 +180,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
     }
 
     private void setSites() {
-        String siteKey = getSiteKey();
-        mSites = new ArrayList<>();
-        for (Site site : VodConfig.get().getSites()) {
-            if (!site.isSearchable()) continue;
-            if (!siteKey.isEmpty() && !site.getKey().equals(siteKey)) continue;
-            mSites.add(site);
-        }
+        mSites = new ArrayList<>(SearchModeStore.filterSites(VodConfig.get().getSites(), getSiteKey()));
         SiteHealthStore.sortSites(mSites);
     }
 
@@ -201,7 +197,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
     }
 
     private int getCount() {
-        return 5;
+        return Product.getColumn();
     }
 
     private int getItemWidth(int count) {

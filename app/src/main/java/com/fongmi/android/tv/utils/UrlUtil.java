@@ -6,6 +6,8 @@ import com.fongmi.android.tv.server.Server;
 import com.github.catvod.utils.UriUtil;
 import com.google.common.net.HttpHeaders;
 
+import java.io.File;
+
 public class UrlUtil {
 
     public static Uri uri(String url) {
@@ -44,12 +46,20 @@ public class UrlUtil {
     }
 
     public static String convert(String url) {
+        if (url == null) return null;
+        url = url.replace("../", "file://").replace("./", "file://tvbox/").replace("clan://", "file://tvbox/");
         String scheme = scheme(url);
         String path = null;
         if ("assets".equals(scheme)) path = "/";
         else if ("file".equals(scheme)) path = "/file/";
         else if ("proxy".equals(scheme)) path = "/proxy?";
         return path != null ? url.replace(scheme + "://", Server.get().getAddress(path)) : url;
+    }
+
+    public static File toLocalFile(String url) {
+        if (url == null) return null;
+        if (url.startsWith("http") || url.startsWith("content")) return null;
+        return com.github.catvod.utils.Path.local(url);
     }
 
     public static String getName(String url) {
