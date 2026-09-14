@@ -293,6 +293,20 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
                 return false;
             });
 
+            itemView.setOnClickListener(v -> {
+                int pos = getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                if (captureType == 0) {
+                    captureListener.onItemClick(captureItem);
+                } else if (captureType == 1) {
+                    captureItem.setSearchable(!captureItem.isSearchable()).save();
+                    notifyItemChanged(pos);
+                } else if (captureType == 2) {
+                    captureItem.setChangeable(!captureItem.isChangeable()).save();
+                    notifyItemChanged(pos);
+                }
+            });
+
             if (actionBinding != null) {
                 actionBinding.text.setText(item.getName());
                 actionBinding.health.setBackgroundTintList(ColorStateList.valueOf(SiteHealthStore.getColor(item)));

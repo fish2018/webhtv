@@ -88,6 +88,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        installCrashGuard();
         Init.set(base);
     }
 
@@ -108,6 +109,67 @@ public class App extends Application implements Application.ActivityLifecycleCal
         DanmakuSearchListFocusFixer.start();
         registerActivityLifecycleCallbacks(this);
         post(this::startBackgroundServices, 1200);
+    }
+
+    /**
+     * 全局未捕获异常保护器。
+     * 第三方 jar（如弹幕源）在任何线程中抛出的异常都不应导致主程序崩溃，
+     * 只记录日志；应用自身代码的异常仍走默认处理器。
+     */
+    private void installCrashGuard() {
+        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                String msg = throwable == null ? "null" : throwable.getClass().getSimpleName() + ":" + throwable.getMessage();
+                android.util.Log.e("crash-guard", "thread=" + thread.getName() + " id=" + thread.getId() + " error=" + msg, throwable);
+            } catch (Throwable ignored) {
+            }
+            try {
+                if (throwable != null) throwable.printStackTrace();
+            } catch (Throwable ignored) {
+            }
+            // 非主线程异常：直接吞掉，不让进程崩溃
+            if (thread.getId() != Looper.getMainLooper().getThread().getId()) {
+                return;
+            }
+            // 主线程异常：判断是否来自第三方 jar，是则吞掉
+            if (isFromThirdPartyJar(throwable)) {
+                return;
+            }
+            // 应用自身代码的主线程异常：交给默认处理器
+            if (defaultHandler != null) {
+                try {
+                    defaultHandler.uncaughtException(thread, throwable);
+                } catch (Throwable ignored) {
+                }
+            }
+        });
+    }
+
+    /**
+     * 判断异常是否来自第三方 jar（通过堆栈跟踪中的类名前缀判断）。
+     */
+    private boolean isFromThirdPartyJar(Throwable throwable) {
+        if (throwable == null) return false;
+        StackTraceElement[] stack = throwable.getStackTrace();
+        if (stack == null) return false;
+        for (StackTraceElement element : stack) {
+            String cls = element.getClassName();
+            if (cls == null) continue;
+            // 第三方 jar 中的混淆类和 spider 包
+            if (cls.startsWith("com.github.catvod.spider.merge.")
+                    || cls.startsWith("com.github.catvod.parser.merge.")
+                    || cls.startsWith("com.github.catvod.spider.Init")
+                    || cls.startsWith("com.github.catvod.spider.Proxy")) {
+                return true;
+            }
+        }
+        // 检查 cause
+        Throwable cause = throwable.getCause();
+        if (cause != null && cause != throwable) {
+            return isFromThirdPartyJar(cause);
+        }
+        return false;
     }
 
     @Override

@@ -135,7 +135,7 @@ public class VodConfig extends BaseConfig {
             String json = Decoder.getJson(config.getUrl(), TAG);
             JsonObject object = Json.parse(json).getAsJsonObject();
             globalSpider = Json.safeString(object, "spider");
-            checkJson(config, object);
+            checkJson(config, object, globalSpider);
             return;
         } catch (Throwable ignored) {}
         try {
@@ -158,13 +158,13 @@ public class VodConfig extends BaseConfig {
         CspWarmup.schedule("vod-config-loaded");
     }
 
-    private void checkJson(Config config, JsonObject object) throws Throwable {
+    private void checkJson(Config config, JsonObject object, String globalSpider) throws Throwable {
         if (object.has("msg")) {
             throw new Exception(object.get("msg").getAsString());
         } else if (object.has("urls")) {
             parseDepot(config, object);
         } else {
-            parseConfig(config, object);
+            parseConfig(config, object, globalSpider);
         }
     }
 
@@ -177,12 +177,12 @@ public class VodConfig extends BaseConfig {
         Config.delete(config.getUrl());
     }
 
-    private void parseConfig(Config config, JsonObject object) {
+    private void parseConfig(Config config, JsonObject object, String globalSpider) {
         CustomCspSetting.inject(object);
         initList(object);
         initLive(config, object);
         initWall(config, object);
-        initSite(config, object);
+        initSite(config, object, globalSpider);
         initParse(config, object);
         WebHomeExtensionRegistry.get().setGlobalSources(object.get("webHomeExtensions"), config.getUrl());
         config.setLogo(Json.safeString(object, "logo"));
@@ -215,8 +215,8 @@ public class VodConfig extends BaseConfig {
         if (sync) WallConfig.get().config(temp.update());
     }
 
-    private void initSite(Config config, JsonObject object) {
-        initSites(config, "", object);
+    private void initSite(Config config, JsonObject object, String globalSpider) {
+        initSites(config, globalSpider, object);
     }
 
     private void initSites(Config config, String globalSpider, JsonObject object) {
@@ -226,7 +226,7 @@ public class VodConfig extends BaseConfig {
         if (Setting.isSourceAllowed(Setting.SOURCE_VOD_URL)) {
             sites.addAll(Json.safeListElement(object, "sites").stream().map(e -> Site.objectFrom(e, spider)).distinct().collect(Collectors.toCollection(ArrayList::new)));
         }
-        List<Site> fileSites = loadFileSites(spider);
+        List<Site> fileSites = loadFileSites(XBPQ_JAR);
         sites.addAll(0, fileSites);
         setSites(sites);
         Map<String, Site> items = Site.findAll().stream().collect(Collectors.toMap(Site::getKey, Function.identity()));

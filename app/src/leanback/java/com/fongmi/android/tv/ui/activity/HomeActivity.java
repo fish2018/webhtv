@@ -57,7 +57,6 @@ import com.fongmi.android.tv.ui.activity.VodActivity;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
 import com.fongmi.android.tv.ui.custom.CustomTitleView;
-import com.fongmi.android.tv.ui.dialog.ExitConfirmDialog;
 import com.fongmi.android.tv.ui.dialog.HomeMenuDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
 import com.fongmi.android.tv.ui.presenter.FuncPresenter;
@@ -190,12 +189,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         mBinding.toolbar.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             syncNativeContentInset();
             syncWebOverlayLayout();
-        });
-        mBinding.typeRecycler.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
-            @Override
-            public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                if (child != null && parent.hasFocus()) updateToolbarVisibility(false);
-            }
         });
     }
 
@@ -842,7 +835,6 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         }
         if (KeyUtil.isActionDown(event) & KeyUtil.isDownKey(event) && (getCurrentFocus() == mBinding.title || mBinding.funcRecycler.hasFocus())) {
             if (hasHomeContent()) {
-                updateToolbarVisibility(false);
                 return requestHomeFocus();
             }
             return true;
@@ -927,7 +919,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     private void exitHome() {
         AppDatabase.autoBackupOnExit();
-        ExitConfirmDialog.create(this::confirmExitHome).show(this);
+        confirmExitHome();
     }
 
     private void confirmExitHome() {
