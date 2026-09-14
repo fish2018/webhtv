@@ -156,11 +156,10 @@ public class App extends Application implements Application.ActivityLifecycleCal
         for (StackTraceElement element : stack) {
             String cls = element.getClassName();
             if (cls == null) continue;
-            // 第三方 jar 中的混淆类和 spider 包
-            if (cls.startsWith("com.github.catvod.spider.merge.")
-                    || cls.startsWith("com.github.catvod.parser.merge.")
-                    || cls.startsWith("com.github.catvod.spider.Init")
-                    || cls.startsWith("com.github.catvod.spider.Proxy")) {
+            // 第三方 jar 中的所有 spider/parser 包类（应用自身不在这两个包下）
+            // 覆盖 merge 混淆类、Init、Proxy、DexNative、Danmaku、AowuShinidie、XxxAmns 等
+            if (cls.startsWith("com.github.catvod.spider.")
+                    || cls.startsWith("com.github.catvod.parser.")) {
                 return true;
             }
         }
