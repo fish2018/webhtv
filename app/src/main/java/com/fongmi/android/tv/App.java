@@ -95,6 +95,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     @Override
     public void onCreate() {
         super.onCreate();
+        Server.get().start();
         PlaybackMemoryMonitor.process().initialize(this);
         PlaybackSystemConditionMonitor.process().initialize(this);
         Setting.applyLanguage();
@@ -122,6 +123,8 @@ public class App extends Application implements Application.ActivityLifecycleCal
             try {
                 String msg = throwable == null ? "null" : throwable.getClass().getSimpleName() + ":" + throwable.getMessage();
                 android.util.Log.e("crash-guard", "thread=" + thread.getName() + " id=" + thread.getId() + " error=" + msg, throwable);
+                String stack = throwable == null ? "null" : android.util.Log.getStackTraceString(throwable);
+                SpiderDebug.log("crash-guard", "thread=%s id=%d error=%s\n%s", thread.getName(), thread.getId(), msg, stack);
             } catch (Throwable ignored) {
             }
             try {

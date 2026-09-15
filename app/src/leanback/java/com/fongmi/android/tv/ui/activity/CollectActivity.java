@@ -22,6 +22,7 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Collect;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
+import com.fongmi.android.tv.setting.SiteBlockSetting;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.ActivityCollectBinding;
 import com.fongmi.android.tv.model.SiteViewModel;
@@ -109,6 +110,47 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         saveKeyword();
         setSites();
         search();
+        initModeToggle();
+        mBinding.collect.post(() -> mBinding.collect.requestFocus());
+    }
+
+    private void initModeToggle() {
+        mBinding.modeToggle.setOnClickListener(v -> onModeToggle());
+        updateModeToggleIcon();
+    }
+
+    private void updateModeToggleIcon() {
+        int iconRes;
+        switch (Setting.getSearchColumn()) {
+            case SearchAdapter.MODE_LIST: iconRes = R.drawable.ic_site_detail; break;
+            case SearchAdapter.MODE_TEXT: iconRes = R.drawable.ic_site_single_column; break;
+            default: iconRes = R.drawable.ic_site_double_column; break;
+        }
+        mBinding.modeToggle.setImageResource(iconRes);
+    }
+
+    private void onModeToggle() {
+        Setting.putSearchColumn(Setting.getSearchColumn() % 3 + 1);
+        applyMode();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            onModeToggle();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void applyMode() {
+        int count = getCount();
+        ((GridLayoutManager) mBinding.recycler.getLayoutManager()).setSpanCount(count);
+        mBinding.recycler.setItemViewCacheSize(count * 3);
+        mSearchAdapter.setSize(getItemWidth(count), getItemHeight(count));
+        mSearchAdapter.setMode(Setting.getSearchColumn());
+        updateModeToggleIcon();
+        mBinding.recycler.scrollToPosition(0);
     }
 
     private void setRecyclerView() {
@@ -137,8 +179,10 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (!canLoadImage()) return;
-                ensureSearchRows(count, 2);
-                preloadNextRows(count);
+                recyclerView.post(() -> {
+                    ensureSearchRows(getCount(), 2);
+                    preloadNextRows(getCount());
+                });
             }
 
             @Override
@@ -148,17 +192,22 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
                 if (scrolling == mScrolling) return;
                 mScrolling = scrolling;
                 if (mScrolling) {
-                    ensureSearchRows(count, 2);
-                    preloadNextRows(count);
+                    recyclerView.post(() -> {
+                        ensureSearchRows(getCount(), 2);
+                        preloadNextRows(getCount());
+                    });
                 } else {
                     Glide.with(CollectActivity.this).resumeRequests();
-                    flushPendingItems();
-                    ensureSearchRows(count, 2);
-                    preloadNextRows(count);
+                    recyclerView.post(() -> {
+                        flushPendingItems();
+                        ensureSearchRows(getCount(), 2);
+                        preloadNextRows(getCount());
+                    });
                 }
             }
         });
         mBinding.recycler.setAdapter(mSearchAdapter = new SearchAdapter(this, getItemWidth(count), getItemHeight(count)));
+        mSearchAdapter.setMode(Setting.getSearchColumn());
     }
 
     private boolean canLoadImage() {
@@ -181,6 +230,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
 
     private void setSites() {
         mSites = new ArrayList<>(SearchModeStore.filterSites(VodConfig.get().getSites(), getSiteKey()));
+        mSites.removeIf(SiteBlockSetting::isBlocked);
         SiteHealthStore.sortSites(mSites);
     }
 
@@ -197,7 +247,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
     }
 
     private int getCount() {
-        return Product.getColumn();
+        return Math.max(1, Setting.getSearchColumn() == SearchAdapter.MODE_GRID ? Product.getColumn() : 2);
     }
 
     private int getItemWidth(int count) {
@@ -223,12 +273,13 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         if (result == null) return;
         mScroller.endLoading(result);
         Collect activated = mCollectAdapter.getActivated();
-        boolean same = !result.getList().isEmpty() && activated.getSite().equals(result.getVod().getSite());
+        boolean same = !result.getList().isEmpty() && activated.getSite() != null && activated.getSite().equals(result.getVod().getSite());
         if (same) activated.getList().addAll(result.getList());
         if (same) addSearchItems(result.getList());
     }
 
     private void addSearchItems(List<Vod> items) {
+        if (items == null || items.isEmpty()) return;
         if (mScrolling) mPendingItems.addAll(items);
         else mSearchAdapter.appendSource(items, getCount() * 4);
     }
@@ -273,6 +324,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         Collect item = mCollectAdapter.get(position);
         boolean same = mCollectAdapter.getPosition() == position;
         mCollectAdapter.setSelected(position);
+        mSearchAdapter.setAllMode("all".equals(item.getSite().getKey()));
         mScroller.reset();
         mScroller.setPage(item.getPage());
         mPendingItems.clear();
@@ -301,8 +353,10 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         mSearchAdapter.setSource(items, getCount() * 4);
         mBinding.recycler.post(() -> {
             scrollSearchToTop();
-            ensureSearchRows(getCount(), 2);
-            preloadNextRows(getCount());
+            mBinding.recycler.post(() -> {
+                ensureSearchRows(getCount(), 2);
+                preloadNextRows(getCount());
+            });
         });
     }
 
@@ -354,7 +408,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         if (event.getAction() != KeyEvent.ACTION_DOWN || position < 0) return false;
         int count = getCount();
         if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return onSearchDown(position, count);
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return position < count;
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
         if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) return position % count == count - 1;
         return false;
     }

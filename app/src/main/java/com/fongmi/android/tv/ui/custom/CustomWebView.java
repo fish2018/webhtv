@@ -160,6 +160,13 @@ public class CustomWebView extends WebView implements DialogInterface.OnDismissL
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return false;
             }
+
+            @Override
+            public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
+                SpiderDebug.log("webview-parse", "render process gone key=%s crashed=%s priority=%s", key, detail.didCrash(), detail.rendererPriorityAtExit());
+                stop(true);
+                return true;
+            }
         };
     }
 

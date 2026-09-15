@@ -51,7 +51,7 @@ public class WebViewUtil {
     public static void configureBase(WebView webView, String role) {
         if (webView == null) return;
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);

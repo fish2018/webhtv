@@ -1572,4 +1572,14 @@
     <string name="search_source_black">黑名单</string>
     <string name="search_site_count">%d 个站点</string>
     <string name="search_site_count_of">已选 %d / %d</string>
+
+    <!-- History & Keep -->
+    <string name="history_title">历史记录</string>
+    <string name="keep_title">收藏列表</string>
+    <string name="menu_clear">清空</string>
+    <string name="menu_delete">删除</string>
+    <string name="dialog_clear_history">清空播放历史</string>
+    <string name="dialog_clear_history_message">是否清空播放历史，删除后无法恢复！</string>
+    <string name="dialog_clear_keep">清空收藏视频</string>
+    <string name="dialog_clear_keep_message">是否清空收藏视频，删除后无法恢复！</string>
 </resources>

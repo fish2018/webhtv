@@ -483,7 +483,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         int count = mFuncAdapter.size();
         if (count > 0) {
             android.view.ViewGroup.LayoutParams params = mBinding.funcRecycler.getLayoutParams();
-            params.width = ResUtil.dp2px(60 * count + 4 * (count - 1) + 64);
+            params.width = ResUtil.dp2px(64 * count + 4 * (count - 1) + 68);
             mBinding.funcRecycler.setLayoutParams(params);
         }
     }
@@ -736,12 +736,16 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
 
     @Override
     public boolean onLeftBoundary() {
-        return mBinding.title.requestFocus();
+        mBinding.title.setFocusable(true);
+        mBinding.title.post(() -> mBinding.title.requestFocus());
+        return true;
     }
 
     @Override
     public boolean onRightBoundary() {
-        return mBinding.title.requestFocus();
+        mBinding.title.setFocusable(true);
+        mBinding.title.post(() -> mBinding.title.requestFocus());
+        return true;
     }
 
     private void focusFirstFunc() {

@@ -42,7 +42,17 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     @Override
     protected void initView(Bundle savedInstanceState) {
         setRecyclerView();
+        setTitleBar();
         getHistory();
+    }
+
+    private void setTitleBar() {
+        mBinding.btnDelete.setOnClickListener(v -> {
+            if (mAdapter.getItemCount() > 0) mAdapter.setDelete(true);
+        });
+        mBinding.btnClear.setOnClickListener(v -> {
+            if (mAdapter.getItemCount() > 0) showClearDialog();
+        });
     }
 
     private void setRecyclerView() {
@@ -54,7 +64,19 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     }
 
     private void getHistory() {
-        mAdapter.setItems(History.get(), () -> mBinding.progressLayout.showContent(true, mAdapter.getItemCount()));
+        mAdapter.setItems(History.get(), () -> {
+            mBinding.progressLayout.showContent(true, mAdapter.getItemCount());
+            focusFirstItem();
+        });
+    }
+
+    private void focusFirstItem() {
+        if (mAdapter.getItemCount() <= 0) return;
+        mBinding.recycler.post(() -> {
+            View view = mBinding.recycler.getLayoutManager().findViewByPosition(0);
+            if (view != null) view.requestFocus();
+            else mBinding.recycler.requestFocus();
+        });
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

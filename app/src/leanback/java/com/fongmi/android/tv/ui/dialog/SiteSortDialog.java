@@ -67,8 +67,11 @@ public class SiteSortDialog extends BaseGlassDialog implements SiteSortAdapter.O
     }
 
     private void loadSites() {
-        // 读取完整数据，包含隐藏的站点
-        List<Site> allSites = new ArrayList<>(VodConfig.get().getSites());
+        // 仅加载未被配置隐藏（hide != 1）的站点，避免 hide 站点进入排序列表并被写入排序记忆
+        List<Site> allSites = new ArrayList<>();
+        for (Site site : VodConfig.get().getSites()) {
+            if (site != null && !site.isHide()) allSites.add(site);
+        }
         // 应用记忆排序，记忆中没有的按手机逻辑（文件源在前，接口源在后）
         SiteOrderStore.sortSites(allSites);
         adapter.addAll(allSites);

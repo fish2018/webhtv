@@ -50,12 +50,13 @@ public class Setting {
 
     public static final int UI_SCALE_FOLLOW_SYSTEM = 0;
     public static final int UI_SCALE_MILD_RELAXED = 6;
+    public static final int UI_SCALE_WIDE_COMFORT = 7;
     public static final int UI_SCALE_STANDARD = 1;
     public static final int UI_SCALE_COMPACT = 2;
     public static final int UI_SCALE_SMALLER = 3;
     public static final int UI_SCALE_MILD_COMPACT = 4;
     public static final int UI_SCALE_MORE_COMPACT = 5;
-    private static final int[] UI_SCALE_OPTIONS = {UI_SCALE_FOLLOW_SYSTEM, UI_SCALE_MILD_RELAXED, UI_SCALE_STANDARD, UI_SCALE_MILD_COMPACT, UI_SCALE_COMPACT, UI_SCALE_MORE_COMPACT, UI_SCALE_SMALLER};
+    private static final int[] UI_SCALE_OPTIONS = {UI_SCALE_FOLLOW_SYSTEM, UI_SCALE_MILD_RELAXED, UI_SCALE_WIDE_COMFORT, UI_SCALE_STANDARD, UI_SCALE_MILD_COMPACT, UI_SCALE_COMPACT, UI_SCALE_MORE_COMPACT, UI_SCALE_SMALLER};
 
     public static final int TITLE_LINES_OFF = 0;
     public static final int TITLE_LINES_2 = 1;
@@ -478,6 +479,7 @@ public class Setting {
 
     private static float getUiScaleFactor(int scale) {
         return switch (scale) {
+            case UI_SCALE_WIDE_COMFORT -> 1.1f;
             case UI_SCALE_MILD_RELAXED -> 0.9f;
             case UI_SCALE_STANDARD -> 0.8f;
             case UI_SCALE_MILD_COMPACT -> 0.75f;
@@ -653,11 +655,11 @@ public class Setting {
     }
 
     public static int getSearchColumn() {
-        return Math.min(Math.max(Prefers.getInt("search_column", 1), 1), 2);
+        return Math.min(Math.max(Prefers.getInt("search_column", 1), 1), 3);
     }
 
     public static void putSearchColumn(int column) {
-        Prefers.put("search_column", column == 2 ? 2 : 1);
+        Prefers.put("search_column", column == 2 ? 2 : (column == 3 ? 3 : 1));
     }
 
     public static boolean isDebugLog() {

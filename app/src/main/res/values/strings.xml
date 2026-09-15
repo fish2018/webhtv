@@ -1580,4 +1580,14 @@
     <string name="search_source_black">Blacklist</string>
     <string name="search_site_count">%d site(s)</string>
     <string name="search_site_count_of">Selected %d / %d</string>
+
+    <!-- History & Keep -->
+    <string name="history_title">History</string>
+    <string name="keep_title">Favorites</string>
+    <string name="menu_clear">Clear</string>
+    <string name="menu_delete">Delete</string>
+    <string name="dialog_clear_history">Clear history</string>
+    <string name="dialog_clear_history_message">Clear all watch history? This cannot be undone.</string>
+    <string name="dialog_clear_keep">Clear favorites</string>
+    <string name="dialog_clear_keep_message">Clear all favorites? This cannot be undone.</string>
 </resources>

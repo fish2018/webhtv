@@ -80,6 +80,16 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
         }
     }
 
+    private void onClear() {
+        if (mAdapter.getItemCount() > 0) {
+            new MaterialAlertDialogBuilder(this).setTitle(R.string.dialog_clear_history).setMessage(R.string.dialog_clear_history_message).setNegativeButton(R.string.dialog_negative, null).setPositiveButton(R.string.dialog_positive, (dialog, which) -> clearHistory()).show();
+        }
+    }
+
+    private void clearHistory() {
+        mAdapter.clear();
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onRefreshEvent(RefreshEvent event) {
         if (event.getType().equals(RefreshEvent.Type.HISTORY)) getHistory();
@@ -113,6 +123,7 @@ public class HistoryActivity extends BaseActivity implements HistoryAdapter.OnCl
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) onBackInvoked();
         else if (item.getItemId() == R.id.delete) onDelete();
+        else if (item.getItemId() == R.id.clear) onClear();
         else if (item.getItemId() == R.id.sync) onSync();
         return super.onOptionsItemSelected(item);
     }

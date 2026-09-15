@@ -60,7 +60,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
     private String[] titleLines;
     private String[] defaultLaunch;
     private String[] uiScale;
-    private static final int[] UI_SCALE_VALUES = {Setting.UI_SCALE_FOLLOW_SYSTEM, Setting.UI_SCALE_STANDARD, Setting.UI_SCALE_COMPACT};
+    private static final int[] UI_SCALE_VALUES = {Setting.UI_SCALE_WIDE_COMFORT, Setting.UI_SCALE_FOLLOW_SYSTEM, Setting.UI_SCALE_STANDARD, Setting.UI_SCALE_COMPACT};
 
     private static final int[][] FOCUS_GRID = {
         {R.id.vod, R.id.vodHome, R.id.vodHistory},
@@ -113,7 +113,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
         mBinding.languageText.setText((language = ResUtil.getStringArray(R.array.select_language))[Setting.getLanguageIndex()]);
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
-        mBinding.uiScaleText.setText((uiScale = new String[]{"宽松", "标准", "紧凑"})[getUiScaleIndex()]);
+        mBinding.uiScaleText.setText((uiScale = new String[]{"超宽松", "宽松", "标准", "紧凑"})[getUiScaleIndex()]);
         mBinding.titleLinesText.setText((titleLines = ResUtil.getStringArray(R.array.select_title_lines))[Setting.getTitleLinesIndex()]);
         mBinding.defaultLaunchText.setText((defaultLaunch = ResUtil.getStringArray(R.array.select_default_launch))[Setting.getDefaultLaunch()]);
     }

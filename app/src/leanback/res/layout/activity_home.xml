@@ -87,6 +87,7 @@
             android:layout_marginEnd="16dp"
             android:ellipsize="marquee"
             android:focusable="false"
+            android:maxWidth="200dp"
             android:nextFocusDown="@id/typeRecycler"
             android:singleLine="true"
             android:text="@string/app_name"
