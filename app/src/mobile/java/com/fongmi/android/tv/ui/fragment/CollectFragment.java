@@ -33,6 +33,7 @@ import com.fongmi.android.tv.model.SearchProgress;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
+import com.fongmi.android.tv.setting.SiteOrderStore;
 import com.fongmi.android.tv.ui.activity.FolderActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.CollectAdapter;
@@ -152,7 +153,8 @@ public class CollectFragment extends BaseFragment implements MenuProvider, Colle
     private void setSites() {
         mSites = new ArrayList<>(SearchModeStore.filterSites(VodConfig.get().getSites(), getSiteKey()));
         mSites.removeIf(SiteBlockSetting::isBlocked);
-        SiteHealthStore.sortSites(mSites);
+        if (Setting.isSiteHealthSort()) SiteHealthStore.sortSites(mSites);
+        else SiteOrderStore.sortSites(mSites);
     }
 
     private void setWidth() {

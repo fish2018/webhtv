@@ -111,6 +111,7 @@ import com.fongmi.android.tv.setting.PlayerButtonSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
+import com.fongmi.android.tv.setting.SiteOrderStore;
 import com.fongmi.android.tv.ui.adapter.ArrayAdapter;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
@@ -5703,7 +5704,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         updateFocus();
         List<Site> sites = new ArrayList<>();
         for (Site site : VodConfig.get().getSites()) if (isPass(site)) sites.add(site);
-        SiteHealthStore.sortSites(sites);
+        if (Setting.isSiteHealthSort()) SiteHealthStore.sortSites(sites);
+        else SiteOrderStore.sortSites(sites);
         mViewModel.searchContent(sites, keyword, true);
     }
 

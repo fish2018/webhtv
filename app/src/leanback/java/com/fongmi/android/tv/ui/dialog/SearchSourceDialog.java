@@ -46,6 +46,7 @@ public class SearchSourceDialog extends BaseGlassDialog {
             SearchModeStore.putMode(mode);
             dismiss();
         });
+        focusFirstItem(binding.recycler);
     }
 
     private void openConfig(SearchSourceItem item) {

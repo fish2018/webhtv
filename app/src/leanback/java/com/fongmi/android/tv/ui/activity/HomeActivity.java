@@ -927,8 +927,7 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     private void confirmExitHome() {
-        if (PlaybackService.isRunning()) Util.moveToBackground(this);
-        else super.onBackInvoked();
+        super.onBackInvoked();
     }
 
     @Override
