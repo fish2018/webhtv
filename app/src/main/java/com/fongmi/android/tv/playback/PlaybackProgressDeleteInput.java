@@ -25,6 +25,12 @@ public class PlaybackProgressDeleteInput {
     public String vodId;
     @SerializedName("episodeName")
     public String episodeName;
+    @SerializedName("mediaType")
+    public String mediaType;
+    @SerializedName("tmdbId")
+    public int tmdbId;
+    @SerializedName("seasonNumber")
+    public int seasonNumber = -1;
     @SerializedName("scope")
     public String scope;
     @SerializedName("cid")
@@ -49,6 +55,9 @@ public class PlaybackProgressDeleteInput {
         siteKey = fallback(siteKey, part(historyKey, 0));
         vodId = fallback(vodId, part(historyKey, 1));
         episodeName = safe(episodeName);
+        mediaType = safe(mediaType).toLowerCase(Locale.ROOT);
+        if (!"tv".equals(mediaType) && !"movie".equals(mediaType)) mediaType = "";
+        if (seasonNumber < 0) seasonNumber = -1;
         configKey = PlaybackConfigIdentity.normalizeKey(configKey);
         configUrl = safe(configUrl);
         if (empty(configKey) && !empty(configUrl)) configKey = PlaybackConfigIdentity.keyForUrl(configUrl);
@@ -65,6 +74,9 @@ public class PlaybackProgressDeleteInput {
         input.siteKey = siteKey;
         input.vodId = vodId;
         input.episodeName = episodeName;
+        input.mediaType = mediaType;
+        input.tmdbId = tmdbId;
+        input.seasonNumber = seasonNumber;
         input.scope = scope;
         input.cid = cid;
         input.configKey = configKey;
@@ -85,6 +97,20 @@ public class PlaybackProgressDeleteInput {
     public boolean isSiteScope() {
         normalize();
         return "site".equals(scope);
+    }
+
+    public boolean isSeasonScope() {
+        normalize();
+        return "season".equals(scope) && "tv".equals(mediaType) && tmdbId > 0 && seasonNumber >= 0;
+    }
+
+    public boolean requestsSeasonScope() {
+        normalize();
+        return "season".equals(scope);
+    }
+
+    public boolean hasMalformedSeasonScope() {
+        return requestsSeasonScope() && !isSeasonScope();
     }
 
     public boolean isDeleteOperation() {
@@ -136,6 +162,9 @@ public class PlaybackProgressDeleteInput {
         input.configUrl = firstString(input.configUrl, object, "config_url", "interfaceUrl", "sourceConfigUrl");
         input.vodId = firstString(input.vodId, object, "vod_id", "videoId", "itemId");
         input.episodeName = firstString(input.episodeName, object, "episode", "episodeTitle", "vodRemarks", "remarks");
+        input.mediaType = firstString(input.mediaType, object, "media_type", "type");
+        input.tmdbId = firstInt(input.tmdbId, object, "tmdb_id", "tmdb");
+        input.seasonNumber = firstInt(input.seasonNumber, object, "season", "season_number", "tmdbSeasonNumber");
         input.action = firstString(input.action, object, "op", "operation");
         input.deletedAt = firstLong(input.deletedAt, object, "deleted_at", "timestamp", "updateTime", "updatedAt", "updated_at");
         if (object.has("deleted")) input.deleted = booleanValue(object.get("deleted"), input.deleted);
@@ -158,7 +187,8 @@ public class PlaybackProgressDeleteInput {
             if (value == null || !value.isJsonObject()) continue;
             JsonObject target = value.getAsJsonObject().deepCopy();
             inherit(target, object, "action", "op", "operation", "event", "deleted", "scope", "confirm",
-                    "deletedAt", "timestamp", "updatedAt", "cid", "configKey", "configUrl");
+                    "deletedAt", "timestamp", "updatedAt", "cid", "configKey", "configUrl",
+                    "mediaType", "tmdbId", "seasonNumber");
             return target;
         }
         return object;
@@ -191,6 +221,18 @@ public class PlaybackProgressDeleteInput {
             try {
                 JsonElement value = object.get(key);
                 if (value != null && !value.isJsonNull()) return value.getAsLong();
+            } catch (Exception ignored) {
+            }
+        }
+        return current;
+    }
+
+    private static int firstInt(int current, JsonObject object, String... keys) {
+        if (current > 0) return current;
+        for (String key : keys) {
+            try {
+                JsonElement value = object.get(key);
+                if (value != null && !value.isJsonNull()) return value.getAsInt();
             } catch (Exception ignored) {
             }
         }

@@ -40,18 +40,24 @@ public class WebHomeRawAdapter {
 
     private final Map<String, String> siteHeaders;
     private final RawUrl home;
+    private final boolean cookiesAllowed;
     private volatile long noCacheUntil;
 
-    private WebHomeRawAdapter(RawUrl home, Map<String, String> siteHeaders) {
+    private WebHomeRawAdapter(RawUrl home, Map<String, String> siteHeaders, boolean cookiesAllowed) {
         this.home = home;
         this.siteHeaders = siteHeaders == null ? new HashMap<>() : new HashMap<>(siteHeaders);
+        this.cookiesAllowed = cookiesAllowed;
     }
 
     public static WebHomeRawAdapter create(String homePage, Map<String, String> siteHeaders) {
+        return create(homePage, siteHeaders, true);
+    }
+
+    public static WebHomeRawAdapter create(String homePage, Map<String, String> siteHeaders, boolean cookiesAllowed) {
         RawUrl home = RawUrl.parse(homePage);
         if (home == null) return null;
         SpiderDebug.log("webhome-raw", "enabled scope=%s url=%s upstream=%s", home.scope, home.original, home.upstream);
-        return new WebHomeRawAdapter(home, siteHeaders);
+        return new WebHomeRawAdapter(home, siteHeaders, cookiesAllowed);
     }
 
     public WebResourceResponse intercept(WebResourceRequest request) {
@@ -74,7 +80,7 @@ public class WebHomeRawAdapter {
             long start = System.currentTimeMillis();
             SpiderDebug.log("webhome-raw", "%s %s upstream=%s noCache=%s", request.method(), webRequest.getUrl(), target.upstream, noCache);
             response = client().newCall(request).execute();
-            CookieBridge.set(target.upstream, response.headers());
+            if (cookiesAllowed) CookieBridge.set(target.upstream, response.headers());
             WebResourceResponse result = toWebResponse(webRequest, target, response);
             SpiderDebug.log("webhome-raw", "%s -> %s in %sms cache=%s", target.upstream, response.code(), System.currentTimeMillis() - start, response.cacheResponse() != null);
             return result;
@@ -89,7 +95,7 @@ public class WebHomeRawAdapter {
         Map<String, String> headers = buildHeaders(webRequest.getRequestHeaders());
         Request.Builder builder = new Request.Builder().url(target.upstream).headers(HeaderPolicy.of(headers));
         HttpUrl url = HttpUrl.parse(target.upstream);
-        if (url != null) CookieBridge.apply(url, builder, true, HeaderPolicy.hasCookie(headers));
+        if (cookiesAllowed && url != null) CookieBridge.apply(url, builder, true, HeaderPolicy.hasCookie(headers));
         if (noCache) {
             builder.cacheControl(CacheControl.FORCE_NETWORK);
             builder.header(HttpHeaders.CACHE_CONTROL, "no-cache");
@@ -115,6 +121,7 @@ public class WebHomeRawAdapter {
 
     private boolean copyRequestHeader(String name, String value) {
         if (TextUtils.isEmpty(name) || value == null) return false;
+        if (!cookiesAllowed && (HttpHeaders.COOKIE.equalsIgnoreCase(name) || HttpHeaders.AUTHORIZATION.equalsIgnoreCase(name))) return false;
         return !"Host".equalsIgnoreCase(name)
                 && !"Connection".equalsIgnoreCase(name)
                 && !"Content-Length".equalsIgnoreCase(name)

@@ -2,6 +2,7 @@ package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,8 +48,8 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     private final String[] scale;
     private DialogControlBinding binding;
     private ActivityVideoBinding parent;
-    private List<TextView> scales;
     private List<TextView> speeds;
+    private List<TextView> displays;
     private PlayerManager player;
     private History history;
     private boolean parse;
@@ -118,8 +119,8 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     @Override
     protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
         binding = DialogControlBinding.inflate(inflater, container, false);
-        scales = Arrays.asList(binding.scale0, binding.scale1, binding.scale2, binding.scale3, binding.scale4);
         speeds = Arrays.asList(binding.speed05, binding.speed075, binding.speed10, binding.speed125, binding.speed15, binding.speed175, binding.speed20, binding.speed25, binding.speed30, binding.speed50);
+        displays = Arrays.asList(binding.displayTime, binding.displayTraffic, binding.displaySize, binding.displayProgress, binding.displayMini, binding.displayTitle, binding.displayParams);
         return binding;
     }
 
@@ -134,7 +135,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.opening.setText(parent.control.action.opening.getText());
         binding.repeat.setSelected(parent.control.action.repeat.isSelected());
         binding.karaoke.setSelected(PlayerSetting.isKaraokeMode());
-        binding.immersiveAudio.setSelected(PlayerSetting.isImmersiveAudioMode());
+        binding.immersiveAudio.setSelected(parent.control.action.immersiveAudio.isSelected());
         setKaraokeVisible();
         setImmersiveAudioVisible();
         binding.timer.setSelected(Timer.get().isRunning());
@@ -144,6 +145,7 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         setEpisodeColumn();
         setPlayer();
         setParse();
+        setDisplaySettings();
         binding.controlScroll.post(() -> binding.controlScroll.scrollTo(0, 0));
         binding.getRoot().post(this::focusInitialControl);
         binding.getRoot().postDelayed(this::focusInitialControl, 180);
@@ -161,7 +163,11 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.immersiveAudio.setOnClickListener(v -> setImmersiveAudio());
         binding.speed.addOnChangeListener(this::setSpeed);
         for (TextView view : speeds) view.setOnClickListener(this::setSpeedPreset);
-        for (TextView view : scales) view.setOnClickListener(this::setScale);
+        binding.scale.setOnClickListener(view -> VideoAspectModeDialog.show(requireActivity(), getScale(), this::setScale));
+        for (int i = 0; i < displays.size(); i++) {
+            int index = i;
+            displays.get(i).setOnClickListener(v -> toggleDisplaySetting(index));
+        }
         binding.reset.setOnClickListener(v -> dismiss(parent.control.action.reset));
         binding.fullscreen.setOnClickListener(v -> dismiss(parent.control.action.fullscreen));
         binding.text.setOnClickListener(v -> onTrack(binding.text));
@@ -193,13 +199,14 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         List<View> views = Arrays.asList(
                 binding.fullscreen, binding.lut, binding.reset, binding.repeat, binding.timer, binding.karaoke,
                 binding.player, binding.decode, binding.opening, binding.ending, binding.immersiveAudio,
-                binding.panDiagnostic,
+                binding.panDiagnostic, binding.scale,
                 binding.text, binding.audio, binding.video, binding.danmaku, binding.title,
+                binding.displayTime, binding.displayTraffic, binding.displaySize, binding.displayProgress,
+                binding.displayMini, binding.displayTitle, binding.displayParams,
                 binding.episodeColumn1, binding.episodeColumn2, binding.compactEpisodeTitle
         );
         for (View view : views) setRemoteFocusable(view);
         for (TextView view : speeds) setRemoteFocusable(view);
-        for (TextView view : scales) setRemoteFocusable(view);
     }
 
     private void setRemoteFocusable(View view) {
@@ -248,8 +255,9 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     }
 
     private void setImmersiveAudio() {
-        PlayerSetting.putImmersiveAudioMode(!PlayerSetting.isImmersiveAudioMode());
-        binding.immersiveAudio.setSelected(PlayerSetting.isImmersiveAudioMode());
+        boolean enabled = !binding.immersiveAudio.isSelected();
+        PlayerSetting.putImmersiveAudioMode(enabled);
+        binding.immersiveAudio.setSelected(enabled);
         ((Listener) requireActivity()).onImmersiveAudioModeChanged();
     }
 
@@ -261,17 +269,30 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.sheetWall.setVisibility(View.GONE);
     }
 
+    private void setDisplaySettings() {
+        boolean[] checked = PlayerSetting.getDisplayChecked();
+        for (int i = 0; i < displays.size(); i++) displays.get(i).setSelected(i < checked.length && checked[i]);
+    }
+
+    private void toggleDisplaySetting(int index) {
+        boolean[] checked = PlayerSetting.getDisplayChecked();
+        if (index < 0 || index >= checked.length) return;
+        checked[index] = !checked[index];
+        PlayerSetting.putDisplayChecked(checked);
+        setDisplaySettings();
+        ((Listener) requireActivity()).onDisplayChanged();
+    }
+
     private void setSpeed(@NonNull Slider slider, float value, boolean fromUser) {
         if (!fromUser) return;
         applySpeed(value);
     }
 
     private void applySpeed(float speed) {
-        PlayerSetting.putDefaultSpeed(speed);
         parent.control.action.speed.setText(player.setSpeed(speed));
         setSpeedPresets();
         binding.speed.setValue(Math.max(player.getSpeed(), 0.5f));
-        if (history != null) history.setSpeed(player.getSpeed());
+        if (history != null) history.setUserSpeed(player.getSpeed());
     }
 
     private void setSpeedPreset(View view) {
@@ -284,10 +305,15 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
     }
 
     private void setScaleText() {
-        for (int i = 0; i < scales.size(); i++) {
-            scales.get(i).setText(scale[i]);
-            scales.get(i).setSelected(scales.get(i).getText().equals(parent.control.action.scale.getText()));
-        }
+        int mode = getScale();
+        binding.scale.setText(scale[mode]);
+        binding.scale.setSelected(false);
+    }
+
+    private int getScale() {
+        CharSequence current = parent.control.action.scale.getText();
+        for (int mode = 0; mode < scale.length; mode++) if (TextUtils.equals(scale[mode], current)) return mode;
+        return history != null && history.getScale() != -1 ? history.getScale() : PlayerSetting.getScale();
     }
 
     private void setParse() {
@@ -300,10 +326,9 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         adapter.addAll(VodConfig.get().getParses());
     }
 
-    private void setScale(View view) {
-        for (TextView textView : scales) textView.setSelected(false);
-        ((Listener) requireActivity()).onScale(Integer.parseInt(view.getTag().toString()));
-        view.setSelected(true);
+    private void setScale(int mode) {
+        ((Listener) requireActivity()).onScale(mode);
+        setScaleText();
     }
 
     private void setEpisodeColumn(int column) {
@@ -360,11 +385,15 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         binding.reset.setText(parent.control.action.reset.getText());
         setLut();
         setEpisodeColumn();
+        // 播放失败回退会同时改内核和软硬解，两个标签都得跟着宿主刷新，否则弹窗里只有内核在变。
+        binding.decode.setText(parent.control.action.decode.getText());
         binding.decode.setVisibility(parent.control.action.decode.getVisibility());
         binding.danmaku.setVisibility(parent.control.action.danmaku.getVisibility());
         setKaraokeVisible();
         setImmersiveAudioVisible();
-        setTrackVisible();
+        // setTitleVisible 会带上 setTrackVisible；章节可见性也参与轨道行的计算，
+        // 只抄轨道不抄章节的话，回退后弹窗会拿旧章节状态算出错的轨道行。
+        setTitleVisible();
     }
 
     public void setLut() {
@@ -498,6 +527,8 @@ public class ControlDialog extends BaseBottomSheetDialog implements ParseAdapter
         void onTitlePanel();
 
         void onDanmakuPanel();
+
+        void onDisplayChanged();
 
         void onImmersiveAudioModeChanged();
 

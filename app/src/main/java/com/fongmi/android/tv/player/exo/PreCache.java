@@ -12,6 +12,7 @@ import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.datasource.DataSource;
+import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.preload.PreCacheHelper;
 
 import com.fongmi.android.tv.BuildConfig;
@@ -41,6 +42,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class PreCache implements Player.Listener {
+
+    public static boolean isPlaylistPreloadEnabled() {
+        return PreloadSetting.isPreload(PlayerSetting.EXO)
+                && PlaybackExperimentSetting.isAllowed(PlaybackExperimentPolicy.Action.EXO_AUTO_PRELOAD);
+    }
+
+    public boolean setPlaylistPreloadDurationMs(Player player, long durationMs) {
+        if (!(player instanceof ExoPlayer exoPlayer) || durationMs < 0) return false;
+        if (durationMs > 0 && !isPlaylistPreloadEnabled()) return false;
+        exoPlayer.setPreloadConfiguration(new ExoPlayer.PreloadConfiguration(
+                durationMs > Long.MAX_VALUE / 1000L ? Long.MAX_VALUE : durationMs * 1000L));
+        return true;
+    }
 
     private static final String TAG = "TV-exo-preload";
     private static final long TICK_MS = 5000;
@@ -184,6 +198,15 @@ public class PreCache implements Player.Listener {
         logSession(lifecycle.beginSession(), "generation=%d %s configuredThreads=%d effectiveThreads=%d durationTargetMs=%d aheadTargetMs=%d pausePolicy=%d cacheCapacityBytes=%d cachedBytesRead=%d cacheSizeBytes=%d", generation, this.routeResolution.logSummary(), PreloadSetting.getPreloadThreads(PlayerSetting.EXO), threads, PreloadSetting.getPreloadDurationMs(PlayerSetting.EXO), PreloadSetting.getPreloadAheadDurationMs(PlayerSetting.EXO), PreloadSetting.getPausePreloadPolicy(PlayerSetting.EXO), MediaSourceFactory.getCacheCapacityBytes(), cacheMetrics.cachedBytesRead(), cacheMetrics.cacheSizeBytes());
         transition(PreloadLifecycleTracker.State.WAIT_FIRST_FRAME, "session-start", "generation=%d position=%d buffered=%d loading=%s", generation, player.getCurrentPosition(), player.getTotalBufferedDuration(), player.isLoading());
         check();
+    }
+
+    /** Rebinds preload state to the item Media3 made current without rebuilding the player. */
+    public void onMediaItemTransition(
+            Player player,
+            MediaItem mediaItem,
+            String playbackTraceId,
+            PlaybackRoute.Resolution routeResolution) {
+        start(player, mediaItem, playbackTraceId, routeResolution);
     }
 
     public void stop() {
@@ -698,7 +721,7 @@ public class PreCache implements Player.Listener {
 
     private PreCacheHelper createHelper(MediaItem mediaItem) {
         DataSource.Factory upstreamFactory = MediaSourceFactory.createUpstreamDataSourceFactory(ExoUtil.extractHeaders(mediaItem));
-        return new PreCacheHelper.Factory(MediaSourceFactory.getCache(), upstreamFactory, ExoUtil.buildRenderersFactory(), getWorker().getLooper())
+        return new PreCacheHelper.Factory(MediaSourceFactory.scopedCache(ExoUtil.extractHeaders(mediaItem)), upstreamFactory, ExoUtil.buildRenderersFactory(), getWorker().getLooper())
                 .setDownloadExecutor(getExecutor())
                 .setListener(preCacheListener)
                 .create(mediaItem);

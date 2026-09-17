@@ -63,6 +63,14 @@ public class PlaybackResourceClassifierTest {
     }
 
     @Test
+    public void hlsUrlCompatibilityRecognizesLiveAliases() {
+        assertTrue(PlaybackResourceClassifier.isHlsUrl("https://example.test/play?type=hls&id=1"));
+        assertTrue(PlaybackResourceClassifier.isHlsUrl("https://example.test/live/stream?id=1"));
+        assertTrue(PlaybackResourceClassifier.isHlsUrl("https://example.test/tv/live.php?id=1"));
+        assertFalse(PlaybackResourceClassifier.isHlsUrl("https://example.test/video.mp4"));
+    }
+
+    @Test
     public void hlsVodRecordsEndListAndSegmentEvidence() {
         String playlist = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\npart-1.ts\n#EXT-X-ENDLIST\n";
         PlaybackResourceClassifier.Classification result = PlaybackResourceClassifier.classifyHls(

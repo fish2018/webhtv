@@ -35,7 +35,9 @@ final class MpvPreloadCachePolicy {
             targetSeconds = ceilSeconds(remainingMs);
         } else {
             targetSeconds = current.aheadSeconds();
-            if (remainingMs > 0) targetSeconds = Math.min(targetSeconds, ceilSeconds(remainingMs));
+            if (current.durationMs() > 0) {
+                targetSeconds = Math.min(targetSeconds, ceilSeconds(remainingMs));
+            }
         }
         targetSeconds = Math.clamp(targetSeconds, 0, MAX_TARGET_SECONDS);
         if (targetSeconds <= current.baselineSeconds()) {

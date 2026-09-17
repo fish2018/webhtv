@@ -1,22 +1,15 @@
 import os
-import requests
+import textwrap
 from importlib.machinery import SourceFileLoader
 import json
 
 
-def spider(cache, api, file_name=None):
-    name = file_name or os.path.basename(api)
+def spider(cache, source, file_name=None):
+    name = file_name or os.path.basename(source)
     path = cache + '/' + name
-    download(path, api)
+    writeFile(path, textwrap.dedent(source).encode())
     name = name.split('.')[0]
     return SourceFileLoader(name, path).load_module().Spider()
-
-
-def download(path, api):
-    if api.startswith('http'):
-        writeFile(path, redirect(api).content)
-    else:
-        writeFile(path, str.encode(api))
 
 
 def writeFile(path, content):

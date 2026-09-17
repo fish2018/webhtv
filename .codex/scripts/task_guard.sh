@@ -209,6 +209,16 @@ start_task() {
       fail_usage "another task guard is unfinished: $(sed -n '1p' "$state_dir/id") ($previous_status)"
     fi
   fi
+  if [[ -d "$state_dir" && -f "$state_dir/status" ]] && [[ "$(sed -n '1p' "$state_dir/status")" == "active" ]]; then
+    # 支持 active 会话一次性扩容；不覆盖 initial-dirty/protected，避免误改保护面。
+    :
+  else
+    : > "$state_dir/initial-dirty"
+    : > "$state_dir/initial-staged"
+    : > "$state_dir/protected"
+    : > "$state_dir/protected-fingerprints"
+    printf 'active\n' > "$state_dir/status"
+  fi
   mkdir -p "$state_dir"
   : > "$state_dir/scope"
   : > "$state_dir/adopted"
@@ -332,7 +342,11 @@ finish_task() {
     [[ -n "$path" ]] || continue
     path_matches_file "$path" "$state_dir/protected" && continue
     path_matches_file "$path" "$state_dir/scope" || continue
-    git add -A -- "$path"
+    if [[ -e "$path" || -L "$path" ]]; then
+      git add -A -- "$path"
+    else
+      git update-index --remove -- "$path"
+    fi
     task_change_count=$((task_change_count + 1))
   done < <(list_dirty)
   ((task_change_count > 0)) || safety_gate "no task-owned changes to commit"

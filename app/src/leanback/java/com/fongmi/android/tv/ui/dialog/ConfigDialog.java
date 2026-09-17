@@ -98,7 +98,7 @@ public class ConfigDialog extends BaseAlertDialog {
     @Override
     protected void initView() {
         Config config = getConfig();
-        binding.name.setText(edit ? config.getName() : "");
+        binding.name.setText(config.getName());
         binding.text.setText(url = config.getUrl());
         binding.text.setSelection(TextUtils.isEmpty(url) ? 0 : url.length());
         binding.positive.setText(edit ? R.string.dialog_edit : R.string.dialog_positive);
@@ -109,6 +109,10 @@ public class ConfigDialog extends BaseAlertDialog {
     @Override
     protected void initEvent() {
         binding.choose.setOnClickListener(this::onChoose);
+        // 猫源本地包是一整个文件夹（index.js + index.config.js），文件列表选不到目录，
+        // 所以单独给一个入口。选 zip 仍走上面那个文件选择。
+        binding.chooseDir.setOnClickListener(this::onChooseDir);
+        binding.chooseDir.setVisibility(type == 0 ? View.VISIBLE : View.GONE);
         binding.positive.setOnClickListener(this::onPositive);
         binding.negative.setOnClickListener(this::onNegative);
         binding.text.addTextChangedListener(new CustomTextListener() {
@@ -168,6 +172,10 @@ public class ConfigDialog extends BaseAlertDialog {
         FileChooser.from(launcher).show();
     }
 
+    private void onChooseDir(View view) {
+        FileChooser.from(launcher).showDirectory();
+    }
+
     private void detect(String s) {
         if (append && "h".equalsIgnoreCase(s)) {
             append = false;
@@ -207,7 +215,7 @@ public class ConfigDialog extends BaseAlertDialog {
             return Config.find(url, type).url(text).name(name).update();
         } else {
             Config exists = AppDatabase.get().getConfigDao().find(text, type);
-            return exists != null ? exists : Config.create(type).url(text).name(name).update();
+            return exists != null ? exists.name(name).update() : Config.create(type).url(text).name(name).update();
         }
     }
 
@@ -239,8 +247,11 @@ public class ConfigDialog extends BaseAlertDialog {
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) return;
         FragmentActivity activity = requireActivity();
-        String path = Objects.toString(FileChooser.getPathFromUri(result.getData().getData()), "");
-        if (TextUtils.isEmpty(path)) return;
+        String path = Objects.toString(FileChooser.getPersistentPathFromUri(result.getData().getData()), "");
+        if (TextUtils.isEmpty(path)) {
+            Notify.show(R.string.dialog_config_choose_failed);
+            return;
+        }
         App.post(() -> {
             if (activity.isFinishing() || activity.isDestroyed()) return;
             dismissAllowingStateLoss();

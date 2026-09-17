@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="#000000"
+    android:fitsSystemWindows="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="#111111"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:paddingStart="2dp"
+        android:paddingEnd="8dp">
+
+        <ImageView
+            android:id="@+id/btnClose"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_action_back"
+            android:contentDescription="关闭"
+            app:tint="#888888" />
+
+        <TextView
+            android:textSize="13sp"
+            android:textColor="#999999"
+            android:ellipsize="end"
+            android:id="@+id/outputTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:layout_marginStart="2dp" />
+
+        <TextView
+            android:textSize="13sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:id="@+id/btnStop"
+            android:background="@drawable/shape_lab_stop_btn"
+            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:text="停止"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/outputScroll"
+        android:scrollbars="none"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <HorizontalScrollView
+            android:scrollbars="none"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:textSize="12sp"
+                android:textColor="#aaffaa"
+                android:id="@+id/outputText"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:lineSpacingExtra="2dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true"
+                android:fontFamily="monospace"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+        </HorizontalScrollView>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:id="@+id/inputContainer"
+        android:visibility="gone"
+        android:background="#111111"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:textSize="13sp"
+            android:textColor="#aaffaa"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$"
+            android:fontFamily="monospace" />
+
+        <EditText
+            android:textSize="13sp"
+            android:textColor="#eeeeee"
+            android:textColorHint="#444444"
+            android:id="@+id/inputEdit"
+            android:background="@android:color/transparent"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:maxLines="1"
+            android:layout_weight="1"
+            android:inputType="text"
+            android:imeOptions="actionSend"
+            android:fontFamily="monospace"
+            android:layout_marginStart="4dp" />
+
+        <ImageView
+            android:id="@+id/btnSend"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="8dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:src="@drawable/ic_action_send"
+            android:contentDescription="发送"
+            app:tint="#aaffaa" />
+    </LinearLayout>
+</LinearLayout>

@@ -34,11 +34,14 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.Optional;
 
-public class VodActivity extends BaseActivity implements TypeAdapter.OnClickListener {
+public class VodActivity extends BaseActivity implements TypeAdapter.OnClickListener, FolderFragment.FilterHost, FolderFragment.CategoryEdgeHost {
 
     private ActivityVodBinding mBinding;
     private TypeAdapter mAdapter;
     private View mOldView;
+    private boolean mPendingCategoryFocus;
+    private int focusGeneration;
+    private Runnable mPendingCategoryFocusRunnable;
 
     public static void start(Activity activity, Result result) {
         start(activity, VodConfig.get().getHome().getKey(), result);
@@ -49,11 +52,18 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     }
 
     public static void start(Activity activity, String key, Result result, int position) {
+        start(activity, key, result, position, -1, null, -1);
+    }
+
+    public static void start(Activity activity, String key, Result result, int position, int historyResumeCid, String historyResumeKey, int historyResumeTargetCid) {
         if (result == null || result.getTypes().isEmpty()) return;
         Intent intent = new Intent(activity, VodActivity.class);
         intent.putExtra("key", key);
         intent.putExtra("result", result);
         intent.putExtra("position", Math.max(position, 0));
+        intent.putExtra("historyResumeCid", historyResumeCid);
+        intent.putExtra("historyResumeKey", historyResumeKey);
+        intent.putExtra("historyResumeTargetCid", historyResumeTargetCid);
         activity.startActivity(intent);
     }
 
@@ -63,6 +73,18 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
 
     private Result getResult() {
         return getIntent().getParcelableExtra("result");
+    }
+
+    private int getHistoryResumeCid() {
+        return getIntent().getIntExtra("historyResumeCid", -1);
+    }
+
+    private String getHistoryResumeKey() {
+        return getIntent().getStringExtra("historyResumeKey");
+    }
+
+    private int getHistoryResumeTargetCid() {
+        return getIntent().getIntExtra("historyResumeTargetCid", -1);
     }
 
     private int getPosition() {
@@ -91,10 +113,33 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
 
     @Override
     protected void initEvent() {
+        mBinding.recycler.setOnFocusChangeListener((view, hasFocus) -> {
+            if (!hasFocus) invalidatePendingFocusRequests();
+        });
         mBinding.pager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 mBinding.recycler.setSelectedPosition(position);
+                if (mPendingCategoryFocus) {
+                    mPendingCategoryFocus = false;
+                    final int generation = focusGeneration;
+                    mPendingCategoryFocusRunnable = () -> {
+                        if (generation != focusGeneration) return;
+                        mPendingCategoryFocusRunnable = null;
+                        if (isFinishing() || isDestroyed() || mBinding.pager.getCurrentItem() != position) return;
+                        // A newly loaded page may have no cards yet; the host must reveal its header.
+                        mBinding.recycler.setVisibility(View.VISIBLE);
+                        mBinding.recycler.requestFocus();
+                        getFragment().scrollContentToTop(generation);
+                        mBinding.recycler.setSelectedPosition(position, holder -> {
+                            if (generation != focusGeneration || !mBinding.recycler.hasFocus()) return;
+                            if (mBinding.pager.getCurrentItem() == position && mBinding.recycler.getSelectedPosition() == position) holder.itemView.requestFocus();
+                        });
+                    };
+                    mBinding.recycler.post(mPendingCategoryFocusRunnable);
+                    return;
+                }
+                invalidatePendingFocusRequests();
                 mBinding.recycler.requestFocus();
             }
         });
@@ -151,6 +196,7 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
         mAdapter.notifyItemRangeChanged(mAdapter.indexOf(item), 1);
     }
 
+    @Override
     public void closeFilter() {
         if (isFilterVisible()) updateFilter();
     }
@@ -162,12 +208,24 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
 
     @Override
     public void onItemClick(Class item) {
+        invalidatePendingFocusRequests();
         updateFilter(item);
     }
 
     @Override
     public void onRefresh(Class item) {
         getFragment().onRefresh();
+    }
+
+    @Override
+    public void onCategoryContentHorizontalEdge(Class item, int contentRow, boolean towardEnd) {
+        int position = mAdapter.indexOf(item);
+        int target = position + (towardEnd ? 1 : -1);
+        if (position != mBinding.pager.getCurrentItem() || contentRow < 0 || target < 0 || target >= mAdapter.getItemCount()) return;
+        App.removeCallbacks(mRunnable);
+        invalidatePendingFocusRequests();
+        mPendingCategoryFocus = true;
+        mBinding.pager.setCurrentItem(target);
     }
 
     @Override
@@ -178,15 +236,40 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     }
 
     private boolean requestContentFocus() {
+        invalidatePendingFocusRequests();
         FolderFragment fragment = getFragment();
         return fragment != null && fragment.requestContentFocus();
     }
 
+    private int invalidatePendingFocusRequests() {
+        focusGeneration++;
+        App.removeCallbacks(mRunnable);
+        if (mBinding != null && mPendingCategoryFocusRunnable != null) {
+            mBinding.recycler.removeCallbacks(mPendingCategoryFocusRunnable);
+        }
+        mPendingCategoryFocusRunnable = null;
+        mPendingCategoryFocus = false;
+        return focusGeneration;
+    }
+
     @Override
     protected void onBackInvoked() {
+        invalidatePendingFocusRequests();
         if (isFilterVisible()) updateFilter();
         else if (getFragment().canBack()) getFragment().goBack();
         else super.onBackInvoked();
+    }
+
+    @Override
+    protected void onPause() {
+        invalidatePendingFocusRequests();
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        invalidatePendingFocusRequests();
+        super.onDestroy();
     }
 
     class PageAdapter extends FragmentStatePagerAdapter {
@@ -199,7 +282,7 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
         @Override
         public Fragment getItem(int position) {
             Class type = mAdapter.get(position);
-            return FolderFragment.newInstance(getKey(), type);
+            return FolderFragment.newInstance(getKey(), type, getHistoryResumeCid(), getHistoryResumeKey(), getHistoryResumeTargetCid());
         }
 
         @Override

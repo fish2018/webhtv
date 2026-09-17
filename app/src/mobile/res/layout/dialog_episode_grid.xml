@@ -23,6 +23,19 @@
             android:textSize="16sp" />
 
         <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/episodeFileName"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/detail_episode_file_name_scraped_action"
+            android:padding="8dp"
+            android:scaleType="center"
+            android:src="@drawable/ic_action_name_short"
+            android:visibility="gone"
+            app:tint="?attr/colorOnSurface" />
+
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/column"
             android:layout_width="40dp"
             android:layout_height="40dp"

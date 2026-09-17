@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.databinding.AdapterEpisodeGroupBinding;
+import com.fongmi.android.tv.ui.helper.EpisodeRangePolicy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,31 +71,17 @@ public class EpisodeGroupAdapter extends RecyclerView.Adapter<EpisodeGroupAdapte
     }
 
     public static List<Group> build(int size, int selectedIndex, boolean reverse) {
-        List<Group> groups = new ArrayList<>();
-        if (size <= 0) return groups;
-        int groupSize = getGroupSize(size);
-        int count = (int) Math.ceil(size / (float) groupSize);
-        for (int i = 0; i < count; i++) {
-            int start = i * groupSize;
-            int end = Math.min(start + groupSize, size);
-            int labelStart = reverse ? size - start : start + 1;
-            int labelEnd = reverse ? size - end + 1 : end;
-            Group group = new Group(Math.max(labelStart, labelEnd) == Math.min(labelStart, labelEnd) ? String.valueOf(labelStart) : labelStart + "-" + labelEnd, start, end);
-            group.selected = selectedIndex >= start && selectedIndex < end;
-            groups.add(group);
-        }
-        if (groups.stream().noneMatch(group -> group.selected)) groups.get(0).selected = true;
-        return groups;
+        return build(size, selectedIndex, reverse, 0);
     }
 
-    private static int getGroupSize(int size) {
-        if (size <= 60) return 20;
-        if (size > 2500) return 300;
-        if (size > 1500) return 200;
-        if (size > 1000) return 150;
-        if (size > 500) return 100;
-        if (size > 300) return 50;
-        return 40;
+    public static List<Group> build(int size, int selectedIndex, boolean reverse, int maxGroupSize) {
+        List<Group> groups = new ArrayList<>();
+        for (EpisodeRangePolicy.Range range : EpisodeRangePolicy.build(size, selectedIndex, reverse, maxGroupSize)) {
+            Group group = new Group(range.label(), range.start(), range.end());
+            group.selected = range.selected();
+            groups.add(group);
+        }
+        return groups;
     }
 
     public static class Group {

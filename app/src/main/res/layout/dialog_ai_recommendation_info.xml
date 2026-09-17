@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/dialogTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:text="@string/ai_recommendation_info_title"
+            android:textColor="#202124"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/sourceLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/shape_recommendation_source_chip"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:maxWidth="150dp"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:textColor="#174EA6"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            tools:text="智能推荐" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:id="@+id/summaryCard"
+        android:layout_height="100dp"
+        android:layout_marginTop="6dp"
+        app:cardBackgroundColor="#F7F9FC"
+        app:cardCornerRadius="13dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#DCE3EC"
+        app:strokeWidth="1dp">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="8dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="52dp"
+                android:layout_height="80dp"
+                app:cardBackgroundColor="#1C2530"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#C7CED8"
+                app:strokeWidth="1dp">
+
+                <ImageView
+                    android:id="@+id/poster"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="#1C2530"
+                    android:contentDescription="@null"
+                    android:scaleType="centerCrop"
+                    tools:src="@color/black" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#202124"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    tools:text="指环王3：王者无敌" />
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:baselineAligned="false"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/subtitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:textColor="#5F6368"
+                        android:textSize="11sp"
+                        tools:text="电影 · 2003-12-17" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/attributes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="7dp"
+                        android:ellipsize="end"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:maxWidth="110dp"
+                        android:textColor="#7A8088"
+                        android:textSize="9sp"
+                        android:visibility="gone"
+                        tools:text="US · EN"
+                        tools:visibility="visible" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/credit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#6A7078"
+                    android:textSize="9sp"
+                    android:visibility="gone"
+                    tools:text="主演：伊利亚·伍德、维果·莫腾森"
+                    tools:visibility="visible" />
+
+                <LinearLayout
+                    android:id="@+id/ratingGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="3dp"
+                    android:divider="@drawable/divider_rating_chip_horizontal"
+                    android:gravity="start|center_vertical"
+                    android:orientation="horizontal"
+                    android:showDividers="middle">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tmdbRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:background="@drawable/shape_tmdb_rating_chip_light"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:minWidth="62dp"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="7dp"
+                        android:textColor="#986600"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        tools:text="TMDB 8.5" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/doubanRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="20dp"
+                        android:background="@drawable/shape_douban_rating_chip_light"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:minWidth="58dp"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="7dp"
+                        android:textColor="#287D46"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        tools:text="豆瓣 9.3" />
+
+                </LinearLayout>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/dataStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:textColor="#8A9098"
+                    android:textSize="9sp"
+                    tools:text="TMDB 条目 #122 · 豆瓣评分已匹配" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/detailScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:fadeScrollbars="false"
+        android:fadingEdge="vertical"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:nextFocusDown="@id/notInterested"
+        android:overScrollMode="ifContentScrolls"
+        android:requiresFadingEdge="vertical"
+        android:scrollbars="vertical">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingEnd="4dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/overviewCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#DCE3EC"
+                app:strokeWidth="1dp">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="11dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="11dp"
+                    android:paddingBottom="9dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/overviewLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:text="@string/recommendation_overview_label"
+                        android:textColor="#30343B"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/overview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="#5F6368"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:textSize="11sp"
+                        tools:text="魔戒终章，护戒远征队迎来最终决战。阿拉贡必须承担王者使命，佛罗多与山姆则继续向末日火山前进。" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/reasonCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#FFF9ED"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#F2D28D"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="11dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="11dp"
+                    android:paddingBottom="9dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/reasonLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:includeFontPadding="false"
+                        android:text="@string/ai_recommendation_reason_label"
+                        android:textColor="#7A5100"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/reason"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:includeFontPadding="false"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="#6E5A31"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:textSize="11sp"
+                        tools:text="11 项奥斯卡加持，史诗奇幻爱好者不可错过。" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+            </com.google.android.material.card.MaterialCardView>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_marginTop="6dp"
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/notInterested"
+            style="@style/Widget.WebHTV.LightDialog.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="112dp"
+            android:nextFocusLeft="@id/confirm"
+            android:nextFocusRight="@id/confirm"
+            android:nextFocusUp="@id/detailScroll"
+            android:text="@string/recommendation_not_interested"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            app:cornerRadius="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/confirm"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minWidth="86dp"
+            android:nextFocusLeft="@id/notInterested"
+            android:nextFocusRight="@id/notInterested"
+            android:nextFocusUp="@id/detailScroll"
+            android:text="@string/dialog_positive"
+            android:textAllCaps="false"
+            android:textColor="@color/dialog_primary_button_text"
+            android:textSize="13sp"
+            app:backgroundTint="@color/dialog_primary_button_bg"
+            app:cornerRadius="8dp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

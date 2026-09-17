@@ -740,3 +740,13 @@
 - 安装：`install.log` 记录OEM风险确认与继续安装均由助手处理，`Success`并启动 `com.fongmi.android.tv`；手机10CF6H1D2L0009S，APK SHA-256 `fc0b397af908989bf7e4ed6cefac6bdea491770d900af48d402e618a45543885`。冻结旧包 `baseline.apk` SHA-256 `13a7dfb6faf4567cbd95a90096c78ab8157d0e98be9903f79b8c14640cf55ce7`。
 - 用户实测反馈“速度好像改善了”，随后明确要求tag并稍后提出新需求。按明确收口规则停止额外真机/计时/构建，不把用户的主观改善扩大为所有原盘、所有网络或既定30%收益均验证通过；两片严格重复A/B尚未完成，量化幅度未定。
 - 本轮只提交guard所列源码、测试与本文档；既有 `app/.cxx/` 受保护，`/tmp`诊断/即时UI工具不进入提交。回滚锚点仍为 `310f8feef5c0a05e5dae6c0a063453113214ea2c`，原生资产不变。提交和tag由紧接本记录的guard finish创建，不push。
+
+## 2026-09-13 B 侧 C4 合并遗漏修复（已确认实现缺陷）
+
+- Git 证据：`git diff 188553addf6620dd29ab344152599426694553a5..7dc58af1b0bb28818b23f43748c3ac67f76e0449 -- app/src/main/java/androidx/media3/mpvplayer/MpvPlayer.java` 显示 C4 squash 只新增 `case "disc-menu-active"` 处理分支，未新增 `observe("disc-menu-active", MPV_FORMAT_FLAG)`。`188553addf6620dd29ab344152599426694553a5` 相对 `2b36396c0d3ed18aa75250d3293c8f29d8b1a10d` 的差异同时移除了旧调用和处理分支，因此 C4 不能从该合并基线自动恢复；这是实现遗漏，不是有意移除。
+- 影响：`dispatchProperty()` 仅由 MPV native 属性事件进入。未注册观察时该分支不可达，`discMenuActive` 无法通过属性事件置 true，Activity 的按键和触摸转发路径会持续判定菜单未激活。`disc-nav-active`/FILE_LOADED 仍可设置 `discMenuAvailable`，所以 MENU 键打开菜单的入口不受影响。
+- 修复：在 `observeProperties()` 的 `sub-visibility` 观察后恢复 A 侧同位注册 `observe("disc-menu-active", MPVLib.MpvFormat.MPV_FORMAT_FLAG)`，不改变处理分支、状态机、输入转发或 native 行为。
+- 验证：`git diff --check` 与 `grep -n 'observe("disc-menu-active"\|case "disc-menu-active"' MpvPlayer.java` 确认注册与分支同现；后续聚焦 Java 编译通过后完成本单元。本轮不改 CMake 缓存或原生产物。
+- 编译结果（2026-09-13 Asia/Shanghai）：`bash ./gradlew :app:compileLeanbackArm64_v8aDebugJavaWithJavac --offline` 通过，日志 `/tmp/p9-disc-menu-observe-compile.log`。编译验证只证明 Java 接线可构建；未重复真机菜单场景。
+- 回滚：revert 本轮 P9 原子提交并恢复 `7dc58af1b0bb28818b23f43748c3ac67f76e0449`；native 产物不变。
+- 唯一下一动作：聚焦 Java 编译通过后用当前 guard finish 提交并创建本地注释恢复 tag，不 push。

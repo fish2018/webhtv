@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 获得焦点：白色边框，优先于当前播放态 -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="3dp" android:color="#FFD166" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- 当前播放：高亮黄边框 -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke android:width="2dp" android:color="#2CC56F" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    <!-- 默认：透明 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+</selector>

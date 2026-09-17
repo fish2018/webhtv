@@ -12,6 +12,8 @@ import java.util.Set;
  */
 public final class IjkRuntimeProfileController {
 
+    static final long FIRST_FRAME_TIMEOUT_ACTIVE_MS = 10_000L;
+
     private final ProfileAccess profiles;
     private final EnumSet<IjkRuntimeProfilePolicy.Path> visited;
     private final EnumSet<IjkRuntimeProfilePolicy.Path> failuresRecorded;
@@ -27,6 +29,8 @@ public final class IjkRuntimeProfileController {
     private long firstFrameAtElapsedMs = -1;
     private long lastHealthSampleAtElapsedMs = -1;
     private long activeObservedDurationMs;
+    private long firstFrameWaitActiveDurationMs;
+    private long lastFirstFrameWaitSampleAtElapsedMs = -1;
     private boolean lastHealthSampleActive;
     private int baselineRebufferCount;
     private long baselineDroppedFrames = -1;
@@ -80,10 +84,65 @@ public final class IjkRuntimeProfileController {
         return true;
     }
 
+    public synchronized void onPlaybackAttemptStarted(
+            PlaybackAutoContext.SessionToken token,
+            RuntimeSample sample) {
+        if (!isManaged(token)) return;
+        beginAttempt(sample);
+    }
+
     public synchronized void onPrepared(
             PlaybackAutoContext.SessionToken token) {
-        if (!isManaged(token)) return;
+        onPrepared(token, -1);
+    }
+
+    public synchronized void onPrepared(
+            PlaybackAutoContext.SessionToken token,
+            long nowElapsedMs) {
+        if (!isManaged(token) || prepared) return;
         prepared = true;
+        firstFrameWaitActiveDurationMs = 0;
+        lastFirstFrameWaitSampleAtElapsedMs = nowElapsedMs < 0
+                ? -1 : nowElapsedMs;
+    }
+
+    public synchronized Decision handleFirstFrameTimeout(
+            PlaybackAutoContext.SessionToken token,
+            Facts facts,
+            RuntimeSample sample,
+            long nowElapsedMs,
+            long nowEpochMs) {
+        if (!isManaged(token)) return null;
+        Facts currentFacts = facts == null ? Facts.inactive() : facts;
+        if (!token.equals(currentFacts.session())) return null;
+        bindProfileKey(currentFacts);
+        updateSample(sample);
+        if (!currentPath.ijk()
+                || !prepared
+                || firstFrame
+                || attemptFailureRecorded) return null;
+        if (!currentFacts.hasVideoTrackEvidence()
+                || lastSample.outputFrameRateUsable()) {
+            resetFirstFrameWait(nowElapsedMs);
+            return null;
+        }
+        advanceFirstFrameWait(lastSample.active(), nowElapsedMs);
+        if (!lastSample.active()
+                || firstFrameWaitActiveDurationMs
+                < FIRST_FRAME_TIMEOUT_ACTIVE_MS) return null;
+        return handleFailure(
+                token,
+                currentFacts,
+                lastSample,
+                new FailureEvent(
+                        PlaybackErrorClassifier.Stage.OUTPUT,
+                        androidx.media3.common.PlaybackException
+                                .ERROR_CODE_DECODING_FAILED,
+                        0,
+                        0,
+                        true),
+                nowElapsedMs,
+                nowEpochMs);
     }
 
     public synchronized Observation onFirstFrame(
@@ -104,6 +163,8 @@ public final class IjkRuntimeProfileController {
         firstFrameAtElapsedMs = Math.max(0, nowElapsedMs);
         lastHealthSampleAtElapsedMs = firstFrameAtElapsedMs;
         activeObservedDurationMs = 0;
+        firstFrameWaitActiveDurationMs = 0;
+        lastFirstFrameWaitSampleAtElapsedMs = -1;
         lastHealthSampleActive = lastSample.active();
         baselineRebufferCount = lastSample.rebufferCount();
         baselineDroppedFrames = lastSample.droppedFramesUsable()
@@ -465,6 +526,8 @@ public final class IjkRuntimeProfileController {
         firstFrameAtElapsedMs = -1;
         lastHealthSampleAtElapsedMs = -1;
         activeObservedDurationMs = 0;
+        firstFrameWaitActiveDurationMs = 0;
+        lastFirstFrameWaitSampleAtElapsedMs = -1;
         lastHealthSampleActive = false;
         baselineRebufferCount = lastSample.rebufferCount();
         baselineDroppedFrames = lastSample.droppedFramesUsable()
@@ -482,6 +545,27 @@ public final class IjkRuntimeProfileController {
 
     private void updateSample(RuntimeSample sample) {
         if (sample != null) lastSample = sample;
+    }
+
+    private void resetFirstFrameWait(long nowElapsedMs) {
+        firstFrameWaitActiveDurationMs = 0;
+        lastFirstFrameWaitSampleAtElapsedMs = Math.max(0, nowElapsedMs);
+    }
+
+    private void advanceFirstFrameWait(
+            boolean active,
+            long nowElapsedMs) {
+        long now = Math.max(0, nowElapsedMs);
+        // 与 IjkFirstFrameWatchdog 保持一致：按当前采样活跃累加上一段间隔，
+        // 否则 prepared 后首个采样周期不计时，实际超时会偏长一个周期。
+        if (lastFirstFrameWaitSampleAtElapsedMs >= 0
+                && now >= lastFirstFrameWaitSampleAtElapsedMs
+                && active) {
+            firstFrameWaitActiveDurationMs = saturatingAdd(
+                    firstFrameWaitActiveDurationMs,
+                    now - lastFirstFrameWaitSampleAtElapsedMs);
+        }
+        lastFirstFrameWaitSampleAtElapsedMs = now;
     }
 
     private IjkRuntimeProfilePolicy.HealthInput healthInput(
@@ -636,6 +720,8 @@ public final class IjkRuntimeProfileController {
         firstFrameAtElapsedMs = -1;
         lastHealthSampleAtElapsedMs = -1;
         activeObservedDurationMs = 0;
+        firstFrameWaitActiveDurationMs = 0;
+        lastFirstFrameWaitSampleAtElapsedMs = -1;
         lastHealthSampleActive = false;
         baselineRebufferCount = 0;
         baselineDroppedFrames = -1;
@@ -1109,6 +1195,11 @@ public final class IjkRuntimeProfileController {
             return softEligible;
         }
 
+        public boolean hasVideoTrackEvidence() {
+            return evidence != null
+                    && evidence.width() > 0
+                    && evidence.height() > 0;
+        }
         public boolean targetFrameRateUsable() {
             return targetFrameRateUsable;
         }

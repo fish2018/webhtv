@@ -15,6 +15,7 @@
     <string name="menu_search">搜索</string>
     <string name="menu_site">站点</string>
     <string name="menu_reset">重置</string>
+    <string name="menu_more">更多</string>
     <string name="menu_push_apk">推送apk</string>
     <string name="menu_push_play">推送播放</string>
     <string name="apk_push_preparing">正在准备APK…</string>
@@ -53,6 +54,7 @@
     <!-- Detail -->
     <string name="detail_flag">线路</string>
     <string name="detail_episode">选集</string>
+    <string name="detail_episode_season_context">第%1$d季</string>
     <string name="detail_quality">画质</string>
     <string name="detail_content">简介</string>
     <string name="detail_search">快搜“<xliff:g name="name">%s</xliff:g>”</string>

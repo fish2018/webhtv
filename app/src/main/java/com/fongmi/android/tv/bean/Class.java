@@ -60,6 +60,7 @@ public class Class implements Parcelable, Diffable<Class> {
         this.circle = (Integer) in.readValue(Integer.class.getClassLoader());
         this.ratio = (Float) in.readValue(Float.class.getClassLoader());
         this.selected = in.readByte() != 0;
+        this.filters = in.createTypedArrayList(Filter.CREATOR);
     }
 
     public static Class objectFrom(String json) {
@@ -170,6 +171,7 @@ public class Class implements Parcelable, Diffable<Class> {
         dest.writeValue(this.circle);
         dest.writeValue(this.ratio);
         dest.writeByte(this.selected ? (byte) 1 : (byte) 0);
+        dest.writeTypedList(this.filters);
     }
 
     @Override

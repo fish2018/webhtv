@@ -1,6 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/shape_video_item_focused" android:state_focused="true" />
-    <item android:drawable="@drawable/shape_video_item_activated" android:state_selected="true" />
-    <item android:drawable="@drawable/shape_video_item_normal" />
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="4dp" />
+            <padding
+                android:bottom="8dp"
+                android:left="12dp"
+                android:right="12dp"
+                android:top="8dp" />
+            <stroke
+                android:width="2dp"
+                android:color="#FFD166" />
+        </shape>
+    </item>
+    <item android:state_activated="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/black_50" />
+            <corners android:radius="4dp" />
+            <padding
+                android:bottom="8dp"
+                android:left="12dp"
+                android:right="12dp"
+                android:top="8dp" />
+            <stroke
+                android:width="2dp"
+                android:color="#2CC56F" />
+        </shape>
+    </item>
+    <!--
+        不要给 state_selected 加描边。这套 selector 的消费方（adapter_episode / adapter_flag /
+        adapter_quality）都用了 android:ellipsize="marquee"，而 Android 的跑马灯只在 View 处于
+        selected 或 focused 时滚动，所以 EpisodeAdapter 那边是 setSelected(isSelected() || hasFocus())
+        ——selected 在这里是"跑马灯开关"，不是语义上的"当前生效"。加了描边会让"标题过长正在滚动"
+        的项被误显示成当前播放。当前生效态统一走 state_activated（ArrayAdapter.setActivated）。
+    -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/black_50" />
+            <corners android:radius="4dp" />
+            <padding
+                android:bottom="8dp"
+                android:left="12dp"
+                android:right="12dp"
+                android:top="8dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/black_30" />
+            <corners android:radius="4dp" />
+            <padding
+                android:bottom="8dp"
+                android:left="12dp"
+                android:right="12dp"
+                android:top="8dp" />
+        </shape>
+    </item>
 </selector>

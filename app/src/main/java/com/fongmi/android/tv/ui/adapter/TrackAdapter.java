@@ -12,6 +12,7 @@ import com.fongmi.android.tv.databinding.AdapterTrackBinding;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class TrackAdapter extends RecyclerView.Adapter<TrackAdapter.ViewHolder> {
 
@@ -32,6 +33,23 @@ public class TrackAdapter extends RecyclerView.Adapter<TrackAdapter.ViewHolder> 
         mItems.addAll(items);
         notifyDataSetChanged();
         return this;
+    }
+
+    public void prependSelected(Track item) {
+        if (item == null) return;
+        for (Track existing : mItems) existing.setSelected(false);
+        for (int i = 0; i < mItems.size(); i++) {
+            if (!sameTrack(mItems.get(i), item)) continue;
+            mItems.remove(i);
+            break;
+        }
+        item.setSelected(true);
+        mItems.add(0, item);
+        notifyDataSetChanged();
+    }
+
+    private boolean sameTrack(Track first, Track second) {
+        return first != null && second != null && Objects.equals(first.getName(), second.getName()) && Objects.equals(first.getFormat(), second.getFormat());
     }
 
     public void replaceAll(List<Track> items) {

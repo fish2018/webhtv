@@ -83,13 +83,21 @@ public class FileUtil {
     public static void clearCache(Callback callback) {
         Task.execute(() -> {
             Path.clear(Path.cache());
+            AppCache.clearLegacyPreferences();
+            // 这两个缓存都是进程内单例：只删文件的话内存 map 还在，
+            // 下一次写入会把整张旧 map 重新落盘，等于没清。
+            com.fongmi.android.tv.bean.EpisodePositionCache.get().clear();
+            com.fongmi.android.tv.bean.FlagPreferenceCache.get().clear();
             App.post(callback::success);
         });
     }
 
     public static void getCacheSize(Callback callback) {
         Task.execute(() -> {
-            String usage = byteCountToDisplaySize(getDirectorySize(Path.cache()));
+            long totalSize = getDirectorySize(Path.cache());
+            // 包含集数位置缓存的大小
+            totalSize += com.fongmi.android.tv.bean.EpisodePositionCache.get().getCacheSize();
+            String usage = byteCountToDisplaySize(totalSize);
             App.post(() -> callback.success(usage));
         });
     }

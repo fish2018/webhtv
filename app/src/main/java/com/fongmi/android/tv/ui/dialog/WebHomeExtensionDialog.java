@@ -781,7 +781,7 @@ public class WebHomeExtensionDialog extends BaseAlertDialog {
 
     private String siteLabel(Site site) {
         if (site == null) return "";
-        String name = site.getName();
+        String name = site.getDisplayName();
         String key = site.getKey();
         return TextUtils.isEmpty(name) || TextUtils.equals(name, key) ? key : name + " (" + key + ")";
     }

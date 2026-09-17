@@ -2,15 +2,24 @@ package com.fongmi.android.tv.utils;
 
 public class Github {
 
-    private static final String GITHUB_LATEST = "https://github.com/fish2018/webhtv/releases/latest/download";
-    private static final String GITHUB_RELEASE = "https://github.com/fish2018/webhtv/releases/download";
-    private static final String GITHUB_API = "https://api.github.com/repos/fish2018/webhtv/releases/tags";
-    private static final String GITHUB_RELEASES_API = "https://api.github.com/repos/fish2018/webhtv/releases";
-    private static final String GITHUB_RELEASE_ASSETS_API = "https://api.github.com/repos/fish2018/webhtv/releases/assets";
-    private static final String CNB = "https://cnb.cool/fish2035/webhtv-release/-/git/raw/main";
+    private static final String GITHUB_LATEST = "https://github.com/YaChengMu/webhtv/releases/latest/download";
+    private static final String GITHUB_RELEASE = "https://github.com/YaChengMu/webhtv/releases/download";
+    private static final String GITHUB_UPDATE_CHANNEL = GITHUB_RELEASE + "/update-channel";
+    private static final String CNB_MANIFEST = "https://cnb.cool/fish2035/webhtv-release/-/git/raw/main/apk";
+    private static final String GITHUB_API = "https://api.github.com/repos/YaChengMu/webhtv/releases/tags";
+    private static final String GITHUB_RELEASES_API = "https://api.github.com/repos/YaChengMu/webhtv/releases";
+    private static final String GITHUB_RELEASE_ASSETS_API = "https://api.github.com/repos/YaChengMu/webhtv/releases/assets";
+
+    public static String getChannelAsset(String name) {
+        return GITHUB_UPDATE_CHANNEL + "/" + name;
+    }
+
+    public static String getCnbMirrorAsset(String name) {
+        return CNB_MANIFEST + "/" + name;
+    }
 
     public static String getCnbAsset(String name) {
-        return CNB + "/apk/" + name;
+        return getGithubLatestAsset(name);
     }
 
     public static String getGithubLatestAsset(String name) {

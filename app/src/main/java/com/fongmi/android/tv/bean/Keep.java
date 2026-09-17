@@ -9,6 +9,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.impl.Diffable;
+import com.fongmi.android.tv.setting.SiteNameStore;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
@@ -91,7 +92,8 @@ public class Keep implements Diffable<Keep> {
     }
 
     public String getSiteName() {
-        return siteName;
+        if (getType() != 0 || !getKey().contains(AppDatabase.SYMBOL)) return siteName;
+        return SiteNameStore.getDisplayName(getCid(), getSiteKey(), siteName);
     }
 
     public void setSiteName(String siteName) {

@@ -15,6 +15,12 @@ public class Product {
         return 1;
     }
 
+    /** 阅读器判定内容不归自己管时，回退到本 flavor 的播放流程。 */
+    public static void registerReaderFallback() {
+        com.fongmi.android.tv.ui.novel.NovelRouter.fallbackLauncher = (activity, key, id, name, pic, mark) ->
+                com.fongmi.android.tv.ui.activity.VideoActivity.startSkippingDispatch(activity, key, id, name, pic, mark, false, null, null, null);
+    }
+
     public static int getColumn(Context context) {
         int count = MobileWindow.isWide(context) ? 7 : 5;
         count = count + (ResUtil.isPad() ? 1 : 0);

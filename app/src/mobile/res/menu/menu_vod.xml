@@ -43,6 +43,11 @@
                 android:title="@string/app_keep" />
 
             <item
+                android:id="@+id/download"
+                android:icon="@drawable/ic_action_download"
+                android:title="@string/download_list"/>
+
+            <item
                 android:id="@+id/sync"
                 android:icon="@drawable/ic_popup_sync"
                 android:title="@string/setting_one_key_sync" />

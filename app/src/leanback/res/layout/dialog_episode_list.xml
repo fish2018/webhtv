@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     android:layout_width="match_parent"
@@ -7,50 +7,91 @@
     android:background="@drawable/shape_quick_search_dialog"
     android:clipChildren="false"
     android:clipToPadding="false"
-    android:orientation="vertical"
+    android:fillViewport="true"
     android:paddingStart="20dp"
     android:paddingEnd="20dp">
 
-    <com.google.android.material.textview.MaterialTextView
+    <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:gravity="center_vertical"
-        android:text="@string/play_episodes"
-        android:textColor="@color/white"
-        android:textSize="18sp"
-        android:textStyle="bold" />
-
-    <androidx.leanback.widget.HorizontalGridView
-        android:id="@+id/flag"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:clipChildren="false"
         android:clipToPadding="false"
-        tools:itemCount="3"
-        tools:listitem="@layout/adapter_flag" />
+        android:orientation="vertical">
 
-    <androidx.leanback.widget.HorizontalGridView
-        android:id="@+id/array"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="12dp"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:visibility="gone"
-        tools:itemCount="4"
-        tools:listitem="@layout/adapter_array"
-        tools:visibility="visible" />
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:gravity="center_vertical"
+            android:text="@string/detail_flag"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-    <androidx.leanback.widget.VerticalGridView
-        android:id="@+id/episode"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="12dp"
-        android:layout_weight="1"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp"
-        tools:itemCount="40"
-        tools:listitem="@layout/adapter_episode" />
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/flag"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            tools:itemCount="3"
+            tools:listitem="@layout/adapter_flag" />
 
-</androidx.appcompat.widget.LinearLayoutCompat>
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/seasonLabel"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:text="@string/detail_season"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/season"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            tools:itemCount="6"
+            tools:listitem="@layout/adapter_array"
+            tools:visibility="visible" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:text="@string/detail_episode"
+            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/array"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            tools:itemCount="4"
+            tools:listitem="@layout/adapter_array"
+            tools:visibility="visible" />
+
+        <androidx.leanback.widget.VerticalGridView
+            android:id="@+id/episode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"
+            tools:itemCount="40"
+            tools:listitem="@layout/adapter_episode" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.core.widget.NestedScrollView>

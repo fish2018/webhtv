@@ -9,6 +9,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class PanEndpointParserTest {
 
@@ -53,6 +54,33 @@ public class PanEndpointParserTest {
 
         assertEquals(upstream, endpoint.upstreamUrl());
         assertEquals("session=abc%2Fdef%3D", endpoint.upstreamHeaders().get("Cookie"));
+    }
+
+
+    @Test
+    public void rejectsPrivateAndNonCanonicalLoopbackUpstreamTargets() {
+        for (String upstream : new String[]{
+                "http://127.0.0.2/admin",
+                "http://0.0.0.0/admin",
+                "http://10.0.0.1/admin",
+                "http://172.16.0.1/admin",
+                "http://192.168.1.1/admin",
+                "http://169.254.169.254/latest/meta-data",
+                "http://[fc00::1]/admin",
+                "http://[fe80::1]/admin"}) {
+            try {
+                PanEndpointParser.parse(local(upstream, "{}", 8), Map.of());
+                fail("Should reject private target: " + upstream);
+            } catch (IllegalArgumentException expected) {
+                assertTrue(expected.getMessage().contains("Private upstream target"));
+            }
+        }
+    }
+
+    @Test
+    public void keepsPublicLiteralUpstreamTarget() {
+        PanEndpoint endpoint = PanEndpointParser.parse(local("https://8.8.8.8/file", "{}", 8), Map.of());
+        assertTrue(endpoint.hasDirectUpstream());
     }
 
     private static String local(String upstream, String headers, int threads) {

@@ -1,8 +1,8 @@
 # EXO 高规格网盘播放源码级性能改造最佳实践方案
 
-日期：2026-07-21  
-代码基线：`main-2` / `44af7eb598` / `playback-optimization-item-32`  
-Media3：`1.11.0-alpha01-fongmi`  
+日期：2026-07-21<br>
+代码基线：`main-2` / `44af7eb598` / `playback-optimization-item-32`<br>
+Media3：`1.11.0-alpha01-fongmi`<br>
 目标场景：4K/5K、HEVC Main10、HDR10/HDR10+/Dolby Vision、大体积 MKV/REMUX、70～200Mbps 峰值码率、网盘 Range、外部回环代理、Android TV/电视盒子
 
 ## 一、结论先行
@@ -367,7 +367,7 @@ App 侧只保留可验证的边界能力：本地 HTTP 读取、CacheDataSource�
 
 #### 后端 A：Media3 Java Matroska
 
-优点：版本可控、行为一致、已有 DV/字幕/章节支持。  
+优点：版本可控、行为一致、已有 DV/字幕/章节支持。<br>
 改造点：
 
 - 对远端网盘统计 `sniff bytes / cues seek distance / track count / attachment bytes / first sample latency`。

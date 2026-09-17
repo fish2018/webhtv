@@ -180,7 +180,9 @@ public final class PlaybackMediaFactsMapper {
                         PlaybackAutoContext.Confidence.HIGH, sampledAtElapsedMs));
     }
 
-    private static PlaybackAutoContext.Fact<PlaybackAutoContext.DecodeMode> decodeModeFact(
+    // Package-private so the classification can be asserted directly; it is the single source
+    // of truth for soft/hard decode across all three kernels.
+    static PlaybackAutoContext.Fact<PlaybackAutoContext.DecodeMode> decodeModeFact(
             PlayerEngine.DecoderKind kind,
             String decoderName,
             long sampledAtElapsedMs) {
@@ -195,7 +197,8 @@ public final class PlaybackMediaFactsMapper {
         String lower = normalize(decoderName);
         if (lower.startsWith("omx.google.") || lower.startsWith("c2.android.")
                 || lower.contains("ffmpeg") || lower.contains("libgav1")
-                || lower.contains("dav1d") || lower.contains("avcodec")) {
+                || lower.contains("libvpx") || lower.contains("dav1d")
+                || lower.contains("avcodec")) {
             return PlaybackAutoContext.Fact.untilReplaced(PlaybackAutoContext.DecodeMode.SOFTWARE,
                     PlaybackAutoContext.ValueSource.ESTIMATOR, PlaybackAutoContext.Confidence.MEDIUM, sampledAtElapsedMs);
         }

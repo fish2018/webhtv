@@ -78,6 +78,7 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         ListHolder(@NonNull AdapterSearchBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.remark.setSelected(true);
             binding.getRoot().setFocusable(true);
             binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
@@ -110,6 +111,7 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         GridHolder(@NonNull AdapterVodRectBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
+            binding.remark.setSelected(true);
             binding.getRoot().setFocusable(true);
             binding.name.setSingleLine(true);
             binding.name.setHorizontallyScrolling(true);

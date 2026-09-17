@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_shell_proxy_dialog"
+    android:fillViewport="true">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="20dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/ad_rule_edit_title"
+            android:textColor="#202124"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:hint="@string/ad_rule_field_name"
+            android:textColorHint="#5F6368"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/dialog_outlined_button_stroke"
+            app:hintTextColor="#5F6368">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="#202124"
+                android:textColorHint="#8A8F98"
+                android:textSize="14sp"
+                tools:text="我的规则" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:hint="@string/ad_rule_field_hosts"
+            android:textColorHint="#5F6368"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/dialog_outlined_button_stroke"
+            app:helperText="@string/ad_rule_field_hosts_hint"
+            app:helperTextEnabled="true"
+            app:helperTextTextColor="#5F6368"
+            app:hintTextColor="#5F6368">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/hosts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:minLines="2"
+                android:textColor="#202124"
+                android:textColorHint="#8A8F98"
+                android:textSize="13sp"
+                tools:text="example.com&#10;ad.provider.net" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:hint="@string/ad_rule_field_regex"
+            android:textColorHint="#5F6368"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/dialog_outlined_button_stroke"
+            app:helperText="@string/ad_rule_field_regex_hint"
+            app:helperTextEnabled="true"
+            app:helperTextTextColor="#5F6368"
+            app:hintTextColor="#5F6368">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/regex"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:minLines="2"
+                android:textColor="#202124"
+                android:textColorHint="#8A8F98"
+                android:textSize="13sp"
+                tools:text=".*\\.mp4\\?ad=.*&#10;.*\/preroll\/.*" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:hint="@string/ad_rule_field_exclude"
+            android:textColorHint="#5F6368"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/dialog_outlined_button_stroke"
+            app:helperText="@string/ad_rule_field_exclude_hint"
+            app:helperTextEnabled="true"
+            app:helperTextTextColor="#5F6368"
+            app:hintTextColor="#5F6368">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/exclude"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:minLines="2"
+                android:textColor="#202124"
+                android:textColorHint="#8A8F98"
+                android:textSize="13sp"
+                tools:text=".*trailer.*&#10;.*preview.*" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancel"
+                style="@style/Widget.WebHTV.LightDialog.Button.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginEnd="12dp"
+                android:minWidth="112dp"
+                android:text="@android:string/cancel"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/confirm"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:minWidth="112dp"
+                android:text="@android:string/ok"
+                android:textColor="@color/dialog_primary_button_text"
+                android:textSize="14sp"
+                app:backgroundTint="@color/dialog_primary_button_bg" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</androidx.core.widget.NestedScrollView>

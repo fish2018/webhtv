@@ -122,6 +122,8 @@ public final class PlaybackExperimentPolicy {
                 Risk.STABLE_BASELINE, 1),
         EXO_AUTO_PRELOAD("exo.auto-preload", Domain.EXO,
                 Risk.AUTOMATIC_OPTIMIZATION, 1),
+        EXO_SHORT_DRAMA_QUEUE("exo.short-drama-queue", Domain.EXO,
+                Risk.AUTOMATIC_OPTIMIZATION, 2),
         EXO_NETWORK_SPEED("exo.network-speed", Domain.EXO,
                 Risk.AUTOMATIC_OPTIMIZATION, 1),
         EXO_RTSP_RECOVERY("exo.rtsp-recovery", Domain.EXO,

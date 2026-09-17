@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#080b15">
+  <title>Eclipse · WebHome</title>
+  <script>
+    (function (w, d) {
+      var proto;
+      var markers = 'no-layout-gap no-css-functions no-aspect-ratio'; // Element.prototype.closest
+      w.__eclipseBoot = { dom: false, native: false, compatibility: markers };
+      if (d.documentElement) d.documentElement.className += ' js';
+      proto = w.Element && w.Element.prototype;
+      if (proto && !proto.matches) proto.matches = proto.msMatchesSelector || proto.webkitMatchesSelector;
+      if (proto && !proto.closest) {
+        proto.closest = function (selector) {
+          var element = this;
+          while (element && element.nodeType === 1) {
+            if (element.matches && element.matches(selector)) return element;
+            element = element.parentElement || element.parentNode;
+          }
+          return null;
+        };
+      }
+      if (proto && !proto.replaceChildren) {
+        proto.replaceChildren = function () {
+          var i;
+          var child;
+          while (this.firstChild) this.removeChild(this.firstChild);
+          for (i = 0; i < arguments.length; i += 1) {
+            child = arguments[i];
+            this.appendChild(child && child.nodeType ? child : d.createTextNode(String(child)));
+          }
+        };
+      }
+    }(window, document));
+  </script>
+  <style>
+    :root {
+      --eclipse-safe-top: var(--fm-safe-top, 0px);
+      --eclipse-active-safe-top: 0px;
+    }
+    @supports (top: max(0px, 1px)) {
+      :root { --eclipse-safe-top: max(var(--fm-safe-top, 0px), env(safe-area-inset-top, 0px)); }
+    }
+    html.safe-top-active { --eclipse-active-safe-top: var(--eclipse-safe-top); }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      color: #f6f8ff;
+      background: #080b15;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+    body:before, body:after {
+      position: fixed;
+      z-index: -2;
+      width: 46vw;
+      height: 46vw;
+      border-radius: 50%;
+      content: "";
+      opacity: .18;
+      pointer-events: none;
+    }
+    body:before { top: -24vw; left: -12vw; background: #6e5bff; box-shadow: 0 0 130px #6e5bff; }
+    body:after { right: -22vw; top: 18vh; background: #00d8ff; box-shadow: 0 0 150px #00d8ff; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .shell {
+      width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 42px 56px;
+      padding-top: calc(24px + var(--eclipse-active-safe-top, 0px));
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      min-height: 58px;
+      margin-bottom: 22px;
+    }
+    .brand { display: flex; align-items: center; margin-right: 26px; white-space: nowrap; }
+    .brand-mark {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      margin-right: 11px;
+      border: 2px solid #8a78ff;
+      border-radius: 50%;
+      box-shadow: inset -12px 0 0 #080b15, 0 0 24px rgba(126, 104, 255, .45);
+    }
+    .brand-mark:after {
+      position: absolute;
+      right: -4px;
+      top: 8px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #36e8ff;
+      box-shadow: 0 0 13px #36e8ff;
+      content: "";
+    }
+    .brand strong { display: block; font-size: 20px; letter-spacing: 3px; line-height: 1; }
+    .brand small { display: block; margin-top: 5px; color: #8c97b7; font-size: 10px; letter-spacing: 1.6px; }
+    .source-pill {
+      max-width: 230px;
+      height: 34px;
+      margin-right: auto;
+      padding: 7px 12px;
+      overflow: hidden;
+      color: #9ca7c6;
+      border: 1px solid #252c45;
+      border-radius: 18px;
+      background: rgba(17, 22, 39, .85);
+      cursor: pointer;
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .source-pill:before { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #45e6b1; content: ""; box-shadow: 0 0 8px #45e6b1; }
+    .search { display: flex; width: 330px; margin-left: 14px; }
+    .search input {
+      width: 100%; height: 42px; padding: 0 15px; color: #fff;
+      border: 1px solid #2b3453; border-right: 0; border-radius: 12px 0 0 12px;
+      outline: 0; background: rgba(13, 18, 33, .92);
+    }
+    .search button { width: 54px; height: 42px; border: 1px solid #574da2; border-radius: 0 12px 12px 0; background: #342e67; cursor: pointer; }
+    .top-action {
+      height: 42px; margin-left: 10px; padding: 0 15px; border: 1px solid #2b3453;
+      border-radius: 12px; background: rgba(17, 22, 39, .9); cursor: pointer; white-space: nowrap;
+    }
+    .hero {
+      position: relative;
+      display: flex;
+      min-height: 310px;
+      margin-bottom: 30px;
+      overflow: hidden;
+      border: 1px solid #242b45;
+      border-radius: 24px;
+      background: linear-gradient(118deg, rgba(20, 24, 48, .98), rgba(11, 16, 30, .94));
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .25);
+    }
+    .hero:before {
+      position: absolute; right: -80px; bottom: -160px; width: 480px; height: 480px;
+      border: 60px solid rgba(101, 81, 255, .12); border-radius: 50%; content: "";
+    }
+    .hero-copy { position: relative; z-index: 1; width: 66%; padding: 44px 48px; }
+    .eyebrow { margin-bottom: 12px; color: #54e7ff; font-size: 12px; font-weight: bold; letter-spacing: 2.4px; text-transform: uppercase; }
+    .hero h1 { max-width: 760px; margin: 0 0 13px; font-size: 38px; line-height: 1.12; letter-spacing: .3px; }
+    .hero p { max-width: 680px; margin: 0; color: #a4aecb; font-size: 15px; }
+    .hero-meta { display: flex; margin-top: 25px; }
+    .meta-cell { min-width: 110px; margin-right: 28px; }
+    .meta-cell strong { display: block; color: #fff; font-size: 23px; }
+    .meta-cell span { color: #7f89a9; font-size: 11px; letter-spacing: .8px; }
+    .hero-art { position: relative; z-index: 1; width: 34%; min-height: 310px; }
+    .orbit { position: absolute; left: 50%; top: 50%; width: 230px; height: 230px; margin: -115px 0 0 -115px; border: 1px solid rgba(100, 225, 255, .3); border-radius: 50%; box-shadow: 0 0 55px rgba(69, 208, 255, .15); }
+    .orbit:before { position: absolute; left: 30px; top: 30px; right: 30px; bottom: 30px; border: 1px solid rgba(144, 109, 255, .45); border-radius: 50%; content: ""; }
+    .featured-poster {
+      position: absolute; left: 50%; top: 50%; width: 134px; height: 196px; margin: -98px 0 0 -67px;
+      overflow: hidden; border: 2px solid rgba(255, 255, 255, .65); border-radius: 16px;
+      background: #1a2038; box-shadow: 0 18px 45px rgba(0,0,0,.52), 0 0 34px rgba(91, 218, 255, .22);
+      transform: rotate(5deg);
+    }
+    .featured-poster img { width: 100%; height: 100%; object-fit: cover; }
+    .featured-poster span { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 8px 8px; background: linear-gradient(transparent, rgba(5,8,17,.94)); font-size: 11px; text-align: center; }
+    .section-head { display: flex; align-items: flex-end; margin: 0 0 14px; }
+    .section-head h2 { margin: 0; font-size: 22px; }
+    .section-head p { margin: 0 0 2px 13px; color: #7782a3; font-size: 12px; }
+    .status { margin-left: auto; color: #8490b2; font-size: 12px; }
+    .tabs, .filters { display: flex; padding: 2px 2px 9px; overflow-x: auto; overflow-y: hidden; }
+    .tabs { margin-bottom: 13px; }
+    .filters { margin: -5px 0 13px; }
+    .tab, .filter-chip {
+      flex: 0 0 auto; margin: 0 9px 7px 0; border: 1px solid #2a3250; border-radius: 18px;
+      color: #a6b0cc; background: #11162a; cursor: pointer; white-space: nowrap;
+    }
+    .tab { min-width: 76px; height: 38px; padding: 0 17px; }
+    .filter-chip { height: 32px; padding: 0 13px; font-size: 12px; }
+    .tab.active, .filter-chip.active { color: #08111a; border-color: #58e5ff; background: #58e5ff; box-shadow: 0 0 18px rgba(73, 221, 255, .26); }
+    .filter-row { display: flex; align-items: center; min-width: 100%; }
+    .filter-label { flex: 0 0 70px; margin: 0 10px 7px 0; color: #717d9f; font-size: 12px; }
+    .filter-values { display: flex; flex: 1 0 auto; }
+    .grid { display: flex; flex-wrap: wrap; margin: 0 -9px; min-height: 180px; }
+    .card { width: 16.666%; padding: 0 9px 24px; }
+    .card-button { display: block; width: 100%; padding: 0; color: inherit; border: 0; outline: 0; background: transparent; cursor: pointer; text-align: left; }
+    .poster {
+      position: relative; display: block; width: 100%; height: 0; padding-top: 140%; overflow: hidden;
+      border: 2px solid transparent; border-radius: 14px; background: #151b31;
+      box-shadow: 0 10px 25px rgba(0,0,0,.22);
+    }
+    .poster img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; background: #161c31; }
+    .poster:after { position: absolute; left: 0; right: 0; bottom: 0; height: 42%; background: linear-gradient(transparent, rgba(6,8,17,.74)); content: ""; }
+    .remark { position: absolute; z-index: 2; left: 7px; right: 7px; bottom: 7px; overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px #000; }
+    .kind { position: absolute; z-index: 2; right: 7px; top: 7px; padding: 3px 6px; border-radius: 7px; color: #09101c; background: rgba(89, 233, 255, .9); font-size: 9px; font-weight: bold; }
+    .card-title { margin-top: 9px; overflow: hidden; color: #edf1ff; font-size: 14px; font-weight: bold; text-overflow: ellipsis; white-space: nowrap; }
+    .card-subtitle { min-height: 14px; margin-top: 3px; overflow: hidden; color: #747f9f; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { width: 100%; padding: 60px 20px; color: #7d88a9; text-align: center; }
+    .auto-page { display: none; min-height: 42px; margin: 5px auto 15px; color: #7d88a9; font-size: 12px; line-height: 42px; text-align: center; }
+    .auto-page.show { display: block; }
+    .auto-page.loading { color: #dfe5ff; }
+    .loading .grid { opacity: .45; }
+    .toast {
+      position: fixed; z-index: 30; left: 50%; bottom: 34px; max-width: 80%; padding: 10px 17px;
+      border: 1px solid #394362; border-radius: 12px; color: #fff; background: rgba(12,16,29,.96);
+      box-shadow: 0 12px 35px rgba(0,0,0,.4); opacity: 0; pointer-events: none;
+      transform: translate(-50%, 14px); transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    button:focus, input:focus { outline: 0; }
+    .tab:focus, .filter-chip:focus, .source-pill:focus, .top-action:focus, .search button:focus {
+      border-color: #fff; box-shadow: 0 0 0 3px #785fff, 0 0 26px rgba(85, 225, 255, .5);
+    }
+    .card-button:focus .poster {
+      border-color: #fff;
+      box-shadow: 0 0 0 3px #785fff;
+    }
+    .search input:focus { border-color: #67e8ff; box-shadow: inset 0 0 0 1px #67e8ff, 0 0 18px rgba(80,220,255,.2); }
+    .noscript { margin: 30px; padding: 20px; border: 1px solid #5d4665; border-radius: 12px; background: #211425; }
+    @media (max-width: 1200px) { .card { width: 20%; } .hero-copy { width: 64%; } .hero-art { width: 36%; } }
+    @media (max-width: 900px) {
+      .shell { padding: 18px 22px 45px; padding-top: calc(18px + var(--eclipse-active-safe-top, 0px)); }
+      .topbar { flex-wrap: wrap; }
+      .source-pill { max-width: 180px; }
+      .search { order: 4; width: 100%; margin: 12px 0 0; }
+      .hero-copy { width: 68%; padding: 34px; }
+      .hero-art { width: 32%; }
+      .hero h1 { font-size: 31px; }
+      .card { width: 25%; }
+    }
+    @media (max-width: 640px) {
+      body { font-size: 14px; }
+      .shell { padding: 14px 12px 38px; padding-top: calc(14px + var(--eclipse-active-safe-top, 0px)); }
+      .topbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 10px;
+        min-height: 0;
+        margin-bottom: 14px;
+      }
+      .brand { grid-column: 1 / 3; grid-row: 1; min-width: 0; margin-right: 0; }
+      .brand-mark { width: 36px; height: 36px; }
+      .brand strong { font-size: 17px; }
+      .source-pill { grid-column: 3; grid-row: 1; width: 34vw; max-width: 120px; margin: 0; justify-self: end; }
+      .search { grid-column: 2 / 4; grid-row: 2; width: 100%; min-width: 0; margin: 0; order: 0; }
+      #libraryButton { grid-column: 1; grid-row: 2; margin-left: 0; }
+      .top-action { height: 42px; padding: 0 11px; font-size: 12px; }
+      .top-action.settings-action { display: none; }
+      .hero { min-height: 218px; border-radius: 18px; }
+      .hero-copy { width: 74%; padding: 25px 21px; }
+      .hero-art { width: 26%; min-height: 218px; }
+      .hero h1 { font-size: 25px; }
+      .hero p { font-size: 12px; }
+      .hero-meta { margin-top: 17px; }
+      .meta-cell { min-width: 76px; margin-right: 12px; }
+      .meta-cell strong { font-size: 19px; }
+      .meta-cell span { font-size: 9px; }
+      .orbit { width: 150px; height: 150px; margin: -75px 0 0 -75px; }
+      .featured-poster { width: 84px; height: 124px; margin: -62px 0 0 -42px; border-radius: 10px; }
+      .section-head h2 { font-size: 19px; }
+      .section-head p { display: none; }
+      .card { width: 33.333%; padding: 0 5px 17px; }
+      .grid { margin: 0 -5px; }
+      .poster { border-radius: 10px; }
+      .card-title { margin-top: 7px; font-size: 12px; }
+      .card-subtitle { font-size: 10px; }
+      .tabs { margin-bottom: 7px; }
+      .tab { min-width: 65px; height: 34px; padding: 0 13px; font-size: 12px; }
+      .filter-label { flex-basis: 52px; }
+    }
+    @media (min-width: 1500px) {
+      .shell { padding-left: 58px; padding-right: 58px; }
+      .card { padding-left: 12px; padding-right: 12px; }
+      .grid { margin-left: -12px; margin-right: -12px; }
+      .card-title { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <noscript><div class="noscript">Eclipse 皮肤需要启用 JavaScript。</div></noscript>
+  <main class="shell" id="app" aria-busy="true">
+    <header class="topbar">
+      <div class="brand" aria-label="Eclipse WebHome">
+        <span class="brand-mark"></span>
+        <span><strong>ECLIPSE</strong><small>UNIVERSAL WEBHOME</small></span>
+      </div>
+      <button class="source-pill" data-focus="source" id="sourceName" type="button" aria-label="切换内容源">正在连接内容源</button>
+      <form class="search" id="searchForm">
+        <input id="searchInput" data-focus="search" type="search" autocomplete="off" placeholder="搜索当前内容源" aria-label="搜索">
+        <button data-focus="search-submit" type="submit" aria-label="提交搜索">⌕</button>
+      </form>
+      <button class="top-action" data-focus="library" id="libraryButton" type="button">媒体库</button>
+      <button class="top-action settings-action" data-focus="settings" id="settingsButton" type="button">设置</button>
+    </header>
+
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <div class="eyebrow">NOW ORBITING · WEBHOME V1</div>
+        <h1 id="heroTitle">一个皮肤，连接当前内容源</h1>
+        <p id="heroText">Eclipse 使用稳定的 WebHome 数据桥接，在手机与电视上呈现同一套内容体验。</p>
+        <div class="hero-meta">
+          <div class="meta-cell"><strong id="itemCount">--</strong><span>推荐内容</span></div>
+          <div class="meta-cell"><strong id="classCount">--</strong><span>内容分类</span></div>
+          <div class="meta-cell"><strong id="clientMode">--</strong><span>当前设备</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="orbit"></div>
+        <div class="featured-poster"><img id="featuredImage" alt=""><span id="featuredName">Eclipse</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="contentTitle">
+      <div class="section-head">
+        <h2 id="contentTitle">探索内容</h2>
+        <p id="contentHint">按分类浏览当前源</p>
+        <span class="status" id="statusText">准备中</span>
+      </div>
+      <div class="tabs" id="classTabs" role="tablist" aria-label="内容分类"></div>
+      <div class="filters" id="filters" aria-label="筛选条件"></div>
+      <div class="grid" id="contentGrid"></div>
+      <div class="auto-page" id="autoPage" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="eclipse-auto-pagination.js"></script>
+  <script src="eclipse-focus-navigation.js"></script>
+  <script src="eclipse-category-diagnostics.js"></script>
+  <script src="eclipse-category-state.js"></script>
+  <script>
+    (function (w, d) {
+      'use strict';
+
+      var state = {
+        home: null,
+        source: { key: '', name: '浏览器预览' },
+        classes: [],
+        filters: {},
+        homeItems: [],
+        items: [],
+        active: '__home__',
+        activeName: '精选',
+        extend: {},
+        page: 1,
+        pageCount: 1,
+        hasMore: false,
+        truncated: false,
+        loading: false,
+        native: false,
+        domReady: false,
+        nativeRequested: false,
+        categorySnapshots: {},
+        duplicateNotices: {},
+        generation: 0,
+        focusKey: '',
+        toastTimer: 0,
+        autoPageTimer: 0,
+        safeChromeMode: '',
+        systemBarsHidden: false
+      };
+
+      var sampleTitles = [
+        '星环旅人', '无声海岸', '月影档案', '深空回声', '零点剧场', '蓝色时刻',
+        '风暴边界', '纸上银河', '昨日来信', '霓虹城市', '冬日花园', '未知航线',
+        '微光计划', '静默电台', '夜航日志', '漫游手册', '远方来客', '云端影院'
+      ];
+
+      function byId(id) { return d.getElementById(id); }
+      function asArray(value) { return Object.prototype.toString.call(value) === '[object Array]' ? value : []; }
+      function text(value) { return value === null || typeof value === 'undefined' ? '' : String(value); }
+      function hasNative() { return !!(w.fm && typeof w.fm.vodHome === 'function' && typeof w.fm.vodCategory === 'function'); }
+      function setText(id, value) { var el = byId(id); if (el) el.textContent = text(value); }
+      function clear(el) { while (el && el.firstChild) el.removeChild(el.firstChild); }
+      function listen(el, name, fn) { if (el) el.addEventListener(name, fn, false); }
+
+      function readRootPixel(name) {
+        var value = '';
+        var number;
+        try { value = w.getComputedStyle(d.documentElement).getPropertyValue(name); } catch (ignore) {}
+        number = parseFloat(value || '0');
+        return isNaN(number) ? 0 : number;
+      }
+
+      function shouldUseTopSafeArea(detail) {
+        var mode;
+        var hidden;
+        var safeTop;
+        var statusBarHeight;
+        detail = detail || {};
+        mode = text(detail.chromeMode || state.safeChromeMode).toLowerCase();
+        hidden = typeof detail.systemBarsHidden === 'undefined' ? state.systemBarsHidden : !!detail.systemBarsHidden;
+        safeTop = Number(detail.safeTop);
+        statusBarHeight = Number(detail.statusBarHeight);
+        if (isNaN(safeTop)) safeTop = readRootPixel('--fm-safe-top');
+        if (isNaN(statusBarHeight)) statusBarHeight = readRootPixel('--fm-status-bar-height');
+        if (hidden && safeTop <= 0 && statusBarHeight <= 0) return false;
+        return (mode === 'edge' || mode === 'immersive') && (safeTop > 0 || statusBarHeight > 0);
+      }
+
+      function updateSafeAreaMode(detail) {
+        detail = detail || {};
+        if (detail.chromeMode) state.safeChromeMode = text(detail.chromeMode).toLowerCase();
+        if (typeof detail.systemBarsHidden !== 'undefined') state.systemBarsHidden = !!detail.systemBarsHidden;
+        if (shouldUseTopSafeArea(detail)) d.documentElement.classList.add('safe-top-active');
+        else d.documentElement.classList.remove('safe-top-active');
+      }
+
+      function refreshSafeAreaMode() {
+        var result;
+        if (w.__fmViewport) {
+          updateSafeAreaMode(w.__fmViewport);
+          return;
+        }
+        if (!w.fm || !w.fm.ui || typeof w.fm.ui.getViewport !== 'function') {
+          updateSafeAreaMode({});
+          return;
+        }
+        try {
+          result = w.fm.ui.getViewport();
+          if (result && typeof result.then === 'function') {
+            result.then(function (detail) { updateSafeAreaMode(detail || {}); }, function () { updateSafeAreaMode({}); });
+          } else updateSafeAreaMode(result || {});
+        } catch (ignore) {
+          updateSafeAreaMode({});
+        }
+      }
+
+      function focusId(prefix, value) { return prefix + '-' + text(value).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 48); }
+
+      function posterData(title, index) {
+        var colors = [
+          ['#10172d', '#6f5bff', '#49e7ff'], ['#161126', '#d84cff', '#5a7bff'],
+          ['#071e2c', '#00b9ca', '#89ffcf'], ['#251121', '#ff5c8d', '#f7b55b'],
+          ['#121d22', '#24c89c', '#7398ff'], ['#21182b', '#9c62ff', '#ff769e']
+        ];
+        var c = colors[index % colors.length];
+        var safe = text(title).replace(/[&<>]/g, '');
+        var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="504" viewBox="0 0 360 504">' +
+          '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="' + c[0] + '"/><stop offset=".58" stop-color="' + c[1] + '"/><stop offset="1" stop-color="' + c[2] + '"/></linearGradient></defs>' +
+          '<rect width="360" height="504" fill="url(#g)"/><circle cx="290" cy="105" r="116" fill="none" stroke="white" stroke-opacity=".24" stroke-width="2"/>' +
+          '<circle cx="290" cy="105" r="72" fill="none" stroke="white" stroke-opacity=".38"/><path d="M-20 380 C90 275 205 470 390 320 L390 520 L-20 520Z" fill="#050913" fill-opacity=".68"/>' +
+          '<text x="28" y="404" fill="white" font-family="Arial,sans-serif" font-size="27" font-weight="bold">' + safe.slice(0, 9) + '</text>' +
+          '<text x="29" y="435" fill="white" fill-opacity=".68" font-family="Arial,sans-serif" font-size="13" letter-spacing="3">ECLIPSE SELECT</text></svg>';
+        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+      }
+
+      function fallbackHome() {
+        var items = [];
+        var i;
+        for (i = 0; i < sampleTitles.length; i += 1) {
+          items.push({
+            index: i,
+            kind: 'vod',
+            vodId: 'demo-' + (i + 1),
+            siteKey: '',
+            name: sampleTitles[i],
+            pic: posterData(sampleTitles[i], i),
+            remarks: i % 3 === 0 ? 'Eclipse 推荐' : (2026 - (i % 7)) + ' · HD',
+            year: String(2026 - (i % 7)),
+            typeName: i % 2 ? '电影' : '剧集',
+            area: i % 3 ? '幻想区域' : '深空频道',
+            style: { type: 'rect', ratio: 0.714 }
+          });
+        }
+        return {
+          version: 1,
+          source: { key: '', name: 'Eclipse 浏览器演示', type: 0 },
+          client: { isLeanback: false, isLandscape: w.innerWidth > w.innerHeight, suggestedColumns: 3 },
+          classes: [
+            { typeId: 'movie', typeName: '电影', filter: true },
+            { typeId: 'series', typeName: '剧集', filter: false },
+            { typeId: 'anime', typeName: '动漫', filter: false },
+            { typeId: 'documentary', typeName: '纪录片', filter: false }
+          ],
+          filters: {
+            movie: [
+              { key: 'year', name: '年份', init: '', values: [{ name: '全部', value: '', selected: true }, { name: '2026', value: '2026' }, { name: '2025', value: '2025' }] },
+              { key: 'area', name: '地区', init: '', values: [{ name: '全部', value: '', selected: true }, { name: '深空', value: 'space' }, { name: '地球', value: 'earth' }] }
+            ]
+          },
+          items: items,
+          capabilities: { category: true, filters: true, recommend: true }
+        };
+      }
+
+      function status(message, busy) {
+        state.loading = !!busy;
+        setText('statusText', message || '');
+        var app = byId('app');
+        if (app) {
+          app.setAttribute('aria-busy', busy ? 'true' : 'false');
+          if (busy) app.classList.add('loading'); else app.classList.remove('loading');
+        }
+        updateAutoPage();
+      }
+
+      function toast(message) {
+        var el = byId('toast');
+        if (!el) return;
+        el.textContent = text(message);
+        el.classList.add('show');
+        w.clearTimeout(state.toastTimer);
+        state.toastTimer = w.setTimeout(function () { el.classList.remove('show'); }, 2300);
+      }
+
+      function updateAutoPage() {
+        var pager = byId('autoPage');
+        if (!pager) return;
+        pager.className = 'auto-page' + (state.hasMore ? ' show' : '') + (state.loading ? ' loading' : '');
+        pager.textContent = state.hasMore ? (state.loading ? '正在自动加载下一页…' : '继续浏览时将自动加载下一页') : '';
+      }
+
+      function gridPreloadCount() {
+        var host = byId('contentGrid');
+        var cards = host ? host.getElementsByClassName('card') : [];
+        var hostRect;
+        var cardRect;
+        if (!cards.length) return 1;
+        hostRect = host.getBoundingClientRect();
+        cardRect = cards[0].getBoundingClientRect();
+        if (!hostRect.width || !cardRect.width) return 1;
+        var count = Math.round(hostRect.width / cardRect.width);
+        return count > 1 ? count : 1;
+      }
+
+      function viewportPreloadDistance() {
+        var distance = Math.round(w.innerHeight * .25);
+        if (distance < 160) return 160;
+        if (distance > 360) return 360;
+        return distance;
+      }
+
+      function loadNextPage() {
+        if (!state.hasMore || state.loading || state.active === '__home__') return false;
+        loadCategory(state.active, state.page + 1, true);
+        return true;
+      }
+
+      function maybeAutoLoadForFocus(target) {
+        var index;
+        if (!target || !target.getAttribute || !w.EclipseAutoPagination) return false;
+        index = target.getAttribute('data-card-index');
+        if (index === null) return false;
+        if (!w.EclipseAutoPagination.shouldLoadForFocus({
+          hasMore: state.hasMore,
+          loading: state.loading,
+          itemIndex: index,
+          itemCount: state.items.length,
+          preloadCount: gridPreloadCount()
+        })) return false;
+        return loadNextPage();
+      }
+
+      function maybeAutoLoadForViewport() {
+        var pager = byId('autoPage');
+        var rect;
+        if (!pager || !w.EclipseAutoPagination) return false;
+        rect = pager.getBoundingClientRect();
+        if (!w.EclipseAutoPagination.shouldLoadForViewport({
+          hasMore: state.hasMore,
+          loading: state.loading,
+          sentinelTop: rect.top,
+          viewportHeight: w.innerHeight,
+          preloadDistance: viewportPreloadDistance()
+        })) return false;
+        return loadNextPage();
+      }
+
+      function scheduleAutoPageCheck() {
+        w.clearTimeout(state.autoPageTimer);
+        state.autoPageTimer = w.setTimeout(maybeAutoLoadForViewport, 90);
+      }
+
+      function handleFocusIn(event) {
+        rememberFocus(event);
+        maybeAutoLoadForFocus(event && event.target);
+      }
+
+      function resolvePic(item, index) {
+        var url = text(item && item.pic);
+        if (!url) return posterData(item && item.name ? item.name : 'Eclipse', index);
+        if (url.indexOf('data:') === 0) return url;
+        if (state.native && w.fm && typeof w.fm.res === 'function') {
+          try { return w.fm.res(url, {}); } catch (ignore) { return url; }
+        }
+        return url;
+      }
+
+      function updateHero(data) {
+        var client = data && data.client ? data.client : {};
+        var first = state.items.length ? state.items[0] : null;
+        setText('itemCount', state.homeItems.length || state.items.length);
+        setText('classCount', state.classes.length);
+        setText('clientMode', client.isLeanback ? 'TV' : 'PHONE');
+        setText('sourceName', state.source.name || '未命名内容源');
+        setText('heroTitle', (state.source.name || 'Eclipse') + ' · 光影首页');
+        setText('heroText', state.native ? '正在通过 WebHome V1 安全读取当前内容源；更换内容源后，皮肤会同步刷新。' : '当前为浏览器回退数据。安装到应用后会自动连接当前内容源。');
+        if (first) {
+          byId('featuredImage').src = resolvePic(first, 0);
+          setText('featuredName', first.name || 'Eclipse');
+        }
+      }
+
+      function renderClasses() {
+        var host = byId('classTabs');
+        var entries = [{ typeId: '__home__', typeName: '精选' }].concat(state.classes);
+        var i;
+        clear(host);
+        for (i = 0; i < entries.length; i += 1) {
+          (function (entry, index) {
+            var button = d.createElement('button');
+            button.type = 'button';
+            button.className = 'tab' + (entry.typeId === state.active ? ' active' : '');
+            button.setAttribute('role', 'tab');
+            button.setAttribute('aria-selected', entry.typeId === state.active ? 'true' : 'false');
+            button.setAttribute('data-focus', focusId('tab', index));
+            button.setAttribute('data-focus-row', 'classes');
+            button.textContent = entry.typeName || entry.typeId || '分类';
+            listen(button, 'click', function () { selectClass(entry); });
+            host.appendChild(button);
+          }(entries[i], i));
+        }
+      }
+
+      function renderFilters() {
+        var host = byId('filters');
+        var values = state.active === '__home__' ? [] : asArray(state.filters[state.active]);
+        var i;
+        clear(host);
+        host.style.display = values.length ? 'block' : 'none';
+        for (i = 0; i < values.length; i += 1) {
+          (function (filter, rowIndex) {
+            var row = d.createElement('div');
+            var label = d.createElement('span');
+            var choices = d.createElement('div');
+            var list = asArray(filter.values);
+            var j;
+            row.className = 'filter-row';
+            label.className = 'filter-label';
+            label.textContent = filter.name || filter.key;
+            choices.className = 'filter-values';
+            for (j = 0; j < list.length; j += 1) {
+              (function (choice, choiceIndex) {
+                var value = text(choice.value);
+                var selected = text(state.extend[filter.key]) === value || (typeof state.extend[filter.key] === 'undefined' && !!choice.selected);
+                var button = d.createElement('button');
+                button.type = 'button';
+                button.className = 'filter-chip' + (selected ? ' active' : '');
+                button.setAttribute('data-focus', focusId('filter-' + rowIndex, choiceIndex));
+                button.setAttribute('data-focus-row', 'filter-' + rowIndex);
+                button.textContent = choice.name || value || '全部';
+                listen(button, 'click', function () {
+                  state.extend[filter.key] = value;
+                  renderFilters();
+                  loadCategory(state.active, 1, false);
+                });
+                choices.appendChild(button);
+              }(list[j], j));
+            }
+            row.appendChild(label);
+            row.appendChild(choices);
+            host.appendChild(row);
+          }(values[i], i));
+        }
+      }
+
+      function renderItems(append) {
+        var host = byId('contentGrid');
+        var start = 0;
+        var i;
+        if (!append) clear(host); else start = host.children.length;
+        if (!state.items.length && !append) {
+          var empty = d.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = '这个分类暂时没有内容';
+          host.appendChild(empty);
+        }
+        for (i = start; i < state.items.length; i += 1) {
+          (function (item, index) {
+            var card = d.createElement('article');
+            var button = d.createElement('button');
+            var poster = d.createElement('span');
+            var image = d.createElement('img');
+            var remark = d.createElement('span');
+            var title = d.createElement('div');
+            var subtitle = d.createElement('div');
+            var fallback = posterData(item.name || 'Eclipse', index);
+            card.className = 'card';
+            button.type = 'button';
+            button.className = 'card-button';
+            button.setAttribute('data-focus', focusId('card-' + state.active, index));
+            button.setAttribute('data-card-index', String(index));
+            button.setAttribute('aria-label', '打开 ' + text(item.name));
+            poster.className = 'poster';
+            image.alt = '';
+            image.setAttribute('loading', 'lazy');
+            image.src = resolvePic(item, index);
+            image.onerror = function () { image.onerror = null; image.src = fallback; };
+            remark.className = 'remark';
+            remark.textContent = item.remarks || item.year || item.typeName || '可播放';
+            poster.appendChild(image);
+            poster.appendChild(remark);
+            if (item.kind && item.kind !== 'vod') {
+              var kind = d.createElement('span');
+              kind.className = 'kind';
+              kind.textContent = item.kind === 'folder' ? '分类' : '入口';
+              poster.appendChild(kind);
+            }
+            title.className = 'card-title';
+            title.textContent = item.name || '未命名内容';
+            subtitle.className = 'card-subtitle';
+            subtitle.textContent = [item.typeName, item.area, item.year].filter(function (value) { return !!value; }).slice(0, 2).join(' · ');
+            button.appendChild(poster);
+            button.appendChild(title);
+            button.appendChild(subtitle);
+            listen(button, 'click', function () { openItem(item); });
+            card.appendChild(button);
+            host.appendChild(card);
+          }(state.items[i], i));
+        }
+        updateAutoPage();
+        setText('contentHint', state.activeName + ' · 第 ' + state.page + ' 页');
+        restoreFocus();
+        if (!append) scheduleAutoPageCheck();
+      }
+
+      function applyHome(data) {
+        var safe = data && typeof data === 'object' ? data : fallbackHome();
+        if (w.EclipseCategoryState) w.EclipseCategoryState.invalidate(state);
+        state.home = safe;
+        state.source = safe.source || { key: '', name: '当前内容源' };
+        state.classes = asArray(safe.classes);
+        state.filters = safe.filters || {};
+        state.homeItems = asArray(safe.items);
+        state.items = state.homeItems.slice(0);
+        state.active = '__home__';
+        state.activeName = '精选';
+        state.extend = {};
+        state.categorySnapshots = {};
+        state.duplicateNotices = {};
+        state.page = 1;
+        state.pageCount = 1;
+        state.hasMore = false;
+        state.truncated = !!safe.truncated;
+        renderClasses();
+        renderFilters();
+        renderItems(false);
+        updateHero(safe);
+        status(state.truncated ? '结果过多，已显示前 500 条' : (state.native ? '已连接当前内容源' : '浏览器演示数据'), false);
+        if (!state.items.length && state.classes.length) selectClass(state.classes[0]);
+      }
+
+      function selectClass(entry) {
+        if (!entry) return;
+        state.active = text(entry.typeId);
+        state.activeName = entry.typeName || entry.typeId || '分类';
+        state.extend = {};
+        renderClasses();
+        renderFilters();
+        if (state.active === '__home__') {
+          if (w.EclipseCategoryState) w.EclipseCategoryState.invalidate(state);
+          state.items = state.homeItems.slice(0);
+          state.page = 1;
+          state.hasMore = false;
+          state.truncated = !!(state.home && state.home.truncated);
+          renderItems(false);
+          status(state.truncated ? '结果过多，已显示前 500 条' : '已显示精选内容', false);
+          return;
+        }
+        loadCategory(state.active, 1, false);
+      }
+
+      function fallbackCategory(typeId, page, extend) {
+        var all = state.homeItems.length ? state.homeItems : fallbackHome().items;
+        var seed = 0;
+        var filtered = [];
+        var i;
+        for (i = 0; i < text(typeId).length; i += 1) seed += text(typeId).charCodeAt(i);
+        for (i = 0; i < all.length; i += 1) {
+          if ((i + seed) % 3 !== 0 || filtered.length < 8) filtered.push(all[i]);
+        }
+        return {
+          version: 1,
+          source: state.source,
+          client: state.home && state.home.client ? state.home.client : {},
+          query: { typeId: typeId, filter: true, extend: extend || {} },
+          page: page,
+          pageCount: 1,
+          hasMore: false,
+          truncated: false,
+          items: filtered
+        };
+      }
+
+      function applyCategory(data, request) {
+        var pageItems = asArray(data && data.items);
+        var queryTypeId = data && data.query ? text(data.query.typeId) : request.typeId;
+        var duplicate = null;
+        var message;
+        var pairKey;
+        if (!w.EclipseCategoryState || !w.EclipseCategoryState.commit(state, request, data)) return false;
+        if (!request.append && state.native && w.EclipseCategoryDiagnostics && !state.truncated) {
+          duplicate = w.EclipseCategoryDiagnostics.record(state.categorySnapshots, queryTypeId, request.activeName, pageItems);
+        }
+        renderItems(request.append);
+        if (state.truncated) {
+          status('结果过多，已显示前 500 条', false);
+          return true;
+        }
+        if (!duplicate) {
+          status('已载入 ' + request.activeName, false);
+          return true;
+        }
+        message = '当前源返回的“' + request.activeName + '”与“' + duplicate.typeName + '”分类内容完全相同';
+        status(message, false);
+        pairKey = [queryTypeId, duplicate.typeId].sort().join('\u001f');
+        if (!state.duplicateNotices[pairKey]) {
+          state.duplicateNotices[pairKey] = true;
+          toast(message + '，已按真实接口结果展示');
+        }
+        return true;
+      }
+
+      function loadCategory(typeId, page, append) {
+        var request;
+        if (!w.EclipseCategoryState) return;
+        request = w.EclipseCategoryState.begin(state, typeId, page, append, state.extend);
+        request.activeName = state.activeName;
+        if (!request.append) clear(byId('contentGrid'));
+        status('正在载入 ' + request.activeName, true);
+        if (state.native && hasNative()) {
+          w.fm.vodCategory(request.typeId, request.page, { filter: true, extend: request.extend }).then(function (data) {
+            applyCategory(data, request);
+          }).catch(function (error) {
+            if (!w.EclipseCategoryState.fail(state, request)) return;
+            status('分类载入失败', false);
+            toast(error && error.message ? error.message : '内容源暂时不可用');
+          });
+        } else {
+          w.setTimeout(function () {
+            applyCategory(fallbackCategory(request.typeId, request.page, request.extend), request);
+          }, 160);
+        }
+      }
+
+      function requestNativeHome() {
+        if (!state.domReady || !hasNative() || state.nativeRequested) return;
+        state.nativeRequested = true;
+        state.native = true;
+        w.__eclipseBoot.native = true;
+        status('正在读取当前内容源', true);
+        w.fm.vodHome({}).then(function (data) {
+          applyHome(data);
+        }).catch(function (error) {
+          state.nativeRequested = false;
+          state.native = false;
+          applyHome(fallbackHome());
+          toast(error && error.message ? error.message : '无法读取当前内容源，已显示演示数据');
+        });
+      }
+
+      function openItem(item) {
+        if (!item) return;
+        if (item.kind === 'action') {
+          toast('此入口需要由内容源应用处理，Eclipse 不会执行任意动作');
+          return;
+        }
+        if (item.kind === 'folder') {
+          state.active = text(item.vodId);
+          state.activeName = item.name || '分类';
+          state.extend = {};
+          renderClasses();
+          renderFilters();
+          loadCategory(state.active, 1, false);
+          return;
+        }
+        if (state.native && w.fm && typeof w.fm.openDetail === 'function') {
+          status('正在打开 ' + (item.name || '内容'), true);
+          w.fm.openDetail({
+            siteKey: item.siteKey || state.source.key,
+            vodId: item.vodId,
+            title: item.name || '',
+            pic: item.pic || '',
+            content: item.content || '',
+            remarks: item.remarks || ''
+          }).then(function () { status('正在进入详情页', false); }).catch(function (error) {
+            if (typeof w.fm.vod !== 'function') {
+              status('打开失败', false);
+              toast(error && error.message ? error.message : '无法打开此内容');
+              return;
+            }
+            w.fm.vod(item.siteKey || state.source.key, item.vodId, item.name || '', item.pic || '', {
+              content: item.content || '', remarks: item.remarks || ''
+            }).then(function () { status('已交给原生播放器', false); }).catch(function (fallbackError) {
+              status('打开失败', false);
+              toast(fallbackError && fallbackError.message ? fallbackError.message : '无法打开此内容');
+            });
+          });
+        } else if (state.native && w.fm && typeof w.fm.vod === 'function') {
+          w.fm.vod(item.siteKey || state.source.key, item.vodId, item.name || '', item.pic || '', {
+            content: item.content || '', remarks: item.remarks || ''
+          }).catch(function (error) { toast(error && error.message ? error.message : '无法打开此内容'); });
+        } else {
+          toast('浏览器演示：' + (item.name || '内容'));
+        }
+      }
+
+      function submitSearch(event) {
+        if (event) event.preventDefault();
+        var keyword = text(byId('searchInput').value).replace(/^\s+|\s+$/g, '');
+        if (!keyword) { toast('请输入搜索关键词'); return; }
+        if (state.native && w.fm && typeof w.fm.search === 'function') {
+          w.fm.search(keyword, {}).catch(function (error) { toast(error && error.message ? error.message : '无法打开搜索'); });
+          return;
+        }
+        if (w.EclipseCategoryState) w.EclipseCategoryState.invalidate(state);
+        state.active = '__home__';
+        state.activeName = '搜索结果';
+        state.items = state.homeItems.filter(function (item) { return text(item.name).toLowerCase().indexOf(keyword.toLowerCase()) >= 0; });
+        state.hasMore = false;
+        renderClasses();
+        renderFilters();
+        renderItems(false);
+        status('浏览器演示搜索：' + keyword, false);
+      }
+
+      function callApp(method, fallbackMessage) {
+        if (state.native && w.fm && typeof w.fm[method] === 'function') {
+          w.fm[method]().catch(function (error) { toast(error && error.message ? error.message : fallbackMessage); });
+        } else toast(fallbackMessage);
+      }
+
+      function getFocusableSnapshot() {
+        var nodes = d.querySelectorAll('[data-focus]');
+        var list = [];
+        var rects = [];
+        var i;
+        for (i = 0; i < nodes.length; i += 1) {
+          var rect = nodes[i].getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0 && !nodes[i].disabled) {
+            list.push(nodes[i]);
+            rects.push(rect);
+          }
+        }
+        return { list: list, rects: rects };
+      }
+
+      function getFocusable() {
+        return getFocusableSnapshot().list;
+      }
+
+      function rememberFocus(event) {
+        var target = event.target;
+        if (!target || !target.getAttribute) return;
+        var key = target.getAttribute('data-focus');
+        if (!key) return;
+        state.focusKey = key;
+        try { w.sessionStorage.setItem('eclipse.focus', key); } catch (ignore) {}
+      }
+
+      function restoreFocus() {
+        w.setTimeout(function () {
+          var key = state.focusKey;
+          var list;
+          var i;
+          if (!key) {
+            try { key = w.sessionStorage.getItem('eclipse.focus') || ''; } catch (ignore) {}
+          }
+          if (!key) return;
+          list = getFocusable();
+          for (i = 0; i < list.length; i += 1) {
+            if (list[i].getAttribute('data-focus') === key) {
+              try { list[i].focus(); } catch (ignore2) {}
+              return;
+            }
+          }
+        }, 20);
+      }
+
+      function reveal(element, cachedRect) {
+        var rect = cachedRect || element.getBoundingClientRect();
+        var topGuard = 70;
+        var bottomGuard = w.innerHeight - 55;
+        if (rect.top < topGuard) w.scrollTo(0, w.pageYOffset + rect.top - topGuard > 0 ? w.pageYOffset + rect.top - topGuard : 0);
+        else if (rect.bottom > bottomGuard) w.scrollTo(0, w.pageYOffset + rect.bottom - bottomGuard);
+      }
+
+      function moveFocusInRow(list, rects, current, direction) {
+        var row = current && current.getAttribute ? current.getAttribute('data-focus-row') : '';
+        var items = [];
+        var currentIndex = -1;
+        var targetIndex;
+        var i;
+        if ((direction !== 'left' && direction !== 'right') || !row || !w.EclipseFocusNavigation) return false;
+        for (i = 0; i < list.length; i += 1) {
+          var rect = rects[i];
+          items.push({
+            row: list[i].getAttribute('data-focus-row') || '',
+            x: rect.left + rect.width / 2
+          });
+          if (list[i] === current) currentIndex = i;
+        }
+        targetIndex = w.EclipseFocusNavigation.findHorizontalTarget(items, currentIndex, direction);
+        if (targetIndex >= 0) {
+          list[targetIndex].focus();
+          reveal(list[targetIndex], rects[targetIndex]);
+        }
+        return true;
+      }
+
+      function moveFocus(direction) {
+        var snapshot = getFocusableSnapshot();
+        var list = snapshot.list;
+        var current = d.activeElement;
+        var currentIndex;
+        var currentRect;
+        var cx;
+        var cy;
+        var best = null;
+        var bestRect = null;
+        var bestScore = Number.MAX_VALUE;
+        var i;
+        if (!list.length) return;
+        currentIndex = list.indexOf(current);
+        if (!current || currentIndex < 0) {
+          list[0].focus();
+          reveal(list[0], snapshot.rects[0]);
+          return;
+        }
+        if (moveFocusInRow(list, snapshot.rects, current, direction)) return;
+        currentRect = snapshot.rects[currentIndex];
+        cx = currentRect.left + currentRect.width / 2;
+        cy = currentRect.top + currentRect.height / 2;
+        for (i = 0; i < list.length; i += 1) {
+          var candidate = list[i];
+          var rect;
+          var x;
+          var y;
+          var primary;
+          var secondary;
+          var score;
+          if (candidate === current) continue;
+          rect = snapshot.rects[i];
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+          if (direction === 'left' && x >= cx - 3) continue;
+          if (direction === 'right' && x <= cx + 3) continue;
+          if (direction === 'up' && y >= cy - 3) continue;
+          if (direction === 'down' && y <= cy + 3) continue;
+          primary = direction === 'left' || direction === 'right' ? Math.abs(x - cx) : Math.abs(y - cy);
+          secondary = direction === 'left' || direction === 'right' ? Math.abs(y - cy) : Math.abs(x - cx);
+          if (secondary > primary) continue;
+          score = primary * 10 + secondary * secondary / (primary > 1 ? primary : 1);
+          if (score < bestScore) {
+            bestScore = score;
+            best = candidate;
+            bestRect = rect;
+          }
+        }
+        if (best) {
+          best.focus();
+          reveal(best, bestRect);
+        }
+      }
+
+      function keydown(event) {
+        var code = event.keyCode || event.which;
+        var direction = code === 37 ? 'left' : code === 38 ? 'up' : code === 39 ? 'right' : code === 40 ? 'down' : '';
+        var target = event.target;
+        if (!direction) return;
+        if (target && target.tagName === 'INPUT' && (direction === 'left' || direction === 'right')) return;
+        event.preventDefault();
+        moveFocus(direction);
+      }
+
+      function bind() {
+        if (state.domReady) return;
+        state.domReady = true;
+        w.__eclipseBoot.dom = true;
+        listen(byId('searchForm'), 'submit', submitSearch);
+        listen(byId('sourceName'), 'click', function () { callApp('openSite', '此操作需要在应用内使用'); });
+        listen(byId('libraryButton'), 'click', function () { callApp('openVod', '此操作需要在应用内使用'); });
+        listen(byId('settingsButton'), 'click', function () { callApp('openSetting', '此操作需要在应用内使用'); });
+        listen(d, 'focusin', handleFocusIn);
+        listen(d, 'keydown', keydown);
+        listen(w, 'scroll', scheduleAutoPageCheck);
+        listen(w, 'resize', scheduleAutoPageCheck);
+        refreshSafeAreaMode();
+        applyHome(fallbackHome());
+        w.setTimeout(function () {
+          if (hasNative()) requestNativeHome();
+        }, 60);
+        w.setTimeout(function () {
+          if (!state.native && hasNative()) requestNativeHome();
+        }, 700);
+      }
+
+      listen(w, 'fmviewport', function (event) {
+        updateSafeAreaMode(event && event.detail ? event.detail : {});
+      });
+      listen(w, 'fmresume', refreshSafeAreaMode);
+      listen(w, 'fmsdk', function () {
+        state.nativeRequested = false;
+        refreshSafeAreaMode();
+        requestNativeHome();
+      });
+      if (d.readyState === 'loading') listen(d, 'DOMContentLoaded', bind); else bind();
+    }(window, document));
+  </script>
+</body>
+</html>

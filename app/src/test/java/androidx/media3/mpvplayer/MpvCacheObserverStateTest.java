@@ -9,6 +9,16 @@ import static org.junit.Assert.assertTrue;
 public class MpvCacheObserverStateTest {
 
     @Test
+    public void compatibilityRecordOverloadTracksObservedValues() {
+        MpvCacheObserverState state = new MpvCacheObserverState();
+
+        assertFalse(state.hasObservedValues());
+        assertTrue(state.record("demuxer-cache-state/cache-duration", 4.5));
+        assertTrue(state.hasObservedValues());
+        assertEquals(1, state.observedCount());
+    }
+
+    @Test
     public void firstObserverValueDisablesFallbackForThatMetric() {
         MpvCacheObserverState state = new MpvCacheObserverState();
 
@@ -140,6 +150,7 @@ public class MpvCacheObserverStateTest {
         state.reset();
 
         assertEquals(0, state.observedCount());
+        assertFalse(state.hasObservedValues());
         assertTrue(state.needsFallback(MpvCacheObserverState.Metric.IDLE, false, 0));
         assertTrue(state.needsFallback(MpvCacheObserverState.Metric.EOF, false, 0));
         assertFalse(state.shouldQueryFallback(true, true, false, 20_000));

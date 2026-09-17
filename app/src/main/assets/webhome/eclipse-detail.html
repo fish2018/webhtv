@@ -1,0 +1,1450 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#090b10">
+  <title>Eclipse · 详情</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      color: #f4f6ff;
+      background: linear-gradient(180deg, #17161d 0, #090b10 420px, #090b10 100%);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+    button { color: inherit; font: inherit; }
+    button:focus { outline: 0; }
+    .hidden { display: none !important; }
+    .shell {
+      width: 100%; max-width: 1540px; margin: 0 auto;
+      padding: calc(22px + var(--fm-safe-top, 0px)) calc(42px + var(--fm-safe-right, 0px))
+        calc(64px + var(--fm-safe-bottom, 0px)) calc(42px + var(--fm-safe-left, 0px));
+    }
+    .topbar { display: flex; align-items: center; min-height: 48px; margin-bottom: 28px; }
+    .back {
+      width: 44px; height: 44px; margin-right: 14px; border: 1px solid #3b3f4c; border-radius: 8px;
+      background: #171a22; cursor: pointer; font-size: 21px;
+    }
+    .brand { display: flex; align-items: center; min-width: 0; }
+    .brand-mark {
+      position: relative; width: 35px; height: 35px; margin-right: 10px; border: 2px solid #8c78ff;
+      border-radius: 50%; box-shadow: inset -10px 0 #070b18, 0 0 20px rgba(130, 105, 255, .48);
+    }
+    .brand-mark:after { position: absolute; right: -3px; top: 7px; width: 7px; height: 7px; border-radius: 50%; background: #4ce9ff; box-shadow: 0 0 10px #4ce9ff; content: ""; }
+    .brand strong { display: block; letter-spacing: 0; line-height: 1; }
+    .brand small { display: block; margin-top: 5px; color: #7e89a9; font-size: 10px; letter-spacing: 0; }
+    .source-pill {
+      max-width: 300px; margin-left: auto; padding: 7px 13px; overflow: hidden; color: #9da8c7;
+      border: 1px solid #343947; border-radius: 8px; background: #151820;
+      font-size: 12px; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .source-pill:before { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #49e6b4; box-shadow: 0 0 9px #49e6b4; content: ""; }
+    .panel { border: 1px solid #323744; border-radius: 8px; background: #11141b; box-shadow: 0 24px 70px rgba(0, 0, 0, .3); }
+    .loading-panel, .error-panel { min-height: 58vh; padding: 72px 24px; text-align: center; }
+    .loader { width: 52px; height: 52px; margin: 12vh auto 24px; border: 3px solid #2d3655; border-top-color: #55e3fa; border-radius: 50%; animation: spin .85s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-panel h1, .error-panel h1 { margin: 0 0 9px; font-size: 24px; }
+    .loading-panel p, .error-panel p { margin: 0 auto; color: #8994b4; }
+    .error-icon { width: 62px; height: 62px; margin: 10vh auto 24px; border: 1px solid #714b72; border-radius: 8px; color: #ff91b8; background: #29152b; font-size: 34px; line-height: 60px; }
+    .error-actions { margin-top: 28px; }
+    .hero { position: relative; display: flex; min-height: 410px; padding: 38px; overflow: hidden; isolation: isolate; }
+    .hero-backdrop { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .2; }
+    .hero-shade { position: absolute; z-index: -1; inset: 0; background: rgba(9, 12, 17, .72); pointer-events: none; }
+    .poster-wrap { position: relative; z-index: 1; flex: 0 0 230px; align-self: flex-start; }
+    .poster {
+      position: relative; width: 230px; height: 326px; overflow: hidden; border: 1px solid #384361;
+      border-radius: 8px; background: linear-gradient(145deg, #3b3155, #161820 62%, #175560);
+      box-shadow: 0 22px 48px rgba(0, 0, 0, .48), 0 0 32px rgba(91, 208, 255, .1);
+    }
+    .poster img { width: 100%; height: 100%; object-fit: cover; }
+    .poster-fallback { position: absolute; left: 0; right: 0; top: 42%; color: rgba(255,255,255,.8); font-size: 34px; font-weight: bold; letter-spacing: 0; text-align: center; }
+    .progress-card { min-width: 0; margin-top: 13px; padding: 11px 13px; overflow: hidden; border: 1px solid #353a47; border-radius: 8px; background: #14171e; }
+    .progress-label { display: flex; color: #8d98b7; font-size: 11px; }
+    .progress-label span:last-child { margin-left: auto; }
+    .progress-track { height: 4px; margin-top: 8px; overflow: hidden; border-radius: 3px; background: #26304d; }
+    .progress-value { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #7b61ff, #4ce6fb); }
+    .hero-copy { position: relative; z-index: 1; flex: 1 1 auto; min-width: 0; padding: 7px 0 0 38px; }
+    .eyebrow { margin-bottom: 11px; color: #54e5fa; font-size: 11px; font-weight: bold; letter-spacing: 0; }
+    h1 { margin: 0; font-size: 40px; line-height: 1.16; letter-spacing: 0; }
+    .remarks { margin: 10px 0 0; color: #d1d7eb; font-size: 15px; }
+    .meta { display: flex; flex-wrap: wrap; margin: 18px 0 0; padding: 0; list-style: none; }
+    .meta li { margin: 0 9px 9px 0; padding: 5px 10px; color: #bdc3d4; border: 1px solid #3a3e4b; border-radius: 6px; background: #191c24; font-size: 12px; }
+    .meta li.accent { color: #102127; border-color: #55d7e6; background: #55d7e6; }
+    .credits { margin-top: 8px; color: #929dbb; font-size: 13px; }
+    .credits p { margin: 5px 0; }
+    .credits strong { color: #cbd2e7; font-weight: normal; }
+    .summary { max-width: 900px; margin: 17px 0 0; color: #a5afca; font-size: 14px; line-height: 1.72; overflow-wrap: anywhere; }
+    .actions { display: flex; flex-wrap: wrap; margin-top: 27px; }
+    .action {
+      min-height: 46px; margin: 0 11px 10px 0; padding: 0 19px; border: 1px solid #414653;
+      border-radius: 8px; background: #1b1e27; cursor: pointer; font-weight: bold;
+    }
+    .action.primary { color: #06121a; border-color: #58e4fa; background: linear-gradient(100deg, #5ce8f7, #8dceff); box-shadow: 0 8px 26px rgba(69, 216, 241, .18); }
+    .action.favorite[aria-pressed="true"] { color: #ffd8e5; border-color: #8c4466; background: #35172a; }
+    .action:disabled { opacity: .5; cursor: default; }
+    .section { margin-top: 34px; padding: 27px 0 4px; border-top: 1px solid #30343e; }
+    .section-head { display: flex; align-items: flex-end; margin-bottom: 17px; }
+    .section-head h2 { margin: 0; font-size: 22px; }
+    .section-head p { margin: 0 0 2px 12px; color: #7f8bab; font-size: 12px; }
+    .people-grid, .gallery-strip, .recommendation-grid {
+      display: flex; gap: 14px; margin: -8px -10px -6px; padding: 11px 12px 18px; overflow-x: auto; overflow-y: hidden;
+      overscroll-behavior-inline: contain; scrollbar-width: thin; scroll-padding-inline: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .horizontal-rail > * { scroll-snap-align: start; }
+    .person-card { flex: 0 0 126px; min-width: 0; padding: 0; overflow: hidden; color: inherit; text-align: left; border: 1px solid #343946; border-radius: 8px; background: #151820; }
+    .person-photo { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: #242630; }
+    .person-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .person-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: #d9bd83; background: #292732; font-size: 28px; font-weight: bold; }
+    .person-copy { min-height: 72px; padding: 10px; }
+    .person-name, .person-role { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .person-name { color: #eef1fa; font-size: 13px; font-weight: bold; }
+    .person-role { margin-top: 4px; color: #969ead; font-size: 11px; }
+    .gallery-item { flex: 0 0 300px; aspect-ratio: 16 / 9; margin: 0; padding: 0; overflow: hidden; color: inherit; border: 1px solid #343946; border-radius: 8px; background: #151820; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+    .recommendation-card {
+      flex: 0 0 154px; min-width: 0; padding: 0; overflow: hidden; color: inherit; text-align: left;
+      border: 1px solid #383d49; border-radius: 8px; background: #151820;
+    }
+    button.recommendation-card { cursor: pointer; }
+    .recommendation-poster { position: relative; width: 100%; aspect-ratio: 2 / 3; overflow: hidden; background: #242630; }
+    .recommendation-poster img { width: 100%; height: 100%; object-fit: cover; }
+    .recommendation-copy { min-height: 79px; padding: 10px; }
+    .recommendation-name, .recommendation-subtitle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .recommendation-name { color: #eef1fa; font-size: 13px; font-weight: bold; }
+    .recommendation-subtitle { margin-top: 4px; color: #969ead; font-size: 11px; }
+    .recommendation-rating { display: block; margin-top: 5px; color: #e8bd69; font-size: 11px; }
+    .recommendation-groups { display: grid; min-width: 0; gap: 24px; }
+    .recommendation-group { min-width: 0; }
+    .recommendation-group-head { display: flex; align-items: baseline; margin-bottom: 7px; }
+    .recommendation-group-head h3 { margin: 0; font-size: 16px; }
+    .recommendation-group-head span { margin-left: 10px; color: #7f8bab; font-size: 11px; }
+    .recommendation-reason { min-height: 20px; margin: 6px 2px 0; color: #8fe9f6; font-size: 12px; }
+    .external-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .external-link { min-height: 48px; padding: 9px 13px; overflow: hidden; border: 1px solid #383d49; border-radius: 8px; background: #151820; cursor: pointer; text-align: left; }
+    .external-link strong, .external-link span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .external-link span { margin-top: 2px; color: #8f99b2; font-size: 11px; }
+    .line-tabs { display: flex; padding: 2px 2px 9px; overflow-x: auto; overflow-y: hidden; }
+    .line-tab {
+      flex: 0 0 auto; min-width: 92px; height: 40px; margin: 0 9px 7px 0; padding: 0 16px;
+      border: 1px solid #3a3f4c; border-radius: 8px; color: #aab3cd; background: #171a22; cursor: pointer;
+    }
+    .line-tab.active { color: #07131b; border-color: #55e2f8; background: #55e2f8; box-shadow: 0 0 20px rgba(72, 220, 246, .2); }
+    .episode-ranges { display: flex; padding: 2px 2px 9px; overflow-x: auto; overflow-y: hidden; }
+    .episode-range {
+      flex: 0 0 auto; min-width: 86px; height: 38px; margin: 0 9px 7px 0; padding: 0 15px;
+      border: 1px solid #353b49; border-radius: 8px; color: #9da8c3; background: #14171f; cursor: pointer;
+    }
+    .episode-range.active { color: #e9fcff; border-color: #45a8bd; background: #12313d; }
+    .episode-toolbar { display: flex; align-items: center; min-height: 38px; margin: 7px 0 13px; color: #818dac; font-size: 12px; }
+    .episode-toolbar .warning { color: #d9af76; }
+    .pager { display: flex; align-items: center; margin-left: auto; }
+    .pager button { width: 38px; height: 34px; border: 1px solid #3a3f4c; border-radius: 8px; background: #171a22; cursor: pointer; }
+    .pager span { min-width: 68px; text-align: center; }
+    .episodes { display: flex; flex-wrap: wrap; margin: 0 -5px; min-height: 52px; }
+    .episode-cell { width: 12.5%; padding: 5px; }
+    .episode {
+      width: 100%; min-height: 52px; padding: 7px 8px; overflow: hidden; border: 1px solid #363b48;
+      border-radius: 8px; color: #aab4cf; background: #151820; cursor: pointer; font-size: 12px;
+      text-align: left;
+    }
+    .episode.selected { color: #dffbff; border-color: #3e91a6; background: #14303c; }
+    .episode-name, .episode-title { display: block; overflow: hidden; white-space: nowrap; }
+    .episode-name { color: inherit; }
+    .episode-title { margin-top: 3px; color: #7f8a9f; font-size: 10px; }
+    .episode-marquee-track { display: block; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .episode:focus .episode-marquee-track.overflowing,
+    .episode.selected .episode-marquee-track.overflowing {
+      width: max-content; min-width: 100%; overflow: visible; text-overflow: clip;
+      animation-name: episode-marquee;
+      animation-duration: var(--episode-marquee-duration, 7s);
+      animation-timing-function: linear;
+      animation-delay: 650ms;
+      animation-iteration-count: infinite;
+      animation-direction: alternate;
+    }
+    @keyframes episode-marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(calc(0px - var(--episode-marquee-distance, 0px))); }
+    }
+    .episode-feature {
+      display: grid; grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); gap: 22px; margin: 8px 0 18px;
+      padding: 18px 0; border-top: 1px solid #2d323c; border-bottom: 1px solid #2d323c;
+    }
+    .episode-still { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; background: #1b1e26; }
+    .episode-still img { width: 100%; height: 100%; object-fit: cover; }
+    .episode-still-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: #6f788d; font-size: 13px; }
+    .episode-feature-copy { min-width: 0; align-self: center; }
+    .episode-kicker { margin: 0 0 5px; color: #56dbe8; font-size: 11px; font-weight: bold; }
+    .episode-feature h3 { margin: 0; font-size: 19px; }
+    .episode-facts { margin-top: 7px; color: #d2ae68; font-size: 11px; }
+    .episode-overview {
+      max-width: 920px; margin: 10px 0 0; color: #9da5b7; font-size: 12px; line-height: 1.7;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .empty { width: 100%; padding: 34px 14px; color: #7e89a9; text-align: center; }
+    .toast {
+      position: fixed; z-index: 20; left: 50%; bottom: 34px; max-width: 80vw; padding: 11px 17px;
+      opacity: 0; border: 1px solid #394464; border-radius: 8px; background: rgba(14, 20, 37, .96);
+      box-shadow: 0 12px 38px rgba(0,0,0,.4); font-size: 13px; pointer-events: none; transform: translate(-50%, 12px); transition: .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    button:focus, .person-card:focus, .gallery-item:focus {
+      border-color: #ffffff !important; outline: none;
+      box-shadow: 0 0 0 3px #705cff, 0 0 24px rgba(94, 223, 255, .42) !important; transform: scale(1.035);
+    }
+    @media (max-width: 920px) {
+      .shell { padding: calc(18px + var(--fm-safe-top, 0px)) calc(24px + var(--fm-safe-right, 0px)) calc(48px + var(--fm-safe-bottom, 0px)) calc(24px + var(--fm-safe-left, 0px)); }
+      .hero { padding: 28px; }
+      .poster-wrap { flex-basis: 190px; }
+      .poster { width: 190px; height: 270px; }
+      .hero-copy { padding-left: 27px; }
+      h1 { font-size: 32px; }
+      .episode-cell { width: 20%; }
+      .person-card { flex-basis: 116px; }
+      .gallery-item { flex-basis: 260px; }
+      .recommendation-card { flex-basis: 142px; }
+    }
+    @media (max-width: 640px) {
+      .shell { padding: calc(14px + var(--fm-safe-top, 0px)) calc(14px + var(--fm-safe-right, 0px)) calc(38px + var(--fm-safe-bottom, 0px)) calc(14px + var(--fm-safe-left, 0px)); }
+      .topbar { margin-bottom: 16px; }
+      .source-pill { display: none; }
+      .hero { display: block; min-height: 0; padding: 20px; border-radius: 8px; }
+      .poster-wrap { display: flex; width: 100%; min-width: 0; align-items: flex-end; }
+      .poster { width: 128px; height: 181px; border-radius: 8px; }
+      .progress-card { flex: 1 1 auto; max-width: calc(100% - 141px); margin: 0 0 0 13px; }
+      .hero-copy { padding: 24px 0 0; }
+      h1 { font-size: 28px; }
+      .summary { max-height: 8.6em; overflow: hidden; }
+      .action { flex: 0 0 calc(50% - 8px); min-width: 0; margin-right: 8px; padding: 0 10px; }
+      #nativeButton { flex-basis: calc(100% - 8px); }
+      .section { margin-top: 24px; padding: 20px 0 3px; }
+      .section-head { display: block; }
+      .section-head p { margin: 4px 0 0; }
+      .episode-toolbar { align-items: flex-start; }
+      .pager { flex: 0 0 auto; }
+      .episode-cell { width: 33.333%; }
+      .episode-feature { display: block; }
+      .episode-feature-copy { margin-top: 13px; }
+      .episode-overview { -webkit-line-clamp: 4; }
+      .people-grid, .gallery-strip, .recommendation-grid { margin-left: -8px; margin-right: -8px; padding-left: 10px; padding-right: 10px; scroll-padding-inline: 10px; }
+      .person-card { flex-basis: 108px; }
+      .gallery-item { flex-basis: 238px; }
+      .recommendation-card { flex-basis: 132px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *:before, *:after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <button id="backButton" class="back" type="button" aria-label="返回">‹</button>
+      <div class="brand" aria-label="Eclipse 主题">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span><strong>ECLIPSE</strong><small>DETAIL EXPERIENCE</small></span>
+      </div>
+      <div id="sourceName" class="source-pill">正在连接内容源</div>
+    </header>
+
+    <main>
+      <section id="loadingPanel" class="panel loading-panel" aria-live="polite">
+        <div class="loader" aria-hidden="true"></div>
+        <h1>正在展开光影档案</h1>
+        <p>从当前内容源安全读取详情与选集</p>
+      </section>
+
+      <section id="errorPanel" class="panel error-panel hidden" aria-live="assertive">
+        <div class="error-icon" aria-hidden="true">!</div>
+        <h1>详情暂时无法显示</h1>
+        <p id="errorMessage">可以重试，或切换到原生详情页。</p>
+        <div class="error-actions">
+          <button id="retryButton" class="action primary" type="button">重新加载</button>
+          <button id="errorNativeButton" class="action" type="button">使用原生详情</button>
+        </div>
+      </section>
+
+      <div id="content" class="hidden">
+        <article class="panel hero" aria-labelledby="title">
+          <img id="heroBackdrop" class="hero-backdrop hidden" alt="">
+          <div class="hero-shade" aria-hidden="true"></div>
+          <div class="poster-wrap">
+            <div class="poster">
+              <span id="posterFallback" class="poster-fallback" aria-hidden="true">影</span>
+              <img id="poster" class="hidden" alt="">
+            </div>
+            <div id="progressCard" class="progress-card hidden">
+              <div class="progress-label"><span>上次观看</span><span id="progressText">0%</span></div>
+              <div class="progress-track"><div id="progressValue" class="progress-value"></div></div>
+            </div>
+          </div>
+
+          <div class="hero-copy">
+            <div class="eyebrow">CURRENT SOURCE · VOD DETAIL</div>
+            <h1 id="title">未命名影片</h1>
+            <p id="remarks" class="remarks hidden"></p>
+            <p id="tagline" class="remarks hidden"></p>
+            <ul id="meta" class="meta"></ul>
+            <div id="credits" class="credits"></div>
+            <p id="summary" class="summary hidden"></p>
+            <div class="actions">
+              <button id="playButton" class="action primary" type="button" data-focus-row="actions">▶ 播放</button>
+              <button id="favoriteButton" class="action favorite" type="button" data-focus-row="actions" aria-pressed="false">♡ 收藏</button>
+              <button id="nativeButton" class="action" type="button" data-focus-row="actions">原生详情</button>
+            </div>
+          </div>
+        </article>
+
+        <section id="peopleSection" class="section hidden" aria-labelledby="peopleHeading">
+          <div class="section-head">
+            <h2 id="peopleHeading">演员与主创</h2>
+            <p id="peopleStatus"></p>
+          </div>
+          <div id="people" class="people-grid horizontal-rail"></div>
+        </section>
+
+        <section class="section" aria-labelledby="episodeHeading">
+          <div class="section-head">
+            <h2 id="episodeHeading">播放线路与选集</h2>
+            <p id="episodeOverview"></p>
+          </div>
+          <div id="lineTabs" class="line-tabs" role="tablist" aria-label="播放线路"></div>
+          <article id="episodeFeature" class="episode-feature hidden" aria-live="polite">
+            <div class="episode-still">
+              <span id="episodeStillFallback" class="episode-still-fallback">暂无剧照</span>
+              <img id="episodeStill" class="hidden" alt="">
+            </div>
+            <div class="episode-feature-copy">
+              <p id="episodeKicker" class="episode-kicker"></p>
+              <h3 id="episodeFeatureTitle"></h3>
+              <div id="episodeFacts" class="episode-facts"></div>
+              <p id="episodeFeatureOverview" class="episode-overview"></p>
+            </div>
+          </article>
+          <div id="episodeRanges" class="episode-ranges horizontal-rail hidden" role="tablist" aria-label="选集范围"></div>
+          <div class="episode-toolbar">
+            <span id="episodeStatus">请选择集数</span>
+            <div id="pager" class="pager hidden">
+              <button id="prevPage" type="button" data-focus-row="episode-pager" aria-label="上一组选集">‹</button>
+              <span id="pageText">1 / 1</span>
+              <button id="nextPage" type="button" data-focus-row="episode-pager" aria-label="下一组选集">›</button>
+            </div>
+          </div>
+          <div id="episodes" class="episodes" role="tabpanel"></div>
+        </section>
+
+        <section id="gallerySection" class="section hidden" aria-labelledby="galleryHeading">
+          <div class="section-head">
+            <h2 id="galleryHeading">剧照</h2>
+            <p id="galleryStatus"></p>
+          </div>
+          <div id="gallery" class="gallery-strip horizontal-rail"></div>
+        </section>
+
+        <section id="recommendationSection" class="section hidden" aria-labelledby="recommendationHeading">
+          <div class="section-head">
+            <h2 id="recommendationHeading">推荐</h2>
+            <p id="recommendationStatus"></p>
+          </div>
+          <div id="recommendationGroups" class="recommendation-groups"></div>
+        </section>
+
+        <section id="externalSection" class="section hidden" aria-labelledby="externalHeading">
+          <div class="section-head">
+            <h2 id="externalHeading">外部链接</h2>
+            <p id="externalStatus"></p>
+          </div>
+          <div id="externalLinks" class="external-links"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="eclipse-focus-navigation.js"></script>
+  <script src="eclipse-detail-state.js"></script>
+  <script>
+    (function (w, d) {
+      'use strict';
+      var EPISODE_GROUP_SIZE = 20;
+      var app = { booted: false, info: null, data: null, state: null, toastTimer: 0, fallbackTimer: 0, pending: false, refreshing: false, refreshQueued: false };
+
+      function byId(id) { return d.getElementById(id); }
+      function text(value) { return value === null || typeof value === 'undefined' ? '' : String(value); }
+      function array(value) { return Object.prototype.toString.call(value) === '[object Array]' ? value : []; }
+      function setText(id, value) { var node = byId(id); if (node) node.textContent = text(value); }
+      function clear(node) { while (node && node.firstChild) node.removeChild(node.firstChild); }
+      function show(node, visible) { if (node) node.className = node.className.replace(/\s*hidden\b/g, '') + (visible ? '' : ' hidden'); }
+      function nativeApi() { return w.fm || w.fongmi || null; }
+
+      function toast(message) {
+        var node = byId('toast');
+        node.textContent = text(message);
+        node.className = 'toast show';
+        w.clearTimeout(app.toastTimer);
+        app.toastTimer = w.setTimeout(function () { node.className = 'toast'; }, 2600);
+      }
+
+      function optional(id, value) {
+        var node = byId(id);
+        node.textContent = text(value);
+        show(node, !!text(value));
+      }
+
+      function addMeta(value, accent) {
+        if (!text(value)) return;
+        var item = d.createElement('li');
+        if (accent) item.className = 'accent';
+        item.textContent = text(value);
+        byId('meta').appendChild(item);
+      }
+
+      function addCredit(label, value) {
+        if (!text(value)) return;
+        var row = d.createElement('p');
+        var strong = d.createElement('strong');
+        strong.textContent = label + '：';
+        row.appendChild(strong);
+        row.appendChild(d.createTextNode(text(value)));
+        byId('credits').appendChild(row);
+      }
+
+      function renderPoster(item) {
+        var image = byId('poster');
+        var url = w.EclipseDetailState.safeImageUrl(item.pic);
+        image.alt = text(item.name) ? text(item.name) + ' 海报' : '影片海报';
+        byId('posterFallback').textContent = text(item.name).slice(0, 1) || '影';
+        if (!url) { show(image, false); return; }
+        image.onload = function () { show(image, true); };
+        image.onerror = function () { show(image, false); };
+        image.src = url;
+      }
+
+      function renderBackdrop(media) {
+        var image = byId('heroBackdrop');
+        var url = w.EclipseDetailState.safeImageUrl(media && media.backdrop);
+        if (!url) { show(image, false); image.removeAttribute('src'); return; }
+        image.onload = function () { show(image, true); };
+        image.onerror = function () { show(image, false); };
+        image.src = url;
+      }
+
+      function statusLabel(value) {
+        return ({
+          'Returning Series': '连载中',
+          'Ended': '已完结',
+          'Canceled': '已取消',
+          'In Production': '制作中',
+          'Released': '已上映',
+          'Post Production': '后期制作'
+        })[text(value)] || text(value);
+      }
+
+      function renderProgress(history) {
+        var duration = Number(history && history.durationMs) || 0;
+        var position = Number(history && history.positionMs) || 0;
+        var percent = duration > 0 ? Math.max(0, Math.min(100, Math.round(position * 100 / duration))) : 0;
+        show(byId('progressCard'), duration > 0 && position > 0);
+        setText('progressText', percent + '%');
+        byId('progressValue').style.width = percent + '%';
+      }
+
+      function renderHero() {
+        var item = app.data.item || {};
+        var media = app.data.media || {};
+        setText('sourceName', (app.data.source && app.data.source.name) || (app.info.source && app.info.source.name) || '当前内容源');
+        setText('title', item.name || '未命名影片');
+        optional('remarks', item.remarks);
+        optional('tagline', media.tagline);
+        clear(byId('meta'));
+        if (Number(media.rating) > 0) addMeta('★ ' + Number(media.rating).toFixed(1), true);
+        addMeta(item.year);
+        addMeta(item.area);
+        addMeta(item.typeName);
+        addMeta(statusLabel(media.status));
+        if (Number(media.seasonCount) > 0) addMeta(Number(media.seasonCount) + ' 季');
+        if (Number(media.episodeCount) > 0) addMeta(Number(media.episodeCount) + ' 集');
+        if (Number(media.runtimeMinutes) > 0) addMeta(Number(media.runtimeMinutes) + ' 分钟');
+        clear(byId('credits'));
+        addCredit('导演', item.director);
+        addCredit('演员', item.actor);
+        addCredit('原名', media.originalName && media.originalName !== item.name ? media.originalName : '');
+        optional('summary', item.content);
+        renderPoster(item);
+        renderBackdrop(media);
+        renderProgress(app.data.state && app.data.state.history);
+        renderFavorite();
+      }
+
+      function renderFavorite() {
+        var button = byId('favoriteButton');
+        var favorite = Boolean(app.state && app.state.favorite);
+        button.setAttribute('aria-pressed', favorite ? 'true' : 'false');
+        button.textContent = favorite ? '♥ 已收藏' : '♡ 收藏';
+      }
+
+      function cardImage(url, alt, className, fallback) {
+        var safe = w.EclipseDetailState.safeImageUrl(url);
+        if (!safe) return null;
+        var image = d.createElement('img');
+        image.className = className || 'hidden';
+        image.alt = text(alt);
+        image.onload = function () {
+          image.className = '';
+          if (fallback) show(fallback, false);
+        };
+        image.onerror = function () { image.remove(); };
+        image.src = safe;
+        return image;
+      }
+
+      function actionFailure(result, fallback) {
+        if (!result || typeof result.catch !== 'function') return;
+        result.catch(function (error) { toast(error && error.message ? error.message : fallback); });
+      }
+
+      function bindLongPress(node, handler) {
+        var timer = 0;
+        var fired = false;
+        var resetTimer = 0;
+        function clearTimer() {
+          if (!timer) return;
+          w.clearTimeout(timer);
+          timer = 0;
+        }
+        function markFired(event) {
+          if (event && typeof event.preventDefault === 'function') event.preventDefault();
+          if (fired) return;
+          clearTimer();
+          fired = true;
+          w.clearTimeout(resetTimer);
+          resetTimer = w.setTimeout(function () { fired = false; }, 1200);
+          handler();
+        }
+        function schedule(event) {
+          if (timer || fired) return;
+          timer = w.setTimeout(function () { timer = 0; markFired(event); }, 650);
+        }
+        node.addEventListener('pointerdown', function (event) {
+          if (typeof event.button === 'number' && event.button !== 0) return;
+          schedule(event);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (name) {
+          node.addEventListener(name, clearTimer);
+        });
+        node.addEventListener('contextmenu', markFired);
+        node.addEventListener('keydown', function (event) {
+          if (event.key === 'ContextMenu' || event.key === 'F2') {
+            markFired(event);
+            return;
+          }
+          if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Select') return;
+          if (event.repeat) markFired(event);
+          else schedule(event);
+        });
+        node.addEventListener('keyup', function (event) {
+          if (event.key === 'Enter' || event.key === ' ' || event.key === 'Select') clearTimer();
+        });
+        node.addEventListener('click', function (event) {
+          if (!fired) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          fired = false;
+          w.clearTimeout(resetTimer);
+        }, true);
+      }
+
+      function openPerson(person) {
+        var api = nativeApi();
+        if (!api || !api.person || typeof api.person.open !== 'function' || !text(person && person.personRef)) return;
+        actionFailure(api.person.open(person.personRef), '无法打开人物详情');
+      }
+
+      function renderPeople() {
+        var root = byId('people');
+        var values = array(app.data.people);
+        var capabilities = app.data.capabilities || {};
+        var api = nativeApi();
+        var canOpen = Boolean(capabilities.canOpenPeople && api && api.person && typeof api.person.open === 'function');
+        var castCount = 0;
+        var crewCount = 0;
+        clear(root);
+        values.forEach(function (person) {
+          var interactive = Boolean(canOpen && text(person.personRef));
+          var card = d.createElement(interactive ? 'button' : 'article');
+          var photo = d.createElement('div');
+          var fallback = d.createElement('span');
+          var copy = d.createElement('div');
+          var name = d.createElement('span');
+          var role = d.createElement('span');
+          var image;
+          card.className = 'person-card';
+          card.tabIndex = interactive ? 0 : -1;
+          if (interactive) {
+            card.type = 'button';
+            card.setAttribute('data-focus-row', 'people');
+            card.addEventListener('click', function () { openPerson(person); });
+          }
+          card.setAttribute('data-person-id', text(person.personRef || (person.kind + '-' + (person.personId || person.name))));
+          photo.className = 'person-photo';
+          fallback.className = 'person-fallback';
+          fallback.textContent = text(person.name).slice(0, 1) || '影';
+          photo.appendChild(fallback);
+          image = cardImage(person.profile, text(person.name) + ' 人物照片', 'hidden', fallback);
+          if (image) photo.appendChild(image);
+          copy.className = 'person-copy';
+          name.className = 'person-name';
+          name.textContent = person.name || '未命名';
+          role.className = 'person-role';
+          role.textContent = person.role || person.department || (person.kind === 'crew' ? '主创' : '演员');
+          copy.appendChild(name);
+          copy.appendChild(role);
+          card.appendChild(photo);
+          card.appendChild(copy);
+          root.appendChild(card);
+          if (person.kind === 'crew') crewCount += 1;
+          else castCount += 1;
+        });
+        setText('peopleStatus', (castCount ? castCount + ' 位演员' : '')
+          + (castCount && crewCount ? ' · ' : '') + (crewCount ? crewCount + ' 位主创' : ''));
+        show(byId('peopleSection'), values.length > 0);
+      }
+
+      function previewImage(item) {
+        var api = nativeApi();
+        if (!api || !api.image || typeof api.image.preview !== 'function' || !text(item && item.imageRef)) return;
+        actionFailure(api.image.preview(item.imageRef), '无法预览原图');
+      }
+
+      function saveImage(item) {
+        var api = nativeApi();
+        if (!api || !api.image || typeof api.image.save !== 'function' || !text(item && item.imageRef)) return;
+        actionFailure(api.image.save(item.imageRef), '无法保存原图');
+      }
+
+      function renderGallery() {
+        var root = byId('gallery');
+        var item = app.data.item || {};
+        var capabilities = app.data.capabilities || {};
+        var api = nativeApi();
+        var values = array(app.data.galleryItems).map(function (value) {
+          return { imageRef: text(value && value.imageRef), preview: w.EclipseDetailState.safeImageUrl(value && value.preview) };
+        }).filter(function (value) { return !!value.preview; });
+        var canPreview = Boolean(capabilities.canPreviewImages && api && api.image && typeof api.image.preview === 'function');
+        var canSave = Boolean(capabilities.canSaveImages && api && api.image && typeof api.image.save === 'function');
+        if (!values.length) {
+          values = array(app.data.gallery).map(function (value) {
+            return { imageRef: '', preview: w.EclipseDetailState.safeImageUrl(value) };
+          }).filter(function (value) { return !!value.preview; });
+        }
+        clear(root);
+        values.forEach(function (value, index) {
+          var interactive = Boolean((canPreview || canSave) && value.imageRef);
+          var frame = d.createElement(interactive ? 'button' : 'figure');
+          var image = cardImage(value.preview, (item.name || '影片') + ' 剧照 ' + (index + 1), '');
+          frame.className = 'gallery-item';
+          frame.tabIndex = interactive ? 0 : -1;
+          if (interactive) {
+            frame.type = 'button';
+            frame.setAttribute('data-focus-row', 'gallery');
+            frame.addEventListener('click', function () {
+              if (canPreview) previewImage(value);
+              else saveImage(value);
+            });
+          }
+          frame.setAttribute('data-gallery-id', text(value.imageRef || index));
+          if (canSave && value.imageRef) {
+            frame.addEventListener('contextmenu', function (event) { event.preventDefault(); saveImage(value); });
+            frame.addEventListener('keydown', function (event) {
+              if (event.key === 'ContextMenu' || event.key === 's' || event.key === 'S') {
+                event.preventDefault();
+                saveImage(value);
+              }
+            });
+          }
+          if (image) frame.appendChild(image);
+          root.appendChild(frame);
+        });
+        setText('galleryStatus', values.length + ' 张' + (canPreview ? ' · 点击查看原图' : (canSave ? ' · 点击保存原图' : '')));
+        show(byId('gallerySection'), values.length > 0);
+      }
+
+      function normalizedRecommendationGroups() {
+        var groups = array(app.data.recommendationGroups).filter(function (group) {
+          return group && array(group.items).length > 0;
+        });
+        if (!groups.length && array(app.data.recommendations).length) {
+          groups = [{ id: 'related', title: '相关推荐', source: 'related', items: app.data.recommendations }];
+        }
+        return groups;
+      }
+
+      function openRecommendation(item) {
+        var api = nativeApi();
+        if (api && api.recommendation && typeof api.recommendation.open === 'function' && text(item && item.recommendationRef)) {
+          actionFailure(api.recommendation.open(item.recommendationRef), '无法打开该推荐');
+          return;
+        }
+        if (api && api.app && typeof api.app.search === 'function' && text(item && item.name)) {
+          actionFailure(api.app.search(item.name), '无法搜索该影片');
+        } else if (api && typeof api.search === 'function' && text(item && item.name)) {
+          actionFailure(api.search(item.name), '无法搜索该影片');
+        }
+      }
+
+      function openRecommendationInfo(item) {
+        var api = nativeApi();
+        if (!api || !api.recommendation || typeof api.recommendation.info !== 'function'
+          || !text(item && item.recommendationRef)) return;
+        actionFailure(api.recommendation.info(item.recommendationRef), '无法打开推荐说明');
+      }
+
+      function updateRecommendationSummary() {
+        var root = byId('recommendationGroups');
+        var groups = root ? root.querySelectorAll('.recommendation-group') : [];
+        var total = root ? root.querySelectorAll('.recommendation-card').length : 0;
+        setText('recommendationStatus', groups.length + ' 组 · ' + total + ' 部');
+        show(byId('recommendationSection'), total > 0);
+      }
+
+      function focusAfterRecommendationRemoval(rail, fallbackGroup, removedIndex) {
+        var cards = rail ? rail.querySelectorAll('.recommendation-card') : [];
+        var target = cards.length ? cards[Math.min(removedIndex, cards.length - 1)] : null;
+        if (!target && fallbackGroup) target = fallbackGroup.querySelector('.recommendation-card');
+        if (!target) target = byId('playButton');
+        w.setTimeout(function () {
+          if (!target || target.disabled) return;
+          target.focus();
+          ensureFocusVisible(target);
+        }, 0);
+      }
+
+      function dismissRecommendation(item, card) {
+        var api = nativeApi();
+        if (!api || !api.recommendation || typeof api.recommendation.feedback !== 'function'
+          || !text(item && item.recommendationRef)) return;
+        var result = api.recommendation.feedback(item.recommendationRef, 'notInterested');
+        if (!result || typeof result.then !== 'function') return;
+        result.then(function () {
+          var rail = card && card.parentNode;
+          var group = rail && rail.parentNode;
+          var cards = rail ? Array.prototype.slice.call(rail.querySelectorAll('.recommendation-card')) : [];
+          var removedIndex = Math.max(0, cards.indexOf(card));
+          var fallbackGroup = group && (group.nextElementSibling || group.previousElementSibling);
+          if (rail && card.parentNode === rail) rail.removeChild(card);
+          if (group) {
+            var count = rail.querySelectorAll('.recommendation-card').length;
+            var label = group.querySelector('.recommendation-group-head span');
+            if (label) label.textContent = count + ' 部';
+            if (!count && group.parentNode) group.parentNode.removeChild(group);
+          }
+          updateRecommendationSummary();
+          focusAfterRecommendationRemoval(rail, fallbackGroup, removedIndex);
+        }).catch(function (error) { toast(error && error.message ? error.message : '反馈失败'); });
+      }
+
+      function renderRecommendationGroups() {
+        var root = byId('recommendationGroups');
+        var groups = normalizedRecommendationGroups();
+        var capabilities = app.data.capabilities || {};
+        var api = nativeApi();
+        var total = 0;
+        clear(root);
+        groups.forEach(function (group, groupIndex) {
+          var values = array(group.items).filter(function (item) { return !!text(item && item.name); });
+          var section;
+          var head;
+          var heading;
+          var status;
+          var rail;
+          var reason;
+          var rowId;
+          if (!values.length) return;
+          total += values.length;
+          section = d.createElement('section');
+          section.className = 'recommendation-group';
+          head = d.createElement('div');
+          head.className = 'recommendation-group-head';
+          heading = d.createElement('h3');
+          heading.textContent = group.title || '推荐';
+          status = d.createElement('span');
+          status.textContent = values.length + ' 部';
+          head.appendChild(heading);
+          head.appendChild(status);
+          section.appendChild(head);
+          rail = d.createElement('div');
+          rail.className = 'recommendation-grid horizontal-rail';
+          rowId = 'recommendations-' + text(group.id || groupIndex).replace(/[^A-Za-z0-9_-]/g, '-');
+          reason = d.createElement('p');
+          reason.className = 'recommendation-reason hidden';
+
+          values.forEach(function (item, index) {
+            var canOpen = Boolean((capabilities.canOpenRecommendations && api && api.recommendation
+              && typeof api.recommendation.open === 'function' && text(item.recommendationRef))
+              || (api && api.app && typeof api.app.search === 'function')
+              || (api && typeof api.search === 'function'));
+            var canInspect = Boolean(capabilities.canInspectRecommendations && api && api.recommendation
+              && typeof api.recommendation.info === 'function' && text(item.recommendationRef));
+            var canFeedback = Boolean(capabilities.canSendRecommendationFeedback && api && api.recommendation
+              && typeof api.recommendation.feedback === 'function' && text(item.recommendationRef));
+            var interactive = canOpen || canInspect || canFeedback;
+            var card = d.createElement(interactive ? 'button' : 'article');
+            var poster = d.createElement('div');
+            var fallback = d.createElement('span');
+            var copy = d.createElement('div');
+            var name = d.createElement('span');
+            var subtitle = d.createElement('span');
+            var rating = d.createElement('span');
+            var image;
+            card.className = 'recommendation-card';
+            if (interactive) {
+              card.type = 'button';
+              card.setAttribute('data-focus-row', rowId);
+              if (canOpen) card.addEventListener('click', function () { openRecommendation(item); });
+              else if (canInspect) card.addEventListener('click', function () { openRecommendationInfo(item); });
+            }
+            card.setAttribute('data-recommendation-id', text(group.source || item.source || 'related') + '-'
+              + text(item.recommendationRef || item.tmdbId || index));
+            card.addEventListener('focus', function () {
+              var explanation = text(item.reason || item.overview);
+              if (text(group.source || item.source) === 'ai' && explanation) {
+                reason.textContent = '推荐理由：' + explanation;
+                show(reason, true);
+              }
+            });
+            card.addEventListener('blur', function () {
+              w.setTimeout(function () {
+                if (!section.contains(d.activeElement)) show(reason, false);
+              }, 0);
+            });
+            if (canInspect) {
+              bindLongPress(card, function () {
+                card.focus();
+                ensureFocusVisible(card);
+                openRecommendationInfo(item);
+              });
+            }
+            card.addEventListener('keydown', function (event) {
+              if ((event.key === 'Delete' || event.key === 'Backspace')
+                && canFeedback) {
+                event.preventDefault();
+                dismissRecommendation(item, card);
+              }
+            });
+            poster.className = 'recommendation-poster';
+            fallback.className = 'person-fallback';
+            fallback.textContent = text(item.name).slice(0, 1) || '影';
+            poster.appendChild(fallback);
+            image = cardImage(item.pic || item.backdrop, text(item.name) + ' 海报', 'hidden', fallback);
+            if (image) poster.appendChild(image);
+            copy.className = 'recommendation-copy';
+            name.className = 'recommendation-name';
+            name.textContent = item.name || '未命名';
+            subtitle.className = 'recommendation-subtitle';
+            subtitle.textContent = item.subtitle || (item.mediaType === 'tv' ? '剧集' : '电影');
+            rating.className = 'recommendation-rating';
+            rating.textContent = Number(item.rating) > 0 ? '★ ' + Number(item.rating).toFixed(1) : '';
+            copy.appendChild(name);
+            copy.appendChild(subtitle);
+            copy.appendChild(rating);
+            card.appendChild(poster);
+            card.appendChild(copy);
+            rail.appendChild(card);
+          });
+          section.appendChild(rail);
+          section.appendChild(reason);
+          root.appendChild(section);
+        });
+        updateRecommendationSummary();
+
+      }
+
+      function renderExternalLinks() {
+        var root = byId('externalLinks');
+        var values = array(app.data.externalLinks);
+        var capabilities = app.data.capabilities || {};
+        var api = nativeApi();
+        var canOpen = Boolean(capabilities.canOpenExternalLinks && api && api.external
+          && typeof api.external.open === 'function');
+        clear(root);
+        values.forEach(function (item, index) {
+          var interactive = Boolean(canOpen && text(item.linkRef));
+          var card = d.createElement(interactive ? 'button' : 'article');
+          var label = d.createElement('strong');
+          var host = d.createElement('span');
+          card.className = 'external-link';
+          if (interactive) {
+            card.type = 'button';
+            card.setAttribute('data-focus-row', 'external-links');
+            card.addEventListener('click', function () {
+              actionFailure(api.external.open(item.linkRef), '无法打开外部链接');
+            });
+          }
+          card.setAttribute('data-external-id', text(item.linkRef || index));
+          label.textContent = item.label || '外部链接';
+          host.textContent = item.host || '';
+          card.appendChild(label);
+          card.appendChild(host);
+          root.appendChild(card);
+        });
+        setText('externalStatus', values.length + ' 个');
+        show(byId('externalSection'), values.length > 0);
+      }
+      function selectSource(sourceId) {
+        if (app.pending) return;
+        if (!w.EclipseDetailState.selectSource(app.state, sourceId)) return;
+        renderLines();
+        renderEpisodes();
+        focusByData('data-source-id', app.state.sourceId);
+      }
+
+      function ensureRailItemVisible(node) {
+        var rail = node && node.parentElement;
+        var railRect;
+        var itemRect;
+        var padding = 10;
+        var delta = 0;
+        if (!rail || !rail.classList || !rail.classList.contains('horizontal-rail')) return;
+        railRect = rail.getBoundingClientRect();
+        itemRect = node.getBoundingClientRect();
+        if (itemRect.left < railRect.left + padding) delta = itemRect.left - railRect.left - padding;
+        else if (itemRect.right > railRect.right - padding) delta = itemRect.right - railRect.right + padding;
+        if (Math.abs(delta) > 0.5) rail.scrollLeft += delta;
+      }
+
+      function safeInset(name) {
+        var value = w.getComputedStyle(d.documentElement).getPropertyValue(name);
+        return Math.max(0, Number.parseFloat(value) || 0);
+      }
+
+      function ensureEpisodeContextVisible(node) {
+        var feature = byId('episodeFeature');
+        if (!node.classList || !node.classList.contains('episode') || w.innerWidth < 900
+          || !feature || feature.classList.contains('hidden')) return false;
+        w.requestAnimationFrame(function () {
+          var featureRect = feature.getBoundingClientRect();
+          var nodeRect = node.getBoundingClientRect();
+          var top = safeInset('--fm-safe-top') + 12;
+          var bottom = w.innerHeight - safeInset('--fm-safe-bottom') - 18;
+          if (nodeRect.bottom - featureRect.top <= bottom - top) {
+            w.scrollBy(0, featureRect.top - top);
+          } else {
+            try { node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+            catch (ignore) { node.scrollIntoView(false); }
+          }
+          ensureRailItemVisible(node);
+        });
+        return true;
+      }
+
+      function ensureFocusVisible(node) {
+        if (!node || node === d.body) return;
+        if (ensureEpisodeContextVisible(node)) return;
+        try { node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+        catch (ignore) { node.scrollIntoView(false); }
+        w.requestAnimationFrame(function () { ensureRailItemVisible(node); });
+      }
+      function focusByData(attribute, value) {
+        var nodes = d.querySelectorAll('[' + attribute + ']');
+        var index;
+        for (index = 0; index < nodes.length; index += 1) {
+          if (nodes[index].getAttribute(attribute) === text(value)) {
+            nodes[index].focus();
+            ensureFocusVisible(nodes[index]);
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function renderLines() {
+        var root = byId('lineTabs');
+        clear(root);
+        array(app.state.sources).forEach(function (source) {
+          var button = d.createElement('button');
+          var active = text(source.sourceId) === app.state.sourceId;
+          button.type = 'button';
+          button.className = 'line-tab' + (active ? ' active' : '');
+          button.textContent = source.name || '线路';
+          button.setAttribute('role', 'tab');
+          button.setAttribute('aria-selected', active ? 'true' : 'false');
+          button.setAttribute('data-focus-row', 'lines');
+          button.setAttribute('data-source-id', text(source.sourceId));
+          button.disabled = app.pending;
+          button.addEventListener('click', function () { selectSource(source.sourceId); });
+          root.appendChild(button);
+        });
+      }
+
+      function selectedEpisode() {
+        return w.EclipseDetailState.selectedEpisode(app.state);
+      }
+
+      function openEpisodeInfo(episode) {
+        var api = nativeApi();
+        if (!api || !api.episode || typeof api.episode.info !== 'function'
+          || !text(episode && episode.episodeRef)) return;
+        actionFailure(api.episode.info(episode.episodeRef), '无法打开选集详情');
+      }
+
+      function updateEpisodeMarquee(track) {
+        w.requestAnimationFrame(function () {
+          var viewport = track && track.parentNode;
+          if (!viewport || !track.isConnected) return;
+          track.classList.remove('overflowing');
+          track.style.removeProperty('--episode-marquee-distance');
+          track.style.removeProperty('--episode-marquee-duration');
+          var distance = Math.max(0, track.scrollWidth - viewport.clientWidth);
+          if (distance <= 2) return;
+          track.classList.add('overflowing');
+          track.style.setProperty('--episode-marquee-distance', distance + 'px');
+          track.style.setProperty('--episode-marquee-duration', Math.max(5, Math.min(13, 4 + distance / 28)) + 's');
+        });
+      }
+
+      function renderEpisodeRanges() {
+        var root = byId('episodeRanges');
+        var ranges = w.EclipseDetailState.episodeRanges(app.state);
+        clear(root);
+        ranges.forEach(function (range, index) {
+          var page = index + 1;
+          var button = d.createElement('button');
+          button.type = 'button';
+          button.className = 'episode-range' + (range.selected ? ' active' : '');
+          button.textContent = range.label;
+          button.setAttribute('role', 'tab');
+          button.setAttribute('aria-selected', range.selected ? 'true' : 'false');
+          button.setAttribute('data-focus-row', 'episode-ranges');
+          button.setAttribute('data-episode-page', text(page));
+          button.disabled = app.pending;
+          button.addEventListener('click', function () {
+            app.state.page = page;
+            renderEpisodes();
+            w.setTimeout(function () { focusByData('data-episode-page', text(page)); }, 0);
+          });
+          root.appendChild(button);
+        });
+        show(root, ranges.length > 1);
+        return ranges;
+      }
+
+      function renderEpisodeFeature(episode) {
+        var root = byId('episodeFeature');
+        var hasMetadata = Boolean(episode && (episode.title || episode.date || episode.overview || episode.still
+          || Number(episode.runtimeMinutes) > 0 || Number(episode.rating) > 0));
+        var image = byId('episodeStill');
+        var fallback = byId('episodeStillFallback');
+        var facts = [];
+        show(root, hasMetadata);
+        if (!hasMetadata) return;
+        setText('episodeKicker', '第 ' + Number(episode.seasonNumber || 1) + ' 季 · 第 ' + Number(episode.number || 1) + ' 集');
+        setText('episodeFeatureTitle', episode.title || episode.name || '本集');
+        if (episode.date) facts.push(text(episode.date));
+        if (Number(episode.runtimeMinutes) > 0) facts.push(Number(episode.runtimeMinutes) + ' 分钟');
+        if (Number(episode.rating) > 0) facts.push('★ ' + Number(episode.rating).toFixed(1));
+        setText('episodeFacts', facts.join(' · '));
+        optional('episodeFeatureOverview', episode.overview);
+        var url = w.EclipseDetailState.safeImageUrl(episode.still);
+        image.alt = text(episode.title || episode.name || '本集') + ' 剧照';
+        if (!url) {
+          image.removeAttribute('src');
+          show(image, false);
+          show(fallback, true);
+          return;
+        }
+        image.onload = function () { show(image, true); show(fallback, false); };
+        image.onerror = function () { show(image, false); show(fallback, true); };
+        image.src = url;
+      }
+
+      function renderEpisodes() {
+        var root = byId('episodes');
+        var page = w.EclipseDetailState.visibleEpisodes(app.state);
+        var capabilities = app.data.capabilities || {};
+        var api = nativeApi();
+        var canInspect = Boolean(capabilities.canInspectEpisodes && api && api.episode
+          && typeof api.episode.info === 'function');
+        clear(root);
+        if (!page.items.length) {
+          var empty = d.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = '该线路暂未提供可播放选集';
+          root.appendChild(empty);
+        }
+        page.items.forEach(function (episode) {
+          var cell = d.createElement('div');
+          var button = d.createElement('button');
+          var name = d.createElement('span');
+          var nameTrack = d.createElement('span');
+          var title = d.createElement('span');
+          var titleTrack = d.createElement('span');
+          var selected = text(episode.episodeId) === app.state.episodeId;
+          var inspectable = canInspect && text(episode.episodeRef);
+          var nameText = episode.name || ('第 ' + text(episode.number) + ' 集');
+          cell.className = 'episode-cell';
+          button.type = 'button';
+          button.className = 'episode' + (selected ? ' selected' : '');
+          name.className = 'episode-name';
+          nameTrack.className = 'episode-marquee-track';
+          nameTrack.textContent = nameText;
+          name.appendChild(nameTrack);
+          title.className = 'episode-title';
+          titleTrack.className = 'episode-marquee-track';
+          titleTrack.textContent = episode.title || '';
+          title.appendChild(titleTrack);
+          button.title = episode.title ? nameText + ' · ' + episode.title : nameText;
+          button.setAttribute('data-focus-row', 'episodes');
+          button.setAttribute('data-episode-id', text(episode.episodeId));
+          button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+          if (inspectable) button.setAttribute('aria-description', '长按查看本集详情');
+          button.disabled = app.pending;
+          button.addEventListener('focus', function () { renderEpisodeFeature(episode); });
+          button.addEventListener('click', function () {
+            app.state.episodeId = text(episode.episodeId);
+            renderEpisodes();
+            focusByData('data-episode-id', app.state.episodeId);
+            playEpisode(episode);
+          });
+          if (inspectable) {
+            bindLongPress(button, function () {
+              button.focus();
+              ensureFocusVisible(button);
+              openEpisodeInfo(episode);
+            });
+          }
+          button.appendChild(name);
+          if (episode.title) button.appendChild(title);
+          cell.appendChild(button);
+          root.appendChild(cell);
+          updateEpisodeMarquee(nameTrack);
+          if (episode.title) updateEpisodeMarquee(titleTrack);
+        });
+        var selected = selectedEpisode();
+        var featured = page.items.find(function (episode) {
+          return selected && text(episode.episodeId) === text(selected.episodeId);
+        }) || page.items[0] || selected;
+        renderEpisodeFeature(featured);
+        var ranges = renderEpisodeRanges();
+        var activeRange = ranges.find(function (range) { return range.selected; });
+        setText('episodeStatus', page.total + ' 个选集'
+          + (activeRange && ranges.length > 1 ? ' · 当前 ' + activeRange.label : '')
+          + (app.state.truncated ? ' · 内容过长，已由宿主安全截断' : ''));
+        byId('episodeStatus').className = app.state.truncated ? 'warning' : '';
+        var media = app.data.media || {};
+        var overview = [];
+        if (Number(media.seasonCount) > 0) overview.push(Number(media.seasonCount) + ' 季');
+        if (Number(media.episodeCount) > 0) overview.push(Number(media.episodeCount) + ' 集');
+        setText('episodeOverview', overview.join(' · '));
+        show(byId('pager'), page.pageCount > 1);
+        setText('pageText', activeRange ? activeRange.label + ' · ' + page.page + ' / ' + page.pageCount
+          : page.page + ' / ' + page.pageCount);
+        byId('prevPage').disabled = app.pending || page.page <= 1;
+        byId('nextPage').disabled = app.pending || page.page >= page.pageCount;
+      }
+
+      function setPending(pending) {
+        var capabilities = (app.data && app.data.capabilities) || {};
+        app.pending = pending;
+        byId('playButton').disabled = pending || capabilities.canPlay === false;
+        byId('favoriteButton').disabled = pending || capabilities.canFavorite === false;
+        Array.prototype.forEach.call(d.querySelectorAll('[data-source-id],[data-episode-id],[data-episode-page]'), function (node) {
+          node.disabled = pending;
+        });
+        var page = app.state ? w.EclipseDetailState.visibleEpisodes(app.state) : { page: 1, pageCount: 1 };
+        byId('prevPage').disabled = pending || page.page <= 1;
+        byId('nextPage').disabled = pending || page.page >= page.pageCount;
+      }
+
+      function finishPendingFocus(id) {
+        setPending(false);
+        var node = byId(id);
+        if (node && !node.disabled) node.focus();
+      }
+
+      function playEpisode(episode) {
+        if (app.pending) return;
+        var api = nativeApi();
+        var item = app.data.item || {};
+        var source = app.data.source || app.info.source || {};
+        if (!api || typeof api.vod !== 'function' || !episode || !episode.playRef
+            || (app.data.capabilities && app.data.capabilities.canPlay === false)) {
+          toast('当前没有可播放的选集');
+          return;
+        }
+        setPending(true);
+        api.vod(source.key || item.siteKey || '', item.vodId || '', item.name || '', item.pic || '', {
+          playRef: episode.playRef,
+          remarks: item.remarks || '',
+          resume: true
+        }).then(function () { setPending(false); }).catch(function (error) {
+          setPending(false);
+          toast(error && error.message ? error.message : '无法启动原生播放器');
+        });
+      }
+
+      function playSelected() { playEpisode(selectedEpisode()); }
+
+      function toggleFavorite() {
+        var api = nativeApi();
+        var next = !app.state.favorite;
+        if (!api || typeof api.favoriteSet !== 'function' || app.pending
+            || (app.data.capabilities && app.data.capabilities.canFavorite === false)) return;
+        setPending(true);
+        api.favoriteSet(next, { vodId: app.data.item && app.data.item.vodId }).then(function (result) {
+          app.state.favorite = result && typeof result.favorite !== 'undefined' ? Boolean(result.favorite) : next;
+          renderFavorite();
+          toast(app.state.favorite ? '已加入收藏' : '已取消收藏');
+          finishPendingFocus('favoriteButton');
+        }).catch(function (error) {
+          finishPendingFocus('favoriteButton');
+          toast(error && error.message ? error.message : '收藏状态更新失败');
+        });
+      }
+
+      function openNative() {
+        clearNativeFallback();
+        var api = nativeApi();
+        if (!api || typeof api.openNativeDetail !== 'function') return;
+        api.openNativeDetail({ vodId: (app.data && app.data.item && app.data.item.vodId) || '' }).catch(function (error) {
+          toast(error && error.message ? error.message : '无法打开原生详情');
+        });
+      }
+
+      function goBack() {
+        var api = nativeApi();
+        if (api && typeof api.back === 'function') api.back().catch(function () {});
+        else if (w.fongmi && w.fongmi.navigation) w.fongmi.navigation.back().catch(function () {});
+      }
+
+      function showError(error) {
+        show(byId('loadingPanel'), false);
+        show(byId('content'), false);
+        show(byId('errorPanel'), true);
+        setText('errorMessage', error && error.message ? error.message : '内容源暂时无法返回详情，可以切换到原生详情页。');
+        byId('retryButton').focus();
+      }
+
+      function clearNativeFallback() {
+        if (!app.fallbackTimer) return;
+        w.clearTimeout(app.fallbackTimer);
+        app.fallbackTimer = 0;
+      }
+
+      function scheduleNativeFallback() {
+        clearNativeFallback();
+        if (app.paused) return;
+        app.fallbackTimer = w.setTimeout(function () {
+          app.fallbackTimer = 0;
+          openNative();
+        }, 700);
+      }
+
+      function focusByRow(row, rowIndex) {
+        var nodes = d.querySelectorAll('[data-focus-row]');
+        var matches = [];
+        var index;
+        var node;
+        for (index = 0; index < nodes.length; index += 1) {
+          node = nodes[index];
+          if (node.getAttribute('data-focus-row') !== text(row) || node.disabled) continue;
+          if (node.getBoundingClientRect().width > 0 && node.getBoundingClientRect().height > 0) matches.push(node);
+        }
+        if (!matches.length) return false;
+        node = matches[Math.min(Math.max(0, Number(rowIndex) || 0), matches.length - 1)];
+        node.focus();
+        ensureFocusVisible(node);
+        return true;
+      }
+
+      function focusMarker() {
+        var node = d.activeElement;
+        var attributes = ['data-source-id', 'data-episode-id', 'data-episode-page', 'data-person-id', 'data-gallery-id', 'data-recommendation-id', 'data-external-id'];
+        var marker = {};
+        var rowNodes;
+        var row;
+        var index;
+        var rowIndex = 0;
+        if (!node || node === d.body) return null;
+        if (node.id) marker.id = node.id;
+        for (index = 0; index < attributes.length; index += 1) {
+          if (node.hasAttribute && node.hasAttribute(attributes[index])) {
+            marker.attribute = attributes[index];
+            marker.value = node.getAttribute(attributes[index]);
+            break;
+          }
+        }
+        row = node.getAttribute && node.getAttribute('data-focus-row');
+        if (row) {
+          rowNodes = d.querySelectorAll('[data-focus-row]');
+          for (index = 0; index < rowNodes.length; index += 1) {
+            if (rowNodes[index].getAttribute('data-focus-row') !== row) continue;
+            if (rowNodes[index] === node) break;
+            rowIndex += 1;
+          }
+          marker.row = row;
+          marker.rowIndex = rowIndex;
+        }
+        return marker.id || marker.attribute || marker.row ? marker : null;
+      }
+
+      function restoreFocus(marker) {
+        if (!marker) return false;
+        if (marker.id && byId(marker.id) && !byId(marker.id).disabled) {
+          byId(marker.id).focus();
+          return true;
+        }
+        if (marker.attribute && focusByData(marker.attribute, marker.value)) return true;
+        return marker.row ? focusByRow(marker.row, marker.rowIndex) : false;
+      }
+
+      function render(preserveState, marker) {
+        app.state = preserveState
+          ? w.EclipseDetailState.refresh(app.state, app.data, EPISODE_GROUP_SIZE)
+          : w.EclipseDetailState.create(app.data, EPISODE_GROUP_SIZE);
+        renderHero();
+        renderPeople();
+        renderLines();
+        renderEpisodes();
+        renderGallery();
+        renderRecommendationGroups();
+        renderExternalLinks();
+        setPending(false);
+        clearNativeFallback();
+        show(byId('loadingPanel'), false);
+        show(byId('errorPanel'), false);
+        show(byId('content'), true);
+        if (preserveState) w.setTimeout(function () { if (!restoreFocus(marker)) byId('playButton').focus(); }, 20);
+        else if (app.info && app.info.client && app.info.client.isLeanback) w.setTimeout(function () { byId('playButton').focus(); }, 30);
+      }
+
+      function loadDetail() {
+        var api = nativeApi();
+        if (!api || typeof api.themeInfo !== 'function' || typeof api.vodDetail !== 'function') return;
+        clearNativeFallback();
+        show(byId('loadingPanel'), true);
+        show(byId('errorPanel'), false);
+        show(byId('content'), false);
+        api.themeInfo().then(function (info) {
+          app.info = info || {};
+          return api.vodDetail({ vodId: info && info.route ? info.route.vodId : '' });
+        }).then(function (data) {
+          app.data = data || {};
+          render(false, null);
+          if (app.refreshQueued) {
+            app.refreshQueued = false;
+            refreshDetail();
+          }
+        }).catch(function (error) {
+          showError(error);
+          scheduleNativeFallback();
+        });
+      }
+
+      function refreshDetail() {
+        var api = nativeApi();
+        var item = app.data && app.data.item;
+        if (!api || typeof api.vodDetail !== 'function') return;
+        if (!item) { app.refreshQueued = true; return; }
+        if (app.refreshing) { app.refreshQueued = true; return; }
+        app.refreshing = true;
+        api.vodDetail({ vodId: item.vodId || '', cached: true }).then(function (data) {
+          var marker = focusMarker();
+          app.data = data || app.data;
+          render(true, marker);
+        }).catch(function () {
+        }).then(function () {
+          app.refreshing = false;
+          if (app.refreshQueued) {
+            app.refreshQueued = false;
+            refreshDetail();
+          }
+        });
+      }
+
+      function focusables() {
+        return Array.prototype.slice.call(d.querySelectorAll('button:not([disabled]),[tabindex="0"]')).filter(function (node) {
+          var rect = node.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
+      }
+
+      function moveFocus(direction) {
+        var nodes = focusables();
+        var current = d.activeElement;
+        var index = nodes.indexOf(current);
+        if (index < 0) { if (nodes.length) nodes[0].focus(); return; }
+        var geometry = nodes.map(function (node) {
+          var rect = node.getBoundingClientRect();
+          return {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            row: node.getAttribute('data-focus-row') || ''
+          };
+        });
+        var targetIndex = w.EclipseFocusNavigation.nextFocusIndex(geometry, index, direction);
+        var best = targetIndex >= 0 ? nodes[targetIndex] : null;
+        if (best) {
+          best.focus();
+          ensureFocusVisible(best);
+        }
+      }
+
+      function bind() {
+        byId('backButton').addEventListener('click', goBack);
+        byId('retryButton').addEventListener('click', loadDetail);
+        byId('errorNativeButton').addEventListener('click', openNative);
+        byId('nativeButton').addEventListener('click', openNative);
+        byId('playButton').addEventListener('click', playSelected);
+        byId('favoriteButton').addEventListener('click', toggleFavorite);
+        byId('prevPage').addEventListener('click', function () { app.state.page -= 1; renderEpisodes(); });
+        byId('nextPage').addEventListener('click', function () { app.state.page += 1; renderEpisodes(); });
+        d.addEventListener('focusin', function (event) { ensureFocusVisible(event.target); });
+        d.addEventListener('keydown', function (event) {
+          var direction = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' }[event.key];
+          if (direction) { event.preventDefault(); moveFocus(direction); }
+          else if (event.key === 'Escape' || event.key === 'BrowserBack') { event.preventDefault(); goBack(); }
+        });
+        w.addEventListener('fmresume', function () {
+          app.paused = false;
+          if (!app.data || !app.data.item) {
+            loadDetail();
+            return;
+          }
+          refreshDetail();
+          w.setTimeout(function () {
+            if (d.activeElement && d.activeElement !== d.body) return;
+            if (!focusByData('data-episode-id', app.state && app.state.episodeId)) byId('playButton').focus();
+          }, 40);
+        });
+        w.addEventListener('fmpause', function () {
+          app.paused = true;
+          clearNativeFallback();
+        });
+        w.addEventListener('fmviewport', function () { ensureFocusVisible(d.activeElement); });
+        w.addEventListener('fmdetailchange', refreshDetail);
+      }
+
+      function boot() {
+        if (app.booted) { loadDetail(); return; }
+        app.booted = true;
+        bind();
+        loadDetail();
+      }
+
+      w.addEventListener('fmsdk', boot);
+      if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', function () { if (nativeApi()) boot(); });
+      else if (nativeApi()) boot();
+      w.setTimeout(function () { if (!app.booted && nativeApi()) boot(); }, 350);
+      w.onerror = function (message) {
+        showError(new Error(text(message) || '详情页脚本异常'));
+        scheduleNativeFallback();
+      };
+    }(window, document));
+  </script>
+</body>
+</html>

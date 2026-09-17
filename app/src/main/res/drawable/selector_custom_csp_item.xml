@@ -2,10 +2,10 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">
-            <solid android:color="#E8F0FE" />
+            <solid android:color="#FFFFFF" />
             <corners android:radius="8dp" />
             <stroke
-                android:width="1.5dp"
+                android:width="2.5dp"
                 android:color="#1A73E8" />
         </shape>
     </item>
@@ -20,11 +20,11 @@
     </item>
     <item android:state_activated="true">
         <shape android:shape="rectangle">
-            <solid android:color="#FFF1F1" />
+            <solid android:color="#E8F5E9" />
             <corners android:radius="8dp" />
             <stroke
-                android:width="1dp"
-                android:color="#F2A0A0" />
+                android:width="1.5dp"
+                android:color="#4CAF50" />
         </shape>
     </item>
     <item>

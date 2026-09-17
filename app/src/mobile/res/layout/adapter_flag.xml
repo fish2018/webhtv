@@ -5,7 +5,12 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/shape_video_item"
+    android:ellipsize="marquee"
     android:gravity="center"
+    android:marqueeRepeatLimit="marquee_forever"
+    android:maxWidth="240dp"
+    android:scrollHorizontally="true"
+    android:singleLine="true"
     android:textColor="@color/selector_video_text"
     android:textSize="14sp"
     tools:text="泥巴" />

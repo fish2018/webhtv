@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Config;
+import com.fongmi.android.tv.setting.InterfaceOrderStore;
 import com.fongmi.android.tv.databinding.AdapterConfigBinding;
 
 import java.util.List;
@@ -27,6 +28,8 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
 
         void onTextClick(Config item);
 
+        boolean onTextLongClick(ViewHolder holder);
+
         void onDeleteClick(Config item);
     }
 
@@ -40,9 +43,9 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
     }
 
     public ConfigAdapter addAll(int type, Config current) {
-        mItems = Config.getAll(type);
+        mItems = type == 0 ? InterfaceOrderStore.sortVodConfigs(Config.getAll(type)) : Config.getAll(type);
         String currentUrl = current == null ? null : current.getUrl();
-        if (!readOnly && !TextUtils.isEmpty(currentUrl)) mItems.removeIf(item -> TextUtils.equals(item.getUrl(), currentUrl));
+        if (type != 0 && !readOnly && !TextUtils.isEmpty(currentUrl)) mItems.removeIf(item -> TextUtils.equals(item.getUrl(), currentUrl));
         return this;
     }
 
@@ -51,8 +54,18 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
         if (position == -1) return -1;
         item.delete();
         mItems.remove(position);
+        if (item.getType() == 0) InterfaceOrderStore.saveVodConfigs(mItems);
         notifyItemRemoved(position);
         return getItemCount();
+    }
+
+    public boolean drag(int from, int to) {
+        if (from < 0 || to < 0 || from >= mItems.size() || to >= mItems.size() || from == to) return false;
+        Config item = mItems.remove(from);
+        mItems.add(to, item);
+        notifyItemMoved(from, to);
+        if (mItems.size() > 0) InterfaceOrderStore.saveVodConfigs(mItems);
+        return true;
     }
 
     @Override
@@ -71,6 +84,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
         Config item = mItems.get(position);
         holder.binding.text.setText(item.getDesc());
         holder.binding.text.setOnClickListener(v -> listener.onTextClick(item));
+        holder.binding.text.setOnLongClickListener(v -> listener.onTextLongClick(holder));
         holder.binding.delete.setVisibility(readOnly ? View.GONE : View.VISIBLE);
         holder.binding.delete.setOnClickListener(v -> listener.onDeleteClick(item));
     }
@@ -79,7 +93,7 @@ public class ConfigAdapter extends RecyclerView.Adapter<ConfigAdapter.ViewHolder
 
         private final AdapterConfigBinding binding;
 
-        ViewHolder(@NonNull AdapterConfigBinding binding) {
+        public ViewHolder(@NonNull AdapterConfigBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
         }

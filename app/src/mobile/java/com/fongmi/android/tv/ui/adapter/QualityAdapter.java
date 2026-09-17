@@ -34,6 +34,14 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
         return position;
     }
 
+    public void setPosition(int position) {
+        this.position = Math.max(position, 0);
+        if (getItemCount() == 0) return;
+        result.getUrl().set(this.position);
+        this.position = Math.max(result.getUrl().getPosition(), 0);
+        notifyItemRangeChanged(0, getItemCount());
+    }
+
     @Override
     public int getItemCount() {
         return result.getUrl().getValues().size();
@@ -53,10 +61,8 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
     }
 
     private void onItemClick(int position) {
-        this.position = position;
-        result.getUrl().set(position);
+        setPosition(position);
         listener.onItemClick(result);
-        notifyItemRangeChanged(0, getItemCount());
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

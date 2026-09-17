@@ -37,6 +37,7 @@ public class LutQuickPanel extends FrameLayout {
     private MaterialTextView favorite;
     private MaterialTextView empty;
     private RecyclerView recycler;
+    private final List<MaterialTextView> chips = new ArrayList<>();
     private final PanelAdapter adapter;
     private final View panel;
     private PlayerManager player;
@@ -92,12 +93,14 @@ public class LutQuickPanel extends FrameLayout {
             items.add(Entry.preset(preset));
         }
         empty.setText(favoriteOnly ? R.string.lut_empty_favorites : R.string.lut_empty_presets);
+        empty.setTextColor(Color.WHITE);
         empty.setVisibility(items.isEmpty() || (!favoriteOnly && items.size() <= 1) ? VISIBLE : GONE);
         adapter.setItems(items);
         if (getVisibility() == VISIBLE && shouldFocusSelectedEntry()) recycler.post(this::focusSelectedEntry);
-        delay.setText(ResUtil.getString(R.string.lut_preview_delay_value, LutSetting.getPreviewSeconds()));
+        setChipText(delay, ResUtil.getString(R.string.lut_preview_delay_value, LutSetting.getPreviewSeconds()));
         updateAllButton();
         updateFavoriteButton();
+        refreshChipTextColors();
     }
 
     public void selectImported(LutPreset preset, PlayerManager player, PlayerView playerView, Runnable refresh) {
@@ -125,10 +128,13 @@ public class LutQuickPanel extends FrameLayout {
     }
 
     private void show() {
+        bringToFront();
         setVisibility(VISIBLE);
+        refreshChipTextColors();
         refreshList(true);
         updatePanelWidth();
         panel.post(() -> {
+            refreshChipTextColors();
             panel.setTranslationX(panel.getWidth());
             panel.animate().translationX(0).setDuration(180).start();
             focusSelectedEntry();
@@ -230,11 +236,11 @@ public class LutQuickPanel extends FrameLayout {
         MaterialTextView title = text(R.string.player_lut, 16, true);
         header.addView(title, new androidx.appcompat.widget.LinearLayoutCompat.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1));
         MaterialTextView reset = chip();
-        reset.setText(R.string.lut_reset);
+        setChipText(reset, R.string.lut_reset);
         reset.setOnClickListener(view -> select(null));
         header.addView(reset);
         MaterialTextView close = chip();
-        close.setText(R.string.lut_close);
+        setChipText(close, R.string.lut_close);
         close.setOnClickListener(view -> hide());
         header.addView(close);
 
@@ -250,26 +256,26 @@ public class LutQuickPanel extends FrameLayout {
         tools.addView(delay);
 
         all = chip();
-        all.setText(R.string.lut_all);
+        setChipText(all, R.string.lut_all);
         all.setOnClickListener(view -> showAll());
         all.setOnFocusChangeListener((v, focused) -> applyBg((MaterialTextView) v, !favoriteOnly, focused));
         tools.addView(all);
 
         favorite = chip();
-        favorite.setText(R.string.lut_favorite);
+        setChipText(favorite, R.string.lut_favorite);
         favorite.setOnClickListener(view -> toggleFavoriteOnly());
         favorite.setOnFocusChangeListener((v, focused) -> applyBg((MaterialTextView) v, favoriteOnly, focused));
         tools.addView(favorite);
 
         MaterialTextView importView = chip();
-        importView.setText(R.string.lut_local);
+        setChipText(importView, R.string.lut_local);
         importView.setOnClickListener(view -> {
             if (importCallback != null) importCallback.onImportLut();
         });
         tools.addView(importView);
 
         MaterialTextView dirView = chip();
-        dirView.setText(R.string.lut_directory);
+        setChipText(dirView, R.string.lut_directory);
         dirView.setOnClickListener(view -> {
             if (importCallback != null) importCallback.onSelectLutDir();
         });
@@ -332,7 +338,7 @@ public class LutQuickPanel extends FrameLayout {
         int current = LutSetting.getPreviewSeconds();
         int next = current < 2 ? 2 : current < 3 ? 3 : current < 5 ? 5 : current < 8 ? 8 : 1;
         LutSetting.putPreviewSeconds(next);
-        delay.setText(ResUtil.getString(R.string.lut_preview_delay_value, next));
+        setChipText(delay, ResUtil.getString(R.string.lut_preview_delay_value, next));
     }
 
     private MaterialTextView chip() {
@@ -346,6 +352,7 @@ public class LutQuickPanel extends FrameLayout {
         view.setLayoutParams(params);
         applyBg(view, false, false);
         view.setOnFocusChangeListener((v, focused) -> applyBg((MaterialTextView) v, false, focused));
+        chips.add(view);
         return view;
     }
 
@@ -358,11 +365,29 @@ public class LutQuickPanel extends FrameLayout {
         return view;
     }
 
+    private void setChipText(MaterialTextView view, int resId) {
+        view.setText(resId);
+        view.setTextColor(Color.WHITE);
+    }
+
+    private void setChipText(MaterialTextView view, CharSequence text) {
+        view.setText(text);
+        view.setTextColor(Color.WHITE);
+    }
+
+    private void refreshChipTextColors() {
+        for (MaterialTextView view : chips) {
+            view.setAlpha(1f);
+            view.setTextColor(Color.WHITE);
+        }
+    }
+
     private void applyBg(MaterialTextView view, boolean selected, boolean focused) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(selected ? 0xFF2F80ED : focused ? 0x55FFFFFF : 0x22FFFFFF);
         drawable.setStroke(dp(1), selected || focused ? 0xFFFFFFFF : 0x33FFFFFF);
         drawable.setCornerRadius(dp(6));
+        view.setTextColor(Color.WHITE);
         view.setBackground(drawable);
     }
 

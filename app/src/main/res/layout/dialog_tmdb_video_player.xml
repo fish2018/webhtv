@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tmdbVideoContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/shape_dialog_glass_panel">
+
+    <FrameLayout
+        android:id="@+id/tmdbVideoSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="52dp"
+        android:background="@android:color/black">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/tmdbVideoPlayer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:focusable="true"
+            android:keepScreenOn="true"
+            app:hide_on_touch="true"
+            app:show_buffering="never"
+            app:use_controller="true" />
+
+        <ProgressBar
+            android:id="@+id/tmdbVideoLoading"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+        <TextView
+            android:id="@+id/tmdbVideoError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/shape_tmdb_dialog_status"
+            android:gravity="center"
+            android:maxWidth="360dp"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:background="#66000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/tmdbVideoTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/tmdbVideoClose"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/dialog_close"
+            android:focusable="true"
+            android:nextFocusRight="@id/tmdbVideoFullscreen"
+            android:padding="10dp"
+            android:src="@drawable/ic_dialog_close"
+            app:tint="@android:color/white" />
+
+        <ImageButton
+            android:id="@+id/tmdbVideoFullscreen"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/play_fullscreen"
+            android:focusable="true"
+            android:nextFocusLeft="@id/tmdbVideoClose"
+            android:padding="10dp"
+            android:src="@drawable/ic_control_fullscreen"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+</FrameLayout>

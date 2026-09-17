@@ -34,6 +34,14 @@ public class Rule {
         return new Rule(name);
     }
 
+    public static Rule create(String name, List<String> hosts, List<String> regex, List<String> exclude) {
+        Rule rule = new Rule(name);
+        rule.hosts = hosts;
+        rule.regex = regex;
+        rule.exclude = exclude;
+        return rule;
+    }
+
     public static Rule empty() {
         return new Rule("");
     }

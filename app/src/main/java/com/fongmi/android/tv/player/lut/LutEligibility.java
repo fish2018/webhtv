@@ -32,7 +32,7 @@ public class LutEligibility {
         if (spec != null && spec.getDrm() != null) return ResUtil.getString(R.string.lut_unavailable_drm);
         if (!engine.supportsNativeLut() && PlayerSetting.isTunnel()) return ResUtil.getString(R.string.lut_unavailable_tunnel);
         if (!engine.supportsNativeLut() && engine.getDecode() == PlayerEngine.SOFT) return ResUtil.getString(R.string.lut_unavailable_soft_decode);
-        if (!engine.supportsNativeLut() && PlayerSetting.isVideoPrefer()) return ResUtil.getString(R.string.lut_unavailable_video_prefer);
+        if (!engine.supportsNativeLut() && PlayerSetting.isVideoPrefer(PlayerSetting.getActivePlayer())) return ResUtil.getString(R.string.lut_unavailable_video_prefer);
         if (isHdr(engine.getVideoFormat()) || isHdr(engine.getCurrentTracks())) return ResUtil.getString(R.string.lut_unavailable_hdr);
         if (isKnownAudioOnly(engine.getCurrentTracks())) return ResUtil.getString(R.string.lut_unavailable_no_video);
         return null;

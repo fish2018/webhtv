@@ -40,8 +40,12 @@ public class ImgUtil {
     private static final Set<String> failed = Collections.synchronizedSet(new HashSet<>());
 
     public static void logo(ImageView view) {
+        logo(view, VodConfig.get().getConfig().getLogo());
+    }
+
+    public static void logo(ImageView view, String logo) {
         try {
-            Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
+            Glide.with(view).load(UrlUtil.convert(logo)).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -80,6 +84,15 @@ public class ImgUtil {
         }
     }
 
+    public static void clear(ImageView view) {
+        try {
+            view.setImageDrawable(null);
+            Glide.with(view).clear(view);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void load(String text, String url, ImageView view) {
         load(text, url, view, true);
     }
@@ -93,16 +106,29 @@ public class ImgUtil {
     }
 
     public static void load(String text, String url, ImageView view, boolean vod, int width, int height) {
+        load(text, url, "", view, vod, width, height);
+    }
+
+    public static void load(String text, String url, String fallbackUrl, ImageView view, boolean vod, int width, int height) {
         view.setScaleType(vod ? CENTER_CROP : FIT_CENTER);
-        if (!vod) view.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
-        if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
-        else try {
-            RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(getListener(text, url, view, vod));
+        String fallback = TextUtils.equals(url, fallbackUrl) ? "" : fallbackUrl;
+        if (!vod) view.setVisibility(TextUtils.isEmpty(url) && TextUtils.isEmpty(fallback) ? View.GONE : View.VISIBLE);
+        if (TextUtils.isEmpty(url) || failed.contains(url)) {
+            if (!TextUtils.isEmpty(fallback) && !failed.contains(fallback)) load(text, fallback, view, vod, width, height);
+            else showTextDrawable(text, view, vod);
+        } else try {
+            RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url));
+            if (!TextUtils.isEmpty(fallback) && !failed.contains(fallback)) {
+                builder.listener(getFallbackListener(text, url, fallback, view, vod, width, height));
+            } else {
+                builder.listener(getListener(text, url, view, vod));
+            }
             if (width > 0 && height > 0) builder.override(width, height);
             if (vod) builder.centerCrop().into(view);
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
             e.printStackTrace();
+            showTextDrawable(text, view, vod);
         }
     }
 
@@ -110,18 +136,30 @@ public class ImgUtil {
         String param = null;
         url = UrlUtil.convert(url);
         if (url.startsWith("data:")) return url;
+        boolean hasReferer = false;
         LazyHeaders.Builder builder = new LazyHeaders.Builder();
-        if (url.contains("@Headers=")) addHeader(builder, param = url.split("@Headers=")[1].split("@")[0]);
+        if (url.contains("@Headers=")) hasReferer |= addHeader(builder, param = url.split("@Headers=")[1].split("@")[0]);
         if (url.contains("@Cookie=")) builder.addHeader(HttpHeaders.COOKIE, param = url.split("@Cookie=")[1].split("@")[0]);
-        if (url.contains("@Referer=")) builder.addHeader(HttpHeaders.REFERER, param = url.split("@Referer=")[1].split("@")[0]);
+        if (url.contains("@Referer=")) {
+            builder.addHeader(HttpHeaders.REFERER, param = url.split("@Referer=")[1].split("@")[0]);
+            hasReferer = true;
+        }
         if (url.contains("@User-Agent=")) builder.addHeader(HttpHeaders.USER_AGENT, param = url.split("@User-Agent=")[1].split("@")[0]);
         url = param == null ? url : url.split("@")[0];
+        String referer = ImageHeaderPolicy.doubanImageReferer(url, hasReferer);
+        if (!TextUtils.isEmpty(referer)) builder.addHeader(HttpHeaders.REFERER, referer);
         return TextUtils.isEmpty(url) ? null : new GlideUrl(url, builder.build());
     }
 
-    private static void addHeader(LazyHeaders.Builder builder, String header) {
+    private static boolean addHeader(LazyHeaders.Builder builder, String header) {
+        boolean hasReferer = false;
         Map<String, String> map = Json.toMap(Json.parse(header));
-        for (Map.Entry<String, String> entry : map.entrySet()) builder.addHeader(UrlUtil.fixHeader(entry.getKey()), entry.getValue());
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String key = UrlUtil.fixHeader(entry.getKey());
+            if (ImageHeaderPolicy.isReferer(key)) hasReferer = true;
+            builder.addHeader(key, entry.getValue());
+        }
+        return hasReferer;
     }
 
     private static Drawable getTextDrawable(String text, boolean vod) {
@@ -131,11 +169,41 @@ public class ImgUtil {
         return builder.buildRoundRect(text, ColorGenerator.get400(text), ResUtil.dp2px(4));
     }
 
+    private static void showTextDrawable(String text, ImageView view, boolean vod) {
+        showTextDrawable(text, view, vod, true);
+    }
+
+    private static void showTextDrawable(String text, ImageView view, boolean vod, boolean clear) {
+        try {
+            if (clear) Glide.with(view).clear(view);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        view.setImageDrawable(getTextDrawable(text, vod));
+    }
+
+    private static RequestListener<Drawable> getFallbackListener(String text, String url, String fallback, ImageView view, boolean vod, int width, int height) {
+        return new RequestListener<>() {
+            @Override
+            public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
+                failed.add(url);
+                if (!TextUtils.isEmpty(fallback) && !failed.contains(fallback)) load(text, fallback, view, vod, width, height);
+                else showTextDrawable(text, view, vod, false);
+                return true;
+            }
+
+            @Override
+            public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                return false;
+            }
+        };
+    }
+
     private static RequestListener<Drawable> getListener(String text, String url, ImageView view, boolean vod) {
         return new RequestListener<>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
-                view.setImageDrawable(getTextDrawable(text, vod));
+                showTextDrawable(text, view, vod, false);
                 failed.add(url);
                 return true;
             }

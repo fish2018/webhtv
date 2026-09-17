@@ -275,6 +275,9 @@
             android:id="@+id/progressText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:minLines="2"
             android:textColor="#5F6368"
             android:textSize="13sp"
             tools:text="正在下载 46% · 3.2 MB/s · 已用 00:12" />

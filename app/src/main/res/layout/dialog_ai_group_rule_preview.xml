@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/contentScroll"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F6F8FC"
+    android:descendantFocusability="afterDescendants"
+    android:fillViewport="true"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="20dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#202124"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="18dp"
+            android:paddingBottom="8dp"
+            android:text="@string/group_rule_ai_groups_title" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/groupsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:lineSpacingExtra="4dp"
+            android:padding="14dp"
+            android:textColor="#3C4043"
+            android:textSize="14sp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            style="@style/Widget.WebHTV.LightDialog.Label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="18dp"
+            android:paddingBottom="8dp"
+            android:text="@string/group_rule_ai_rules_title" />
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/rulesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/note"
+            style="@style/Widget.WebHTV.LightDialog.Helper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:text="@string/group_rule_ai_preview_note" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</androidx.core.widget.NestedScrollView>

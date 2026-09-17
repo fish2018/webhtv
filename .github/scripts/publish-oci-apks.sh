@@ -12,8 +12,8 @@ mkdir -p "$(dirname "$metadata_file")"
 printf '{}\n' > "$metadata_file"
 
 if [[ -z "$repository_input" || -z "$username" || -z "$token" || -z "$release_tag" ]]; then
-  echo "OCI publishing skipped: configure vars.OCI_REPOSITORY and OCI credentials."
-  exit 0
+  echo "OCI publishing requested but vars.OCI_REPOSITORY, OCI credentials, or RELEASE_TAG are missing." >&2
+  exit 1
 fi
 
 if ! command -v oras >/dev/null 2>&1; then

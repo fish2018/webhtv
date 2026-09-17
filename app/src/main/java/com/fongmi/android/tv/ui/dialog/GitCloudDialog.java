@@ -1771,8 +1771,9 @@ public class GitCloudDialog extends BaseAlertDialog {
         if (!requireAccount("备份需要先添加账号")) return;
         if (repo == null || !repo.privateRepo) return;
         run("生成备份中", () -> {
-            File archive = AppBackup.createTemp((stage, percent, bytes, total) -> updateProgress(progressText(stage, bytes, total), percent, percent <= 0));
-            String name = AppBackup.fileName();
+            AppBackup.CreatedBackup created = AppBackup.createTempResult((stage, percent, bytes, total) -> updateProgress(progressText(stage, bytes, total), percent, percent <= 0));
+            File archive = created.getFile();
+            String name = AppBackup.fileName(created.hasWarning());
             String zip = GitCloudPaths.backupDir() + "/" + name;
             CommitResult result;
             try {
@@ -1798,8 +1799,11 @@ public class GitCloudDialog extends BaseAlertDialog {
             List<GitFile> appFiles = provider().listFiles(account, token(), repo, repo.defaultBranch, "apps");
             List<GitFile> webhtvFiles = provider().listFiles(account, token(), repo, repo.defaultBranch, "apps/webhtv");
             List<GitFile> backupFiles = visibleFiles(GitCloudPaths.backupDir(), provider().listFiles(account, token(), repo, repo.defaultBranch, GitCloudPaths.backupDir()));
+            String message = result.pushed
+                    ? (created.hasWarning() ? "不完整备份已上传：" + created.getResult().warning : "备份已上传")
+                    : result.message;
             App.post(() -> {
-                Notify.show(result.pushed ? "备份已上传" : result.message);
+                Notify.show(message);
                 if (!isAdded() || binding == null) return;
                 fileTree.clear();
                 fileTree.put("", rootFiles);
@@ -1856,7 +1860,7 @@ public class GitCloudDialog extends BaseAlertDialog {
         GitFile latest = null;
         for (GitFile file : files) {
             if (!isBackupZip(file)) continue;
-            if (latest == null || AppBackup.backupSortKey(file.name).compareToIgnoreCase(AppBackup.backupSortKey(latest.name)) > 0) latest = file;
+            if (latest == null || AppBackup.compareBackupNames(file.name, latest.name) > 0) latest = file;
         }
         return latest;
     }

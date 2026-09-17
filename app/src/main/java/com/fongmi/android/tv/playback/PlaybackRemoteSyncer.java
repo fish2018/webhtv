@@ -20,11 +20,12 @@ public final class PlaybackRemoteSyncer {
     private static final Runnable PERIODIC = new Runnable() {
         @Override
         public void run() {
+            if (!started) return;
             Task.execute(() -> syncDue(false));
-            App.post(this, TimeUnit.MINUTES.toMillis(5));
+            if (started) App.post(this, TimeUnit.MINUTES.toMillis(5));
         }
     };
-    private static boolean started;
+    private static volatile boolean started;
 
     private PlaybackRemoteSyncer() {
     }
@@ -36,10 +37,17 @@ public final class PlaybackRemoteSyncer {
         Task.execute(() -> syncDue(true));
     }
 
+    public static void stop() {
+        started = false;
+        App.removeCallbacks(PERIODIC);
+    }
+
     public static void syncDue(boolean startup) {
+        if (!started) return;
         if (!ViewingRecordSyncStore.isEnabled() || Setting.isIncognito()) return;
         long now = System.currentTimeMillis();
         for (RemoteSyncConfig config : PlaybackRemoteSyncStore.list()) {
+            if (!started) return;
             if (!config.shouldSyncNow(now, startup)) continue;
             sync(config.id);
         }

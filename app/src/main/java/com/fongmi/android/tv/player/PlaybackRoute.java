@@ -94,6 +94,7 @@ public enum PlaybackRoute {
         return switch (owner) {
             case MAIN_SERVER -> Owner.APP_MAIN_SERVER;
             case HLS_PROXY -> Owner.APP_HLS_PROXY;
+            case MULTI_THREAD_PROXY -> Owner.APP_MULTI_THREAD_PROXY;
         };
     }
 
@@ -107,6 +108,7 @@ public enum PlaybackRoute {
         REMOTE_ORIGIN("remote-origin"),
         APP_MAIN_SERVER("app-main-server"),
         APP_HLS_PROXY("app-hls-proxy"),
+        APP_MULTI_THREAD_PROXY("app-multi-thread-proxy"),
         EXTERNAL_OR_UNKNOWN_LOOPBACK("external-or-unknown-loopback"),
         UNKNOWN("unknown");
 

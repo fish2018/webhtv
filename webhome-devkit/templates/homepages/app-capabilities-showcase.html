@@ -519,6 +519,7 @@
           <div class="actions">
             <button data-action="app-search">搜索</button>
             <button data-action="open-vod">点播</button>
+            <button data-action="open-site">内容源</button>
             <button data-action="open-keep">收藏</button>
             <button data-action="open-live">直播</button>
             <button data-action="open-setting">设置</button>
@@ -727,6 +728,7 @@
           stat: function () { return Promise.resolve({ preview: true, state: 1 }); },
           search: function (keyword, options) { return Promise.resolve({ preview: true, keyword: keyword, options: options || {} }); },
           openVod: function () { return Promise.resolve({ preview: true, open: "vod" }); },
+          openSite: function () { return Promise.resolve({ preview: true, open: "site" }); },
           openLive: function () { return Promise.resolve({ preview: true, open: "live" }); },
           openKeep: function () { return Promise.resolve({ preview: true, open: "keep" }); },
           openSetting: function () { return Promise.resolve({ preview: true, open: "setting" }); },
@@ -1229,6 +1231,7 @@
         },
         "app-search": function (api) { return api.search($("searchKeyword").value || "仙逆", { direct: true }); },
         "open-vod": function (api) { return api.openVod(); },
+        "open-site": function (api) { return api.openSite(); },
         "open-keep": function (api) { return api.openKeep(); },
         "open-live": function (api) { return api.openLive(); },
         "open-setting": function (api) { return api.openSetting(); },

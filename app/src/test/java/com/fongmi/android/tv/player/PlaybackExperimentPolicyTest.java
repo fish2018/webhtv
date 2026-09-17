@@ -60,6 +60,8 @@ public class PlaybackExperimentPolicyTest {
         assertTrue(state.allows(
                 PlaybackExperimentPolicy.Action.EXO_AUTO_PRELOAD));
         assertTrue(state.allows(
+                PlaybackExperimentPolicy.Action.EXO_SHORT_DRAMA_QUEUE));
+        assertTrue(state.allows(
                 PlaybackExperimentPolicy.Action.MPV_HLS_RUNTIME_RELOAD));
         assertTrue(state.allows(
                 PlaybackExperimentPolicy.Action.IJK_DECODE_REBUILD));

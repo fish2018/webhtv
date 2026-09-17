@@ -25,6 +25,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class UpdateDialog extends BaseAlertDialog {
 
+    private static final int FULLSCREEN_INSET_DP = 32;
+
     private DialogUpdateBinding binding;
     private UpdateListener listener;
     private Update stable;
@@ -50,8 +52,9 @@ public class UpdateDialog extends BaseAlertDialog {
 
     public UpdateDialog selected(String selected) {
         this.selected = selected;
-        this.stableExpanded = !Update.CHANNEL_BETA.equals(selected);
-        this.betaExpanded = Update.CHANNEL_BETA.equals(selected);
+        boolean betaAvailable = hasBeta();
+        this.stableExpanded = !betaAvailable && !Update.CHANNEL_BETA.equals(selected);
+        this.betaExpanded = betaAvailable && Update.CHANNEL_BETA.equals(selected);
         return this;
     }
 
@@ -72,7 +75,7 @@ public class UpdateDialog extends BaseAlertDialog {
 
     @Override
     protected MaterialAlertDialogBuilder getBuilder() {
-        return new MaterialAlertDialogBuilder(requireActivity(), R.style.ThemeOverlay_WebHTV_LightDialog).setView(getBinding().getRoot()).setCancelable(false);
+        return new MaterialAlertDialogBuilder(requireActivity(), R.style.ThemeOverlay_WebHTV_LightDialog_NoInset).setView(getBinding().getRoot()).setCancelable(false);
     }
 
     @Override
@@ -102,8 +105,7 @@ public class UpdateDialog extends BaseAlertDialog {
             getDialog().setOnKeyListener((dialog, keyCode, event) -> onDialogKey(keyCode, event));
         }
         clearWindowInset();
-        configureWindow();
-        configureScrollHeight();
+        configureDialogLayout();
         binding.stableItem.requestFocus();
     }
 
@@ -265,29 +267,60 @@ public class UpdateDialog extends BaseAlertDialog {
 
     private void clearWindowInset() {
         Window window = getDialog() == null ? null : getDialog().getWindow();
-        if (window != null) window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        if (window == null) return;
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        // ColorDrawable.getPadding() 返回 false，setBackgroundDrawable 不会重置已有 padding，
+        // 所以此前 InsetDrawable 写进 DecorView 的 inset padding 必须显式清掉，否则窗口高度
+        // 与内容可用高度会差出一个 inset，底部的进度面板和按钮会被裁掉。
+        window.getDecorView().setPadding(0, 0, 0, 0);
     }
 
+    /**
+     * 铺满全屏，不再手算窗口高度。
+     *
+     * 原先要同时算对屏宽高、content 高度、visibleFrame、Material 背景 inset 和 chrome 高度，
+     * 每项都有设备差异，任何一项出错就裁掉底部的进度面板和取消按钮。铺满后这些变量全部无关：
+     * listScroll 带 layout_weight 吃掉剩余空间，progressPanel 和 cancel 作为固定高子项永远保住。
+     */
     private void configureWindow() {
         Window window = getDialog() == null ? null : getDialog().getWindow();
         if (window == null) return;
-        int screenWidth = ResUtil.getScreenWidth(requireContext());
-        int horizontalMargin = ResUtil.dp2px(96);
-        int width = Math.min(ResUtil.dp2px(960), (int) (screenWidth * 0.72f));
-        width = Math.min(width, screenWidth - horizontalMargin);
         WindowManager.LayoutParams params = window.getAttributes();
-        params.width = width;
-        params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        params.width = WindowManager.LayoutParams.MATCH_PARENT;
+        params.height = WindowManager.LayoutParams.MATCH_PARENT;
         window.setAttributes(params);
-        window.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT);
+        // XML 里 root 是 wrap_content，铺满全屏必须显式改成 match_parent，
+        // 否则窗口虽然全屏、内容仍只占中间一小块。
+        ViewGroup.LayoutParams rootParams = binding.getRoot().getLayoutParams();
+        if (rootParams != null) {
+            rootParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            rootParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            binding.getRoot().setLayoutParams(rootParams);
+        }
     }
 
-    private void configureScrollHeight() {
-        int screenHeight = ResUtil.getScreenHeight(requireContext());
-        int height = Math.max(ResUtil.dp2px(220), Math.min(ResUtil.dp2px(320), (int) (screenHeight * 0.42f)));
-        ViewGroup.LayoutParams params = binding.listScroll.getLayoutParams();
-        params.height = height;
-        binding.listScroll.setLayoutParams(params);
+    /**
+     * 电视存在 overscan，正文不能贴边。在 XML 既有 padding 之上再加一圈安全边距。
+     *
+     * 用 tag 记在 root 上而不是记在 Fragment 实例字段上：配置变更（HDMI 分辨率切换、字体缩放）
+     * 后 Fragment 实例保留、binding 却会重新 inflate，实例字段会让新 root 永远拿不到边距。
+     */
+    private void applyFullscreenInset() {
+        View root = binding.getRoot();
+        if (Boolean.TRUE.equals(root.getTag(R.id.update_fullscreen_inset))) return;
+        root.setTag(R.id.update_fullscreen_inset, Boolean.TRUE);
+        int inset = ResUtil.dp2px(FULLSCREEN_INSET_DP);
+        root.setPadding(
+                root.getPaddingLeft() + inset,
+                root.getPaddingTop() + inset,
+                root.getPaddingRight() + inset,
+                root.getPaddingBottom() + inset);
+    }
+
+    private void configureDialogLayout() {
+        applyFullscreenInset();
+        binding.getRoot().requestLayout();
+        configureWindow();
     }
 
     private String getVersion(Update update) {
@@ -327,6 +360,8 @@ public class UpdateDialog extends BaseAlertDialog {
         if (!indeterminate) binding.progress.setProgress(value);
         binding.progressText.setText(getProgressText(indeterminate, value, bytes, total, speed, elapsed));
         binding.cancel.setText(R.string.update_cancel);
+        // 全屏 + listScroll 带 weight，progressPanel 由 VISIBLE 引起的高度变化由 LinearLayout
+        // 自行吸收，不再需要探测面板高度后重设窗口——那套逻辑还会因文案逐秒变长变短而抖动。
         if (requestFocus) binding.cancel.requestFocus();
         return true;
     }

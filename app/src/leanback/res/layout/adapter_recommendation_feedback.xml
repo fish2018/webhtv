@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/selector_light_dialog_item"
+    android:descendantFocusability="blocksDescendants"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:minHeight="58dp"
+    android:orientation="vertical"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="9dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="#202124"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="芸汐传" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textColor="#5F6368"
+        android:textSize="12sp"
+        tools:text="剧集 · 2018 · 智能推荐 · 剩余约 89 天 · 点击恢复" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -21,11 +21,16 @@ import androidx.annotation.NonNull;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
+import com.fongmi.android.tv.api.config.AdBlockStatsStore;
 import com.fongmi.android.tv.api.config.RuleConfig;
+import com.fongmi.android.tv.api.config.UserAdRuleStore;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Rule;
+import com.fongmi.android.tv.bean.UserAdRule;
 import com.fongmi.android.tv.impl.ParseCallback;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.dialog.WebDialog;
+import com.fongmi.android.tv.utils.RuleIdUtil;
 import com.fongmi.android.tv.utils.WebSniffHeaders;
 import com.fongmi.android.tv.utils.WebViewUtil;
 import com.fongmi.android.tv.utils.Sniffer;
@@ -51,6 +56,8 @@ public class CustomWebView extends WebView implements DialogInterface.OnDismissL
     private static final int MAX_URLS = 5;
 
     private final AtomicReference<ParseCallback> callbackRef = new AtomicReference<>();
+    /** 调用方指定的嗅探正则（猫源 /msg 的 sniff 会带 rule）；为空时用默认判定。 */
+    private Pattern sniff;
     private LinkedHashSet<String> urls;
     private WebResourceResponse empty;
     private WebDialog dialog;
@@ -213,13 +220,65 @@ public class CustomWebView extends WebView implements DialogInterface.OnDismissL
     }
 
     private boolean isAd(String host) {
-        for (String ad : RuleConfig.get().getAds()) if (Util.containOrMatch(host, ad)) return true;
+        for (String ad : RuleConfig.get().getAds()) {
+            if (Util.containOrMatch(host, ad)) {
+                // 记录拦截统计
+                String ruleId = findRuleIdByAdPattern(ad);
+                AdBlockStatsStore.recordBlock(key, ruleId);
+                return true;
+            }
+        }
         return false;
+    }
+
+    /**
+     * 根据广告规则字符串查找对应的规则 ID
+     */
+    private String findRuleIdByAdPattern(String adPattern) {
+        if (TextUtils.isEmpty(adPattern)) return "unknown";
+
+        // 查找用户自定义规则
+        for (UserAdRule rule : UserAdRuleStore.load()) {
+            if (!rule.isEnabled()) continue;
+            if (matchesRule(adPattern, rule.getHosts()) ||
+                matchesRule(adPattern, rule.getRegex()) ||
+                matchesRule(adPattern, rule.getExclude())) {
+                return rule.getId();
+            }
+        }
+
+        // 查找默认规则（Rule 使用 getHosts() 而非 getAds()，且需要计算 ID）
+        for (Rule rule : RuleConfig.get().getDefaultRules()) {
+            List<String> ruleHosts = rule.getHosts();
+            if (ruleHosts != null && ruleHosts.contains(adPattern)) {
+                return RuleIdUtil.computeRuleId(rule);
+            }
+        }
+
+        return "unknown";
+    }
+
+    /**
+     * 检查广告规则字符串是否存在于规则的某个字段列表中
+     */
+    private boolean matchesRule(String adPattern, List<String> ruleField) {
+        if (ruleField == null || ruleField.isEmpty()) return false;
+        for (String item : ruleField) {
+            if (item != null && adPattern.equals(item.trim())) return true;
+        }
+        return false;
+    }
+
+    /** 指定自定义嗅探正则，需在 start() 之前调用。 */
+    public CustomWebView sniff(Pattern pattern) {
+        this.sniff = pattern;
+        return this;
     }
 
     private boolean isVideoFormat(String url) {
         try {
             if (!detect && url.equals(this.url)) return false;
+            if (sniff != null) return sniff.matcher(url).find();
             Spider spider = VodConfig.get().getSite(key).spider();
             if (spider.manualVideoCheck()) return spider.isVideoFormat(url);
             return Sniffer.isVideoFormat(url);

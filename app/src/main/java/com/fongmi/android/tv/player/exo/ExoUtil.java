@@ -56,6 +56,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.BuildConfig;
 import com.fongmi.android.tv.bean.Drm;
 import com.fongmi.android.tv.bean.Sub;
+import com.fongmi.android.tv.api.config.HlsRuleConfig;
 import com.fongmi.android.tv.player.PlayerHelper;
 import com.fongmi.android.tv.player.PlaybackAutoContext;
 import com.fongmi.android.tv.player.PlaybackAutoContextStore;
@@ -229,15 +230,20 @@ public class ExoUtil {
     }
 
     public static MediaItem getMediaItem(PlaySpec spec, int decode) {
+        return getMediaItem(spec, decode, spec.getKey());
+    }
+
+    public static MediaItem getMediaItem(PlaySpec spec, int decode, String mediaId) {
         MediaItem.Builder builder = new MediaItem.Builder().setUri(spec.getUri());
         builder.setSubtitleConfigurations(buildSubtitleConfigs(spec.getSubs()));
         builder.setDrmConfiguration(buildDrmConfig(spec.getDrm()));
         builder.setRequestMetadata(buildRequestMetadata(spec));
         builder.setMediaMetadata(spec.getMetadata());
-        builder.setAdblock(Setting.isAdblock());
+        builder.setAdblock(Setting.isAdblock() && !HlsRuleConfig.getRules().isEmpty()
+                && HlsRuleConfig.isLegacyFallbackEnabled());
         builder.setMimeType(spec.getFormat());
         builder.setImageDurationMs(15000);
-        builder.setMediaId(spec.getKey());
+        builder.setMediaId(mediaId == null || mediaId.isEmpty() ? spec.getKey() : mediaId);
         builder.setDecode(decode);
         return builder.build();
     }
@@ -804,9 +810,20 @@ public class ExoUtil {
         return builder.build();
     }
 
-    private static MediaSource.Factory buildMediaSourceFactory(
+    public static boolean supportsPlaylistPreload(Player player) {
+        return player instanceof ExoPlayer;
+    }
+
+    public static MediaSource.Factory buildMediaSourceFactory(
             @Nullable ExoDolbyVisionPlaybackState dolbyVisionPlaybackState) {
         return new MediaSourceFactory(dolbyVisionPlaybackState);
+    }
+
+    /** Builds an item-scoped source for playlist append without touching the active player. */
+    public static MediaSource createMediaSource(
+            MediaItem mediaItem,
+            @Nullable ExoDolbyVisionPlaybackState dolbyVisionPlaybackState) {
+        return buildMediaSourceFactory(dolbyVisionPlaybackState).createMediaSource(mediaItem);
     }
 
     private static MediaItem.RequestMetadata buildRequestMetadata(PlaySpec spec) {

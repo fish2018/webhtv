@@ -454,6 +454,7 @@
                     android:id="@+id/settings"
                     android:layout_width="match_parent"
                     android:layout_height="38dp"
+                    android:checked="true"
                     android:text="@string/sync_item_settings"
                     android:textColor="#202124"
                     app:buttonTint="@color/dialog_checkbox_tint" />

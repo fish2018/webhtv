@@ -14,6 +14,10 @@ import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.datasource.HttpDataSource;
 import androidx.media3.datasource.cache.Cache;
 import androidx.media3.datasource.cache.CacheDataSource;
+import androidx.media3.datasource.cache.CacheKeyFactory;
+import androidx.media3.datasource.cache.CacheSpan;
+import androidx.media3.datasource.cache.ContentMetadata;
+import androidx.media3.datasource.cache.ContentMetadataMutations;
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.datasource.okhttp.OkHttpDataSource;
@@ -36,12 +40,22 @@ import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
+import com.google.common.base.Ascii;
 
 import java.io.File;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import okhttp3.Call;
 
 public class MediaSourceFactory implements MediaSource.Factory {
 
@@ -72,8 +86,7 @@ public class MediaSourceFactory implements MediaSource.Factory {
     }
 
     static DataSource.Factory createUpstreamDataSourceFactory(Map<String, String> headers) {
-        OkHttpDataSource.Factory factory = new OkHttpDataSource.Factory(OkHttp.player());
-        applyHeaders(factory, headers);
+        OkHttpDataSource.Factory factory = createHttpDataSourceFactory(OkHttp.player(), headers);
         DataSource.Factory upstream = new DefaultDataSource.Factory(App.get(), factory);
         DataSource.Factory recovered = new HttpEofRecoveryDataSource.Factory(upstream);
         return new PriorityTaskDataSource.Factory(recovered, PLAYBACK_PRIORITY_MANAGER, C.PRIORITY_PLAYBACK_PRELOAD, true);
@@ -172,7 +185,7 @@ public class MediaSourceFactory implements MediaSource.Factory {
         }
     }
 
-    static boolean isConcatenatingUrl(String url) {
+    public static boolean isConcatenatingUrl(String url) {
         return url != null && url.contains(CONCAT_SOURCE_SEPARATOR) && url.contains(CONCAT_DURATION_SEPARATOR);
     }
 
@@ -197,17 +210,23 @@ public class MediaSourceFactory implements MediaSource.Factory {
     @NonNull
     @Override
     public MediaSource createMediaSource(@NonNull MediaItem mediaItem) {
-        applyHeaders(getHttpDataSourceFactory(), ExoUtil.extractHeaders(mediaItem));
+        Map<String, String> headers = ExoUtil.extractHeaders(mediaItem);
+        DefaultMediaSourceFactory itemFactory = createItemMediaSourceFactory(headers);
         String url = mediaItem.requestMetadata.mediaUri != null ? mediaItem.requestMetadata.mediaUri.toString() : "";
-        if (isConcatenatingUrl(url)) return createConcatenatingMediaSource(mediaItem, url);
-        else return defaultMediaSourceFactory.createMediaSource(mediaItem);
+        if (isConcatenatingUrl(url)) return createConcatenatingMediaSource(mediaItem, url, itemFactory);
+        else return itemFactory.createMediaSource(mediaItem);
     }
 
-    private MediaSource createConcatenatingMediaSource(MediaItem mediaItem, String url) {
+    private MediaSource createConcatenatingMediaSource(
+            MediaItem mediaItem, String url, DefaultMediaSourceFactory itemFactory) {
         ConcatenatingMediaSource2.Builder builder = new ConcatenatingMediaSource2.Builder();
         for (String split : url.split(CONCAT_SOURCE_SEPARATOR_REGEX)) {
             String[] info = split.split(CONCAT_DURATION_SEPARATOR_REGEX);
-            if (info.length >= 2) builder.add(defaultMediaSourceFactory.createMediaSource(mediaItem.buildUpon().setUri(UrlUtil.uri(info[0])).build()), Long.parseLong(info[1]));
+            if (info.length >= 2) {
+                builder.add(itemFactory.createMediaSource(
+                        mediaItem.buildUpon().setUri(UrlUtil.uri(info[0])).build()),
+                        Long.parseLong(info[1]));
+            }
         }
         return builder.build();
     }
@@ -247,18 +266,42 @@ public class MediaSourceFactory implements MediaSource.Factory {
 
     private DataSource.Factory getDataSourceFactory() {
         if (dataSourceFactory == null) {
-            DataSource.Factory cacheDataSource = getCacheDataSource(new DefaultDataSource.Factory(App.get(), getHttpDataSourceFactory()));
-            DataSource.Factory trackedDataSource = new PlaybackBytePositionDataSource.Factory(cacheDataSource);
+            DataSource.Factory cacheDataSource = getCacheDataSource(
+                    new DefaultDataSource.Factory(App.get(), getHttpDataSourceFactory()),
+                    Map.of());
+            DataSource.Factory adblockDataSource = new ExoHlsAdblockDataSource.Factory(cacheDataSource);
+            DataSource.Factory trackedDataSource = new PlaybackBytePositionDataSource.Factory(adblockDataSource);
             dataSourceFactory = new PriorityTaskDataSource.Factory(trackedDataSource, PLAYBACK_PRIORITY_MANAGER, C.PRIORITY_PLAYBACK, false);
         }
         return dataSourceFactory;
     }
 
+    private DataSource.Factory getDataSourceFactory(Map<String, String> headers) {
+        OkHttpDataSource.Factory httpFactory = createHttpDataSourceFactory(OkHttp.player(), headers);
+        DataSource.Factory upstreamFactory = new DefaultDataSource.Factory(App.get(), httpFactory);
+        DataSource.Factory cacheDataSource = getCacheDataSource(upstreamFactory, headers);
+        DataSource.Factory adblockDataSource = new ExoHlsAdblockDataSource.Factory(cacheDataSource);
+        DataSource.Factory trackedDataSource = new PlaybackBytePositionDataSource.Factory(adblockDataSource);
+        return new PriorityTaskDataSource.Factory(
+                trackedDataSource, PLAYBACK_PRIORITY_MANAGER, C.PRIORITY_PLAYBACK, false);
+    }
+
+    private DefaultMediaSourceFactory createItemMediaSourceFactory(Map<String, String> headers) {
+        return new DefaultMediaSourceFactory(getDataSourceFactory(headers), getExtractorsFactory())
+                .setLoadOnlySelectedTracks(PlaybackPerformanceSetting.isLoadOnlySelectedTracksEnabled());
+    }
+
     private CacheDataSource.Factory getCacheDataSource(DataSource.Factory upstreamFactory) {
+        return getCacheDataSource(upstreamFactory, Map.of());
+    }
+
+    private CacheDataSource.Factory getCacheDataSource(
+            DataSource.Factory upstreamFactory, Map<String, String> headers) {
         return new CacheDataSource.Factory()
                 .setCache(getCache())
                 .setUpstreamDataSourceFactory(new HttpEofRecoveryDataSource.Factory(upstreamFactory))
                 .setCacheWriteDataSinkFactory(null)
+                .setCacheKeyFactory(cacheKeyFactory(headers))
                 .setEventListener(PlaybackCacheMetrics.listener())
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
     }
@@ -272,6 +315,206 @@ public class MediaSourceFactory implements MediaSource.Factory {
         Map<String, String> sanitized = sanitizeHeaders(headers);
         String userAgent = removeUserAgentHeader(sanitized);
         factory.setUserAgent(userAgent).setDefaultRequestProperties(sanitized);
+    }
+
+    static OkHttpDataSource.Factory createHttpDataSourceFactory(
+            Call.Factory client, Map<String, String> headers) {
+        // Keep the player's CookieJar, redirect policy, proxy and connection pool unchanged.
+        OkHttpDataSource.Factory factory = new OkHttpDataSource.Factory(client);
+        applyHeaders(factory, headers);
+        return factory;
+    }
+
+    /**
+     * Builds a cache namespace from request headers without putting credentials into the cache
+     * key. The namespace is shared by the foreground MediaSource and any future item-scoped
+     * preload for the same immutable request snapshot.
+     */
+    static String cacheNamespace(Map<String, String> headers) {
+        Map<String, String> sanitized = sanitizeHeaders(headers);
+        String userAgent = removeUserAgentHeader(sanitized);
+        if (userAgent != null) sanitized.put("User-Agent", userAgent);
+        // No request identity was added: retain the existing URL/custom-key cache hits.
+        if (sanitized.isEmpty()) return "";
+        TreeMap<String, String> normalized = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        normalized.putAll(sanitized);
+        boolean hasCaseVariants = normalized.size() != sanitized.size();
+        // Media3 retains case variants until OkHttp builds the request. Do not guess which
+        // credential wins or silently discard one when computing its cache identity.
+        if (hasCaseVariants) normalized = new TreeMap<>(sanitized);
+        StringBuilder value = new StringBuilder();
+        value.append(hasCaseVariants ? 'D' : 'S');
+        for (Map.Entry<String, String> entry : normalized.entrySet()) {
+            String name = hasCaseVariants ? entry.getKey() : Ascii.toLowerCase(entry.getKey());
+            // Length-prefix fields: cache lookup happens before HTTP validation, so newline
+            // delimiters would allow even a rejected header to alias valid cached credentials.
+            value.append(name.length()).append(':').append(name)
+                    .append(entry.getValue().length()).append(':').append(entry.getValue());
+        }
+        return sha256(value.toString());
+    }
+
+    static CacheKeyFactory cacheKeyFactory(Map<String, String> headers) {
+        String namespace = cacheNamespace(headers);
+        return dataSpec -> cacheKey(namespace, dataSpec.key == null ? dataSpec.uri.toString() : dataSpec.key);
+    }
+
+    static String cacheKey(Map<String, String> headers, String resourceKey) {
+        return cacheKey(cacheNamespace(headers), resourceKey);
+    }
+
+    private static String cacheKey(String namespace, String resourceKey) {
+        return namespace.isEmpty() ? resourceKey : namespace + "|" + resourceKey;
+    }
+
+    /**
+     * Gives Media3's PreCacheHelper an item-scoped view of the shared cache.  PreCacheHelper does
+     * not expose CacheKeyFactory, so the scope has to be applied at the Cache boundary.  The
+     * foreground CacheDataSource uses the same {@link #cacheKey(Map, String)} contract.
+     */
+    static Cache scopedCache(Map<String, String> headers) {
+        return scopedCache(getCache(), headers);
+    }
+
+    static Cache scopedCache(Cache delegate, Map<String, String> headers) {
+        return new ScopedCache(delegate, cacheNamespace(headers));
+    }
+
+    private static final class ScopedCache implements Cache {
+
+        private final Cache delegate;
+        private final String namespace;
+        private final String prefix;
+
+        private ScopedCache(Cache delegate, String namespace) {
+            this.delegate = delegate;
+            this.namespace = namespace;
+            this.prefix = namespace.isEmpty() ? "" : namespace + "|";
+        }
+
+        private String key(String rawKey) {
+            return cacheKey(namespace, rawKey);
+        }
+
+        @Override
+        public long getUid() {
+            return delegate.getUid();
+        }
+
+        @Override
+        public void release() {
+            // The process cache is shared by foreground playback and other sessions.
+        }
+
+        @Override
+        public NavigableSet<CacheSpan> addListener(String rawKey, Listener listener) {
+            return delegate.addListener(key(rawKey), listener);
+        }
+
+        @Override
+        public void removeListener(String rawKey, Listener listener) {
+            delegate.removeListener(key(rawKey), listener);
+        }
+
+        @Override
+        public NavigableSet<CacheSpan> getCachedSpans(String rawKey) {
+            return delegate.getCachedSpans(key(rawKey));
+        }
+
+        @Override
+        public Set<String> getKeys() {
+            Set<String> keys = new TreeSet<>();
+            for (String key : delegate.getKeys()) {
+                if (key.startsWith(prefix)) keys.add(key.substring(prefix.length()));
+            }
+            return keys;
+        }
+
+        @Override
+        public long getCacheSpace() {
+            return delegate.getCacheSpace();
+        }
+
+        @Override
+        public CacheSpan startReadWrite(String rawKey, long position, long length)
+                throws InterruptedException, CacheException {
+            return delegate.startReadWrite(key(rawKey), position, length);
+        }
+
+        @Override
+        public CacheSpan startReadWriteNonBlocking(String rawKey, long position, long length)
+                throws CacheException {
+            return delegate.startReadWriteNonBlocking(key(rawKey), position, length);
+        }
+
+        @Override
+        public File startFile(String rawKey, long position, long length) throws CacheException {
+            return delegate.startFile(key(rawKey), position, length);
+        }
+
+        @Override
+        public void commitFile(File file, long length) throws CacheException {
+            delegate.commitFile(file, length);
+        }
+
+        @Override
+        public void releaseHoleSpan(CacheSpan holeSpan) {
+            delegate.releaseHoleSpan(holeSpan);
+        }
+
+        @Override
+        public void removeResource(String rawKey) {
+            delegate.removeResource(key(rawKey));
+        }
+
+        @Override
+        public void removeSpan(CacheSpan span) {
+            delegate.removeSpan(span);
+        }
+
+        @Override
+        public boolean isCached(String rawKey, long position, long length) {
+            return delegate.isCached(key(rawKey), position, length);
+        }
+
+        @Override
+        public long getCachedLength(String rawKey, long position, long length) {
+            return delegate.getCachedLength(key(rawKey), position, length);
+        }
+
+        @Override
+        public long getCachedBytes(String rawKey, long position, long length) {
+            return delegate.getCachedBytes(key(rawKey), position, length);
+        }
+
+        @Override
+        public void applyContentMetadataMutations(String rawKey, ContentMetadataMutations mutations)
+                throws CacheException {
+            delegate.applyContentMetadataMutations(key(rawKey), mutations);
+        }
+
+        @Override
+        public ContentMetadata getContentMetadata(String rawKey) {
+            return delegate.getContentMetadata(key(rawKey));
+        }
+    }
+
+    private static String sha256(String value) {
+        try {
+            // Preserve every code unit, including malformed headers that HTTP will reject.
+            // UTF-8's replacement of unpaired surrogates would alias a literal '?' credential.
+            MessageDigest hash = MessageDigest.getInstance("SHA-256");
+            for (int i = 0; i < value.length(); i++) {
+                hash.update((byte) (value.charAt(i) >>> 8));
+                hash.update((byte) value.charAt(i));
+            }
+            byte[] digest = hash.digest();
+            StringBuilder result = new StringBuilder(digest.length * 2);
+            for (byte item : digest) result.append(String.format(Locale.ROOT, "%02x", item));
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 is required by the Android runtime", e);
+        }
     }
 
     static Map<String, String> sanitizeHeaders(Map<String, String> headers) {

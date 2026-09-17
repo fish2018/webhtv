@@ -26,6 +26,7 @@ public class ArrayAdapter extends RecyclerView.Adapter<ArrayAdapter.ViewHolder> 
     private int nextFocusDown;
     private int nextFocusUp;
     private int segmentSize;
+    private int selectedPosition = -1;
 
     public ArrayAdapter(OnClickListener listener) {
         mListener = listener;
@@ -41,11 +42,13 @@ public class ArrayAdapter extends RecyclerView.Adapter<ArrayAdapter.ViewHolder> 
     public void addAll(List<String> items) {
         mItems.clear();
         mItems.addAll(items);
+        selectedPosition = -1;
         notifyDataSetChanged();
     }
 
     public void clear() {
         mItems.clear();
+        selectedPosition = -1;
         notifyDataSetChanged();
     }
 
@@ -65,6 +68,14 @@ public class ArrayAdapter extends RecyclerView.Adapter<ArrayAdapter.ViewHolder> 
 
     public void setSegmentSize(int segmentSize) {
         this.segmentSize = Math.max(1, segmentSize);
+    }
+
+    public void setSelectedPosition(int position) {
+        if (selectedPosition == position) return;
+        int previous = selectedPosition;
+        selectedPosition = position;
+        if (previous >= 0 && previous < mItems.size()) notifyItemChanged(previous);
+        if (position >= 0 && position < mItems.size()) notifyItemChanged(position);
     }
 
     public void setNextFocus(int nextFocusUp, int nextFocusDown) {
@@ -94,12 +105,19 @@ public class ArrayAdapter extends RecyclerView.Adapter<ArrayAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String text = mItems.get(position);
         holder.binding.text.setText(text);
+        holder.binding.text.setActivated(position == selectedPosition);
         holder.binding.text.setNextFocusUpId(nextFocusUp == 0 ? View.NO_ID : nextFocusUp);
         holder.binding.text.setNextFocusDownId(nextFocusDown == 0 ? View.NO_ID : nextFocusDown);
         holder.binding.text.setOnKeyListener(keyListener);
+        holder.binding.text.setOnFocusChangeListener(null);
         if (text.equals(reverse)) holder.binding.getRoot().setOnClickListener(view -> mListener.onRevSort());
         else if (text.equals(backward) || text.equals(forward)) holder.binding.getRoot().setOnClickListener(view -> mListener.onRevPlay(holder.binding.text));
-        else holder.binding.getRoot().setOnClickListener(null);
+        else {
+            holder.binding.text.setOnFocusChangeListener((view, hasFocus) -> {
+                if (hasFocus) mListener.onSegmentFocus(position);
+            });
+            holder.binding.getRoot().setOnClickListener(view -> mListener.onSegmentClick(position));
+        }
     }
 
     public interface OnClickListener {
@@ -107,6 +125,10 @@ public class ArrayAdapter extends RecyclerView.Adapter<ArrayAdapter.ViewHolder> 
         void onRevSort();
 
         void onRevPlay(TextView view);
+
+        void onSegmentClick(int position);
+
+        void onSegmentFocus(int position);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

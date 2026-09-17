@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "packageId": "webhtv-builtin-hls",
+  "version": 1,
+  "rules": [
+    {
+      "id": "builtin.hls.baofeng.preroll",
+      "name": "暴风片头广告（实验）",
+      "version": 1,
+      "enabledByDefault": false,
+      "playlistHostRegex": ["(?:^|\\.)s5\\.bfzycdn|bfzy"],
+      "minDuration": 2.99,
+      "maxDuration": 3.01,
+      "requireDiscontinuity": true,
+      "minimumSignals": 2
+    },
+    {
+      "id": "builtin.hls.liangzi.preroll",
+      "name": "量子片头广告（实验）",
+      "version": 1,
+      "enabledByDefault": false,
+      "playlistHostRegex": ["vip\\.lz|hd\\.lz|v\\.cdnlz|cdnlz"],
+      "minDuration": 6.42,
+      "maxDuration": 6.45,
+      "requireDiscontinuity": true,
+      "minimumSignals": 2
+    },
+    {
+      "id": "builtin.hls.feifan.preroll",
+      "name": "非凡片头广告（实验）",
+      "version": 1,
+      "enabledByDefault": false,
+      "playlistHostRegex": ["vip\\.ffzy|hd\\.ffzy|super\\.ffzy"],
+      "minDuration": 6.65,
+      "maxDuration": 6.68,
+      "requireDiscontinuity": true,
+      "minimumSignals": 2
+    }
+  ]
+}

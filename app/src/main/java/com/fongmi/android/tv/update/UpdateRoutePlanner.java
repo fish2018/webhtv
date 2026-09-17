@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.update;
 
+import com.fongmi.android.tv.utils.GithubProxy;
+
 import java.util.ArrayList;
 import java.util.List;
 

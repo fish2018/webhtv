@@ -42,6 +42,12 @@ public final class PlaybackDeleteTombstoneStore {
 
     public static long latest(List<PlaybackDeleteTombstone> tombstones, String configKey, int cid,
                               String historyKey, String siteKey, String vodId) {
+        return latest(tombstones, configKey, cid, historyKey, siteKey, vodId, "", 0, -1);
+    }
+
+    public static long latest(List<PlaybackDeleteTombstone> tombstones, String configKey, int cid,
+                              String historyKey, String siteKey, String vodId,
+                              String mediaType, int tmdbId, int seasonNumber) {
         if (tombstones == null || tombstones.isEmpty()) return 0;
         String identity = configIdentity(configKey, cid);
         String normalizedHistory = safe(historyKey);
@@ -50,7 +56,8 @@ public final class PlaybackDeleteTombstoneStore {
         long latest = 0;
         for (PlaybackDeleteTombstone tombstone : tombstones) {
             if (tombstone == null || !Objects.equals(identity, safe(tombstone.configKey))) continue;
-            if (!matches(tombstone, normalizedHistory, normalizedSite, normalizedVod)) continue;
+            if (!matches(tombstone, normalizedHistory, normalizedSite, normalizedVod,
+                    mediaType, tmdbId, seasonNumber)) continue;
             latest = Math.max(latest, tombstone.deletedAt);
         }
         return latest;
@@ -66,12 +73,13 @@ public final class PlaybackDeleteTombstoneStore {
     private static void append(List<PlaybackDeleteTombstone> items, PlaybackProgressDeleteInput input,
                                int cid, RemoteSyncConfig filter) {
         input.normalize();
-        if (filter != null && input.isAllScope() && filter.siteKeys != null && !filter.siteKeys.isEmpty()) {
+        if (filter != null && (input.isAllScope() || input.isSeasonScope())
+                && filter.siteKeys != null && !filter.siteKeys.isEmpty()) {
             for (String site : filter.siteKeys) {
                 String normalized = RemoteSyncConfig.normalize(site);
                 if (empty(normalized)) continue;
                 PlaybackProgressDeleteInput scoped = input.copy();
-                scoped.scope = "site";
+                scoped.scope = input.isSeasonScope() ? "season" : "site";
                 scoped.siteKey = normalized;
                 scoped.vodId = "";
                 scoped.historyKey = "";
@@ -82,18 +90,25 @@ public final class PlaybackDeleteTombstoneStore {
         items.add(create(input, cid));
     }
 
-    private static PlaybackDeleteTombstone create(PlaybackProgressDeleteInput input, int cid) {
+    static PlaybackDeleteTombstone create(PlaybackProgressDeleteInput input, int cid) {
         PlaybackDeleteTombstone tombstone = new PlaybackDeleteTombstone();
         tombstone.configKey = configIdentity(input.configKey, cid);
-        tombstone.scope = input.isAllScope() ? "all" : input.isSiteScope() ? "site" : "item";
+        tombstone.scope = input.isAllScope() ? "all" : input.isSiteScope() ? "site"
+                : input.isSeasonScope() ? "season" : "item";
         tombstone.historyKey = safe(input.historyKey);
         tombstone.siteKey = RemoteSyncConfig.normalize(input.siteKey);
         tombstone.vodId = safe(input.vodId);
+        tombstone.mediaType = input.isSeasonScope() ? safe(input.mediaType).toLowerCase(Locale.ROOT) : "";
+        tombstone.tmdbId = input.isSeasonScope() ? input.tmdbId : 0;
+        tombstone.seasonNumber = input.isSeasonScope() ? input.seasonNumber : -1;
         if ("all".equals(tombstone.scope)) {
             tombstone.historyKey = "";
             tombstone.siteKey = "";
             tombstone.vodId = "";
         } else if ("site".equals(tombstone.scope)) {
+            tombstone.historyKey = "";
+            tombstone.vodId = "";
+        } else if ("season".equals(tombstone.scope)) {
             tombstone.historyKey = "";
             tombstone.vodId = "";
         } else if (!empty(tombstone.siteKey) && !empty(tombstone.vodId)) {
@@ -102,13 +117,20 @@ public final class PlaybackDeleteTombstoneStore {
         }
         tombstone.deletedAt = input.deletedAt > 0 ? input.deletedAt : System.currentTimeMillis();
         tombstone.id = digest(join(tombstone.configKey, tombstone.scope, tombstone.historyKey,
-                tombstone.siteKey, tombstone.vodId));
+                tombstone.siteKey, tombstone.vodId, tombstone.mediaType,
+                String.valueOf(tombstone.tmdbId), String.valueOf(tombstone.seasonNumber)));
         return tombstone;
     }
 
-    private static boolean matches(PlaybackDeleteTombstone tombstone, String historyKey, String siteKey, String vodId) {
+    private static boolean matches(PlaybackDeleteTombstone tombstone, String historyKey, String siteKey, String vodId,
+                                   String mediaType, int tmdbId, int seasonNumber) {
         if ("all".equals(tombstone.scope)) return true;
         if ("site".equals(tombstone.scope)) return Objects.equals(tombstone.siteKey, siteKey);
+        if ("season".equals(tombstone.scope)) {
+            return Objects.equals(safe(tombstone.mediaType), safe(mediaType).toLowerCase(Locale.ROOT))
+                    && tombstone.tmdbId == tmdbId && tombstone.seasonNumber == seasonNumber
+                    && (empty(tombstone.siteKey) || Objects.equals(tombstone.siteKey, siteKey));
+        }
         if (!empty(tombstone.siteKey) && !empty(tombstone.vodId)) {
             return Objects.equals(tombstone.siteKey, siteKey) && Objects.equals(tombstone.vodId, vodId);
         }

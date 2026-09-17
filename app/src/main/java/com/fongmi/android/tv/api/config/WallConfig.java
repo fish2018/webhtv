@@ -37,6 +37,8 @@ public class WallConfig extends BaseConfig {
         return get().getConfig().getDesc();
     }
 
+    private boolean preserveSelection;
+
     public static void load(Config config, Callback callback) {
         get().config(config).load(callback);
     }
@@ -45,10 +47,19 @@ public class WallConfig extends BaseConfig {
         return config(Config.wall());
     }
 
+    public WallConfig initPreservingSelection() {
+        return config(Config.wall()).preserveSelection();
+    }
+
     public WallConfig config(Config config) {
         this.config = config;
         if (config.isEmpty()) return this;
         this.sync = config.getUrl().equals(VodConfig.get().getWall());
+        return this;
+    }
+
+    public WallConfig preserveSelection() {
+        this.preserveSelection = true;
         return this;
     }
 
@@ -79,8 +90,10 @@ public class WallConfig extends BaseConfig {
         checkUrl(config.getUrl(), file);
         int type = wallType(file);
         setSnapshot(file);
-        Setting.putWall(0);
-        Setting.putWallType(type);
+        if (!preserveSelection) {
+            Setting.putWall(0);
+            Setting.putWallType(type);
+        }
     }
 
     @Override
