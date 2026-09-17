@@ -113,7 +113,7 @@ public class SettingActivity extends BaseActivity implements ConfigListener, Sit
         mBinding.autoClearCacheText.setText(getSwitch(Setting.isAutoClearCache()));
         mBinding.languageText.setText((language = ResUtil.getStringArray(R.array.select_language))[Setting.getLanguageIndex()]);
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
-        mBinding.uiScaleText.setText((uiScale = new String[]{"超宽松", "宽松", "标准", "紧凑"})[getUiScaleIndex()]);
+        mBinding.uiScaleText.setText((uiScale = new String[]{"特宽松", "宽松", "标准", "紧凑"})[getUiScaleIndex()]);
         mBinding.titleLinesText.setText((titleLines = ResUtil.getStringArray(R.array.select_title_lines))[Setting.getTitleLinesIndex()]);
         mBinding.defaultLaunchText.setText((defaultLaunch = ResUtil.getStringArray(R.array.select_default_launch))[Setting.getDefaultLaunch()]);
     }

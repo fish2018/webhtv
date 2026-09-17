@@ -53,6 +53,7 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
     private long pendingSeekPosition = C.TIME_UNSET;
     private long pendingSeekOrigin = C.TIME_UNSET;
     private long pendingSeekDeadlineMs;
+    private long endingMs;
 
     public CustomSeekView(Context context) {
         this(context, null);
@@ -108,6 +109,20 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
         return Util.getStringForTime(timeBuilder, timeFormatter, time);
     }
 
+    /**
+     * 设置片尾时长（毫秒），总时长显示为 视频总长 - 片尾，即时刷新。
+     */
+    public void setEnding(long endingMs) {
+        long value = Math.max(0, endingMs);
+        if (this.endingMs == value) return;
+        this.endingMs = value;
+        if (attached) updateTimeline();
+    }
+
+    private long effectiveDuration(long duration) {
+        return Math.max(0, duration + endingMs);
+    }
+
     private void updateTimeline() {
         Player progress = getProgressPlayer();
         if (!attached || progress == null) return;
@@ -116,7 +131,7 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
         currentDuration = duration;
         setKeyTimeIncrement(duration);
         timeBar.setDuration(duration);
-        durationView.setText(stringToTime(duration));
+        durationView.setText(stringToTime(effectiveDuration(duration)));
         updateProgress();
     }
 
@@ -133,7 +148,7 @@ public class CustomSeekView extends FrameLayout implements Player.Listener, Time
             currentDuration = duration;
             setKeyTimeIncrement(duration);
             timeBar.setDuration(duration);
-            durationView.setText(stringToTime(duration));
+            durationView.setText(stringToTime(effectiveDuration(duration)));
         }
         if (position != currentPosition) {
             currentPosition = position;
