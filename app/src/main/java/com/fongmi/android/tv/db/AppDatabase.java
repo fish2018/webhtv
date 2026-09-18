@@ -83,18 +83,24 @@ public abstract class AppDatabase extends RoomDatabase {
     }
     
     public static void autoBackupOnExit() {
-        Task.execute(() -> {
+        Task.execute(AppDatabase::backupOnExitSync);
+    }
+
+    /**
+     * 退出前同步备份（调用线程阻塞直到备份完成），供"返回键彻底退出"流程使用，
+     * 避免结束进程前异步备份未跑完导致备份丢失。
+     */
+    public static void backupOnExitSync() {
+        try {
             cleanAutoOnly();
             String timePart = AppBackup.fileName().substring(AppBackup.PREFIX.length());
             String fileName = AUTO_PREFIX + timePart;
             File file = new File(Path.tv(), fileName);
-            try {
-                AppBackup.CreateResult result = AppBackup.create(file, null);
-                SpiderDebug.log("backup", "auto exit backup complete file=%s", file.getAbsolutePath());
-            } catch (Exception e) {
-                SpiderDebug.log("backup", "auto exit backup failed error=%s", e.getMessage());
-            }
-        });
+            AppBackup.CreateResult result = AppBackup.create(file, null);
+            SpiderDebug.log("backup", "auto exit backup complete file=%s", file.getAbsolutePath());
+        } catch (Exception e) {
+            SpiderDebug.log("backup", "auto exit backup failed error=%s", e.getMessage());
+        }
     }
 
     public static void restore(File file, com.fongmi.android.tv.impl.Callback callback) {

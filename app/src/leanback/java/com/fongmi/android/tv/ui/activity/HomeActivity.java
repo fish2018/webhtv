@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Process;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -50,6 +51,7 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.DLNARendererService;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.ui.adapter.BaseDiffCallback;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -922,12 +924,20 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
     }
 
     private void exitHome() {
-        AppDatabase.autoBackupOnExit();
         confirmExitHome();
     }
 
+    /**
+     * 返回键确认退出：后台线程同步完成退出备份后彻底结束进程，
+     * 避免只 finish Activity 导致进程残留（外挂 jar 悬浮窗、播放服务等仍存活）。
+     * 想进后台请用 Home 键，返回键即真正退出。
+     */
     private void confirmExitHome() {
-        super.onBackInvoked();
+        Task.execute(() -> {
+            AppDatabase.backupOnExitSync();
+            Process.killProcess(Process.myPid());
+            System.exit(0);
+        });
     }
 
     @Override

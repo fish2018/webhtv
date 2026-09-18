@@ -5,6 +5,7 @@ import android.app.SearchManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Process;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
@@ -36,6 +37,7 @@ import com.fongmi.android.tv.receiver.ShortcutReceiver;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.FragmentStateManager;
 import com.fongmi.android.tv.ui.fragment.SettingEnhanceFragment;
@@ -455,7 +457,12 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         } else if (mManager.isVisible(1)) {
             change(0);
         } else if (mManager.canBack(0)) {
-            super.onBackInvoked();
+            // 根页面返回 = 真正退出：后台线程同步备份后结束进程，避免进程残留（外挂 jar 悬浮窗、播放服务等仍存活）。想进后台请用 Home 键。
+            Task.execute(() -> {
+                AppDatabase.backupOnExitSync();
+                Process.killProcess(Process.myPid());
+                System.exit(0);
+            });
         }
     }
 
