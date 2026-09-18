@@ -82,6 +82,7 @@ public class PlayerOsdController {
     private long lastTotalRxBytes;
     private long lastTimeStamp;
     private long lastSpeedKBps;
+    private long endingMs;
     private String lastSpeedText;
     private boolean controlsVisible;
     private boolean diagnosticsVisible;
@@ -134,6 +135,20 @@ public class PlayerOsdController {
         if (this.controlsVisible == controlsVisible) return;
         this.controlsVisible = controlsVisible;
         if (started) render();
+    }
+
+    /**
+     * 设置片尾时长（毫秒），屏显左下角进度中的总时长显示为 视频总长 - 片尾，即时刷新。
+     */
+    public void setEnding(long endingMs) {
+        long value = Math.max(0, endingMs);
+        if (this.endingMs == value) return;
+        this.endingMs = value;
+        if (started) render();
+    }
+
+    private long effectiveDuration(long duration) {
+        return Math.max(0, duration - endingMs);
     }
 
     public boolean isDiagnosticsVisible() {
@@ -210,7 +225,7 @@ public class PlayerOsdController {
             bottomLeft.setVisibility(View.GONE);
             return;
         }
-        bottomLeft.setText(Util.timeMs(position) + " / " + Util.timeMs(duration));
+        bottomLeft.setText(Util.timeMs(position) + " / " + Util.timeMs(effectiveDuration(duration)));
         bottomLeft.setVisibility(View.VISIBLE);
     }
 
