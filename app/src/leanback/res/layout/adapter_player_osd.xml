@@ -27,9 +27,22 @@
         tools:text="Playback params" />
 
     <androidx.appcompat.widget.AppCompatImageButton
-        android:id="@+id/visible"
+        android:id="@+id/vodVisible"
         android:layout_width="40dp"
         android:layout_height="36dp"
+        android:background="@drawable/selector_dialog_switch"
+        android:contentDescription="@string/setting_show"
+        android:focusable="true"
+        android:padding="8dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_player_button_visible"
+        app:tint="@color/dialog_tonal_button_text" />
+
+    <androidx.appcompat.widget.AppCompatImageButton
+        android:id="@+id/liveVisible"
+        android:layout_width="40dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="8dp"
         android:background="@drawable/selector_dialog_switch"
         android:contentDescription="@string/setting_show"
         android:focusable="true"

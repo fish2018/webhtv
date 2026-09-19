@@ -39,6 +39,7 @@ public class Func implements Diffable<Func> {
         else if (resId == R.string.home_push) this.drawable = R.drawable.ic_home_push;
         else if (resId == R.string.home_search) this.drawable = R.drawable.ic_home_search;
         else if (resId == R.string.home_setting) this.drawable = R.drawable.ic_home_setting;
+        else if (resId == R.string.home_history) this.drawable = R.drawable.ic_setting_history;
     }
 
     @Override

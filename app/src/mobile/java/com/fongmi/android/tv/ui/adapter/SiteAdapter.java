@@ -49,6 +49,8 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
 
         void onChangeClick(int position, Site item);
 
+        void onDeleteClick(int position, Site item);
+
         boolean onTextLongClick(ViewHolder holder);
 
         boolean onSearchLongClick(Site item);
@@ -123,6 +125,16 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         notifyDataSetChanged();
     }
 
+    public void removeSite(Site item) {
+        int position = mItems.indexOf(item);
+        if (position < 0) return;
+        mItems.remove(position);
+        mAllItems.remove(item);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, Math.max(0, getItemCount() - position));
+        SiteOrderStore.save(mAllItems);
+    }
+
     public boolean drag(int from, int to) {
         if (from == RecyclerView.NO_POSITION || to == RecyclerView.NO_POSITION) return false;
         if (from < 0 || to < 0 || from >= mItems.size() || to >= mItems.size() || from == to) return false;
@@ -174,9 +186,11 @@ public class SiteAdapter extends RecyclerView.Adapter<SiteAdapter.ViewHolder> {
         holder.binding.change.setImageResource(getChangeIcon(item));
         holder.binding.search.setVisibility(!block && search && singleColumn ? View.VISIBLE : View.GONE);
         holder.binding.change.setVisibility(!block && change && singleColumn ? View.VISIBLE : View.GONE);
+        holder.binding.delete.setVisibility(!block && item.isFile() && singleColumn ? View.VISIBLE : View.GONE);
         holder.binding.text.setOnClickListener(v -> listener.onTextClick(item));
         holder.binding.search.setOnClickListener(v -> listener.onSearchClick(position, item));
         holder.binding.change.setOnClickListener(v -> listener.onChangeClick(position, item));
+        holder.binding.delete.setOnClickListener(v -> listener.onDeleteClick(position, item));
         holder.binding.text.setOnLongClickListener(v -> listener.onTextLongClick(holder));
         holder.binding.search.setOnLongClickListener(v -> listener.onSearchLongClick(item));
         holder.binding.change.setOnLongClickListener(v -> listener.onChangeLongClick(item));

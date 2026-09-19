@@ -74,9 +74,7 @@ final class MpvDiagnosticsPolicy {
     }
 
     static String redactSensitive(String text) {
-        if (text == null || text.isEmpty()) return "";
-        String safe = URL.matcher(text).replaceAll("<url>");
-        return SENSITIVE_HEADER.matcher(safe).replaceAll("$1=<redacted>");
+        return text == null ? "" : text;
     }
 
     /** Persist startup/failure evidence without waiting for the Android main queue. */

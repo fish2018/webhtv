@@ -31,8 +31,9 @@ public final class DebugLogDialog {
         Server.get().start();
         String localUrl = Server.get().getAddress("/debug/logs");
         String lanUrl = Server.get().getAddress(false) + "/debug/logs";
-        SpiderDebug.log("debug", "logs service ready url=%s lan=%s", localUrl, lanUrl);
-        String message = activity.getString(R.string.debug_log_dialog_message, lanUrl, localUrl);
+        String xbpqUrl = Server.get().getAddress("/proxy?do=log");
+        SpiderDebug.log("debug", "logs service ready url=%s lan=%s xbpq=%s", localUrl, lanUrl, xbpqUrl);
+        String message = activity.getString(R.string.debug_log_dialog_message, lanUrl, localUrl, xbpqUrl);
         MaterialTextView content = new MaterialTextView(activity);
         content.setText(message);
         content.setTextColor(Color.parseColor("#5F6368"));

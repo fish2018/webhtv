@@ -25,7 +25,52 @@ public class SiteOrderStore {
         if (keys.isEmpty()) return;
         Map<String, Integer> indexes = new HashMap<>();
         for (int i = 0; i < keys.size(); i++) indexes.put(keys.get(i), i);
-        sites.sort((a, b) -> Integer.compare(indexes.getOrDefault(a.getKey(), Integer.MAX_VALUE), indexes.getOrDefault(b.getKey(), Integer.MAX_VALUE)));
+        // 分离已记忆和未记忆的站点
+        List<Site> remembered = new ArrayList<>();
+        List<Site> unrememberedFile = new ArrayList<>();
+        List<Site> unrememberedApi = new ArrayList<>();
+        for (Site site : sites) {
+            if (indexes.containsKey(site.getKey())) {
+                remembered.add(site);
+            } else if (site.isFile()) {
+                unrememberedFile.add(site);
+            } else {
+                unrememberedApi.add(site);
+            }
+        }
+        // 已记忆的按记忆顺序排序
+        remembered.sort((a, b) -> Integer.compare(indexes.get(a.getKey()), indexes.get(b.getKey())));
+        // 未记忆的文件源按类型插入到记忆列表中相应类型的最后
+        if (!unrememberedFile.isEmpty()) {
+            // 按类型分组
+            Map<String, List<Site>> byType = new HashMap<>();
+            for (Site site : unrememberedFile) {
+                String type = site.getFileType();
+                byType.computeIfAbsent(type, k -> new ArrayList<>()).add(site);
+            }
+            // 固定类型顺序
+            String[] typeOrder = {"XBPQ", "JS", "PY", "RAW"};
+            // 从后往前插入，避免索引偏移
+            for (int t = typeOrder.length - 1; t >= 0; t--) {
+                String type = typeOrder[t];
+                List<Site> group = byType.get(type);
+                if (group == null || group.isEmpty()) continue;
+                // 找到该类型在记忆列表中的最后位置
+                int insertPos = remembered.size();
+                for (int i = remembered.size() - 1; i >= 0; i--) {
+                    Site s = remembered.get(i);
+                    if (s.isFile() && s.getFileType().equals(type)) {
+                        insertPos = i + 1;
+                        break;
+                    }
+                }
+                remembered.addAll(insertPos, group);
+            }
+        }
+        // 未记忆的接口源放最后
+        remembered.addAll(unrememberedApi);
+        sites.clear();
+        sites.addAll(remembered);
     }
 
     public static void save(List<Site> sites) {

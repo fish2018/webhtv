@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -30,8 +31,11 @@ import com.fongmi.android.tv.ui.dialog.OneKeySyncDialog;
 import com.fongmi.android.tv.ui.dialog.RemoteTrustDialog;
 import com.fongmi.android.tv.ui.dialog.ShellProxyDialog;
 import com.fongmi.android.tv.ui.dialog.SiteHealthDialog;
+import com.fongmi.android.tv.ui.dialog.SourceBlockDialog;
 import com.fongmi.android.tv.ui.dialog.ViewingRecordSyncDialog;
 import com.fongmi.android.tv.ui.dialog.WebHomeExtensionDialog;
+import com.fongmi.android.tv.utils.FocusLoop;
+import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.LoginStateSync;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
@@ -40,8 +44,7 @@ import com.github.catvod.crawler.SpiderDebug;
 
 public class SettingEnhanceActivity extends BaseActivity {
 
-    private static final String URL_GITHUB = "https://github.com/fish2018/webhtv";
-    private static final String URL_CNB = "https://cnb.cool/fish2035/ext";
+    private static final String URL_GITHUB = "https://github.com/llb0/webhtv";
 
     private ActivitySettingEnhanceBinding mBinding;
 
@@ -61,14 +64,14 @@ public class SettingEnhanceActivity extends BaseActivity {
     @Override
     protected void initView(Bundle savedInstanceState) {
         reorderItems();
-        mBinding.customCsp.requestFocus();
+        mBinding.fileSites.requestFocus();
         setText();
     }
 
     @Override
     protected void initEvent() {
         mBinding.githubRepo.setOnClickListener(view -> openRepo(URL_GITHUB));
-        mBinding.cnbRepo.setOnClickListener(view -> openRepo(URL_CNB));
+        mBinding.fileSites.setOnClickListener(this::setFileSites);
         mBinding.driveCheck.setOnClickListener(this::setDriveCheck);
         mBinding.debugLog.setOnClickListener(this::setDebugLog);
         mBinding.siteHealthSort.setOnClickListener(view -> SiteHealthDialog.show(this, this::setText));
@@ -94,9 +97,16 @@ public class SettingEnhanceActivity extends BaseActivity {
         mBinding.oneKeySync.setOnClickListener(v -> OneKeySyncDialog.create().show(this));
     }
 
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (FocusLoop.handleChildGrid(mBinding.content, 1, FocusLoop.Mode.VERTICAL, event)) return true;
+        return super.dispatchKeyEvent(event);
+    }
+
     private void reorderItems() {
         ViewGroup parent = (ViewGroup) mBinding.customCsp.getParent();
         View[] order = {
+                mBinding.fileSites,
                 mBinding.customCsp,
                 mBinding.webHomeExtension,
                 mBinding.gitCloud,
@@ -120,6 +130,7 @@ public class SettingEnhanceActivity extends BaseActivity {
 
     private void setText() {
         if (!canSetText()) return;
+        safeSet("fileSites", mBinding.fileSitesText, () -> getString(R.string.setting_source_block_count, Setting.getSourceBlockedCount(), Setting.SOURCE_ALL.length));
         safeSet("driveCheck", mBinding.driveCheckText, () -> getSwitch(Setting.isDriveCheck()));
         safeSet("debugLog", mBinding.debugLogText, () -> getSwitch(Setting.isDebugLog()));
         safeSet("siteHealthSort", mBinding.siteHealthSortText, () -> getSwitch(Setting.isSiteHealthSort()));
@@ -193,6 +204,10 @@ public class SettingEnhanceActivity extends BaseActivity {
 
     private interface TextSupplier {
         CharSequence get();
+    }
+
+    private void setFileSites(View view) {
+        SourceBlockDialog.create(this::setText).show(this);
     }
 
     private void setDriveCheck(View view) {

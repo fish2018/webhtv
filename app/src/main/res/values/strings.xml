@@ -1,5 +1,5 @@
-<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
-
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    
     <!-- App -->
     <string name="app_name">TV</string>
 
@@ -37,12 +37,15 @@
     <string name="play_exo">EXO</string>
     <string name="play_next">Next</string>
     <string name="play_prev">Prev</string>
+    <string name="play_vod">VOD</string>
+    <string name="play_live">Live</string>
     <string name="play_stop">Stop</string>
     <string name="play_repeat">Repeat</string>
     <string name="play_forward">→</string>
     <string name="play_backward">←</string>
     <string name="play_speed">1.00</string>
     <string name="play_reset">Reset</string>
+    <string name="play_setting">Setting</string>
     <string name="play_decode">Hard</string>
     <string name="play_params">Playback params</string>
     <string name="codec_capability_short">Codec caps</string>
@@ -369,6 +372,16 @@
     <string name="remote_trust_send_server_failed">Failed to save on the other device: %1$s</string>
     <string name="remote_trust_config_select">Select</string>
     <string name="setting_login_state">Login state learning</string>
+    <string name="setting_file_sites">Source blocking</string>
+    <string name="setting_source_block_dialog_title">Select sources to block</string>
+    <string name="setting_source_block_count">Blocked %1$d / %2$d</string>
+    <string name="source_vod_url">Vod URL</string>
+    <string name="source_live_url">Live URL</string>
+    <string name="source_sites_json">Folder: /tvbox/sites-json/</string>
+    <string name="source_sites_js">Folder: /tvbox/sites-js/</string>
+    <string name="source_sites_py">Folder: /tvbox/sites-py/</string>
+    <string name="source_sites_raw">Folder: /tvbox/sites/ </string>
+    <string name="source_lives_file">Folder: /tvbox/lives/ </string>
     <string name="setting_site_health_sort">Site health ranking</string>
     <string name="setting_site_health_enable">Enable site health ranking</string>
     <string name="setting_site_health_dialog_sort">Sort site dialog</string>
@@ -668,15 +681,22 @@
     <string name="setting_drive_check">Drive link check</string>
     <string name="setting_theme_color">Theme color</string>
     <string name="setting_appearance">Appearance &amp; language</string>
-    <string name="setting_appearance_summary">4 options</string>
+    <string name="setting_appearance_summary">5 options</string>
     <string name="setting_auto">Auto</string>
     <string name="setting_custom">Custom</string>
     <string name="setting_language">Language</string>
+    <string name="setting_default_launch">Default launch</string>
     <string name="setting_size">Image size</string>
     <string name="setting_ui_scale">Interface size</string>
+    <string name="setting_title_lines">Title wrapping</string>
+    <string name="setting_site_delete_title">Delete file site</string>
+    <string name="setting_site_delete_message">Delete %1$s and its source file? This cannot be undone.</string>
+    <string name="setting_site_delete_done">Deleted %1$s</string>
+    <string name="setting_site_delete_failed">Delete failed, the file may is in use</string>
     <string name="dialog_close">Close</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">Auto‑clear on exit</string>
     <string name="setting_cache">Cache</string>
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
@@ -768,8 +788,8 @@
     <string name="apk_push_url_canceled">APK download canceled</string>
     <string name="sync_paths_title">Sync folders</string>
     <string name="sync_paths_edit">Edit</string>
-    <string name="sync_paths_desc">One external-storage relative path per line. TV, TVBox and TVData are synced by default. You can add local package folders; folder contents are synced with Jar/script saved data.</string>
-    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+    <string name="sync_paths_desc">One external-storage relative path per line. Select folders in the directory tree below; folder contents are synced with Jar/script saved data.</string>
+    <string name="sync_paths_hint"></string>
     <string name="sync_paths_up">Collapse</string>
     <string name="sync_paths_refresh">Refresh</string>
     <string name="sync_paths_enter">Open folder</string>
@@ -829,6 +849,8 @@
     <string name="player_pad_live">Tablet live</string>
     <string name="player_button_up">Up</string>
     <string name="player_button_down">Down</string>
+    <string name="player_button_top">Top</string>
+    <string name="site_sort_title">Site Sort</string>
     <string name="play_episodes">Episodes</string>
     <string name="player_exo_4k_compat">Playback performance</string>
     <string name="player_immersive_audio_mode">Immersive audio mode</string>
@@ -1228,7 +1250,7 @@
 
     <!-- Hint -->
     <string name="copied">Copied</string>
-    <string name="debug_log_dialog_message">Debug log service is running.\n\nLAN URL:\n%1$s\n\nLocal URL:\n%2$s\n\nIf this TV has no browser, open the LAN URL from a computer or phone on the same network.</string>
+    <string name="debug_log_dialog_message">Debug log service is running.\n\nLAN URL:\n%1$s\n\nLocal URL:\n%2$s\n\nXBPQ URL:\n%3$s\n\nIf this TV has no browser, open the LAN URL from a computer or phone on the same network.</string>
     <string name="debug_log_open_browser">Open browser</string>
     <string name="debug_log_copy_url">Copy URL</string>
     <string name="debug_log_no_browser">No browser app found. Use the LAN URL from another device.</string>
@@ -1305,6 +1327,7 @@
 
     <string-array name="select_ui_scale">
         <item>Follow system</item>
+        <item>Slightly relaxed</item>
         <item>Standard</item>
         <item>Mild compact</item>
         <item>Compact</item>
@@ -1312,10 +1335,23 @@
         <item>Smaller</item>
     </string-array>
 
+    <string-array name="select_title_lines">
+        <item>Off</item>
+        <item>Up to 2 lines</item>
+        <item>Up to 3 lines</item>
+        <item>Unlimited</item>
+    </string-array>
+
     <string-array name="select_language">
         <item>Follow system</item>
         <item>Simplified Chinese</item>
         <item>Traditional Chinese</item>
+    </string-array>
+
+    <string-array name="select_default_launch">
+        <item>Home</item>
+        <item>Live</item>
+        <item>Recent</item>
     </string-array>
 
     <string-array name="select_scale">
@@ -1544,4 +1580,28 @@
 
     <string name="player_audio_badge_queue">Queue</string>
     <string name="player_audio_repeat">Repeat</string>
+
+    <string name="setting">Config</string>
+    <string name="confirm">OK</string>
+    <string name="search_sites">Search sites…</string>
+    <string name="select_all">Select all</string>
+    <string name="select_none">Select none</string>
+    <string name="select_invert">Invert</string>
+    <string name="search_source_all">All sources</string>
+    <string name="search_source_home">Home source</string>
+    <string name="search_source_tag">Tag source</string>
+    <string name="search_source_white">Whitelist</string>
+    <string name="search_source_black">Blacklist</string>
+    <string name="search_site_count">%d site(s)</string>
+    <string name="search_site_count_of">Selected %d / %d</string>
+
+    <!-- History & Keep -->
+    <string name="history_title">History</string>
+    <string name="keep_title">Favorites</string>
+    <string name="menu_clear">Clear</string>
+    <string name="menu_delete">Delete</string>
+    <string name="dialog_clear_history">Clear history</string>
+    <string name="dialog_clear_history_message">Clear all watch history? This cannot be undone.</string>
+    <string name="dialog_clear_keep">Clear favorites</string>
+    <string name="dialog_clear_keep_message">Clear all favorites? This cannot be undone.</string>
 </resources>

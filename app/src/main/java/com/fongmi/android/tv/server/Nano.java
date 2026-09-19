@@ -75,14 +75,23 @@ public class Nano extends NanoHTTPD {
 
     @Override
     public Response serve(IHTTPSession session) {
-        String url = session.getUri().trim();
-        Map<String, String> files = new HashMap<>();
-        if (session.getMethod() == Method.POST && shouldParseBody(url)) parse(session, files);
-        if (shouldLogRequest(url)) SpiderDebug.log("server", "%s %s params=%s", session.getMethod(), url, session.getParms());
-        if (url.startsWith("/tvbus")) return ok(LiveConfig.getResp());
-        if (url.startsWith("/device")) return ok(Device.get().toString());
-        for (Process process : process) if (process.isRequest(session, url)) return process.doResponse(session, url, files);
-        return getAssets(url.substring(1));
+        try {
+            String url = session.getUri().trim();
+            Map<String, String> files = new HashMap<>();
+            if (session.getMethod() == Method.POST && shouldParseBody(url)) parse(session, files);
+            if (shouldLogRequest(url)) {
+                String params = session.getParms().toString();
+                if (params.length() > 1024) params = params.substring(0, 1024) + "...(truncated)";
+                SpiderDebug.log("server", "%s %s params=%s", session.getMethod(), url, params);
+            }
+            if (url.startsWith("/tvbus")) return ok(LiveConfig.getResp());
+            if (url.startsWith("/device")) return ok(Device.get().toString());
+            for (Process process : process) if (process.isRequest(session, url)) return process.doResponse(session, url, files);
+            return getAssets(url.substring(1));
+        } catch (Throwable t) {
+            SpiderDebug.log("server", "serve error: %s", t.getMessage());
+            return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Server Error");
+        }
     }
 
     private boolean shouldParseBody(String url) {
@@ -103,7 +112,7 @@ public class Nano extends NanoHTTPD {
             String ct = session.getHeaders().get("content-type");
             if (ct != null) session.getHeaders().put("content-type", ct.replace("multipart/form-data", "multipart/form-data; charset=utf-8"));
             session.parseBody(files);
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
     }
 

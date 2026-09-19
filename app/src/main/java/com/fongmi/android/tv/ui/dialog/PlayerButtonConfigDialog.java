@@ -167,12 +167,15 @@ public class PlayerButtonConfigDialog extends BaseAlertDialog {
             holder.binding.up.setFocusable(position > 0);
             holder.binding.down.setEnabled(position < items.size() - 1);
             holder.binding.down.setFocusable(position < items.size() - 1);
+            holder.binding.top.setEnabled(position > 0);
+            holder.binding.top.setFocusable(position > 0);
             holder.binding.root.setAlpha(1f);
             holder.binding.name.setAlpha(item.visible() ? 1f : 0.55f);
             holder.binding.root.setOnClickListener(view -> toggle(holder.getBindingAdapterPosition(), R.id.visible));
             holder.binding.visible.setOnClickListener(view -> toggle(holder.getBindingAdapterPosition(), view.getId()));
             holder.binding.up.setOnClickListener(view -> move(-1, holder.getBindingAdapterPosition(), view.getId()));
             holder.binding.down.setOnClickListener(view -> move(1, holder.getBindingAdapterPosition(), view.getId()));
+            holder.binding.top.setOnClickListener(view -> moveToTop(holder.getBindingAdapterPosition(), view.getId()));
             setFocusNavigation(holder);
         }
 
@@ -209,6 +212,17 @@ public class PlayerButtonConfigDialog extends BaseAlertDialog {
             notifyItemMoved(position, target);
             notifyItemRangeChanged(Math.min(position, target), Math.abs(position - target) + 1);
             focus(target, focusId);
+            notifyChanged();
+        }
+
+        private void moveToTop(int position, int focusId) {
+            if (position == RecyclerView.NO_POSITION || position <= 0) return;
+            PlayerButtonSetting.Item item = items.remove(position);
+            items.add(0, item);
+            PlayerButtonSetting.putOrder(getIds());
+            notifyItemMoved(position, 0);
+            notifyItemRangeChanged(0, position + 1);
+            focus(0, focusId);
             notifyChanged();
         }
 
@@ -249,7 +263,7 @@ public class PlayerButtonConfigDialog extends BaseAlertDialog {
 
         private boolean requestFocus(ViewHolder holder, int focusId) {
             View view = holder.itemView.findViewById(focusId);
-            return requestFocus(view) || requestFocus(holder.binding.visible) || requestFocus(holder.binding.up) || requestFocus(holder.binding.down);
+            return requestFocus(view) || requestFocus(holder.binding.visible) || requestFocus(holder.binding.up) || requestFocus(holder.binding.down) || requestFocus(holder.binding.top);
         }
 
         private boolean requestFocus(View view) {
@@ -259,12 +273,15 @@ public class PlayerButtonConfigDialog extends BaseAlertDialog {
         private void setFocusNavigation(ViewHolder holder) {
             boolean up = holder.binding.up.isEnabled();
             boolean down = holder.binding.down.isEnabled();
+            boolean top = holder.binding.top.isEnabled();
             holder.binding.visible.setNextFocusLeftId(R.id.visible);
-            holder.binding.visible.setNextFocusRightId(up ? R.id.up : down ? R.id.down : R.id.visible);
+            holder.binding.visible.setNextFocusRightId(up ? R.id.up : down ? R.id.down : top ? R.id.top : R.id.visible);
             holder.binding.up.setNextFocusLeftId(R.id.visible);
-            holder.binding.up.setNextFocusRightId(down ? R.id.down : R.id.up);
+            holder.binding.up.setNextFocusRightId(down ? R.id.down : top ? R.id.top : R.id.up);
             holder.binding.down.setNextFocusLeftId(up ? R.id.up : R.id.visible);
-            holder.binding.down.setNextFocusRightId(R.id.down);
+            holder.binding.down.setNextFocusRightId(top ? R.id.top : R.id.down);
+            holder.binding.top.setNextFocusLeftId(down ? R.id.down : up ? R.id.up : R.id.visible);
+            holder.binding.top.setNextFocusRightId(R.id.top);
         }
 
         private List<String> getIds() {

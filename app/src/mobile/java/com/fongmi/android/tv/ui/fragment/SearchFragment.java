@@ -34,7 +34,7 @@ import com.fongmi.android.tv.ui.adapter.RecordAdapter;
 import com.fongmi.android.tv.ui.adapter.WordAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
-import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.dialog.SearchSourceDialog;
 import com.fongmi.android.tv.utils.SearchSuggest;
 import com.fongmi.android.tv.utils.Util;
 import com.github.catvod.net.OkHttp;
@@ -280,7 +280,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
 
     private void onSite() {
         Util.hideKeyboard(mBinding.keyword);
-        mBinding.keyword.post(() -> SiteDialog.create().search().show(this));
+        mBinding.keyword.post(() -> SearchSourceDialog.create().show(this));
     }
 
     private interface HotSaver {

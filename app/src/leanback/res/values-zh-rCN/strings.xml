@@ -1,6 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- Home -->
+    <string name="home_refresh">刷新</string>
     <string name="home_vod">点播</string>
     <string name="home_live">直播</string>
     <string name="home_search">搜索</string>
@@ -14,11 +15,12 @@
     <string name="control_episode_column_double">双列</string>
     <string name="control_compact_episode_title">精简标题</string>
     <string name="control_track">轨道</string>
-    <string name="home_history">最近观看</string>
-    <string name="home_recommend">更新推荐</string>
+    <string name="home_history">历史</string>
+    <string name="home_recommend">推荐</string>
+    <string name="home_switch">选站</string>
 
     <!-- Collect -->
-    <string name="collect_result">“<xliff:g name="name">%s</xliff:g>”的搜索结果</string>
+    <string name="collect_result">"<xliff:g name="name">%s</xliff:g>"的搜索结果</string>
 
     <!-- Push -->
     <string name="push_clip">推送剪贴板内容</string>

@@ -1,0 +1,4 @@
+<resources>
+    <item name="root" type="id" />
+    <item name="handle" type="id" />
+</resources>

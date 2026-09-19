@@ -88,6 +88,7 @@ public class PlayerHelper {
     public static void choose(Activity activity, String url, Map<String, String> headers, boolean isVod, long position, CharSequence title) {
         try {
             if (url == null || url.isEmpty()) return;
+            url = url.replace("clan://", "file://tvbox/");
             List<String> list = new ArrayList<>();
             headers.forEach((key, value) -> {
                 list.add(key);

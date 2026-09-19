@@ -70,11 +70,15 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     public CastDialog history(History history) {
         if (history == null || TextUtils.isEmpty(history.getVodId())) return this;
         String id = history.getVodId();
-        String fd = history.getVodId();
-        if (fd.startsWith("/")) fd = Server.get().getAddress() + "/file" + fd.replace(Path.rootPath(), "");
-        if (fd.startsWith("file")) fd = Server.get().getAddress() + "/" + fd.replace(Path.rootPath(), "").replace("://", "");
-        if (fd.contains("127.0.0.1")) fd = fd.replace("127.0.0.1", Util.getIp());
-        body.add("history", history.toString().replace(id, fd));
+        if (id.startsWith("/") || id.startsWith("file") || id.contains("127.0.0.1")) {
+            String fd = id;
+            if (fd.startsWith("/")) fd = Server.get().getAddress() + "/file" + fd.replace(Path.rootPath(), "");
+            if (fd.startsWith("file")) fd = Server.get().getAddress() + "/" + fd.replace(Path.rootPath(), "").replace("://", "");
+            if (fd.contains("127.0.0.1")) fd = fd.replace("127.0.0.1", Util.getIp());
+            body.add("history", history.toString().replace(id, fd));
+        } else {
+            body.add("history", history.toString());
+        }
         historyReady = true;
         return this;
     }

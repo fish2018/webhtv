@@ -75,4 +75,23 @@
         app:iconSize="18dp"
         app:iconTint="@color/dialog_tonal_button_text" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/top"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="40dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="6dp"
+        android:contentDescription="@string/player_button_top"
+        android:focusable="true"
+        android:minWidth="0dp"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:textColor="@color/dialog_tonal_button_text"
+        app:backgroundTint="@color/dialog_tonal_button_bg"
+        app:icon="@drawable/ic_player_button_top"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:iconSize="18dp"
+        app:iconTint="@color/dialog_tonal_button_text" />
+
 </androidx.appcompat.widget.LinearLayoutCompat>

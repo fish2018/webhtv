@@ -120,6 +120,7 @@ import com.fongmi.android.tv.setting.PlayerButtonSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.setting.SiteHealthStore;
+import com.fongmi.android.tv.setting.SiteOrderStore;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.adapter.EpisodeGroupAdapter;
 import com.fongmi.android.tv.ui.adapter.FlagAdapter;
@@ -149,6 +150,7 @@ import com.fongmi.android.tv.ui.dialog.SubtitleDialog;
 import com.fongmi.android.tv.ui.dialog.TitleDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
 import com.fongmi.android.tv.ui.dialog.VideoContentDialog;
+import com.fongmi.android.tv.ui.fragment.SettingPlayerFragment;
 import com.fongmi.android.tv.utils.Clock;
 import com.fongmi.android.tv.utils.EpisodeTitleCompact;
 import com.fongmi.android.tv.utils.FileChooser;
@@ -240,6 +242,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private boolean mSuppressKaraokeResultAction;
     private boolean mRestoringConfigurationPlayback;
     private boolean mSkipKaraokeTrackAutoLoad;
+    private boolean mWasPlaying;
+    private boolean mWasPlayingBeforeSetting;
     private BottomSheetDialog mLyricsResultDialog;
     private BottomSheetDialog mAudioQueueDialog;
     private BottomSheetDialog mKaraokePitchDialog;
@@ -285,9 +289,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private FlagAdapter mFlagAdapter;
     private PlayerOsdController mOsd;
     private CustomKeyDown mKeyDown;
+    private float mSpeedBeforeLongPress = 1.0f;
+    private String mCastEpisodeHint = "";
+    private boolean mCastSearch;
+    private int mCastDetailRetry;
     private List<String> mBroken;
     private History mHistory;
     private boolean fullscreen;
+    private boolean startFullscreen;
     private boolean initAuto;
     private boolean autoMode;
     private boolean revealManualSearch;
@@ -390,7 +399,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     public static void cast(Activity activity, History history) {
-        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, history.getWallPic());
+        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, false, history.getWallPic(), null, false, history);
+    }
+
+    public static void startFullscreen(Activity activity, History history) {
+        start(activity, history.getSiteKey(), history.getVodId(), history.getVodName(), history.getVodPic(), null, false, history.getWallPic(), null, true);
     }
 
     public static void collect(Activity activity, String key, String id, String name, String pic) {
@@ -434,6 +447,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, String wallPic, String content) {
+        start(activity, key, id, name, pic, mark, collect, wallPic, content, false);
+    }
+
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, String wallPic, String content, boolean fullscreen) {
+        start(activity, key, id, name, pic, mark, collect, wallPic, content, fullscreen, null);
+    }
+
+    public static void start(Activity activity, String key, String id, String name, String pic, String mark, boolean collect, String wallPic, String content, boolean fullscreen, History history) {
         ImgUtil.preload(activity, pic);
         if (Setting.isPlaybackArtworkWall() && !TextUtils.isEmpty(wallPic) && !TextUtils.equals(wallPic, pic)) ImgUtil.preload(activity, wallPic);
         Intent intent = new Intent(activity, VideoActivity.class);
@@ -445,7 +466,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         intent.putExtra("content", content);
         intent.putExtra("key", key);
         intent.putExtra("id", id);
+        intent.putExtra("startFullscreen", fullscreen);
+        if (history != null) intent.putExtra("castHistory", history.toString());
         activity.startActivity(intent);
+    }
+
+    private boolean isCast() {
+        return getIntent().hasExtra("castHistory");
     }
 
     private String getName() {
@@ -613,6 +640,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
         mRestoringConfigurationPlayback = savedInstanceState != null;
+        startFullscreen = getIntent().getBooleanExtra("startFullscreen", false);
         ViewCompat.setOnApplyWindowInsetsListener(mBinding.getRoot(), (v, insets) -> setStatusBar(insets));
         mKeyDown = CustomKeyDown.create(this, mBinding.exo);
         mFrameParams = mBinding.video.getLayoutParams();
@@ -817,6 +845,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.opening.setOnClickListener(view -> onOpening());
         mBinding.control.action.danmaku.setOnClickListener(view -> onDanmaku());
         mBinding.control.action.episodes.setOnClickListener(view -> onEpisodes());
+        mBinding.control.action.setting.setOnClickListener(view -> {
+            mWasPlayingBeforeSetting = service() != null && player().isPlaying();
+            if (mWasPlayingBeforeSetting) onPaused();
+            showSettingPlayer();
+        });
         mBinding.audioPlay.setOnClickListener(view -> checkPlay());
         mBinding.audioNext.setOnClickListener(view -> checkNext());
         mBinding.audioPrev.setOnClickListener(view -> checkPrev());
@@ -1026,6 +1059,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         addActionButton(PlayerButtonSetting.NEXT, mBinding.control.action.next);
         addActionButton(PlayerButtonSetting.EPISODES, mBinding.control.action.episodes);
         addActionButton(PlayerButtonSetting.CHANGE, mBinding.control.action.change2);
+        addActionButton(PlayerButtonSetting.SETTING, mBinding.control.action.setting);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
         setupCustomActionButtons();
     }
@@ -1227,11 +1261,12 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void checkId() {
         if (getId().startsWith("push://")) getIntent().putExtra("key", SiteApi.PUSH).putExtra("id", getId().substring(7));
         if (getId().isEmpty() || getId().startsWith("msearch:")) setEmpty(false);
+        else if (!TextUtils.isEmpty(getKey()) && VodConfig.get().getSite(getKey()).isEmpty()) startCastSearch(getName());
         else getDetail();
     }
 
     private void checkLand() {
-        if (isPort() && ResUtil.isLand(this)) enterFullscreen();
+        if (startFullscreen || (isPort() && ResUtil.isLand(this))) enterFullscreen();
     }
 
     private void getDetail() {
@@ -1266,8 +1301,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         SpiderDebug.log("video-flow", "detail finish cost=%dms empty=%s msg=%s", cost, result.getList().isEmpty(), result.getMsg());
         recordDetailHealth(result, cost);
         mBinding.swipeLayout.setRefreshing(false);
-        if (result.getList().isEmpty()) setEmpty(result.hasMsg());
-        else setDetail(result.getVod());
+        if (result.getList().isEmpty()) {
+            if (isCast() && mCastDetailRetry < 1 && TextUtils.isEmpty(result.getMsg())) {
+                mCastDetailRetry++;
+                SpiderDebug.log("video-flow", "cast detail empty, retry after 800ms attempt=%d", mCastDetailRetry);
+                App.post(() -> getDetail(), 800);
+                return;
+            }
+            setEmpty(result.hasMsg());
+        } else {
+            mCastDetailRetry = 0;
+            setDetail(result.getVod());
+        }
         Notify.show(result.getMsg());
     }
 
@@ -1613,7 +1658,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void seamless(Flag flag) {
-        Episode episode = getMark().isEmpty() ? flag.find(mHistory.getEpisode(), true) : flag.find(mHistory.getVodRemarks(), false);
+        String hint = !TextUtils.isEmpty(mCastEpisodeHint) ? mCastEpisodeHint : mHistory.getVodRemarks();
+        Episode episode = getMark().isEmpty() ? flag.find(hint, true) : flag.find(mHistory.getVodRemarks(), false);
         setQualityVisible(episode != null && episode.isSelected() && mQualityAdapter.getItemCount() > 1);
         if (episode == null || episode.isSelected()) return;
         mHistory.setVodRemarks(episode.getName());
@@ -3936,6 +3982,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void setEnding(long ending) {
         mHistory.setEnding(ending);
         mBinding.control.action.ending.setText(ending <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
+        mOsd.setEnding(ending);
     }
 
     private void onOpening() {
@@ -4167,7 +4214,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.keep.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
         boolean showPlayParams = PlayerButtonSetting.isVisible(PlayerButtonSetting.PLAY_PARAMS);
         mBinding.control.action.playParams.setVisibility(showPlayParams ? View.VISIBLE : View.GONE);
-        mBinding.control.osdDiagnostics.setVisibility(PlayerSetting.isOsdDiagnostics() && PlayerButtonSetting.isVisible(PlayerButtonSetting.PLAY_PARAMS) && !player().isEmpty() ? View.VISIBLE : View.GONE);
+        boolean osdDiagnosticsEnabled = player() != null && player().isLive() ? PlayerSetting.isOsdLiveDiagnostics() : PlayerSetting.isOsdVodDiagnostics();
+        mBinding.control.osdDiagnostics.setVisibility(osdDiagnosticsEnabled && PlayerButtonSetting.isVisible(PlayerButtonSetting.PLAY_PARAMS) && !player().isEmpty() ? View.VISIBLE : View.GONE);
         mBinding.control.osdDiagnostics.setAlpha(mOsd != null && mOsd.isDiagnosticsVisible() ? 1f : 0.30f);
         mBinding.control.action.playParams.setSelected(mOsd != null && mOsd.isDiagnosticsVisible());
         mBinding.control.parse.setVisibility(isFullscreen() && isUseParse() ? View.VISIBLE : View.GONE);
@@ -4394,11 +4442,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void checkHistory(Vod item) {
         mHistory = History.find(getHistoryKey());
         mHistory = mHistory == null ? createHistory(item) : mHistory;
+        applyCastHistory();
         if (!TextUtils.isEmpty(getWallPic())) mHistory.setWallPic(getWallPic());
         if (!TextUtils.isEmpty(getMark())) mHistory.setVodRemarks(getMark());
         if (Setting.isIncognito() && mHistory.getKey().equals(getHistoryKey())) mHistory.delete();
         mBinding.control.action.opening.setText(mHistory.getOpening() <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
         mBinding.control.action.ending.setText(mHistory.getEnding() <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
+        mOsd.setEnding(mHistory.getEnding());
         mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getDefaultSpeed()));
         mHistory.setSpeed(player().getSpeed());
         mHistory.setVodName(item.getName());
@@ -4409,6 +4459,16 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private boolean shouldKeepPushArtwork() {
         return SiteApi.PUSH.equals(getKey()) && !TextUtils.isEmpty(getPic());
+    }
+
+    private void applyCastHistory() {
+        String json = Objects.toString(getIntent().getStringExtra("castHistory"), "");
+        if (TextUtils.isEmpty(json)) return;
+        History pushed = History.objectFrom(json);
+        if (pushed == null || TextUtils.isEmpty(pushed.getVodId())) return;
+        if (pushed.getPosition() > 0) mHistory.setPosition(pushed.getPosition());
+        if (!TextUtils.isEmpty(pushed.getVodRemarks())) mCastEpisodeHint = pushed.getVodRemarks();
+        SpiderDebug.log("video-flow", "cast history pointer applied position=%d episodeHint=%s", mHistory.getPosition(), mCastEpisodeHint);
     }
 
     private String getInitialArtwork(Vod item) {
@@ -4458,6 +4518,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (mHistory == null || Setting.isIncognito()) return;
         if (service() != null && isOwner()) {
             updatePlaybackHistoryPosition();
+            mHistory.setPlayerType(player().getPlayerType());
             mHistory.setCreateTime(System.currentTimeMillis());
         }
         if (exit && service() != null) PlaybackEventCollector.get().onStop(player());
@@ -5945,6 +6006,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setPosition() {
         if (mHistory == null || hasDiscMenu()) return;
+        applyCastHistory();
         if (mHistory.isNearEnding()) {
             SpiderDebug.log("video-flow", "reset near-end history position=%d duration=%d key=%s", mHistory.getPosition(), mHistory.getDuration(), getHistoryKey());
             mHistory.resetPlaybackPosition();
@@ -6131,6 +6193,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         startSearch(keyword);
     }
 
+    private void startCastSearch(String keyword) {
+        if (TextUtils.isEmpty(keyword)) { setEmpty(false); return; }
+        Notify.show(getString(R.string.play_switch_site, keyword));
+        mCastSearch = true;
+        initSearch(keyword, true);
+    }
+
     private boolean isPass(Site item) {
         if (isAutoMode() && !item.isChangeable()) return false;
         return item.isSearchable();
@@ -6143,7 +6212,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (isQuickSearchVisible()) mQuickSearchDialog.clear();
         List<Site> sites = new ArrayList<>();
         for (Site item : VodConfig.get().getSites()) if (isPass(item)) sites.add(item);
-        SiteHealthStore.sortSites(sites);
+        if (Setting.isSiteHealthSort()) SiteHealthStore.sortSites(sites);
+        else SiteOrderStore.sortSites(sites);
         mViewModel.searchContent(sites, keyword, true);
     }
 
@@ -6154,7 +6224,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mQuickAdapter.addAll(items);
         if (isQuickSearchVisible()) mQuickSearchDialog.addAll(items);
         if (revealManualSearch && !items.isEmpty()) revealManualSearch = false;
-        if (isInitAuto() && PlayerSetting.isAutoChange()) nextSite();
+        if (isInitAuto() && (PlayerSetting.isAutoChange() || mCastSearch)) nextSite();
         if (items.isEmpty()) return;
         App.removeCallbacks(mR4);
     }
@@ -6304,16 +6374,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void onSpeedUp() {
         if (!player().isPlaying()) return;
+        mSpeedBeforeLongPress = player().getSpeed();
         mBinding.widget.speed.setVisibility(View.VISIBLE);
         mBinding.widget.speed.startAnimation(ResUtil.getAnim(R.anim.forward));
-        mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getSpeed()));
+        player().setSpeed(PlayerSetting.getSpeed());
     }
 
     @Override
     public void onSpeedEnd() {
         mBinding.widget.speed.clearAnimation();
-        mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getDefaultSpeed()));
-        mHistory.setSpeed(player().getSpeed());
+        mBinding.widget.speed.setVisibility(View.GONE);
+        player().setSpeed(mSpeedBeforeLongPress);
     }
 
     @Override
@@ -6522,10 +6593,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void onStart() {
         super.onStart();
         mClock.stop().start();
+        if (isVisible(mBinding.control.getRoot())) hideControl();
         if (mOsd != null) mOsd.start();
         setAudioOnly(false);
         setStop(false);
         if (service() != null) refreshLyrics();
+        if (mActionButtons != null) PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
+        if ((mWasPlaying || mWasPlayingBeforeSetting) && service() != null && !player().isPlaying() && !player().isEmpty()) onPlay();
+        mWasPlayingBeforeSetting = false;
         syncLyricsPlaybackState();
         syncKaraokePosition();
     }
@@ -6533,6 +6608,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     protected void onStop() {
         super.onStop();
+        mWasPlaying = service() != null && player().isPlaying();
         if (mOsd != null) mOsd.stop();
         if (mKaraoke != null) mKaraoke.clear();
         if (PlayerSetting.isBackgroundOff()) mClock.stop();
@@ -6541,6 +6617,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onBackInvoked() {
+        if (isVisible(mBinding.settingContainer)) {
+            hideSettingPlayer();
+            return;
+        }
         if (hasLutQuick() && mBinding.lutQuick.hideIfVisible()) {
             return;
         } else if (isVisible(mBinding.control.getRoot())) {
@@ -6560,6 +6640,32 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         stopPlayback();
         if (isTaskRoot()) startActivity(new Intent(this, HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         super.onBackInvoked();
+    }
+
+    private void showSettingPlayer() {
+        int wallColor = Setting.getWallColor();
+        int bgColor = android.graphics.Color.argb(220, android.graphics.Color.red(wallColor), android.graphics.Color.green(wallColor), android.graphics.Color.blue(wallColor));
+        mBinding.settingContainer.setBackgroundColor(bgColor);
+        mBinding.settingContainer.setVisibility(View.VISIBLE);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.settingContainer, SettingPlayerFragment.newInstance())
+                .commit();
+    }
+
+    private void hideSettingPlayer() {
+        androidx.fragment.app.Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.settingContainer);
+        if (fragment != null) {
+            getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+        }
+        mBinding.settingContainer.setVisibility(View.GONE);
+        if (mWasPlayingBeforeSetting && service() != null && !player().isPlaying() && !player().isEmpty()) {
+            onPlay();
+        }
+        mWasPlayingBeforeSetting = false;
+    }
+
+    public void finishVideoForCast() {
+        finishVideoPlaybackFromSystemBack();
     }
 
     @Override

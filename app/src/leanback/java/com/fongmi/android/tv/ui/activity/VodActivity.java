@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.OnChildViewHolderSelectedListener;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
@@ -173,8 +174,51 @@ public class VodActivity extends BaseActivity implements TypeAdapter.OnClickList
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (KeyUtil.isMenuKey(event)) updateFilter();
+        // 视频列表/筛选左右环形跳转（放在最前面，确保在VerticalGridView处理之前消费）
+        if (KeyUtil.isActionDown(event) && (KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event))) {
+            View focus = getCurrentFocus();
+            if (focus != null) {
+                HorizontalGridView grid = findHorizontalGridView(focus);
+                if (grid != null && grid.getAdapter() != null) {
+                    int position = grid.getSelectedPosition();
+                    int count = grid.getAdapter().getItemCount();
+                    if (count > 1 && position >= 0) {
+                        if (KeyUtil.isLeftKey(event) && position == 0) {
+                            grid.setSelectedPosition(count - 1);
+                            return true;
+                        }
+                        if (KeyUtil.isRightKey(event) && position == count - 1) {
+                            grid.setSelectedPosition(0);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
         if (KeyUtil.isActionDown(event) && KeyUtil.isDownKey(event) && mBinding.recycler.hasFocus()) return requestContentFocus();
+        if (KeyUtil.isActionDown(event) && KeyUtil.isLeftKey(event) && mBinding.recycler.hasFocus()) {
+            if (mBinding.recycler.getSelectedPosition() == 0) {
+                mBinding.recycler.setSelectedPosition(mAdapter.getItemCount() - 1);
+                return true;
+            }
+        }
+        if (KeyUtil.isActionDown(event) && KeyUtil.isRightKey(event) && mBinding.recycler.hasFocus()) {
+            if (mBinding.recycler.getSelectedPosition() == mAdapter.getItemCount() - 1) {
+                mBinding.recycler.setSelectedPosition(0);
+                return true;
+            }
+        }
         return super.dispatchKeyEvent(event);
+    }
+
+    private HorizontalGridView findHorizontalGridView(View view) {
+        View parent = view;
+        while (parent != null) {
+            if (parent instanceof HorizontalGridView) return (HorizontalGridView) parent;
+            if (!(parent.getParent() instanceof View)) break;
+            parent = (View) parent.getParent();
+        }
+        return null;
     }
 
     private boolean requestContentFocus() {

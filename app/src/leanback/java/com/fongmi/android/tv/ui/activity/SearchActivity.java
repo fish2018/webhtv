@@ -25,7 +25,7 @@ import com.fongmi.android.tv.ui.adapter.WordAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.CustomKeyboard;
 import com.fongmi.android.tv.ui.custom.CustomTextListener;
-import com.fongmi.android.tv.ui.dialog.SiteDialog;
+import com.fongmi.android.tv.ui.dialog.SearchSourceDialog;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.SearchSuggest;
 import com.fongmi.android.tv.utils.Util;
@@ -276,7 +276,7 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
 
     @Override
     public void showDialog() {
-        SiteDialog.create().search().show(this);
+        SearchSourceDialog.create().show(this);
     }
 
     @Override
@@ -353,7 +353,29 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
         return true;
     }
 
+    private View findLastInRow(RecyclerView rv, View focused) {
+        int top = focused.getTop();
+        View last = null;
+        int maxRight = Integer.MIN_VALUE;
+        for (int i = 0; i < rv.getChildCount(); i++) {
+            View child = rv.getChildAt(i);
+            if (child.getTop() == top && child.getRight() > maxRight) {
+                maxRight = child.getRight();
+                last = child;
+            }
+        }
+        return last;
+    }
+
     private boolean handleKeywordKey(KeyEvent event) {
+        if (KeyUtil.isUpKey(event)) {
+            View last = findNearestInLastRow(mBinding.keyboard, mBinding.keyword.getLeft());
+            if (last != null) {
+                last.requestFocus();
+                return true;
+            }
+            return false;
+        }
         if (!KeyUtil.isRightKey(event)) return false;
         if (mBinding.keyword.getSelectionEnd() < mBinding.keyword.getText().length()) return false;
         boolean hasRecord = mBinding.recordLayout.getVisibility() == View.VISIBLE;
@@ -365,8 +387,19 @@ public class SearchActivity extends BaseActivity implements WordAdapter.OnClickL
             mBinding.keyword.requestFocus();
             return true;
         }
-        if (KeyUtil.isLeftKey(event) && isFirstInRow(mBinding.keyboard, item)) return true;
-        return KeyUtil.isDownKey(event) && isLastRow(mBinding.keyboard, item);
+        if (KeyUtil.isDownKey(event) && isLastRow(mBinding.keyboard, item)) {
+            mBinding.keyword.requestFocus();
+            return true;
+        }
+        if (KeyUtil.isLeftKey(event) && isFirstInRow(mBinding.keyboard, item)) {
+            View lastInRow = findLastInRow(mBinding.keyboard, item);
+            if (lastInRow != null) {
+                lastInRow.requestFocus();
+                return true;
+            }
+            return true;
+        }
+        return false;
     }
 
     private boolean handleWordKey(KeyEvent event, View item) {

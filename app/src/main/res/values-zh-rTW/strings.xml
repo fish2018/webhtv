@@ -1,5 +1,5 @@
-<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
-
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    
     <!-- App -->
     <string name="app_name">影視</string>
 
@@ -36,12 +36,15 @@
     <string name="play_exo">EXO</string>
     <string name="play_next">下集</string>
     <string name="play_prev">上集</string>
+    <string name="play_vod">點播</string>
+    <string name="play_live">直播</string>
     <string name="play_stop">停止</string>
     <string name="play_repeat">循環</string>
     <string name="play_forward">→</string>
     <string name="play_backward">←</string>
     <string name="play_speed">1.00</string>
     <string name="play_reset">刷新</string>
+    <string name="play_setting">設置</string>
     <string name="play_decode">硬解</string>
     <string name="play_params">播放參數</string>
     <string name="codec_capability_short">硬解能力</string>
@@ -367,6 +370,16 @@
     <string name="remote_trust_send_server_done">已保存到對方設備</string>
     <string name="remote_trust_send_server_failed">保存到對方設備失敗：%1$s</string>
     <string name="setting_login_state">登入狀態學習</string>
+    <string name="setting_file_sites">來源屏蔽</string>
+    <string name="setting_source_block_dialog_title">選擇要屏蔽的站源來源</string>
+    <string name="setting_source_block_count">已屏蔽 %1$d / %2$d</string>
+    <string name="source_vod_url">點播接口</string>
+    <string name="source_live_url">直播接口</string>
+    <string name="source_sites_json">資料夾：/tvbox/sites-json/</string>
+    <string name="source_sites_js">資料夾：/tvbox/sites-js/</string>
+    <string name="source_sites_py">資料夾：/tvbox/sites-py/</string>
+    <string name="source_sites_raw">資料夾：/tvbox/sites/ </string>
+    <string name="source_lives_file">資料夾：/tvbox/lives/ </string>
     <string name="setting_site_health_sort">站點健康排序</string>
     <string name="setting_site_health_enable">啟用站點健康排序</string>
     <string name="setting_site_health_dialog_sort">站點彈窗排序</string>
@@ -650,15 +663,22 @@
     <string name="setting_drive_check">網盤檢測</string>
     <string name="setting_theme_color">主題色彩</string>
     <string name="setting_appearance">外觀與語言</string>
-    <string name="setting_appearance_summary">4 項</string>
+    <string name="setting_appearance_summary">5 項</string>
     <string name="setting_auto">自動</string>
     <string name="setting_custom">自訂</string>
     <string name="setting_language">語言</string>
+    <string name="setting_default_launch">默認啟動</string>
     <string name="setting_size">圖片尺寸</string>
     <string name="setting_ui_scale">介面大小</string>
+    <string name="setting_title_lines">標題換行</string>
+    <string name="setting_site_delete_title">刪除文件站點</string>
+    <string name="setting_site_delete_message">確定刪除 %1$s 及其源文件？此操作不可恢復。</string>
+    <string name="setting_site_delete_done">已刪除 %1$s</string>
+    <string name="setting_site_delete_failed">刪除失敗，檔案可能被佔用</string>
     <string name="dialog_close">關閉</string>
     <string name="setting_doh">DoH</string>
     <string name="setting_proxy">Proxy</string>
+    <string name="setting_autoClearCache">退出自動清除快取</string>
     <string name="setting_cache">暫存</string>
     <string name="setting_backup">備份</string>
     <string name="setting_restore">還原</string>
@@ -721,8 +741,8 @@
     <string name="sync_item_remote_relay">中轉服務配置</string>
     <string name="sync_paths_title">同步目錄</string>
     <string name="sync_paths_edit">編輯</string>
-    <string name="sync_paths_desc">每行一個外置儲存相對路徑，預設同步 TV、TVBox、TVData。可加入本地包目錄；目錄內容會隨 Jar/腳本保存資料一起同步。</string>
-    <string name="sync_paths_hint">TV&#10;TVBox&#10;TVData</string>
+    <string name="sync_paths_desc">每行一個外置儲存相對路徑，不預設同步任何目錄，需自行勾選。目錄內容會隨 Jar/腳本保存資料一起同步。</string>
+    <string name="sync_paths_hint"></string>
     <string name="sync_paths_up">收起</string>
     <string name="sync_paths_refresh">刷新</string>
     <string name="sync_paths_enter">打開目錄</string>
@@ -811,6 +831,8 @@
     <string name="player_pad_live">平板直播</string>
     <string name="player_button_up">上移</string>
     <string name="player_button_down">下移</string>
+    <string name="player_button_top">置頂</string>
+    <string name="site_sort_title">站點排序</string>
     <string name="play_episodes">選集</string>
     <string name="player_exo_4k_compat">播放效能</string>
     <string name="player_immersive_audio_mode">沉浸音訊模式</string>
@@ -1209,7 +1231,7 @@
 
     <!-- Hint -->
     <string name="copied">已複製</string>
-    <string name="debug_log_dialog_message">調試日誌服務已啟動。\n\n局域網地址：\n%1$s\n\n本機地址：\n%2$s\n\n電視端沒有瀏覽器也沒關係，請在同一局域網的電腦或手機瀏覽器中打開局域網地址。</string>
+    <string name="debug_log_dialog_message">調試日誌服務已啟動。\n\n局域網地址：\n%1$s\n\n本機地址：\n%2$s\n\nXBPQ地址：\n%3$s\n\n電視端沒有瀏覽器也沒關係，請在同一局域網的電腦或手機瀏覽器中打開局域網地址。</string>
     <string name="debug_log_open_browser">打開瀏覽器</string>
     <string name="debug_log_copy_url">複製地址</string>
     <string name="debug_log_no_browser">未找到可打開網頁的應用，請使用局域網地址訪問</string>
@@ -1281,6 +1303,7 @@
 
     <string-array name="select_ui_scale">
         <item>跟隨系統</item>
+        <item>稍寬鬆</item>
         <item>標準</item>
         <item>較緊湊</item>
         <item>緊湊</item>
@@ -1288,10 +1311,23 @@
         <item>更小</item>
     </string-array>
 
+    <string-array name="select_title_lines">
+        <item>關閉</item>
+        <item>最多2行</item>
+        <item>最多3行</item>
+        <item>不限行數</item>
+    </string-array>
+
     <string-array name="select_language">
         <item>跟隨系統</item>
         <item>簡體中文</item>
         <item>繁體中文</item>
+    </string-array>
+
+    <string-array name="select_default_launch">
+        <item>首頁</item>
+        <item>直播</item>
+        <item>最近</item>
     </string-array>
 
     <string-array name="select_scale">
@@ -1520,4 +1556,28 @@
 
     <string name="player_audio_badge_queue">佇列</string>
     <string name="player_audio_repeat">循環</string>
+
+    <string name="setting">設定</string>
+    <string name="confirm">確定</string>
+    <string name="search_sites">搜尋站點…</string>
+    <string name="select_all">全選</string>
+    <string name="select_none">全清</string>
+    <string name="select_invert">反選</string>
+    <string name="search_source_all">全部來源</string>
+    <string name="search_source_home">首頁來源</string>
+    <string name="search_source_tag">標籤來源</string>
+    <string name="search_source_white">白名單</string>
+    <string name="search_source_black">黑名單</string>
+    <string name="search_site_count">%d 個站點</string>
+    <string name="search_site_count_of">已選 %d / %d</string>
+
+    <!-- History & Keep -->
+    <string name="history_title">歷史記錄</string>
+    <string name="keep_title">收藏列表</string>
+    <string name="menu_clear">清空</string>
+    <string name="menu_delete">刪除</string>
+    <string name="dialog_clear_history">清空播放歷史</string>
+    <string name="dialog_clear_history_message">是否清空播放歷史，刪除後無法恢復！</string>
+    <string name="dialog_clear_keep">清空收藏影片</string>
+    <string name="dialog_clear_keep_message">是否清空收藏影片，刪除後無法恢復！</string>
 </resources>

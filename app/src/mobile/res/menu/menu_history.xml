@@ -14,4 +14,10 @@
         android:title="@string/menu_delete"
         app:showAsAction="always" />
 
+    <item
+        android:id="@+id/clear"
+        android:icon="@drawable/ic_action_clear"
+        android:title="@string/menu_clear"
+        app:showAsAction="always" />
+
 </menu>

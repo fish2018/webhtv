@@ -8,6 +8,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -45,6 +46,7 @@ public class EpisodeListDialog extends BaseAlertDialog implements FlagAdapter.On
     private DialogInterface.OnDismissListener dismissListener;
     private List<Flag> flags;
     private int panelWidth;
+    private boolean arrayUserActive;
 
     public EpisodeListDialog() {
         segmentStarts = new ArrayList<>();
@@ -108,6 +110,7 @@ public class EpisodeListDialog extends BaseAlertDialog implements FlagAdapter.On
         binding.array.addOnChildViewHolderSelectedListener(new androidx.leanback.widget.OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
+                if (!arrayUserActive) return;
                 if (child != null && position >= 0 && position < segmentStarts.size()) scrollToEpisode(segmentStarts.get(position), false);
             }
         });
@@ -163,6 +166,7 @@ public class EpisodeListDialog extends BaseAlertDialog implements FlagAdapter.On
 
     private boolean onArrayKey(KeyEvent event) {
         if (!KeyUtil.isActionDown(event)) return false;
+        arrayUserActive = true;
         if (KeyUtil.isUpKey(event)) {
             focusFlag();
             return true;
@@ -234,9 +238,18 @@ public class EpisodeListDialog extends BaseAlertDialog implements FlagAdapter.On
     }
 
     private void scrollToSelectedEpisode() {
+        arrayUserActive = false;
         int position = episodeAdapter.getPosition();
         scrollToSegment(position);
         scrollToEpisode(position, true);
+        binding.episode.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                ViewTreeObserver observer = binding.episode.getViewTreeObserver();
+                if (observer.isAlive()) observer.removeOnGlobalLayoutListener(this);
+                scrollToEpisode(position, true);
+            }
+        });
     }
 
     private void scrollToSegment(int episodePosition) {

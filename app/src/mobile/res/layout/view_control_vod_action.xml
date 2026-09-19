@@ -130,5 +130,10 @@
             style="@style/Control"
             android:text="@string/play_change" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/setting"
+            style="@style/Control"
+            android:text="@string/play_setting" />
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 </HorizontalScrollView>
