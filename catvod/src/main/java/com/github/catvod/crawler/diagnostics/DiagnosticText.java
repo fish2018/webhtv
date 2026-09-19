@@ -25,15 +25,14 @@ public final class DiagnosticText {
     public record Clean(String text, boolean truncated) {}
 
     public static Clean clean(String input) {
+        return clean(input, true);
+    }
+
+    /** 调试日志仅本机/局域网自看，不做脱敏，只截断超长行和转义控制字符。 */
+    public static Clean clean(String input, boolean redactUrls) {
         if (input == null) return new Clean("", false);
         boolean truncated = input.length() > MAX_CHARS;
         String value = input.substring(0, Math.min(MAX_CHARS, input.length())).replace("\\/", "/");
-        value = HEADER.matcher(value).replaceAll("sensitive-header=" + REDACTED);
-        value = SECRET.matcher(value).replaceAll("$1" + REDACTED);
-        value = BEARER.matcher(value).replaceAll(REDACTED);
-        value = URI_TEXT.matcher(value).replaceAll("uri:" + REDACTED);
-        value = LOCAL_PATH.matcher(value).replaceAll("path:" + REDACTED);
-        value = ADDRESS.matcher(value).replaceAll("address:" + REDACTED);
         StringBuilder result = new StringBuilder(Math.min(MAX_CHARS, value.length()));
         for (int i = 0; i < value.length() && result.length() < MAX_CHARS; i++) {
             char c = value.charAt(i);

@@ -15,7 +15,7 @@ public final class DiagnosticCategories {
     private DiagnosticCategories() {}
 
     public static Category event(String name) {
-        if (name.startsWith("diag.")) return null; // Collection controls and completeness must remain visible.
+        if (name.startsWith("diag.")) return Category.SYSTEM; // 诊断控制事件归内核设备，受开关控制。
         if (name.startsWith("audio.") || name.equals("mpv.audio.path")) return Category.AUDIO;
         if (name.startsWith("video.") || name.startsWith("surface.") || name.contains("display") || name.equals("mpv.video.path")) return Category.VIDEO;
         if (name.startsWith("input.") || name.equals("resolve.result")) return Category.NETWORK;
@@ -43,7 +43,7 @@ public final class DiagnosticCategories {
         return Category.SYSTEM;
     }
 
-    public static boolean accepts(int mask, Category category) { return category == null || (mask & category.bit) != 0; }
+    public static boolean accepts(int mask, Category category) { return category != null && (mask & category.bit) != 0; }
     public static String summary(int mask) {
         StringBuilder result = new StringBuilder();
         for (Category category : Category.values()) {
