@@ -41,7 +41,6 @@ public final class MpvPerformanceSetting {
     private static final String KEY_FRAME_DROP = "perf_mpv_frame_drop";
     private static final String KEY_INTERPOLATION = "perf_mpv_interpolation";
     private static final String KEY_SOFT_TUNE = "perf_mpv_soft_tune";
-    private static final String KEY_VERBOSE_LOG = "perf_mpv_verbose_log";
     private static final String KEY_FRAME_RATE = "perf_mpv_frame_rate";
     private static final String KEY_HLS_BITRATE = "perf_mpv_hls_bitrate";
     private static final String KEY_REBUFFER_MS = "perf_mpv_rebuffer_ms";
@@ -179,10 +178,6 @@ public final class MpvPerformanceSetting {
             case SOFT_TUNE_AGGRESSIVE -> "积极";
             default -> "温和";
         };
-    }
-
-    public static boolean isVerboseLog() {
-        return Prefers.getBoolean(KEY_VERBOSE_LOG);
     }
 
     public static int getFrameRateMode() {
@@ -335,11 +330,6 @@ public final class MpvPerformanceSetting {
         };
     }
 
-    public static void putVerboseLog(boolean value) {
-        Prefers.put(KEY_VERBOSE_LOG, value);
-        PlaybackPerformanceSetting.markOverride(PlaybackPerformanceCatalog.MPV_VERBOSE_LOG);
-    }
-
     public static void applyRecommended() {
         PlayerSetting.putMpvRender(PlayerSetting.MPV_RENDER_OPENGL);
         Prefers.put(KEY_OUTPUT_MODE, OUTPUT_AUTO);
@@ -348,7 +338,6 @@ public final class MpvPerformanceSetting {
         Prefers.put(KEY_FRAME_DROP, FRAME_DROP_OUTPUT);
         Prefers.put(KEY_INTERPOLATION, false);
         Prefers.put(KEY_SOFT_TUNE, SOFT_TUNE_MILD);
-        Prefers.put(KEY_VERBOSE_LOG, false);
         Prefers.put(KEY_FRAME_RATE, FRAME_RATE_SEAMLESS);
         Prefers.put(KEY_HLS_BITRATE, HLS_HIGHEST);
         Prefers.put(KEY_VULKAN_BACKEND, VULKAN_BACKEND_DIRECT);
@@ -364,7 +353,6 @@ public final class MpvPerformanceSetting {
         Prefers.put(KEY_FRAME_DROP, FRAME_DROP_OUTPUT);
         Prefers.put(KEY_INTERPOLATION, false);
         Prefers.put(KEY_SOFT_TUNE, SOFT_TUNE_MILD);
-        Prefers.put(KEY_VERBOSE_LOG, false);
         Prefers.put(KEY_FRAME_RATE, FRAME_RATE_SEAMLESS);
         Prefers.put(KEY_HLS_BITRATE, HLS_HIGHEST);
         Prefers.put(KEY_VULKAN_BACKEND, VULKAN_BACKEND_DIRECT);
@@ -384,7 +372,6 @@ public final class MpvPerformanceSetting {
         Prefers.put(KEY_FRAME_DROP, FRAME_DROP_OUTPUT);
         Prefers.put(KEY_INTERPOLATION, false);
         Prefers.put(KEY_SOFT_TUNE, SOFT_TUNE_MILD);
-        Prefers.put(KEY_VERBOSE_LOG, false);
         Prefers.put(KEY_FRAME_RATE, FRAME_RATE_OFF);
         Prefers.put(KEY_HLS_BITRATE, HLS_8_MBPS);
         Prefers.put(KEY_VULKAN_BACKEND, VULKAN_BACKEND_DIRECT);

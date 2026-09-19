@@ -735,6 +735,7 @@
     <string name="sync_item_webhome">WebHome 主頁資料</string>
     <string name="sync_item_search">搜尋記錄</string>
     <string name="sync_item_history">觀看記錄</string>
+    <string name="history_watched_time">已看 %1$s</string>
     <string name="sync_item_keep">收藏資料</string>
     <string name="sync_item_settings">應用設定</string>
     <string name="sync_item_remote_relay">中轉服務配置</string>
@@ -926,6 +927,18 @@
     <string name="player_scale">縮放比例</string>
     <string name="player_lut">LUT 調色</string>
     <string name="player_mpv_config">MPV 設定管理</string>
+    <string name="player_bluray_menu">藍光原盤選單</string>
+    <string name="disc_menu_root">主選單</string>
+    <string name="disc_menu_popup">彈出選單</string>
+    <string name="disc_menu_previous">選單返回</string>
+    <string name="disc_menu_up">上</string>
+    <string name="disc_menu_down">下</string>
+    <string name="disc_menu_left">左</string>
+    <string name="disc_menu_right">右</string>
+    <string name="disc_menu_open">原碟選單</string>
+    <string name="disc_menu_open_hint">開啟原碟主選單；長按開啟選單導覽</string>
+    <string name="disc_menu_navigation">選單導覽</string>
+    <string name="disc_menu_touch_hint">可直接點選畫面中的選單按鈕，也可使用方向鍵選擇</string>
     <string name="mpv_config_target">%1$s · %2$s</string>
     <string name="mpv_config_default">預設</string>
     <string name="mpv_config_local">本機 mpv.conf</string>
@@ -1027,6 +1040,7 @@
     <string name="mpv_config_script_text_edit">透過文字建立</string>
     <string name="mpv_config_script_text_edit_desc">開啟文字編輯器，輸入並儲存 Lua 指令碼</string>
     <string name="mpv_config_script_settings_title">指令碼設定</string>
+    <string name="mpv_config_script_enabled">啟用指令碼</string>
     <string name="mpv_config_script_settings_desc">設定名稱、啟用狀態和執行時機</string>
     <string name="mpv_config_script_open_editor">開啟編輯視窗</string>
     <string name="mpv_config_script_import_url">透過 URL 匯入指令碼</string>
@@ -1217,7 +1231,7 @@
 
     <!-- Hint -->
     <string name="copied">已複製</string>
-    <string name="debug_log_dialog_message">調試日誌服務已啟動。\n\n局域網地址：\n%1$s\n\n本機地址：\n%2$s\n\n電視端沒有瀏覽器也沒關係，請在同一局域網的電腦或手機瀏覽器中打開局域網地址。</string>
+    <string name="debug_log_dialog_message">調試日誌服務已啟動。\n\n局域網地址：\n%1$s\n\n本機地址：\n%2$s\n\nXBPQ地址：\n%3$s\n\n電視端沒有瀏覽器也沒關係，請在同一局域網的電腦或手機瀏覽器中打開局域網地址。</string>
     <string name="debug_log_open_browser">打開瀏覽器</string>
     <string name="debug_log_copy_url">複製地址</string>
     <string name="debug_log_no_browser">未找到可打開網頁的應用，請使用局域網地址訪問</string>

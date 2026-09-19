@@ -84,6 +84,33 @@
         android:visibility="gone">
 
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/scriptEnabledRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:labelFor="@id/scriptEnabled"
+                android:text="@string/mpv_config_script_enabled"
+                android:textColor="#3C4043"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/scriptEnabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"

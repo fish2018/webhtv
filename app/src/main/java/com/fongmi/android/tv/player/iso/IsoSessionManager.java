@@ -87,6 +87,12 @@ public final class IsoSessionManager {
         }
     }
 
+    /** Only a playback-demand read, never speculative prefetch or signature probing. */
+    public static long demandWaitMs(String uri) {
+        IsoPlaybackSession session = SESSIONS.get(parseId(uri));
+        return session == null ? 0 : session.demandWaitMs();
+    }
+
     public static int readAt(long id, long offset, ByteBuffer target, int length) {
         IsoPlaybackSession session = SESSIONS.get(id);
         if (session == null || target == null) return -1;

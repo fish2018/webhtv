@@ -1,0 +1,183 @@
+diff --git a/build.gradle.kts b/build.gradle.kts
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -11,7 +11,7 @@
+             coordinates(
+                 groupId = "io.github.anilbeesetti",
+                 artifactId = property("POM_ARTIFACT_ID") as String,
+-                version = "1.10.0-0.12.1-fongmi-softload-av3a-ffmpeg901-r3"
++                version = "1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5"
+             )
+ 
+             pom {
+diff --git a/ffmpeg/setup.sh b/ffmpeg/setup.sh
+--- a/ffmpeg/setup.sh
++++ b/ffmpeg/setup.sh
+@@ -1,4 +1,5 @@
+ #!/bin/bash
++set -e
+ 
+ # Versions
+ VPX_VERSION=1.13.0
+@@ -8,6 +9,7 @@
+ 
+ # Directories
+ BASE_DIR=$(cd "$(dirname "$0")" && pwd)
++WEBHTV_ROOT="${WEBHTV_ROOT:-$(cd "$BASE_DIR/../../../.." && pwd)}"
+ BUILD_DIR=$BASE_DIR/build
+ OUTPUT_DIR=$BASE_DIR/output
+ SOURCES_DIR=$BASE_DIR/sources
+@@ -18,7 +20,7 @@
+ # Configuration
+ ANDROID_ABIS="armeabi-v7a arm64-v8a"
+ ANDROID_PLATFORM=21
+-ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd ape libarcdav3a h264 hevc mpeg2video mpegvideo libvpx_vp8 libvpx_vp9"
++ENABLED_DECODERS="vorbis opus flac alac pcm_mulaw pcm_alaw mp3 amrnb amrwb aac ac3 eac3 dca mlp truehd ape libarcdav3a h264 hevc mpeg2video mpegvideo libvpx_vp8 libvpx_vp9 libuavs3d"
+ JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || sysctl -n hw.pysicalcpu || echo 4)
+ 
+ # Set up host platform variables
+@@ -213,6 +215,22 @@
+ 
+     done
+     popd
++}
++
++function buildUavs3d() {
++  # Apply only this video wrapper correction, preserving the pinned AV3A source.
++  if ! patch -d "$FFMPEG_DIR" -p1 -R --dry-run < "$WEBHTV_ROOT/third_party/patches/ffmpeg-avs3.patch" > /dev/null 2>&1; then
++    patch -d "$FFMPEG_DIR" -p1 --forward < "$WEBHTV_ROOT/third_party/patches/ffmpeg-avs3.patch"
++  fi
++  for ABI in $ANDROID_ABIS; do
++    bash "$WEBHTV_ROOT/scripts/build_avs3_native.sh" \
++      --abi "$ABI" --ndk "$ANDROID_NDK_HOME" \
++      --prefix "$BUILD_DIR/external/$ABI" \
++      --work-dir "$BUILD_DIR/uavs3d/$ABI" --jobs "$JOBS"
++  done
++  mkdir -p "$BASE_DIR/../media3ext/src/main/assets/licenses"
++  cp "$WEBHTV_ROOT/third_party/avs3-hpm/LICENSE.HPM" "$BASE_DIR/../media3ext/src/main/assets/licenses/hpm-avs3.txt"
++  cp "$BUILD_DIR/external/arm64-v8a/share/licenses/hpm-avs3/SSE2NEON" "$BASE_DIR/../media3ext/src/main/assets/licenses/sse2neon.txt"
+ }
+ 
+ function buildFfmpeg() {
+@@ -293,6 +311,7 @@
+       --enable-avformat \
+       --enable-libvpx \
+       --enable-libarcdav3a \
++      --enable-libuavs3d \
+       --enable-protocol=file,http,https,mmsh,mmst,pipe,rtmp,rtmps,rtmpt,rtmpts,rtp,tls \
+       --enable-version3 \
+       --enable-mbedtls \
+@@ -320,11 +339,12 @@
+ }
+ 
+ if [[ "${1:-}" == "--ffmpeg-only" ]]; then
++  buildUavs3d
+   buildFfmpeg
+   exit $?
+ fi
+ 
+-if [[ ! -d "$OUTPUT_DIR" && ! -d "$BUILD_DIR" ]]; then
++if [[ ! -f "$OUTPUT_DIR/.webhtv-avs3-hpm15" ]]; then
+   # Download MbedTLS source code if it doesn't exist
+   if [[ ! -d "$MBEDTLS_DIR" ]]; then
+     downloadMbedTLS
+@@ -344,5 +364,7 @@
+   buildMbedTLS
+   buildLibVpx
+   buildArcDav3a
++  buildUavs3d
+   buildFfmpeg
++  touch "$OUTPUT_DIR/.webhtv-avs3-hpm15"
+ fi
+diff --git a/media3ext/src/main/assets/licenses/uavs3d.txt b/media3ext/src/main/assets/licenses/uavs3d.txt
+new file mode 100644
+--- /dev/null
++++ b/media3ext/src/main/assets/licenses/uavs3d.txt
+@@ -0,0 +1,29 @@
++uavs3/uavs3d
++https://github.com/uavs3/uavs3d
++Source: 0e20d2c291853f196c68922a264bcd8471d75b68
++
++Copyright (c) 2018-2022 ["Peking University Shenzhen Graduate School", "Peng Cheng Laboratory", and "Guangdong Bohua UHD Innovation Corporation"]
++
++All rights reserved.
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++1. Redistributions of source code must retain the above copyright
++   notice, this list of conditions and the following disclaimer.
++2. Redistributions in binary form must reproduce the above copyright
++   notice, this list of conditions and the following disclaimer in the
++   documentation and/or other materials provided with the distribution.
++3. Neither the name of the organizations (Peking University Shenzhen Graduate School, Peng Cheng Laboratory and Guangdong Bohua UHD Innovation Corporation)
++   nor the names of its contributors may be used to endorse or promote products
++   derived from this software without specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ''AS IS'' AND ANY
++EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY
++DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegLibrary.java
+@@ -122,6 +122,7 @@
+       case AUDIO_AV3A -> "libarcdav3a";
+ 
+       // Video codecs
++      case "video/avs3" -> "libuavs3d";
+       case MimeTypes.VIDEO_H264 -> "h264";
+       case MimeTypes.VIDEO_H265 -> "hevc";
+       case MimeTypes.VIDEO_MPEG -> "mpegvideo";
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoDecoder.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoDecoder.java
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoDecoder.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoDecoder.java
+@@ -79,6 +79,13 @@
+         codecName = Assertions.checkNotNull(FfmpegLibrary.getCodecName(format.sampleMimeType));
+         extraData = getExtraData(format.sampleMimeType, format.initializationData);
+         this.format = format;
++        // AVS3 has no reduced-resolution decode contract. Keep its in-loop
++        // filters and references even when the general soft-video tune is on.
++        if ("video/avs3".equals(format.sampleMimeType)) {
++            skipFrame = 0;
++            skipLoopFilter = 0;
++            lowres = 0;
++        }
+         nativeContext = ffmpegInitialize(codecName, extraData, threads, skipFrame, skipLoopFilter, lowres);
+         if (nativeContext == 0) {
+             throw new FfmpegDecoderException("Failed to initialize decoder.");
+@@ -102,7 +109,7 @@
+                 System.arraycopy(pps, 0, extraData, sps.length, pps.length);
+                 return extraData;
+             }
+-            case MimeTypes.VIDEO_H265 -> {
++            case MimeTypes.VIDEO_H265, "video/avs3" -> {
+                 return initializationData.get(0);
+             }
+             default -> {
+diff --git a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoRenderer.java b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoRenderer.java
+--- a/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoRenderer.java
++++ b/media3ext/src/main/java/io/github/anilbeesetti/nextlib/media3ext/ffdecoder/FfmpegVideoRenderer.java
+@@ -23,7 +23,7 @@
+ 
+ 
+ @UnstableApi
+-public final class FfmpegVideoRenderer extends DecoderVideoRenderer {
++public class FfmpegVideoRenderer extends DecoderVideoRenderer {
+ 
+     private static final String TAG = "FfmpegVideoRenderer";
+ 
+@@ -146,7 +146,7 @@
+ 
+     @Override
+     @RendererCapabilities.Capabilities
+-    public final int supportsFormat(Format format) {
++    public int supportsFormat(Format format) {
+         String mimeType = Assertions.checkNotNull(format.sampleMimeType);
+         if (!FfmpegLibrary.isAvailable() || !MimeTypes.isVideo(mimeType)) {
+             return C.FORMAT_UNSUPPORTED_TYPE;

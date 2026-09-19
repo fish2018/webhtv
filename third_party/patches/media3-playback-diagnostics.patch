@@ -1,0 +1,307 @@
+--- a/libraries/common/src/main/java/androidx/media3/common/audio/AudioFocusManager.java
++++ b/libraries/common/src/main/java/androidx/media3/common/audio/AudioFocusManager.java
+@@ -233,6 +233,8 @@
+       return PLAYER_COMMAND_PLAY_WHEN_READY;
+     }
+     int requestResult = requestAudioFocusInternal();
++    androidx.media3.common.util.PlaybackDiagnostics.event(this, "audio.focus", "request", "returned", 0, requestResult,
++        "gain=" + focusGainToRequest, null);
+     if (requestResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+         || requestResult == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+       setAudioFocusState(AUDIO_FOCUS_STATE_HAVE_FOCUS);
+@@ -249,7 +251,8 @@
+       return;
+     }
+     if (audioFocusRequest != null) {
+-      AudioManagerCompat.abandonAudioFocusRequest(audioManager.get(), audioFocusRequest);
++      int result = AudioManagerCompat.abandonAudioFocusRequest(audioManager.get(), audioFocusRequest);
++      androidx.media3.common.util.PlaybackDiagnostics.event(this, "audio.focus", "abandon", "returned", 0, result, "Media3", null);
+     }
+   }
+ 
+@@ -367,12 +370,15 @@
+       return;
+     }
+     this.volumeMultiplier = volumeMultiplier;
++    if (androidx.media3.common.util.PlaybackDiagnostics.enabled("audio.focus"))
++      androidx.media3.common.util.PlaybackDiagnostics.event(this, "audio.focus", "duck-gain", "applied", 0, 0, Float.toString(volumeMultiplier), null);
+     if (playerControl != null) {
+       playerControl.setVolumeMultiplier(volumeMultiplier);
+     }
+   }
+ 
+   private void handlePlatformAudioFocusChange(int focusChange) {
++    androidx.media3.common.util.PlaybackDiagnostics.event(this, "audio.focus", "callback", "received", 0, focusChange, "Media3", null);
+     switch (focusChange) {
+       case AudioManager.AUDIOFOCUS_GAIN:
+         setAudioFocusState(AUDIO_FOCUS_STATE_HAVE_FOCUS);
+@@ -398,6 +404,7 @@
+   }
+ 
+   private void executePlayerCommand(@PlayerCommand int playerCommand) {
++    androidx.media3.common.util.PlaybackDiagnostics.event(this, "audio.focus", "player-command", "requested", 0, playerCommand, "Media3", null);
+     if (playerControl != null) {
+       playerControl.executePlayerCommand(playerCommand);
+     }
+--- a/libraries/common/src/main/java/androidx/media3/common/audio/AudioProcessingPipeline.java
++++ b/libraries/common/src/main/java/androidx/media3/common/audio/AudioProcessingPipeline.java
+@@ -69,6 +69,8 @@
+  */
+ @UnstableApi
+ public final class AudioProcessingPipeline {
++  private Object diagnosticOwner = this;
++  public void setDiagnosticOwner(Object owner) { diagnosticOwner = owner; }
+ 
+   /** The {@link AudioProcessor} instances passed to {@link AudioProcessingPipeline}. */
+   private final ImmutableList<AudioProcessor> audioProcessors;
+@@ -136,6 +138,9 @@
+     for (int i = 0; i < audioProcessors.size(); i++) {
+       AudioProcessor audioProcessor = audioProcessors.get(i);
+       AudioFormat nextFormat = audioProcessor.configure(intermediateAudioFormat);
++      if (androidx.media3.common.util.PlaybackDiagnostics.enabled("audio.processing"))
++        androidx.media3.common.util.PlaybackDiagnostics.event(diagnosticOwner, "audio.processing", "configure", "returned", 0, i,
++            audioProcessor.getClass().getSimpleName() + " in=" + intermediateAudioFormat + " out=" + nextFormat, null);
+       if (audioProcessor.isActive()) {
+         checkState(!nextFormat.equals(AudioFormat.NOT_SET));
+         intermediateAudioFormat = nextFormat;
+@@ -192,6 +197,9 @@
+                       previousStreamMetadata.positionOffsetUs))
+               .build();
+       activeAudioProcessors.add(audioProcessor);
++      if (androidx.media3.common.util.PlaybackDiagnostics.enabled("audio.processing"))
++        androidx.media3.common.util.PlaybackDiagnostics.event(diagnosticOwner, "audio.processing", "active", "applied", 0,
++            activeAudioProcessors.size() - 1, audioProcessor.getClass().getSimpleName(), null);
+     }
+ 
+     outputBuffers = new ByteBuffer[activeAudioProcessors.size()];
+--- /dev/null
++++ b/libraries/common/src/main/java/androidx/media3/common/util/PlaybackDiagnostics.java
+@@ -0,0 +1,81 @@
++package androidx.media3.common.util;
++
++import android.media.MediaCodec;
++import android.media.MediaCrypto;
++import android.media.MediaFormat;
++import android.os.SystemClock;
++import android.view.Surface;
++import java.io.IOException;
++import java.lang.ref.WeakReference;
++import java.util.WeakHashMap;
++
++/** Optional observation only. Exceptions and playback decisions remain owned by the caller. */
++@UnstableApi
++public final class PlaybackDiagnostics {
++  public interface Listener {
++    boolean enabled(String event);
++    void event(Object owner, String event, String operation, String phase, long durationNs,
++        long value, String detail, Throwable error);
++    void write(Object owner, int requested, int result, long ptsUs, boolean header, long durationNs);
++  }
++  private static volatile Listener listener;
++  private static final ThreadLocal<Object> context = new ThreadLocal<>();
++  private static final WeakHashMap<Object, WeakReference<Object>> parents = new WeakHashMap<>();
++  private PlaybackDiagnostics() {}
++  public static void setListener(Listener value) { listener = value; }
++  public static Object enter(Object owner) { Object prior = context.get(); context.set(owner); return prior; }
++  public static void leave(Object prior) { if (prior == null) context.remove(); else context.set(prior); }
++  public static synchronized void link(Object owner, Object parent) { parents.put(owner, new WeakReference<>(parent)); }
++  private static synchronized Object resolve(Object owner) {
++    if (owner == null) return context.get();
++    for (int i = 0; i < 4; i++) {
++      WeakReference<Object> parent = parents.get(owner);
++      if (parent == null || parent.get() == null) break;
++      owner = parent.get();
++    }
++    return owner;
++  }
++  public static boolean enabled(String event) {
++    Listener current = listener;
++    try { return current != null && current.enabled(event); }
++    catch (RuntimeException | LinkageError ignored) { return false; }
++  }
++  public static long begin(Object owner, String event, String operation, String detail) {
++    if (!enabled(event)) return 0;
++    long now = SystemClock.elapsedRealtimeNanos();
++    event(owner, event, operation, "begin", 0, 0, detail, null); return now;
++  }
++  public static void end(Object owner, String event, String operation, long start, long value, String detail, Throwable error) {
++    event(owner, event, operation, error == null ? "end" : "failed",
++        start == 0 ? -1 : SystemClock.elapsedRealtimeNanos() - start, value, detail, error);
++  }
++  public static void event(Object owner, String event, String operation, String phase, long duration,
++      long value, String detail, Throwable error) {
++    Listener current = listener;
++    try { if (current != null && current.enabled(event)) current.event(resolve(owner), event, operation, phase, duration, value, detail, error); }
++    catch (RuntimeException | LinkageError ignored) { /* Diagnostics cannot change playback. */ }
++  }
++  public static void write(Object owner, int requested, int result, long ptsUs, boolean header, long start) {
++    Listener current = listener;
++    try { if (current != null && current.enabled("audio.output.write")) current.write(owner, requested, result, ptsUs, header,
++        start == 0 ? -1 : SystemClock.elapsedRealtimeNanos() - start); }
++    catch (RuntimeException | LinkageError ignored) { /* Preserve the original write result. */ }
++  }
++  public static long writeStart() { return enabled("audio.output.write") ? SystemClock.elapsedRealtimeNanos() : 0; }
++
++  public static MediaCodec createCodec(String name) throws IOException {
++    long start = begin(null, "codec", "create", name);
++    try { MediaCodec codec = MediaCodec.createByCodecName(name); end(null, "codec", "create", start, 0, name, null); return codec; }
++    catch (IOException | RuntimeException error) { end(null, "codec", "create", start, 0, name, error); throw error; }
++  }
++  public static void configureCodec(MediaCodec codec, MediaFormat format, Surface surface, MediaCrypto crypto, int flags) {
++    long start = begin(null, "codec", "configure", "MediaCodec.configure");
++    try { codec.configure(format, surface, crypto, flags); end(null, "codec", "configure", start, flags, "MediaCodec.configure", null); }
++    catch (RuntimeException error) { end(null, "codec", "configure", start, flags, "MediaCodec.configure", error); throw error; }
++  }
++  public static void startCodec(MediaCodec codec) {
++    long start = begin(null, "codec", "start", "MediaCodec.start");
++    try { codec.start(); end(null, "codec", "start", start, 0, "MediaCodec.start", null); }
++    catch (RuntimeException error) { end(null, "codec", "start", start, 0, "MediaCodec.start", error); throw error; }
++  }
++}
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayerImpl.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayerImpl.java
+@@ -392,6 +392,7 @@
+       playbackInfo = PlaybackInfo.createDummy(emptyTrackSelectorResult);
+       analyticsCollector.setPlayer(this.wrappingPlayer, applicationLooper);
+       PlayerId playerId = new PlayerId(builder.playerName);
++      androidx.media3.common.util.PlaybackDiagnostics.link(playerId, this.wrappingPlayer);
+       internalPlayer =
+           new ExoPlayerImplInternal(
+               applicationContext,
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayerImplInternal.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayerImplInternal.java
+@@ -387,6 +387,7 @@
+     handler = clock.createHandler(this.playbackLooper, this);
+ 
+     audioFocusManager = new AudioFocusManager(context, playbackLooper, /* playerControl= */ this);
++    androidx.media3.common.util.PlaybackDiagnostics.link(audioFocusManager, playerId);
+     VideoFrameMetadataListener internalVideoFrameMetadataListener =
+         (presentationTimeUs, releaseTimeNs, format, mediaFormat) -> {
+           videoFrameMetadataListener.onVideoFrameAboutToBeRendered(
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/audio/AudioTrackAudioOutput.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/audio/AudioTrackAudioOutput.java
+@@ -257,8 +257,10 @@
+       }
+       bytesWrittenOrError = writeWithAvSync(audioTrack, buffer, presentationTimeUs);
+     } else {
++      long diagnosticStart = androidx.media3.common.util.PlaybackDiagnostics.writeStart();
+       bytesWrittenOrError =
+           audioTrack.write(buffer, buffer.remaining(), AudioTrack.WRITE_NON_BLOCKING);
++      androidx.media3.common.util.PlaybackDiagnostics.write(audioTrack, bytesRemaining, bytesWrittenOrError, presentationTimeUs, false, diagnosticStart);
+     }
+ 
+     if (bytesWrittenOrError < 0) {
+@@ -405,8 +407,11 @@
+     int size = buffer.remaining();
+     if (SDK_INT >= 26) {
+       // The underlying platform AudioTrack writes AV sync headers directly.
+-      return audioTrack.write(
++      long diagnosticStart = androidx.media3.common.util.PlaybackDiagnostics.writeStart();
++      int diagnosticResult = audioTrack.write(
+           buffer, size, AudioTrack.WRITE_NON_BLOCKING, presentationTimeUs * 1000);
++      androidx.media3.common.util.PlaybackDiagnostics.write(audioTrack, size, diagnosticResult, presentationTimeUs, false, diagnosticStart);
++      return diagnosticResult;
+     }
+     if (avSyncHeader == null) {
+       avSyncHeader = ByteBuffer.allocate(16);
+@@ -421,8 +426,10 @@
+     }
+     int avSyncHeaderBytesRemaining = avSyncHeader.remaining();
+     if (avSyncHeaderBytesRemaining > 0) {
++      long diagnosticStart = androidx.media3.common.util.PlaybackDiagnostics.writeStart();
+       int result =
+           audioTrack.write(avSyncHeader, avSyncHeaderBytesRemaining, AudioTrack.WRITE_NON_BLOCKING);
++      androidx.media3.common.util.PlaybackDiagnostics.write(audioTrack, avSyncHeaderBytesRemaining, result, presentationTimeUs, true, diagnosticStart);
+       if (result < 0) {
+         bytesUntilNextAvSync = 0;
+         return result;
+@@ -431,7 +438,9 @@
+         return 0;
+       }
+     }
++    long diagnosticStart = androidx.media3.common.util.PlaybackDiagnostics.writeStart();
+     int result = audioTrack.write(buffer, size, AudioTrack.WRITE_NON_BLOCKING);
++    androidx.media3.common.util.PlaybackDiagnostics.write(audioTrack, size, result, presentationTimeUs, false, diagnosticStart);
+     if (result < 0) {
+       bytesUntilNextAvSync = 0;
+       return result;
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/audio/DefaultAudioSink.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/audio/DefaultAudioSink.java
+@@ -760,6 +760,7 @@
+         pipelineProcessors.add(audioProcessorChain.getAudioProcessors());
+       }
+       audioProcessingPipeline = new AudioProcessingPipeline(pipelineProcessors.build());
++      audioProcessingPipeline.setDiagnosticOwner(this);
+ 
+       // If the underlying processors of the new pipeline are the same as the existing pipeline,
+       // then use the existing one when the configuration is used.
+@@ -794,6 +795,7 @@
+     } else {
+       // Audio processing is not supported in offload or passthrough mode.
+       audioProcessingPipeline = new AudioProcessingPipeline(ImmutableList.of());
++      audioProcessingPipeline.setDiagnosticOwner(this);
+       inputPcmFrameSize = C.LENGTH_UNSET;
+       outputPcmFrameSize = C.LENGTH_UNSET;
+       afterProcessingFormat = inputFormat;
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/mediacodec/AsynchronousMediaCodecAdapter.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/mediacodec/AsynchronousMediaCodecAdapter.java
+@@ -122,7 +122,7 @@
+       @Nullable MediaCodec codec = null;
+       try {
+         TraceUtil.beginSection("createCodec:" + codecName);
+-        codec = MediaCodec.createByCodecName(codecName);
++        codec = androidx.media3.common.util.PlaybackDiagnostics.createCodec(codecName);
+         int flags = 0;
+         MediaCodecBufferEnqueuer bufferEnqueuer;
+         if (enableSynchronousBufferQueueingWithAsyncCryptoFlag
+@@ -203,11 +203,11 @@
+       int flags) {
+     asynchronousMediaCodecCallback.initialize(codec);
+     TraceUtil.beginSection("configureCodec");
+-    codec.configure(mediaFormat, surface, crypto, flags);
++    androidx.media3.common.util.PlaybackDiagnostics.configureCodec(codec, mediaFormat, surface, crypto, flags);
+     TraceUtil.endSection();
+     bufferEnqueuer.start();
+     TraceUtil.beginSection("startCodec");
+-    codec.start();
++    androidx.media3.common.util.PlaybackDiagnostics.startCodec(codec);
+     TraceUtil.endSection();
+     if (SDK_INT >= 35 && loudnessCodecController != null) {
+       loudnessCodecController.addMediaCodec(codec);
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/mediacodec/SynchronousMediaCodecAdapter.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/mediacodec/SynchronousMediaCodecAdapter.java
+@@ -58,11 +58,11 @@
+             && SDK_INT >= 35) {
+           flags |= MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE;
+         }
+-        codec.configure(
++        androidx.media3.common.util.PlaybackDiagnostics.configureCodec(codec,
+             configuration.mediaFormat, configuration.surface, configuration.crypto, flags);
+         TraceUtil.endSection();
+         TraceUtil.beginSection("startCodec");
+-        codec.start();
++        androidx.media3.common.util.PlaybackDiagnostics.startCodec(codec);
+         TraceUtil.endSection();
+         return new SynchronousMediaCodecAdapter(codec, configuration.loudnessCodecController);
+       } catch (IOException | RuntimeException e) {
+@@ -78,7 +78,7 @@
+       checkNotNull(configuration.codecInfo);
+       String codecName = configuration.codecInfo.name;
+       TraceUtil.beginSection("createCodec:" + codecName);
+-      MediaCodec mediaCodec = MediaCodec.createByCodecName(codecName);
++      MediaCodec mediaCodec = androidx.media3.common.util.PlaybackDiagnostics.createCodec(codecName);
+       TraceUtil.endSection();
+       return mediaCodec;
+     }
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/BundledExtractorsAdapter.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/BundledExtractorsAdapter.java
+@@ -111,6 +111,9 @@
+       }
+     }
+     extractor.init(output);
++    if (androidx.media3.common.util.PlaybackDiagnostics.enabled("media.container"))
++      androidx.media3.common.util.PlaybackDiagnostics.event(output, "media.container", "extractor-selected", "initialized", 0, position,
++          extractor.getUnderlyingImplementation().getClass().getName(), null);
+   }
+ 
+   @Override

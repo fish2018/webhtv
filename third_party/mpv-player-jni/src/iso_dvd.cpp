@@ -32,7 +32,7 @@ jmethodID manager_read;
 jmethodID manager_close;
 jmethodID manager_prepare_track_metadata;
 
-enum class IsoKind { NONE, DVD, BLURAY };
+enum class IsoKind { NONE, RAW, DVD, BLURAY };
 
 struct DvdStream {
     int64_t session_id = -1;
@@ -45,6 +45,7 @@ struct DvdStream {
     uint64_t bluray_duration_ticks = 0;
     uint32_t bluray_playlist = 0;
     uint32_t bluray_title_count = 0;
+    bool owns_java_session = true;
     std::atomic<bool> cancelled{false};
     std::mutex lock;
     std::unordered_map<int, std::string> track_languages;
@@ -170,6 +171,18 @@ int64_t stream_read(void *opaque, char *buffer, uint64_t requested) {
     auto *stream = static_cast<DvdStream *>(opaque);
     if (!stream || !buffer || stream->cancelled) return -1;
     std::lock_guard<std::mutex> guard(stream->lock);
+    if (stream->kind == IsoKind::RAW) {
+        if (stream->iso_offset >= stream->output_size || requested == 0) return 0;
+        int wanted = requested > INT32_MAX ? INT32_MAX : static_cast<int>(requested);
+        int64_t remaining = stream->output_size - stream->iso_offset;
+        if (wanted > remaining) wanted = static_cast<int>(remaining);
+        int read = java_read(stream, stream->iso_offset, buffer, wanted);
+        if (read > 0) {
+            stream->iso_offset += read;
+            stream->output_offset += read;
+        }
+        return read;
+    }
     if (stream->kind == IsoKind::BLURAY) {
         int wanted = requested > INT32_MAX ? INT32_MAX : static_cast<int>(requested);
         int read = bd_read(stream->bluray, reinterpret_cast<unsigned char *>(buffer), wanted);
@@ -196,6 +209,13 @@ int64_t stream_seek(void *opaque, int64_t offset) {
     auto *stream = static_cast<DvdStream *>(opaque);
     if (!stream || offset < 0 || stream->cancelled) return MPV_ERROR_GENERIC;
     std::lock_guard<std::mutex> guard(stream->lock);
+    if (stream->kind == IsoKind::RAW) {
+        if (stream->output_size >= 0 && offset > stream->output_size)
+            return MPV_ERROR_GENERIC;
+        stream->iso_offset = offset;
+        stream->output_offset = offset;
+        return offset;
+    }
     if (stream->kind == IsoKind::BLURAY) {
         int64_t result = bd_seek(stream->bluray, static_cast<uint64_t>(offset));
         if (result < 0) return MPV_ERROR_GENERIC;
@@ -302,7 +322,10 @@ void stream_close(void *opaque) {
     }
     if (stream->nav) dvdnav_close(stream->nav);
     if (stream->bluray) bd_close(stream->bluray);
-    close_java_session(stream->session_id);
+    // A raw ISO callback is owned by MPV's nested Blu-ray stream. Keep the
+    // Java session alive across Blu-ray->DVD probing and let MpvPlayer close
+    // it with the public ISO URI when playback ends.
+    if (stream->owns_java_session) close_java_session(stream->session_id);
     delete stream;
 }
 
@@ -400,17 +423,27 @@ int stream_open(void *, char *uri, mpv_stream_cb_info *info) {
     auto *stream = new DvdStream();
     stream->session_id = id;
     JNIEnv *env = env_for_thread();
-    if (!env || env->CallStaticLongMethod(manager_class, manager_length, id) <= 0) {
+    jlong length = env ? env->CallStaticLongMethod(manager_class, manager_length, id) : -1;
+    if (!env || length <= 0) {
         delete stream;
         return MPV_ERROR_LOADING_FAILED;
     }
-    // Probe Blu-ray first. libdvdread may scan a very large UDF image
-    // sequentially while looking for VIDEO_TS, which makes BD ISO startup
-    // appear hung and wastes remote bandwidth.
-    if (!open_bluray(stream) && !open_dvd(stream)) {
-        close_java_session(id);
-        delete stream;
-        return MPV_ERROR_LOADING_FAILED;
+    const char *raw_marker = strstr(uri, "/raw");
+    if (raw_marker && raw_marker[4] == '\0') {
+        stream->kind = IsoKind::RAW;
+        stream->owns_java_session = false;
+        stream->output_size = length;
+        ALOGV("iso-native opened raw Blu-ray ISO callback session=%lld size=%lld",
+              static_cast<long long>(id), static_cast<long long>(stream->output_size));
+    } else {
+        // Probe Blu-ray first. libdvdread may scan a very large UDF image
+        // sequentially while looking for VIDEO_TS, which makes BD ISO startup
+        // appear hung and wastes remote bandwidth.
+        if (!open_bluray(stream) && !open_dvd(stream)) {
+            close_java_session(id);
+            delete stream;
+            return MPV_ERROR_LOADING_FAILED;
+        }
     }
     {
         std::lock_guard<std::mutex> guard(streams_lock);

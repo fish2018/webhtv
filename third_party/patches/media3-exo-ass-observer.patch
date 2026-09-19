@@ -1,0 +1,234 @@
+diff --git a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/text/TextRenderer.java b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/text/TextRenderer.java
+--- a/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/text/TextRenderer.java
++++ b/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/text/TextRenderer.java
+@@ -74,6 +74,43 @@
+   private static final String TAG = "TextRenderer";
+ 
+   /**
++   * Optional side-channel for a separately owned subtitle presenter.
++   *
++   * <p>All callbacks run on the playback thread and must return without waiting, native calls or
++   * I/O. A sample view is valid only for the duration of its callback; consumers must bound and copy
++   * the remaining bytes before returning. Cue output and renderer scheduling are never replaced.
++   */
++  public interface Observer {
++    void onStream(Stream stream, long generation);
++    void onReset(Stream stream, long generation, long positionUs);
++    void onSample(Stream stream, long generation, Format format, ByteBuffer data, long timeUs);
++    void onClock(
++        Stream readingStream, @Nullable Stream displayingStream, long generation,
++        long positionUs, long textOffsetUs, boolean started, boolean ended);
++    void onCues(@Nullable Stream displayingStream, long generation, CueGroup cues);
++    void onDisabled(long generation);
++  }
++
++  /** Immutable identity of a selected SampleStream, distinct from a seek generation. */
++  public static final class Stream {
++    public final long sequence;
++    public final Format format;
++    public final MediaSource.MediaPeriodId mediaPeriodId;
++    public final long startPositionUs;
++    public final long offsetUs;
++
++    private Stream(
++        long sequence, Format format, MediaSource.MediaPeriodId mediaPeriodId,
++        long startPositionUs, long offsetUs) {
++      this.sequence = sequence;
++      this.format = format;
++      this.mediaPeriodId = mediaPeriodId;
++      this.startPositionUs = startPositionUs;
++      this.offsetUs = offsetUs;
++    }
++  }
++
++  /**
+    * The type of a message that can be passed to this renderer via {@link
+    * androidx.media3.exoplayer.ExoPlayer#createMessage(
+    * androidx.media3.exoplayer.PlayerMessage.Target)} to set the text display offset, in
+@@ -147,6 +184,45 @@
+   private long textOffsetUs;
+   private boolean textOffsetChanged;
+   private boolean legacyDecodingEnabled;
++
++  @Nullable private Observer observer;
++  @Nullable private Stream observerReadingStream;
++  @Nullable private Stream observerDecoderStream;
++  @Nullable private Stream observerDisplayingStream;
++  private long observerStreamSequence;
++  private long observerGeneration;
++
++  /** Installs an observer before enabling this renderer. Null preserves the original path. */
++  public void setObserver(@Nullable Observer observer) {
++    checkState(getState() == STATE_DISABLED);
++    this.observer = observer;
++  }
++
++  private void observerFailed(RuntimeException error) {
++    Observer failed = observer;
++    observer = null;
++    Log.e(TAG, "Subtitle observer disabled", error);
++    if (failed != null) {
++      try {
++        failed.onDisabled(++observerGeneration);
++      } catch (RuntimeException ignored) {
++        // Observers must never break the compatible subtitle or audio/video path.
++      }
++    }
++  }
++
++  private void notifyObserverClock(long positionUs) {
++    if (observer == null || observerReadingStream == null || positionUs == C.TIME_UNSET) {
++      return;
++    }
++    try {
++      observer.onClock(
++          observerReadingStream, observerDisplayingStream, observerGeneration,
++          positionUs, textOffsetUs, getState() == STATE_STARTED, outputStreamEnded);
++    } catch (RuntimeException error) {
++      observerFailed(error);
++    }
++  }
+ 
+   /**
+    * @param output The output.
+@@ -246,6 +322,18 @@
+     textOffsetChanged = true;
+     if (lastRendererPositionUs != C.TIME_UNSET) {
+-      clearOutput();
++      if (observer != null && subtitle != null
++          && observerDisplayingStream == observerReadingStream
++          && decoderReplacementState == REPLACEMENT_STATE_NONE) {
++        long positionUs = getTextPositionUs(lastRendererPositionUs);
++        nextSubtitleEventIndex = subtitle.getNextEventTimeIndex(positionUs);
++        long presentationTimeUs = getPresentationTimeUs(
++            getRendererPositionUs(getCurrentEventTimeUs(positionUs)));
++        updateOutput(new CueGroup(subtitle.getCues(positionUs), presentationTimeUs));
++        textOffsetChanged = false;
++      } else {
++        clearOutput();
++      }
++      notifyObserverClock(lastRendererPositionUs);
+     }
+   }
+ 
+@@ -261,6 +338,15 @@
+       long offsetUs,
+       MediaSource.MediaPeriodId mediaPeriodId) {
+     streamFormat = formats[0];
++    if (observer != null) {
++      observerReadingStream = new Stream(
++          ++observerStreamSequence, streamFormat, mediaPeriodId, startPositionUs, offsetUs);
++      try {
++        observer.onStream(observerReadingStream, ++observerGeneration);
++      } catch (RuntimeException error) {
++        observerFailed(error);
++      }
++    }
+     if (!isCuesWithTiming(streamFormat)) {
+       assertLegacyDecodingEnabledIfRequired();
+       if (subtitleDecoder != null) {
+@@ -280,6 +366,14 @@
+   protected void onPositionReset(
+       long positionUs, boolean joining, boolean sampleStreamIsResetToKeyFrame) {
+     lastRendererPositionUs = positionUs;
++    observerDisplayingStream = observerReadingStream;
++    if (observer != null && observerReadingStream != null) {
++      try {
++        observer.onReset(observerReadingStream, ++observerGeneration, positionUs);
++      } catch (RuntimeException error) {
++        observerFailed(error);
++      }
++    }
+     if (cuesResolver != null) {
+       cuesResolver.clear();
+     }
+@@ -310,6 +404,7 @@
+     }
+ 
+     if (outputStreamEnded) {
++      notifyObserverClock(positionUs);
+       return;
+     }
+ 
+@@ -320,6 +415,17 @@
+       assertLegacyDecodingEnabledIfRequired();
+       renderFromSubtitles(positionUs);
+     }
++    notifyObserverClock(positionUs);
++  }
++
++  @Override
++  protected void onStarted() {
++    notifyObserverClock(lastRendererPositionUs);
++  }
++
++  @Override
++  protected void onStopped() {
++    notifyObserverClock(lastRendererPositionUs);
+   }
+ 
+   /**
+@@ -479,6 +585,7 @@
+         }
+         nextSubtitleEventIndex = nextSubtitle.getNextEventTimeIndex(subtitlePositionUs);
+         subtitle = nextSubtitle;
++        observerDisplayingStream = observerDecoderStream;
+         this.nextSubtitle = null;
+         textRendererNeedsUpdate = true;
+       }
+@@ -553,6 +660,16 @@
+             }
+             nextInputBuffer.subsampleOffsetUs = format.subsampleOffsetUs;
+             nextInputBuffer.flip();
++            if (observer != null && observerReadingStream != null
++                && !nextInputBuffer.isEncrypted() && nextInputBuffer.data != null) {
++              try {
++                observer.onSample(
++                    observerReadingStream, observerGeneration, format,
++                    nextInputBuffer.data.asReadOnlyBuffer(), nextInputBuffer.timeUs);
++              } catch (RuntimeException error) {
++                observerFailed(error);
++              }
++            }
+             waitingForKeyFrame &= !nextInputBuffer.isKeyFrame();
+           }
+           if (!waitingForKeyFrame) {
+@@ -570,6 +687,16 @@
+ 
+   @Override
+   protected void onDisabled() {
++    if (observer != null) {
++      try {
++        observer.onDisabled(++observerGeneration);
++      } catch (RuntimeException error) {
++        observerFailed(error);
++      }
++    }
++    observerReadingStream = null;
++    observerDisplayingStream = null;
++    observerDecoderStream = null;
+     streamFormat = null;
+     finalStreamEndPositionUs = C.TIME_UNSET;
+     clearOutput();
+@@ -643,6 +770,7 @@
+   }
+ 
+   private void initSubtitleDecoder() {
++    observerDecoderStream = observerReadingStream;
+     waitingForKeyFrame = true;
+     subtitleDecoder = subtitleDecoderFactory.createDecoder(checkNotNull(streamFormat));
+     subtitleDecoder.setOutputStartTimeUs(getLastResetPositionUs());
+@@ -664,6 +792,13 @@
+   }
+ 
+   private void updateOutput(CueGroup cueGroup) {
++    if (observer != null) {
++      try {
++        observer.onCues(observerDisplayingStream, observerGeneration, cueGroup);
++      } catch (RuntimeException error) {
++        observerFailed(error);
++      }
++    }
+     if (outputHandler != null) {
+       outputHandler.obtainMessage(MSG_UPDATE_OUTPUT, cueGroup).sendToTarget();
+     } else {

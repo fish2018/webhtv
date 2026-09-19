@@ -68,11 +68,11 @@
         {
           "name": "media3-common-1.11.0-alpha01-fongmi.aar",
           "url": "media3-common-1.11.0-alpha01-fongmi.aar",
-          "size": 655871,
-          "sha512": "3e2bb725e95521d91764cada50e2987cbaa2d5ebce31e20914d1494b225e185376693a289289540fa703b52284b3f62cdeb28b8d84fb4abf6833b4c0f59e8b12",
-          "sha256": "5935ba8de36c042ff3acb131eb89eaec1b3088af2805ea6e918136be81df547e",
-          "sha1": "1a649fb080e23a8e38374f78effff0a6356a8dd7",
-          "md5": "3be1b235aa1fb00af9c03d53d40232a1"
+          "size": 659744,
+          "sha512": "1fc3033021affacd45491216b6a111fd779249a961001ab5148bb4949e8df0b35ef64393c6f509b0afc4fff3fba3163a6d38cb274df97a73e0f2862ecdf5f9c5",
+          "sha256": "4826fe94891fb584951c813a8e67a63aafe0816d6adf836317ed895c7eee9cfd",
+          "sha1": "65d3594e8b7df98b29f5ad924a1aa21385d3653e",
+          "md5": "c42f9739e1c4154cdca80d8fa5199f61"
         }
       ]
     },
@@ -433,11 +433,11 @@
         {
           "name": "media3-common-1.11.0-alpha01-fongmi.aar",
           "url": "media3-common-1.11.0-alpha01-fongmi.aar",
-          "size": 655871,
-          "sha512": "3e2bb725e95521d91764cada50e2987cbaa2d5ebce31e20914d1494b225e185376693a289289540fa703b52284b3f62cdeb28b8d84fb4abf6833b4c0f59e8b12",
-          "sha256": "5935ba8de36c042ff3acb131eb89eaec1b3088af2805ea6e918136be81df547e",
-          "sha1": "1a649fb080e23a8e38374f78effff0a6356a8dd7",
-          "md5": "3be1b235aa1fb00af9c03d53d40232a1"
+          "size": 659744,
+          "sha512": "1fc3033021affacd45491216b6a111fd779249a961001ab5148bb4949e8df0b35ef64393c6f509b0afc4fff3fba3163a6d38cb274df97a73e0f2862ecdf5f9c5",
+          "sha256": "4826fe94891fb584951c813a8e67a63aafe0816d6adf836317ed895c7eee9cfd",
+          "sha1": "65d3594e8b7df98b29f5ad924a1aa21385d3653e",
+          "md5": "c42f9739e1c4154cdca80d8fa5199f61"
         }
       ]
     },
@@ -453,11 +453,11 @@
         {
           "name": "media3-common-1.11.0-alpha01-fongmi-sources.jar",
           "url": "media3-common-1.11.0-alpha01-fongmi-sources.jar",
-          "size": 534379,
-          "sha512": "c4d18ee377163217958e3f33358c289e48f880b34065306be53eaa37c399daed5ff1a53a03d8e9e53414fe655e523e43b6cbcc9cf1e7b9426585e5e6cc927c5e",
-          "sha256": "3504199e25d413ca623753f144cbd1f43a16cd800630e39d8fc30db7ae7e62f9",
-          "sha1": "061111484e6ecf84068a81a1d16b146ce0121674",
-          "md5": "b12098f17f06b3a5865eeda2d3d6badc"
+          "size": 536221,
+          "sha512": "6e2f2177df4aefd94670c66b3ef4d000ce58c580db87c06d0d1c267dbba71d300e3cd71d5500e07dfe22921ddf533128571560c6b299d01344c7e5ddf8bf70fb",
+          "sha256": "dc9aefdcf38b0b8a2a55a467476c67ac51094fe6a32995bd5e61bce079140bcc",
+          "sha1": "a15346ad4258c89a5bdbb4c8306b2fafbd1f93c7",
+          "md5": "9c8c0c81664eedd3c9ba69b27223d410"
         }
       ]
     }

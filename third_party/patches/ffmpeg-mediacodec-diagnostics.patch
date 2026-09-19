@@ -1,0 +1,226 @@
+--- a/libavcodec/mediacodec_wrapper.c
++++ b/libavcodec/mediacodec_wrapper.c
+@@ -495,8 +495,11 @@
+                                             int encoder, int hardware_only, const char **codec_mime,
+                                             void *log_ctx)
+ {
+-    int i;
+-    int codec_count;
++    int i = -1;
++    int codec_count = 0;
++    int diag_query_complete = 0;
++    const char *diag_stage = "jni-env";
++    const char *diag_reason = "not-visited";
+     int found_codec = 0;
+     char *name = NULL;
+     char *supported_type = NULL;
+@@ -518,16 +521,24 @@
+     if (codec_mime)
+         *codec_mime = mime;
+ 
+-    JNI_GET_ENV_OR_RETURN(env, log_ctx, NULL);
+-
++    av_log(log_ctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-lookup v=1 phase=begin mime=%s profile=%d hardware=%d\n", mime, profile, hardware_only);
++    env = ff_jni_get_env(log_ctx);
++    if (!env) {
++        av_log(log_ctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-lookup v=1 phase=end outcome=jvm-unavailable stage=jni-env\n");
++        return NULL;
++    }
++
++    diag_stage = "codec-list-jni-bindings";
+     if (ff_jni_init_jfields(env, &jfields, jni_amediacodeclist_mapping, 0, log_ctx) < 0) {
+         goto done;
+     }
+ 
++    diag_stage = "format-jni-bindings";
+     if (ff_jni_init_jfields(env, &mediaformat_jfields, jni_amediaformat_mapping, 0, log_ctx) < 0) {
+         goto done;
+     }
+ 
++    diag_stage = "codec-count";
+     codec_count = (*env)->CallStaticIntMethod(env, jfields.mediacodec_list_class, jfields.get_codec_count_id);
+     if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+         goto done;
+@@ -544,26 +555,32 @@
+         const char *mime_alias;
+         const char *selected_mime = NULL;
+ 
++        diag_stage = "codec-info";
++        diag_reason = "profile-mismatch";
+         info = (*env)->CallStaticObjectMethod(env, jfields.mediacodec_list_class, jfields.get_codec_info_at_id, i);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+             goto done;
+         }
+ 
++        diag_stage = "supported-types";
+         types = (*env)->CallObjectMethod(env, info, jfields.get_supported_types_id);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+             goto done;
+         }
+ 
++        diag_stage = "encoder-flag";
+         is_encoder = (*env)->CallBooleanMethod(env, info, jfields.is_encoder_id);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+             goto done;
+         }
+ 
+         if (is_encoder != encoder) {
++            diag_reason = "encoder-mismatch";
+             goto done_with_info;
+         }
+ 
+         if (hardware_only && jfields.is_hardware_accelerated_id) {
++            diag_stage = "hardware-flag";
+             int is_hardware_accelerated = (*env)->CallBooleanMethod(
+                 env, info, jfields.is_hardware_accelerated_id);
+             if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+@@ -571,21 +588,25 @@
+             }
+ 
+             if (!is_hardware_accelerated) {
++                diag_reason = "not-hardware-accelerated";
+                 goto done_with_info;
+             }
+         }
+ 
+         if (jfields.is_software_only_id) {
++            diag_stage = "software-flag";
+             int is_software_only = (*env)->CallBooleanMethod(env, info, jfields.is_software_only_id);
+             if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+                 goto done;
+             }
+ 
+             if (is_software_only) {
++                diag_reason = "software-only";
+                 goto done_with_info;
+             }
+         }
+ 
++        diag_stage = "codec-name";
+         codec_name = (*env)->CallObjectMethod(env, info, jfields.get_name_id);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0) {
+             goto done;
+@@ -608,9 +629,11 @@
+             !strcmp(name, "OMX.qcom.video.decoder.hevcswvdec") ||
+             (hardware_only && (strstr(name, ".sw.") ||
+                                strstr(name, "software")))) {
++            diag_reason = "software-name-policy";
+             goto done_with_info;
+         }
+ 
++        diag_stage = "mime-matching";
+         mime_alias = get_codec_mime_alias(name, mime);
+         type_count = (*env)->GetArrayLength(env, types);
+         /* Prefer the canonical MIME if a decoder exposes both forms. */
+@@ -644,17 +667,21 @@
+                 break;
+         }
+ 
+-        if (type_index < 0)
++        if (type_index < 0) {
++            diag_reason = "mime-mismatch";
+             goto done_with_info;
++        }
+ 
+         type = (*env)->GetObjectArrayElement(env, types, type_index);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0)
+             goto done;
+ 
++        diag_stage = "capabilities-query";
+         capabilities = (*env)->CallObjectMethod(env, info, jfields.get_codec_capabilities_id, type);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0)
+             goto done;
+ 
++        diag_stage = "profile-levels-query";
+         profile_levels = (*env)->GetObjectField(env, capabilities, jfields.profile_levels_id);
+         if (ff_jni_exception_check(env, 1, log_ctx) < 0)
+             goto done;
+@@ -679,6 +706,8 @@
+                 goto done;
+ 
+             found_codec = profile == supported_profile;
++            av_log(log_ctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-profile v=1 candidate=%d name=%s requested=%d supported=%d accepted=%d\n",
++                   i, name, profile, supported_profile, found_codec);
+ 
+             (*env)->DeleteLocalRef(env, profile_level);
+             profile_level = NULL;
+@@ -700,6 +729,8 @@
+             *codec_mime = selected_mime;
+ 
+ done_with_info:
++        av_log(log_ctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-candidate v=1 index=%d name=%s accepted=%d reason=%s\n",
++               i, name ? name : "not-queried", found_codec, found_codec ? "selected" : diag_reason);
+         (*env)->DeleteLocalRef(env, info);
+         info = NULL;
+ 
+@@ -712,8 +743,12 @@
+ 
+         av_freep(&name);
+     }
++    diag_query_complete = 1;
+ 
+ done:
++    av_log(log_ctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-lookup v=1 phase=end outcome=%s stage=%s candidate=%d count=%d name=%s\n",
++           found_codec ? "selected" : diag_query_complete ? "no-eligible-candidate" : "query-failed",
++           diag_stage, i, codec_count, name ? name : "none");
+     (*env)->DeleteLocalRef(env, codec_name);
+     (*env)->DeleteLocalRef(env, info);
+     (*env)->DeleteLocalRef(env, type);
+--- a/libavcodec/mediacodecdec_common.c
++++ b/libavcodec/mediacodecdec_common.c
+@@ -1362,12 +1362,15 @@
+         // getCodecNameByType() can fail due to missing JVM, while NDK
+         // mediacodec can be used without JVM.
+         if (!s->use_ndk_codec) {
++            av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=create phase=not-attempted reason=java-lookup-failed\n");
+             return AVERROR_EXTERNAL;
+         }
+     } else {
+         av_log(avctx, AV_LOG_DEBUG, "Found decoder %s\n", s->codec_name);
+     }
+ 
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=create phase=begin backend=%s method=%s name=%s\n",
++           s->use_ndk_codec ? "ndk" : "jni", s->codec_name ? "by-name" : "by-mime", s->codec_name ? s->codec_name : mime);
+     if (s->codec_name)
+         s->codec = ff_AMediaCodec_createCodecByName(s->codec_name, s->use_ndk_codec);
+     else {
+@@ -1378,6 +1381,7 @@
+                 s->codec_name = av_strdup(mime);
+         }
+     }
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=create phase=end outcome=%s\n", s->codec ? "created" : "null");
+     if (!s->codec) {
+         av_log(avctx, AV_LOG_ERROR, "Failed to create media decoder for type %s and name %s\n",
+                codec_mime, s->codec_name);
+@@ -1402,8 +1406,11 @@
+         return AVERROR_EXTERNAL;
+     }
+ 
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=create phase=begin backend=%s method=by-name name=%s\n",
++           s->use_ndk_codec ? "ndk" : "jni", s->codec_name);
+     s->codec = ff_AMediaCodec_createCodecByName(s->codec_name,
+                                                 s->use_ndk_codec);
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=create phase=end outcome=%s\n", s->codec ? "created" : "null");
+     if (!s->codec) {
+         av_log(avctx, AV_LOG_ERROR,
+                "Failed to create hardware audio MediaCodec decoder %s for mime %s\n",
+@@ -1445,7 +1452,9 @@
+     if (ret < 0)
+         goto fail;
+ 
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=configure phase=begin name=%s surface=%d\n", s->codec_name, !!s->surface);
+     status = ff_AMediaCodec_configure(s->codec, format, s->surface, NULL, 0);
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=configure phase=end code=%d\n", status);
+     if (status < 0) {
+         char *desc = ff_AMediaFormat_toString(format);
+         av_log(avctx, AV_LOG_ERROR,
+@@ -1457,7 +1466,9 @@
+         goto fail;
+     }
+ 
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=start phase=begin name=%s\n", s->codec_name);
+     status = ff_AMediaCodec_start(s->codec);
++    av_log(avctx, AV_LOG_INFO, "WebHTV AV-DIAG codec-operation v=1 operation=start phase=end code=%d\n", status);
+     if (status < 0) {
+         char *desc = ff_AMediaFormat_toString(format);
+         av_log(avctx, AV_LOG_ERROR,

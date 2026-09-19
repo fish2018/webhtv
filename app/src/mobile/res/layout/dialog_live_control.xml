@@ -188,11 +188,10 @@
                     style="@style/ControlSheetButton"
                     tools:text="硬解" />
 
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="34dp"
-                    android:layout_marginEnd="7dp"
-                    android:layout_weight="1" />
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/playParams"
+                    style="@style/ControlSheetButton"
+                    android:text="@string/play_params" />
 
                 <Space
                     android:layout_width="0dp"

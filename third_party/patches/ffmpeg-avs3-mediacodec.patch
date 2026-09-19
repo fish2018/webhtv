@@ -1,0 +1,167 @@
+diff --git a/configure b/configure
+--- a/configure
++++ b/configure
+@@ -3615,6 +3615,8 @@
+ av1_d3d12va_encoder_deps="d3d12va d3d12va_av1_headers"
+ av1_d3d12va_encoder_select="cbs_av1 d3d12va_encode"
+ av1_mediacodec_decoder_deps="mediacodec"
++avs3_mediacodec_decoder_deps="mediacodec"
++avs3_mediacodec_decoder_select="avs3_parser"
+ av1_mediacodec_encoder_deps="mediacodec"
+ av1_mediacodec_encoder_select="extract_extradata_bsf"
+ av1_mf_encoder_deps="mediafoundation"
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -286,6 +286,7 @@
+ OBJS-$(CONFIG_AVRP_DECODER)            += r210dec.o
+ OBJS-$(CONFIG_AVRP_ENCODER)            += r210enc.o
+ OBJS-$(CONFIG_AVS_DECODER)             += avs.o
++OBJS-$(CONFIG_AVS3_MEDIACODEC_DECODER) += mediacodecdec.o
+ OBJS-$(CONFIG_AVUI_DECODER)            += avuidec.o
+ OBJS-$(CONFIG_AVUI_ENCODER)            += avuienc.o
+ OBJS-$(CONFIG_BETHSOFTVID_DECODER)     += bethsoftvideo.o
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -852,6 +852,7 @@
+ extern const FFCodec ff_av1_cuvid_decoder;
+ extern const FFCodec ff_av1_d3d12va_encoder;
+ extern const FFCodec ff_av1_mediacodec_decoder;
++extern const FFCodec ff_avs3_mediacodec_decoder;
+ extern const FFCodec ff_av1_mediacodec_encoder;
+ extern const FFCodec ff_av1_nvenc_encoder;
+ extern const FFCodec ff_av1_qsv_decoder;
+diff --git a/libavcodec/mediacodecdec.c b/libavcodec/mediacodecdec.c
+--- a/libavcodec/mediacodecdec.c
++++ b/libavcodec/mediacodecdec.c
+@@ -581,6 +581,40 @@
+ }
+ #endif
+ 
++#if CONFIG_AVS3_MEDIACODEC_DECODER
++static int avs3_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
++{
++    uint8_t *header = avctx->extradata;
++    int size = avctx->extradata_size;
++
++    /* TS/raw inputs may carry their sequence header in the first access unit. */
++    if (!size)
++        return 0;
++    if (!header || size < 6)
++        return AVERROR_INVALIDDATA;
++
++    /* Avs3DecoderConfigurationRecord: version, length, sequence, library flags.
++     * MediaCodec consumes the sequence bytes, not this MP4 container record. */
++    if (header[0] == 1) {
++        int sequence_size = AV_RB16(header + 1);
++        if (sequence_size < 6 || sequence_size > size - 4)
++            return AVERROR_INVALIDDATA;
++        header += 3;
++        size = sequence_size;
++    }
++    if (AV_RB32(header) != 0x000001B0)
++        return AVERROR_INVALIDDATA;
++
++    /* Android has no standardized AVS3 CodecProfileLevel values. Preserve the
++     * bitstream profile/precision and let the hardware validate its support. */
++    ff_AMediaFormat_setBuffer(format, "csd-0", header, size);
++    av_log(avctx, AV_LOG_INFO,
++           "WebHTV AVS3 MediaCodec config: profile=0x%02x level=0x%02x csd=%d\n",
++           header[4], header[5], size);
++    return 0;
++}
++#endif
++
+ static const AVDOVIDecoderConfigurationRecord *
+ mediacodec_get_dovi_config(AVCodecContext *avctx)
+ {
+@@ -650,6 +684,15 @@
+     }
+ 
+     switch (avctx->codec_id) {
++#if CONFIG_AVS3_MEDIACODEC_DECODER
++    case AV_CODEC_ID_AVS3:
++        codec_mime = "video/avs3";
++
++        ret = avs3_set_extradata(avctx, format);
++        if (ret < 0)
++            goto done;
++        break;
++#endif
+ #if CONFIG_AV1_MEDIACODEC_DECODER
+     case AV_CODEC_ID_AV1:
+         codec_mime = "video/av01";
+@@ -1150,6 +1193,10 @@
+ DECLARE_MEDIACODEC_VDEC(av1, "AV1", AV_CODEC_ID_AV1, NULL)
+ #endif
+ 
++#if CONFIG_AVS3_MEDIACODEC_DECODER
++DECLARE_MEDIACODEC_VDEC(avs3, "AVS3", AV_CODEC_ID_AVS3, NULL)
++#endif
++
+ #define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+ static const AVOption ff_mediacodec_adec_options[] = {
+     { "ndk_codec", "Use MediaCodec from NDK",
+diff --git a/libavcodec/mediacodecdec_common.c b/libavcodec/mediacodecdec_common.c
+--- a/libavcodec/mediacodecdec_common.c
++++ b/libavcodec/mediacodecdec_common.c
+@@ -1314,6 +1314,7 @@
+ {
+     int32_t profile;
+     int32_t format_profile;
++    const int hardware_only = avctx->codec_id == AV_CODEC_ID_AVS3;
+     const char *codec_mime = mime;
+ 
+     enum AVPixelFormat pix_fmt;
+@@ -1321,6 +1322,16 @@
+         AV_PIX_FMT_MEDIACODEC,
+         AV_PIX_FMT_NONE,
+     };
++
++    /* A wrapper can also appear in mpv's ordinary decoder retry list after a
++     * software init failure. Require its explicit MediaCodec hwdec context. */
++    if (hardware_only && !avctx->hwaccel_context &&
++        (!avctx->hw_device_ctx ||
++         ((AVHWDeviceContext *)avctx->hw_device_ctx->data)->type != AV_HWDEVICE_TYPE_MEDIACODEC)) {
++        av_log(avctx, AV_LOG_ERROR,
++               "AVS3 MediaCodec requires an explicit hardware context\n");
++        return AVERROR(EINVAL);
++    }
+ 
+     pix_fmt = ff_get_format(avctx, pix_fmts);
+     if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {
+@@ -1351,13 +1362,20 @@
+     }
+ 
+     s->codec_name = ff_AMediaCodecList_getCodecNameByType(
+-        mime, profile, 0, 0, &codec_mime, avctx);
++        mime, profile, 0, hardware_only, &codec_mime, avctx);
+     if (!s->codec_name && (avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH)) {
+         profile = -1;
+         s->codec_name = ff_AMediaCodecList_getCodecNameByType(
+-            mime, profile, 0, 0, &codec_mime, avctx);
++            mime, profile, 0, hardware_only, &codec_mime, avctx);
+     }
+     if (!s->codec_name) {
++        /* Never bypass hardware-only enumeration with createDecoderByType:
++         * NDK MIME selection can also return a software MediaCodec component. */
++        if (hardware_only) {
++            av_log(avctx, AV_LOG_ERROR,
++                   "No hardware AVS3 MediaCodec decoder for mime %s\n", mime);
++            return AVERROR_DECODER_NOT_FOUND;
++        }
+         av_log(avctx, AV_LOG_INFO, "Failed to getCodecNameByType(%s, %d)\n", mime, profile);
+         // getCodecNameByType() can fail due to missing JVM, while NDK
+         // mediacodec can be used without JVM.
+@@ -1389,6 +1407,10 @@
+     }
+ 
+     ff_AMediaFormat_setString(format, "mime", codec_mime);
++
++    if (hardware_only)
++        av_log(avctx, AV_LOG_INFO,
++               "WebHTV hardware AVS3 MediaCodec decoder: %s\n", s->codec_name);
+ 
+     return 0;
+ }

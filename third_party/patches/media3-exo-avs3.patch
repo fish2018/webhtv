@@ -1,0 +1,410 @@
+diff --git a/libraries/common/src/main/java/androidx/media3/common/MimeTypes.java b/libraries/common/src/main/java/androidx/media3/common/MimeTypes.java
+--- a/libraries/common/src/main/java/androidx/media3/common/MimeTypes.java
++++ b/libraries/common/src/main/java/androidx/media3/common/MimeTypes.java
+@@ -52,6 +52,7 @@
+   @UnstableApi public static final String VIDEO_VP8 = BASE_TYPE_VIDEO + "/x-vnd.on2.vp8";
+   @UnstableApi public static final String VIDEO_VP9 = BASE_TYPE_VIDEO + "/x-vnd.on2.vp9";
+   public static final String VIDEO_AV1 = BASE_TYPE_VIDEO + "/av01";
++  public static final String VIDEO_AVS3 = BASE_TYPE_VIDEO + "/avs3";
+   public static final String VIDEO_MP2T = BASE_TYPE_VIDEO + "/mp2t";
+   public static final String VIDEO_MP4V = BASE_TYPE_VIDEO + "/mp4v-es";
+   public static final String VIDEO_MPEG = BASE_TYPE_VIDEO + "/mpeg";
+@@ -516,6 +517,8 @@
+         || codec.startsWith("dvh1")
+         || codec.startsWith("dav1")) {
+       return MimeTypes.VIDEO_DOLBY_VISION;
++    } else if (codec.startsWith("avs3")) {
++      return MimeTypes.VIDEO_AVS3;
+     } else if (codec.startsWith("av01")) {
+       return MimeTypes.VIDEO_AV1;
+     } else if (codec.startsWith("vp9") || codec.startsWith("vp09")) {
+diff --git a/libraries/container/src/main/java/androidx/media3/container/Mp4Box.java b/libraries/container/src/main/java/androidx/media3/container/Mp4Box.java
+--- a/libraries/container/src/main/java/androidx/media3/container/Mp4Box.java
++++ b/libraries/container/src/main/java/androidx/media3/container/Mp4Box.java
+@@ -62,6 +62,12 @@
+ 
+   @SuppressWarnings("ConstantCaseForConstants")
+   public static final int TYPE_av3a = 0x61763361;
++
++  @SuppressWarnings("ConstantCaseForConstants")
++  public static final int TYPE_avs3 = 0x61767333;
++
++  @SuppressWarnings("ConstantCaseForConstants")
++  public static final int TYPE_av3c = 0x61763363;
+ 
+   @SuppressWarnings("ConstantCaseForConstants")
+   public static final int TYPE_hvc1 = 0x68766331;
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/Avs3Config.java b/libraries/extractor/src/main/java/androidx/media3/extractor/Avs3Config.java
+new file mode 100644
+--- /dev/null
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/Avs3Config.java
+@@ -0,0 +1,95 @@
++/*
++ * Copyright 2026 WebHTV contributors
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy at https://www.apache.org/licenses/LICENSE-2.0
++ */
++package androidx.media3.extractor;
++
++import androidx.media3.common.ParserException;
++import androidx.media3.common.util.ParsableBitArray;
++import androidx.media3.common.util.UnstableApi;
++import androidx.media3.common.util.Util;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.List;
++
++/** AVS3 sequence properties, from T/AI 109.2-2021 table 14 and the av3c record. */
++@UnstableApi
++public final class Avs3Config {
++  private static final double[] FRAME_RATES = {
++    0, 24000d / 1001, 24, 25, 30000d / 1001, 30, 50, 60000d / 1001,
++    60, 100, 120, 200, 240, 300, 0, 0
++  };
++
++  public final List<byte[]> initializationData;
++  public final String codecs;
++  public final int profile;
++  public final int width;
++  public final int height;
++  public final int bitdepth;
++  public final float frameRate;
++  public final float pixelWidthHeightRatio;
++
++  /** Accepts an av3c payload or a start-code-prefixed sequence header. */
++  public static Avs3Config parse(byte[] data) throws ParserException {
++    try {
++      byte[] sequence = data;
++      if (data.length > 0 && data[0] == 1) {
++        check(data.length >= 4, "Truncated av3c record");
++        int size = ((data[1] & 0xff) << 8) | (data[2] & 0xff);
++        check(size >= 13 && size <= data.length - 4, "Invalid av3c sequence length");
++        sequence = Arrays.copyOfRange(data, 3, 3 + size);
++      }
++      check(sequence.length >= 13 && sequence.length <= 65535, "Invalid AVS3 sequence size");
++      check(sequence[0] == 0 && sequence[1] == 0 && sequence[2] == 1
++          && (sequence[3] & 0xff) == 0xb0, "Missing AVS3 sequence header");
++      ParsableBitArray bits = new ParsableBitArray(sequence);
++      bits.skipBits(32);
++      int profile = bits.readBits(8);
++      int level = bits.readBits(8);
++      bits.skipBits(2); // progressive_sequence, field_coded_sequence
++      boolean libraryStream = bits.readBit();
++      if (!libraryStream && bits.readBit()) {
++        bits.skipBit(); // duplicate_sequence_header_flag
++      }
++      check(bits.readBit(), "Invalid AVS3 width marker");
++      int width = bits.readBits(14);
++      check(bits.readBit(), "Invalid AVS3 height marker");
++      int height = bits.readBits(14);
++      bits.skipBits(2); // chroma_format
++      int samplePrecision = bits.readBits(3);
++      int encodingPrecision = (profile == 0x22 || profile == 0x32) ? bits.readBits(3) : 1;
++      check(width > 0 && height > 0, "Invalid AVS3 dimensions");
++      check(samplePrecision >= 1 && samplePrecision <= 2
++          && encodingPrecision >= 1 && encodingPrecision <= 2, "Invalid AVS3 bit depth");
++      check(bits.readBit(), "Invalid AVS3 aspect marker");
++      int aspectRatio = bits.readBits(4);
++      int rateCode = bits.readBits(4);
++      float pixelRatio = 1;
++      if (aspectRatio == 2) pixelRatio = 4f * height / (3f * width);
++      else if (aspectRatio == 3) pixelRatio = 16f * height / (9f * width);
++      else if (aspectRatio == 4) pixelRatio = 221f * height / (100f * width);
++      return new Avs3Config(sequence.clone(), profile, level, width, height,
++          encodingPrecision == 2 ? 10 : 8, (float) FRAME_RATES[rateCode], pixelRatio);
++    } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
++      throw ParserException.createForMalformedContainer("Truncated AVS3 configuration", e);
++    }
++  }
++
++  private Avs3Config(byte[] data, int profile, int level, int width, int height,
++      int bitdepth, float frameRate, float pixelRatio) {
++    this.initializationData = Collections.singletonList(data);
++    this.codecs = Util.formatInvariant("avs3.%02X.%02X", profile, level);
++    this.profile = profile;
++    this.width = width;
++    this.height = height;
++    this.bitdepth = bitdepth;
++    this.frameRate = frameRate;
++    this.pixelWidthHeightRatio = pixelRatio;
++  }
++
++  private static void check(boolean valid, String message) throws ParserException {
++    if (!valid) throw ParserException.createForMalformedContainer(message, null);
++  }
++}
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java b/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/mkv/MatroskaExtractor.java
+@@ -49,6 +49,7 @@
+ import androidx.media3.extractor.AacUtil;
+ import androidx.media3.extractor.Av1Config;
+ import androidx.media3.extractor.AvcConfig;
++import androidx.media3.extractor.Avs3Config;
+ import androidx.media3.extractor.ChunkIndex;
+ import androidx.media3.extractor.ChunkIndexProvider;
+ import androidx.media3.extractor.DtsUtil;
+@@ -186,6 +187,7 @@
+   private static final String CODEC_ID_VP8 = "V_VP8";
+   private static final String CODEC_ID_VP9 = "V_VP9";
+   private static final String CODEC_ID_AV1 = "V_AV1";
++  private static final String CODEC_ID_AVS3 = "V_AVS3";
+   private static final String CODEC_ID_MPEG2 = "V_MPEG2";
+   private static final String CODEC_ID_MPEG4_SP = "V_MPEG4/ISO/SP";
+   private static final String CODEC_ID_MPEG4_ASP = "V_MPEG4/ISO/ASP";
+@@ -2450,6 +2452,7 @@
+       case CODEC_ID_VP8:
+       case CODEC_ID_VP9:
+       case CODEC_ID_AV1:
++      case CODEC_ID_AVS3:
+       case CODEC_ID_MPEG2:
+       case CODEC_ID_MPEG4_SP:
+       case CODEC_ID_MPEG4_ASP:
+@@ -2799,6 +2802,16 @@
+         case CODEC_ID_VP9:
+           mimeType = MimeTypes.VIDEO_VP9;
+           initializationData = codecPrivate == null ? null : ImmutableList.of(codecPrivate);
++          break;
++        case CODEC_ID_AVS3:
++          mimeType = MimeTypes.VIDEO_AVS3;
++          if (codecPrivate != null) {
++            Avs3Config avs3Config = Avs3Config.parse(codecPrivate);
++            initializationData = avs3Config.initializationData;
++            codecs = avs3Config.codecs;
++            bitstreamLumaBitdepth = avs3Config.bitdepth;
++            bitstreamChromaBitdepth = avs3Config.bitdepth;
++          }
+           break;
+         case CODEC_ID_AV1:
+           mimeType = MimeTypes.VIDEO_AV1;
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java b/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/mp4/BoxParser.java
+@@ -53,6 +53,7 @@
+ import androidx.media3.extractor.Ac4Util;
+ import androidx.media3.extractor.Av1Config;
+ import androidx.media3.extractor.AvcConfig;
++import androidx.media3.extractor.Avs3Config;
+ import androidx.media3.extractor.ExtractorUtil;
+ import androidx.media3.extractor.GaplessInfoHolder;
+ import androidx.media3.extractor.HevcConfig;
+@@ -1315,6 +1316,7 @@
+           || childAtomType == Mp4Box.TYPE_vp08
+           || childAtomType == Mp4Box.TYPE_vp09
+           || childAtomType == Mp4Box.TYPE_av01
++          || childAtomType == Mp4Box.TYPE_avs3
+           || childAtomType == Mp4Box.TYPE_dvav
+           || childAtomType == Mp4Box.TYPE_dva1
+           || childAtomType == Mp4Box.TYPE_dvhe
+@@ -1735,6 +1737,27 @@
+         colorRange = fullRangeFlag ? C.COLOR_RANGE_FULL : C.COLOR_RANGE_LIMITED;
+         colorTransfer =
+             ColorInfo.isoTransferCharacteristicsToColorTransfer(transferCharacteristics);
++      } else if (childAtomType == Mp4Box.TYPE_av3c) {
++        ExtractorUtil.checkContainerInput(mimeType == null, /* message= */ null);
++        ExtractorUtil.checkContainerInput(
++            childAtomSize >= Mp4Box.HEADER_SIZE
++                && childAtomSize <= Mp4Box.HEADER_SIZE + 65539
++                && (long) childStartPosition + childAtomSize <= (long) position + size
++                && (long) childStartPosition + childAtomSize <= parent.limit(),
++            "Invalid av3c box size");
++        byte[] configBytes = new byte[childAtomSize - Mp4Box.HEADER_SIZE];
++        parent.readBytes(configBytes, 0, configBytes.length);
++        Avs3Config avs3Config = Avs3Config.parse(configBytes);
++        mimeType = MimeTypes.VIDEO_AVS3;
++        initializationData = avs3Config.initializationData;
++        codecs = avs3Config.codecs;
++        decodedWidth = avs3Config.width;
++        decodedHeight = avs3Config.height;
++        bitdepthLuma = avs3Config.bitdepth;
++        bitdepthChroma = avs3Config.bitdepth;
++        if (!pixelWidthHeightRatioFromPasp) {
++          pixelWidthHeightRatio = avs3Config.pixelWidthHeightRatio;
++        }
+       } else if (childAtomType == Mp4Box.TYPE_av1C) {
+         mimeType = MimeTypes.VIDEO_AV1;
+ 
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/ts/Avs3Reader.java b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/Avs3Reader.java
+new file mode 100644
+--- /dev/null
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/Avs3Reader.java
+@@ -0,0 +1,155 @@
++/*
++ * Copyright (C) 2016 The Android Open Source Project
++ * Copyright 2026 WebHTV contributors
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy at https://www.apache.org/licenses/LICENSE-2.0
++ */
++package androidx.media3.extractor.ts;
++
++import static com.google.common.base.Preconditions.checkNotNull;
++
++import androidx.media3.common.C;
++import androidx.media3.common.ColorInfo;
++import androidx.media3.common.Format;
++import androidx.media3.common.MimeTypes;
++import androidx.media3.common.ParserException;
++import androidx.media3.common.util.ParsableByteArray;
++import androidx.media3.common.util.UnstableApi;
++import androidx.media3.container.NalUnitUtil;
++import androidx.media3.extractor.Avs3Config;
++import androidx.media3.extractor.ExtractorOutput;
++import androidx.media3.extractor.TrackOutput;
++import java.util.Arrays;
++import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
++
++/** AVS3 access-unit reader using Media3's H262Reader start-code/PES accounting. */
++@UnstableApi
++public final class Avs3Reader implements ElementaryStreamReader {
++  private static final int SEQUENCE = 0xb0;
++  private static final int I_PICTURE = 0xb3;
++  private static final int PB_PICTURE = 0xb6;
++  private final boolean[] prefixFlags = new boolean[4];
++  private final byte[] sequence = new byte[65535];
++  private @MonotonicNonNull TrackOutput output;
++  private @MonotonicNonNull String formatId;
++  private int sequenceLength;
++  private boolean collectingSequence;
++  private boolean hasFormat;
++  private long frameDurationUs;
++  private long totalBytesWritten;
++  private long samplePosition;
++  private long sampleTimeUs = C.TIME_UNSET;
++  private long pesTimeUs = C.TIME_UNSET;
++  private boolean startedSample;
++  private boolean sampleHasPicture;
++  private boolean sampleIsKeyframe;
++
++  @Override
++  public void seek() {
++    NalUnitUtil.clearPrefixFlags(prefixFlags);
++    collectingSequence = false;
++    sequenceLength = 0;
++    totalBytesWritten = 0;
++    startedSample = false;
++    sampleHasPicture = false;
++    sampleIsKeyframe = false;
++    sampleTimeUs = C.TIME_UNSET;
++    pesTimeUs = C.TIME_UNSET;
++  }
++
++  @Override
++  public void createTracks(ExtractorOutput extractorOutput, TsPayloadReader.TrackIdGenerator ids) {
++    ids.generateNewId();
++    formatId = ids.getFormatId();
++    output = extractorOutput.track(ids.getTrackId(), C.TRACK_TYPE_VIDEO);
++  }
++
++  @Override
++  public void packetStarted(long timeUs, @TsPayloadReader.Flags int flags) {
++    pesTimeUs = timeUs;
++  }
++
++  @Override
++  public void consume(ParsableByteArray data) throws ParserException {
++    checkNotNull(output);
++    int offset = data.getPosition();
++    int limit = data.limit();
++    byte[] bytes = data.getData();
++    totalBytesWritten += data.bytesLeft();
++    output.sampleData(data, data.bytesLeft());
++    while (true) {
++      int start = NalUnitUtil.findNalUnit(bytes, offset, limit, prefixFlags);
++      if (start == limit) {
++        appendSequence(bytes, offset, limit);
++        return;
++      }
++      int code = bytes[start + 3] & 0xff;
++      int length = start - offset;
++      if (!hasFormat) {
++        if (length > 0) appendSequence(bytes, offset, start);
++        if (collectingSequence) {
++          sequenceLength -= Math.max(0, -length);
++          if (code == I_PICTURE || code == PB_PICTURE || code == SEQUENCE || code == 0xb1) {
++            Avs3Config config = Avs3Config.parse(Arrays.copyOf(sequence, sequenceLength));
++            output.format(new Format.Builder().setId(formatId)
++                .setContainerMimeType(MimeTypes.VIDEO_MP2T)
++                .setSampleMimeType(MimeTypes.VIDEO_AVS3).setCodecs(config.codecs)
++                .setWidth(config.width).setHeight(config.height).setFrameRate(config.frameRate)
++                .setPixelWidthHeightRatio(config.pixelWidthHeightRatio)
++                .setInitializationData(config.initializationData)
++                .setColorInfo(new ColorInfo.Builder().setLumaBitdepth(config.bitdepth)
++                    .setChromaBitdepth(config.bitdepth).build()).build());
++            frameDurationUs = config.frameRate > 0 ? (long) (1_000_000d / config.frameRate) : 0;
++            hasFormat = true;
++            collectingSequence = false;
++          }
++        }
++        if (!hasFormat) {
++          if (code == SEQUENCE) {
++            collectingSequence = true;
++            sequenceLength = 0;
++          }
++          appendSequence(new byte[] {0, 0, 1}, 0, 3);
++        }
++      }
++      if (code == SEQUENCE || code == I_PICTURE || code == PB_PICTURE) {
++        int bytesPastStart = limit - start;
++        if (sampleHasPicture && hasFormat && sampleTimeUs != C.TIME_UNSET) {
++          output.sampleMetadata(sampleTimeUs, sampleIsKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0,
++              (int) (totalBytesWritten - samplePosition) - bytesPastStart, bytesPastStart, null);
++        }
++        if (!startedSample || sampleHasPicture) {
++          samplePosition = totalBytesWritten - bytesPastStart;
++          sampleTimeUs = pesTimeUs != C.TIME_UNSET ? pesTimeUs
++              : sampleTimeUs != C.TIME_UNSET ? sampleTimeUs + frameDurationUs : C.TIME_UNSET;
++          pesTimeUs = C.TIME_UNSET;
++          sampleIsKeyframe = false;
++          startedSample = true;
++        }
++        sampleHasPicture = code == I_PICTURE || code == PB_PICTURE;
++        sampleIsKeyframe |= code == I_PICTURE;
++      }
++      offset = start + 3;
++    }
++  }
++
++  @Override
++  public void endOfInputReached() {
++    if (output != null && hasFormat && sampleHasPicture && sampleTimeUs != C.TIME_UNSET) {
++      output.sampleMetadata(sampleTimeUs, sampleIsKeyframe ? C.BUFFER_FLAG_KEY_FRAME : 0,
++          (int) (totalBytesWritten - samplePosition), 0, null);
++      sampleHasPicture = false;
++    }
++  }
++
++  private void appendSequence(byte[] bytes, int offset, int limit) throws ParserException {
++    if (!collectingSequence) return;
++    int length = limit - offset;
++    if (length > sequence.length - sequenceLength) {
++      throw ParserException.createForMalformedContainer("AVS3 sequence header exceeds 65535 bytes", null);
++    }
++    System.arraycopy(bytes, offset, sequence, sequenceLength, length);
++    sequenceLength += length;
++  }
++}
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/ts/DefaultTsPayloadReaderFactory.java b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/DefaultTsPayloadReaderFactory.java
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/ts/DefaultTsPayloadReaderFactory.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/DefaultTsPayloadReaderFactory.java
+@@ -207,6 +207,8 @@
+       case TsExtractor.TS_STREAM_TYPE_H262:
+       case TsExtractor.TS_STREAM_TYPE_DC2_H262:
+         return new PesReader(new H262Reader(buildUserDataReader(esInfo), MimeTypes.VIDEO_MP2T));
++      case TsExtractor.TS_STREAM_TYPE_AVS3:
++        return new PesReader(new Avs3Reader());
+       case TsExtractor.TS_STREAM_TYPE_H263:
+         return new PesReader(new H263Reader(buildUserDataReader(esInfo), MimeTypes.VIDEO_MP2T));
+       case TsExtractor.TS_STREAM_TYPE_H264:
+diff --git a/libraries/extractor/src/main/java/androidx/media3/extractor/ts/TsExtractor.java b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/TsExtractor.java
+--- a/libraries/extractor/src/main/java/androidx/media3/extractor/ts/TsExtractor.java
++++ b/libraries/extractor/src/main/java/androidx/media3/extractor/ts/TsExtractor.java
+@@ -147,6 +147,7 @@
+   public static final int TS_STREAM_TYPE_H264 = 0x1B;
+   public static final int TS_STREAM_TYPE_SAMPLE_AES_H264 = 0xDB;
+   public static final int TS_STREAM_TYPE_H265 = 0x24;
++  public static final int TS_STREAM_TYPE_AVS3 = 0xD4;
+   public static final int TS_STREAM_TYPE_MHAS = 0x2D;
+   public static final int TS_STREAM_TYPE_ID3 = 0x15;
+   public static final int TS_STREAM_TYPE_SPLICE_INFO = 0x86;

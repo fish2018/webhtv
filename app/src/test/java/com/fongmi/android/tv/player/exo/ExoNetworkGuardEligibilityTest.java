@@ -12,7 +12,14 @@ public class ExoNetworkGuardEligibilityTest {
     @Test
     public void allowsExoVodWithoutResourceTypeGate() {
         assertTrue(ExoNetworkGuardEligibility.resolve(
+                request(false, AudioPlaybackDiagnostics.OutputMode.PCM)).eligible());
+    }
+
+    @Test
+    public void unknownOutput_defersSpeedChangesUntilInitialized() {
+        assertFalse(ExoNetworkGuardEligibility.resolve(
                 request(false, AudioPlaybackDiagnostics.OutputMode.UNKNOWN)).eligible());
+        assertFalse(ExoNetworkGuardEligibility.resolve(request(false, null)).eligible());
     }
 
     @Test

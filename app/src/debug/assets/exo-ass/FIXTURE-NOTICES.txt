@@ -1,0 +1,20 @@
+sample-fonts.mkv contains a locally generated test pattern and tone (AVC + stereo PCM),
+and Aileron-Regular.otf from libass/libass-tests at
+10edd9ecd8054f2c4678d36b379d8372d0e573c6.
+The font's name-table copyright is "No Rights Reserved". Its identity and source URL
+are recorded in app/src/androidTest/assets/exo-ass/official/sources.json.
+The PCM track avoids the connected device's existing AAC direct-output initialization
+failure without changing production audio settings. animated.ass requests Aileron by
+its internal family; its CJK line also exercises system fallback.
+These generated media/font fixtures are included only in debug/test APKs.
+
+sample-embedded.mkv copies the first 8 seconds of sample-fonts.mkv and its Aileron
+attachment, with embedded.ass muxed as a default Chinese ASS track. No external
+subtitle configuration is needed. It exercises container packets, duplicate seek
+preroll, and long events spanning video keyframes.
+embedded.ass preserves animated.ass's four events and their layers, placing the
+drawing event first so the legacy per-packet decoder's final Cue contains text.
+The legacy SsaParser deliberately drops drawing-only Cues; this ordering gives
+the fallback test a visible baseline without changing production parsing.
+Reproduce with FFmpeg:
+ffmpeg -i sample-fonts.mkv -i embedded.ass -map 0 -map 1:0 -c copy -t 8 -metadata:s:s:0 language=chi -disposition:s:0 default sample-embedded.mkv

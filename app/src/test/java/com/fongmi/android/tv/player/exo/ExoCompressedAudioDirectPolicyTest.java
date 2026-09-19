@@ -1,7 +1,9 @@
 package com.fongmi.android.tv.player.exo;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import androidx.media3.common.AudioAttributes;
@@ -16,6 +18,7 @@ import androidx.media3.exoplayer.audio.AudioOutputProvider;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.lang.reflect.Proxy;
 
 public class ExoCompressedAudioDirectPolicyTest {
 
@@ -104,25 +107,66 @@ public class ExoCompressedAudioDirectPolicyTest {
     }
 
     @Test
-    public void directBitstream_disablesTunnelingEvenWhenRequested() throws Exception {
+    public void tunneling_doesNotAdvertiseVendorOnlyBypass() {
+        AtomicInteger queries = new AtomicInteger();
+        ExoCompressedAudioDirectPolicy policy = new ExoCompressedAudioDirectPolicy(
+                (format, attributes) -> AudioOffloadSupport.DEFAULT_UNSUPPORTED,
+                (format, attributes) -> { queries.incrementAndGet(); return true; });
+
+        assertSame(AudioOutputProvider.FormatSupport.UNSUPPORTED,
+                wrapped(policy).getFormatSupport(tunnelingConfig()));
+        assertEquals(0, queries.get());
+        assertFalse(policy.usesVendorDirect(C.ENCODING_AAC_LC, 48_000,
+                Util.getAudioTrackChannelConfig(aacStereo())));
+    }
+
+    @Test
+    public void tunneling_afterCachedDirectProbe_preservesStandardConfiguration() throws Exception {
         Format format = aacStereo();
         ExoCompressedAudioDirectPolicy policy = new ExoCompressedAudioDirectPolicy(
                 (ignoredFormat, ignoredAttributes) -> AudioOffloadSupport.DEFAULT_UNSUPPORTED,
                 (ignoredFormat, ignoredAttributes) -> true);
-        AudioOutputProvider provider = wrapped(policy);
-        AudioOutputProvider.FormatConfig config = new AudioOutputProvider.FormatConfig.Builder(format)
-                .setAudioAttributes(AudioAttributes.DEFAULT)
-                .setAudioSessionId(1234)
-                .setVirtualDeviceId(0)
-                .setEnableTunneling(true)
-                .build();
-        provider.getFormatSupport(config);
+        wrapped(policy).getFormatSupport(formatConfig(format));
+        AudioOutputProvider.OutputConfig standard = encodedOutput(true, false);
+        StandardAudioOutputProvider delegate = new StandardAudioOutputProvider(standard);
+        AudioOutputProvider provider = policy.wrapOutputProvider(delegate);
 
-        AudioOutputProvider.OutputConfig output = provider.getOutputConfig(config);
+        // Even without a new capability query, the final request must not use the stale direct key.
+        assertSame(standard, provider.getOutputConfig(tunnelingConfig()));
+        assertTrue(standard.isTunneling);
+        assertEquals(1234, standard.audioSessionId);
+        assertSame(delegate.support, provider.getFormatSupport(tunnelingConfig()));
+    }
 
-        assertFalse(output.isTunneling);
-        assertTrue(output.audioSessionId == 0);
-        assertTrue(output.virtualDeviceId == C.INDEX_UNSET);
+    @Test
+    public void finalStandardMode_ignoresDirectCacheAndPublishesItsActualOutput() throws Exception {
+        for (boolean offload : new boolean[]{false, true}) {
+            ExoCompressedAudioDirectPolicy policy = new ExoCompressedAudioDirectPolicy(
+                    (format, attributes) -> AudioOffloadSupport.DEFAULT_UNSUPPORTED,
+                    (format, attributes) -> true);
+            wrapped(policy).getFormatSupport(formatConfig(aacStereo()));
+            AudioOutputProvider.OutputConfig standard = encodedOutput(!offload, offload);
+            StandardAudioOutputProvider delegate = new StandardAudioOutputProvider(standard);
+            AudioOutput output = policy.wrapOutputProvider(delegate).getAudioOutput(standard);
+
+            assertEquals(1, delegate.creations);
+            assertEquals(!offload, policy.getAudioOutputSnapshot().tunneling());
+            assertEquals(offload, policy.getAudioOutputSnapshot().offload());
+            // A standard mode must not apply any vendor builder overrides, even with a cached key.
+            policy.modifyAudioTrackBuilder(null, standard);
+            output.release();
+            assertFalse(policy.getAudioOutputSnapshot().initialized());
+        }
+    }
+
+    @Test
+    public void failedInitialization_doesNotPublishOutputState() {
+        ExoCompressedAudioDirectPolicy policy = new ExoCompressedAudioDirectPolicy(
+                (format, attributes) -> AudioOffloadSupport.DEFAULT_UNSUPPORTED,
+                (format, attributes) -> false);
+        assertThrows(AudioOutputProvider.InitializationException.class,
+                () -> wrapped(policy).getAudioOutput(encodedOutput(false, false)));
+        assertFalse(policy.getAudioOutputSnapshot().initialized());
     }
 
     @Test
@@ -246,6 +290,27 @@ public class ExoCompressedAudioDirectPolicyTest {
                 .build();
     }
 
+    private static AudioOutputProvider.FormatConfig tunnelingConfig() {
+        return new AudioOutputProvider.FormatConfig.Builder(aacStereo())
+                .setAudioAttributes(AudioAttributes.DEFAULT)
+                .setAudioSessionId(1234)
+                .setVirtualDeviceId(0)
+                .setEnableTunneling(true)
+                .build();
+    }
+
+    private static AudioOutputProvider.OutputConfig encodedOutput(boolean tunneling, boolean offload) {
+        return new AudioOutputProvider.OutputConfig.Builder()
+                .setEncoding(C.ENCODING_AAC_LC)
+                .setSampleRate(48_000)
+                .setChannelMask(Util.getAudioTrackChannelConfig(aacStereo()))
+                .setBufferSize(4096)
+                .setAudioSessionId(1234)
+                .setIsTunneling(tunneling)
+                .setIsOffload(offload)
+                .build();
+    }
+
     private static Format aacStereo() {
         return new Format.Builder()
                 .setSampleMimeType(MimeTypes.AUDIO_AAC)
@@ -309,6 +374,28 @@ public class ExoCompressedAudioDirectPolicyTest {
         @Override
         public FormatSupport getFormatSupport(FormatConfig config) {
             return formatSupport;
+        }
+    }
+
+    private static final class StandardAudioOutputProvider extends UnsupportedAudioOutputProvider {
+        private final OutputConfig config;
+        private final FormatSupport support = new FormatSupport.Builder()
+                .setFormatSupportLevel(AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY).build();
+        private int creations;
+
+        StandardAudioOutputProvider(OutputConfig config) {
+            this.config = config;
+        }
+
+        @Override public FormatSupport getFormatSupport(FormatConfig config) { return support; }
+
+        @Override public OutputConfig getOutputConfig(FormatConfig config) { return this.config; }
+
+        @Override public AudioOutput getAudioOutput(OutputConfig config) {
+            assertSame(this.config, config);
+            creations++;
+            return (AudioOutput) Proxy.newProxyInstance(AudioOutput.class.getClassLoader(),
+                    new Class<?>[]{AudioOutput.class}, (proxy, method, args) -> null);
         }
     }
 }

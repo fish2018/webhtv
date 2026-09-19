@@ -13,6 +13,7 @@ public final class PlaybackTrace {
     public static final String NONE = "none";
 
     private static final AtomicLong SEQUENCE = new AtomicLong();
+    private final PlaybackDiagnosticSession diagnostics = new PlaybackDiagnosticSession();
     private final EnumMap<Stage, Long> stageTimes = new EnumMap<>(Stage.class);
     private String traceId = "";
     private long startedAtMs = -1;
@@ -47,6 +48,7 @@ public final class PlaybackTrace {
         startedAtMs = Math.max(0, elapsedRealtimeMs);
         lastStageAtMs = startedAtMs;
         stageTimes.clear();
+        diagnostics.begin(traceId, startedAtMs);
         return traceId;
     }
 
@@ -63,6 +65,7 @@ public final class PlaybackTrace {
     }
 
     public synchronized void clear() {
+        diagnostics.end("controller-cleared");
         traceId = "";
         startedAtMs = -1;
         lastStageAtMs = -1;
@@ -74,7 +77,10 @@ public final class PlaybackTrace {
     }
 
     synchronized boolean mark(Stage stage, long elapsedRealtimeMs, String detail) {
-        if (traceId.isEmpty() || stage == null || stageTimes.containsKey(stage)) return false;
+        if (traceId.isEmpty() || stage == null) return false;
+        // Repeated PREPARE is a new diagnostic attempt; preserve the original startup timer semantics.
+        if (!stageTimes.containsKey(stage) || stage == Stage.PREPARE) diagnostics.stage(stage.label(), detail, elapsedRealtimeMs);
+        if (stageTimes.containsKey(stage)) return false;
         long now = Math.max(startedAtMs, elapsedRealtimeMs);
         long elapsedMs = Math.max(0, now - startedAtMs);
         long deltaMs = Math.max(0, now - lastStageAtMs);

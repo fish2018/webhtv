@@ -34,15 +34,16 @@ public final class UpdateSettingsDialog {
     }
 
     public static void show(FragmentActivity activity) {
-        DialogUpdateSettingsBinding binding = DialogUpdateSettingsBinding.inflate(LayoutInflater.from(activity));
+        Dialog dialog = new Dialog(activity, R.style.Theme_WebHTV_LightDialog);
+        DialogUpdateSettingsBinding binding = DialogUpdateSettingsBinding.inflate(LayoutInflater.from(dialog.getContext()));
         State state = State.load();
-        Dialog dialog = LightDialog.create(activity, null, binding.getRoot());
+        dialog.setContentView(binding.getRoot());
         setupTabs(activity, binding, state);
         bind(activity, dialog, binding, state);
         render(activity, binding, state);
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
-        configureWindow(activity, dialog);
+        configureWindow(activity, dialog, binding);
         configureTvFocus(binding, state);
     }
 
@@ -184,14 +185,20 @@ public final class UpdateSettingsDialog {
         return value == null ? "" : value.toString().trim();
     }
 
-    private static void configureWindow(FragmentActivity activity, Dialog dialog) {
+    private static void configureWindow(FragmentActivity activity, Dialog dialog, DialogUpdateSettingsBinding binding) {
         Window window = dialog.getWindow();
         if (window == null) return;
         WindowManager.LayoutParams params = window.getAttributes();
         params.width = (int) (ResUtil.getScreenWidth(activity) * (ResUtil.isLand(activity) ? 0.62f : 0.92f));
         params.height = WindowManager.LayoutParams.WRAP_CONTENT;
         params.gravity = Gravity.CENTER;
+        params.dimAmount = 0.58f;
+        // Reserve the title, save button, margins and padding outside the scroll area.
+        binding.contentScroll.setMaxHeight(Math.max(1,
+                (int) (ResUtil.getScreenHeight(activity) * 0.90f) - ResUtil.dp2px(150)));
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        window.getDecorView().setPadding(0, 0, 0, 0);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setAttributes(params);
         window.setLayout(params.width, WindowManager.LayoutParams.WRAP_CONTENT);
     }

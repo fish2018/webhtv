@@ -489,6 +489,8 @@ public class History implements Diffable<History> {
 
     @Override
     public boolean isSameContent(History other) {
-        return getVodName().equals(other.getVodName()) && getVodPic().equals(other.getVodPic()) && getWallPic().equals(other.getWallPic()) && getCreateTime() == other.getCreateTime();
+        return getVodName().equals(other.getVodName()) && getVodPic().equals(other.getVodPic()) && getWallPic().equals(other.getWallPic())
+                && getCreateTime() == other.getCreateTime() && getPosition() == other.getPosition()
+                && getDuration() == other.getDuration() && getVodRemarks().equals(other.getVodRemarks());
     }
 }

@@ -1,0 +1,18 @@
+--- a/video/out/vo_mediacodec_embed.c
++++ b/video/out/vo_mediacodec_embed.c
+@@ -356,6 +356,15 @@
+ static int control(struct vo *vo, uint32_t request, void *data)
+ {
+     struct priv *p = vo->priv;
++    if (request == VOCTRL_RESET) {
++        mp_image_unrefp(&p->next_image);
++        p->last_pts = MP_NOPTS_VALUE;
++        p->next_pts = MP_NOPTS_VALUE;
++        p->next_duration = 0;
++        p->last_submit_start = 0;
++        MP_VERBOSE(vo, "WebHTV MediaCodec reset discards pending output\n");
++        return VO_TRUE;
++    }
+     if (request == VOCTRL_UPDATE_RENDER_OPTS ||
+         request == VOCTRL_UPDATE_OSD_SIZE)
+     {

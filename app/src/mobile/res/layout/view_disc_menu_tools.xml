@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="48dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/fullscreen"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/play_fullscreen"
+        android:scaleType="center"
+        android:src="@drawable/ic_control_fullscreen" />
+</LinearLayout>

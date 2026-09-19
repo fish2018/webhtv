@@ -10,6 +10,10 @@ final class MpvSurfaceTeardownPolicy {
         return true;
     }
 
+    void beginNewMedia() {
+        terminalReleaseRequested = false;
+    }
+
     boolean shouldBindSurface() {
         return !terminalReleaseRequested;
     }

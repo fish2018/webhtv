@@ -1,0 +1,158 @@
+--- a/audio/out/ao_audiotrack.c
++++ b/audio/out/ao_audiotrack.c
+@@ -21,6 +21,7 @@
+  * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#include <stdatomic.h>
+ #include "ao.h"
+ #include "internal.h"
+ #include "audio/aframe.h"
+@@ -33,6 +34,7 @@
+ 
+ static mp_static_mutex jni_static_lock = MP_STATIC_MUTEX_INITIALIZER;
+ static int jni_static_use_count = 0;
++static atomic_uint diagnostic_output_ids = 1;
+ enum {
+     ANDROID_API_LEVEL_S = 31,
+ };
+@@ -53,6 +55,9 @@
+     uint32_t playhead_pos;
+     uint32_t playhead_offset;
+     bool reset_pending;
++    uint32_t diag_output_id;
++    int64_t diag_last_ns, diag_write_calls, diag_requested, diag_accepted;
++    int64_t diag_short_writes, diag_zero_writes, diag_errors, diag_max_write_ns;
+ 
+     void *chunk;
+     int chunksize;
+@@ -103,6 +108,7 @@
+     jmethodID getBufferSizeInFramesV23;
+     jmethodID getPlaybackHeadPosition;
+     jmethodID getTimestamp;
++    jmethodID getRoutedDevice;
+     jmethodID getLatency;
+     jmethodID getMinBufferSize;
+     jmethodID getNativeOutputSampleRate;
+@@ -135,6 +141,7 @@
+     {"write", "(Ljava/nio/ByteBuffer;II)I", MP_JNI_METHOD, OFFSET(writeBufferV21), 1},
+     {"getBufferSizeInFrames", "()I", MP_JNI_METHOD, OFFSET(getBufferSizeInFramesV23), 0},
+     {"getTimestamp", "(Landroid/media/AudioTimestamp;)Z", MP_JNI_METHOD, OFFSET(getTimestamp), 1},
++    {"getRoutedDevice", "()Landroid/media/AudioDeviceInfo;", MP_JNI_METHOD, OFFSET(getRoutedDevice), 0},
+     {"getPlaybackHeadPosition", "()I", MP_JNI_METHOD, OFFSET(getPlaybackHeadPosition), 1},
+     {"getLatency", "()I", MP_JNI_METHOD, OFFSET(getLatency), 1},
+     {"getMinBufferSize", "(III)I", MP_JNI_STATIC_METHOD, OFFSET(getMinBufferSize), 1},
+@@ -149,6 +156,20 @@
+     {"ERROR", "I", MP_JNI_STATIC_FIELD_AS_INT, OFFSET(ERROR), 1},
+     {"ERROR_BAD_VALUE", "I", MP_JNI_STATIC_FIELD_AS_INT, OFFSET(ERROR_BAD_VALUE), 1},
+     {"ERROR_INVALID_OPERATION", "I", MP_JNI_STATIC_FIELD_AS_INT, OFFSET(ERROR_INVALID_OPERATION), 1},
++    {0}
++};
++#undef OFFSET
++
++static struct JNIAudioDeviceInfo {
++    jclass clazz;
++    jmethodID getId;
++    jmethodID getType;
++} AudioDeviceInfo;
++#define OFFSET(member) offsetof(struct JNIAudioDeviceInfo, member)
++static const struct MPJniField AudioDeviceInfo_mapping[] = {
++    {"android/media/AudioDeviceInfo", NULL, MP_JNI_CLASS, OFFSET(clazz), 0},
++    {"getId", "()I", MP_JNI_METHOD, OFFSET(getId), 0},
++    {"getType", "()I", MP_JNI_METHOD, OFFSET(getType), 0},
+     {0}
+ };
+ #undef OFFSET
+@@ -317,6 +338,7 @@
+ } jclass_list[] = {
+     ENTRY(ByteBuffer),
+     ENTRY(AudioTrack),
++    ENTRY(AudioDeviceInfo),
+     ENTRY(AudioAttributes),
+     ENTRY(AudioAttributesBuilder),
+     ENTRY(AudioFormat),
+@@ -479,6 +501,11 @@
+     if (!p->audiotrack)
+         return -1;
+ 
++    p->diag_output_id = atomic_fetch_add_explicit(&diagnostic_output_ids, 1, memory_order_relaxed);
++    p->diag_last_ns = p->diag_write_calls = p->diag_requested = p->diag_accepted = 0;
++    p->diag_short_writes = p->diag_zero_writes = p->diag_errors = p->diag_max_write_ns = 0;
++    MP_INFO(ao, "WebHTV AV-DIAG audio-config v=1 output=%u rate=%d channels=%d mask=%d encoding=%d bufferBytes=%d compressed=%d offload=%d sessionRequested=%d\n",
++            p->diag_output_id, p->samplerate, ao->channels.num, p->channel_config, p->format, p->size, p->compressed, p->offload, p->cfg_session_id);
+     return 0;
+ }
+ 
+@@ -487,6 +514,7 @@
+     struct priv *p = ao->priv;
+     JNIEnv *env = MP_JNI_GET_ENV(ao);
+ 
++    MP_INFO(ao, "WebHTV AV-DIAG audio-lifecycle v=1 output=%u operation=recreate phase=begin\n", p->diag_output_id);
+     MP_JNI_CALL_VOID(p->audiotrack, AudioTrack.release);
+     MP_JNI_EXCEPTION_LOG(ao);
+     MP_JNI_GLOBAL_FREEP(&p->audiotrack);
+@@ -607,6 +635,10 @@
+         return -1;
+     JNIEnv *env = MP_JNI_GET_ENV(ao);
+     void *buf = source ? (void *)source : p->chunk;
++    bool diagnostic = mp_msg_test(ao->log, MSGL_INFO);
++    int64_t diag_start = diagnostic ? mp_time_ns() : 0;
++    jint raw_ret = 0;
++    const char *raw_unit = "bytes";
+ 
+     jint ret;
+     if (p->compressed) {
+@@ -624,6 +656,7 @@
+         if (MP_JNI_EXCEPTION_LOG(ao) < 0) return -1;
+         ret = MP_JNI_CALL_INT(p->audiotrack, AudioTrack.writeShortV23, p->shortarray, 0, len / 2, AudioTrack.WRITE_BLOCKING);
+         if (MP_JNI_EXCEPTION_LOG(ao) < 0) return -1;
++        raw_ret = ret; raw_unit = "int16-samples";
+         if (ret > 0) ret *= 2;
+ 
+     } else if (AudioTrack.writeBufferV21) {
+@@ -639,6 +672,7 @@
+         if (MP_JNI_EXCEPTION_LOG(ao) < 0) return -1;
+         ret = MP_JNI_CALL_INT(p->audiotrack, AudioTrack.writeFloat, p->floatarray, 0, len / sizeof(float), AudioTrack.WRITE_BLOCKING);
+         if (MP_JNI_EXCEPTION_LOG(ao) < 0) return -1;
++        raw_ret = ret; raw_unit = "float-samples";
+         if (ret > 0) ret *= sizeof(float);
+ 
+     } else {
+@@ -648,6 +682,37 @@
+         if (MP_JNI_EXCEPTION_LOG(ao) < 0) return -1;
+     }
+ 
++    if (diagnostic) {
++        int64_t now = mp_time_ns();
++        p->diag_write_calls++; p->diag_requested += len;
++        if (ret < 0) p->diag_errors++;
++        else if (!ret) p->diag_zero_writes++;
++        else { p->diag_accepted += ret; if (ret < len) p->diag_short_writes++; }
++        p->diag_max_write_ns = MPMAX(p->diag_max_write_ns, now - diag_start);
++        if (ret < 0 || p->diag_write_calls == 1 || now - p->diag_last_ns >= MP_TIME_S_TO_NS(5)) {
++            p->diag_last_ns = now;
++            MP_INFO(ao, "WebHTV AV-DIAG audio-write v=1 output=%u calls=%lld requested=%lld accepted=%lld short=%lld zero=%lld errors=%lld raw=%d rawUnit=%s maxUs=%lld writtenFrames=%u headRaw=%u timestampValid=%d timestampAgeMs=%lld\n",
++                    p->diag_output_id, (long long)p->diag_write_calls, (long long)p->diag_requested, (long long)p->diag_accepted,
++                    (long long)p->diag_short_writes, (long long)p->diag_zero_writes, (long long)p->diag_errors,
++                    raw_unit[0] == 'b' ? ret : raw_ret, raw_unit, (long long)(p->diag_max_write_ns / 1000),
++                    p->written_frames, p->playhead_pos, p->timestamp_set,
++                    p->timestamp_fetched ? (long long)((now - p->timestamp_fetched) / 1000000) : -1LL);
++            if (AudioTrack.getRoutedDevice && AudioDeviceInfo.getId && AudioDeviceInfo.getType) {
++                jobject route = MP_JNI_CALL_OBJECT(p->audiotrack, AudioTrack.getRoutedDevice);
++                if (MP_JNI_EXCEPTION_LOG(ao) == 0 && route) {
++                    jint id = MP_JNI_CALL_INT(route, AudioDeviceInfo.getId);
++                    if (MP_JNI_EXCEPTION_LOG(ao) == 0) {
++                        jint type = MP_JNI_CALL_INT(route, AudioDeviceInfo.getType);
++                        if (MP_JNI_EXCEPTION_LOG(ao) == 0)
++                            MP_INFO(ao, "WebHTV AV-DIAG audio-route v=1 output=%u role=actual id=%d type=%d\n", p->diag_output_id, id, type);
++                    }
++                } else {
++                    MP_INFO(ao, "WebHTV AV-DIAG audio-route v=1 output=%u role=actual status=unavailable\n", p->diag_output_id);
++                }
++                MP_JNI_LOCAL_FREEP(&route);
++            }
++        }
++    }
+     return ret;
+ }
+ 

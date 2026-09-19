@@ -6,6 +6,7 @@
 #include "jni_utils.h"
 #include "log.h"
 #include "request.h"
+#include "node_json.h"
 
 static void sendPropertyUpdateToJava(JNIEnv *env, mpv_event_property *prop)
 {
@@ -31,6 +32,16 @@ static void sendPropertyUpdateToJava(JNIEnv *env, mpv_event_property *prop)
         jvalue = utf8_to_jstring(env, *(const char**)prop->data);
         env->CallStaticVoidMethod(mpv_MPVLib, mpv_MPVLib_eventProperty_SS, jprop, jvalue);
         break;
+    case MPV_FORMAT_NODE: {
+        std::string json;
+        if (mpv_node_json::encode(static_cast<mpv_node *>(prop->data), &json))
+            jvalue = utf8_to_jstring(env, json.c_str());
+        else
+            ALOGE("bounded NODE snapshot rejected for %s", prop->name);
+        env->CallStaticVoidMethod(mpv_MPVLib, mpv_MPVLib_eventPropertyNode_SS,
+                                  jprop, jvalue);
+        break;
+    }
     default:
         ALOGV("sendPropertyUpdateToJava: Unknown property update format received in callback: %d!", prop->format);
         break;

@@ -34,6 +34,14 @@
             android:text="@string/play_episodes" />
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/discMenu"
+            style="@style/Control"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/disc_menu_open_hint"
+            android:text="@string/disc_menu_open"
+            android:visibility="gone" />
+
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/reset"
             style="@style/Control"
             android:layout_marginEnd="8dp"

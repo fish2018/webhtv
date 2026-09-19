@@ -151,7 +151,7 @@ public class DriveCheckService {
         if (diskType.isEmpty() || item.getUrl().isEmpty()) return result(diskType, item.getUrl(), normalized, STATE_UNCERTAIN, false, "type 和 url 不能为空");
         if (normalized.isEmpty()) return result(diskType, item.getUrl(), "", STATE_UNCERTAIN, false, "链接格式无效");
 
-        String key = diskType + "|" + normalized;
+        String key = cacheKey(diskType, normalized);
         DriveCheckResult cached = getCached(key);
         if (cached != null) {
             SpiderDebug.log("pan-check", "cache type=%s state=%s url=%s", diskType, cached.getState(), normalized);
@@ -449,18 +449,27 @@ public class DriveCheckService {
         JsonObject data = obj(object, "data");
         JsonObject shareInfo = obj(data, "shareinfo");
         if (state && errno == 0) {
-            int size = data.has("list") && data.get("list").isJsonArray() ? data.getAsJsonArray("list").size() : 0;
-            if (size > 0 || integer(data, "count", 0) > 0 || !str(shareInfo, "snap_id").isEmpty() || !str(shareInfo, "share_title").isEmpty()) return result(item, normalized, STATE_OK, false, "链接有效");
-            int shareState = integer(data, "share_state", integer(shareInfo, "share_state", 0));
-            if (shareState == 1) return result(item, normalized, STATE_OK, false, "链接有效");
-            String reason = coalesce(str(shareInfo, "forbid_reason"), "链接状态异常");
-            if (containsAny(reason.toLowerCase(Locale.ROOT), "密码", "提取码")) return result(item, normalized, STATE_LOCKED, false, reason);
-            return result(item, normalized, STATE_BAD, false, reason);
+            String shareState = classify115ShareState(data);
+            String summary = STATE_OK.equals(shareState) ? "链接有效" : coalesce(str(shareInfo, "forbid_reason"), "链接状态异常");
+            return result(item, normalized, shareState, false, summary);
         }
         String error = str(object, "error");
         if (containsAny(error.toLowerCase(Locale.ROOT), "密码", "提取码", "receive_code")) return result(item, normalized, STATE_LOCKED, false, coalesce(error, "需要提取码"));
         if (containsAny(error.toLowerCase(Locale.ROOT), "参数错误", "不存在", "失效", "share_code", "forbid", "forbidden", "违规", "删除", "取消")) return result(item, normalized, STATE_BAD, false, coalesce(error, "链接失效"));
         return result(item, normalized, error.isEmpty() ? STATE_UNCERTAIN : STATE_BAD, false, coalesce(error, "无法确认链接状态"));
+    }
+
+    static String classify115ShareState(JsonObject data) {
+        JsonObject shareInfo = obj(data, "shareinfo");
+        int shareState = integer(data, "share_state", integer(shareInfo, "share_state", 0));
+        String reason = str(shareInfo, "forbid_reason");
+        // Expired or forbidden shares may still include a file list and share metadata.
+        if (shareState == 7) return STATE_BAD;
+        if (!reason.isEmpty()) return containsAny(reason.toLowerCase(Locale.ROOT), "密码", "提取码") ? STATE_LOCKED : STATE_BAD;
+        if (shareState == 1) return STATE_OK;
+        int size = data.has("list") && data.get("list").isJsonArray() ? data.getAsJsonArray("list").size() : 0;
+        if (size > 0 || integer(data, "count", 0) > 0 || !str(shareInfo, "snap_id").isEmpty() || !str(shareInfo, "share_title").isEmpty()) return STATE_OK;
+        return STATE_BAD;
     }
 
     private DriveCheckResult checkMobile(DriveCheckItem item, String normalized) throws Exception {
@@ -553,6 +562,11 @@ public class DriveCheckService {
             SpiderDebug.log("pan-check-net", "%s %s -> %s raw=%s decoded=%s in %sms", verb, url, response.code(), raw.length, decoded.length, System.currentTimeMillis() - start);
             return new HttpResult(response.code(), new String(decoded, StandardCharsets.UTF_8));
         }
+    }
+
+    static String cacheKey(String diskType, String normalized) {
+        // Do not reuse 115 results cached before explicit share-state checks took priority.
+        return ("115".equals(diskType) ? "115:v2" : diskType) + "|" + normalized;
     }
 
     private DriveCheckResult getCached(String key) {

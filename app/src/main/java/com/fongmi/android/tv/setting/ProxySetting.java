@@ -103,7 +103,7 @@ public class ProxySetting {
     }
 
     private static void collectDebugUrls(Set<String> urls) {
-        for (String line : DebugLogStore.snapshot()) addUrls(line, urls);
+        for (String origin : DebugLogStore.observedOrigins()) addUrls(origin, urls);
     }
 
     private static void addLocalFileUrls(String source, Set<String> urls) {

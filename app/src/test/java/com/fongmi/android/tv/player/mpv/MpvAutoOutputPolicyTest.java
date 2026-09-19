@@ -9,6 +9,24 @@ import org.junit.Test;
 public class MpvAutoOutputPolicyTest {
 
     @Test
+    public void failedDirectStaysOnGpuAcrossSameItemEvaluations() {
+        MpvAutoOutputPolicy.Decision tv = MpvAutoOutputPolicy.evaluate(1920, 1080, true, true, false, false);
+        for (int rebuild = 0; rebuild < 3; rebuild++) {
+            MpvAutoOutputPolicy.Decision safe = MpvAutoOutputPolicy.afterSurfaceFailure(tv, true);
+            assertFalse(safe.eligible());
+            assertEquals("surface-direct-failed-for-item", safe.reason());
+            assertEquals(MpvAutoOutputPolicy.Transition.KEEP_GPU,
+                    MpvAutoOutputPolicy.transition(safe.eligible(), false));
+            assertEquals(MpvAutoOutputPolicy.Transition.LEAVE_SURFACE_DIRECT,
+                    MpvAutoOutputPolicy.transition(safe.eligible(), true));
+        }
+        // New items/explicit settings changes clear the failure in PlayerManager.
+        assertTrue(MpvAutoOutputPolicy.afterSurfaceFailure(tv, false).eligible());
+        MpvAutoOutputPolicy.Decision mobile = MpvAutoOutputPolicy.evaluate(1920, 1080, true, false, false, false);
+        assertEquals(mobile, MpvAutoOutputPolicy.afterSurfaceFailure(mobile, false));
+    }
+
+    @Test
     public void acceptsTvHardwareDecodeAtAnyResolution() {
         assertTrue(MpvAutoOutputPolicy.evaluate(3840, 1632, true, true, false, false).eligible());
         assertTrue(MpvAutoOutputPolicy.evaluate(1920, 1080, true, true, false, false).eligible());

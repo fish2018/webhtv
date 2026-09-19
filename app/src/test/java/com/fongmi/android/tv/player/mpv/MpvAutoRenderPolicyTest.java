@@ -70,6 +70,33 @@ public class MpvAutoRenderPolicyTest {
                 true, true, false, true);
     }
 
+    @Test
+    public void manualFelUsesVulkanWithoutRequiringANativeDolbyDecoder() {
+        for (MpvAutoOutputPolicy.DolbyVisionSupport support
+                : MpvAutoOutputPolicy.DolbyVisionSupport.values()) {
+            MpvAutoRenderPolicy.Decision decision = MpvAutoRenderPolicy.evaluate(
+                    true, true, 7, support, true, true, false, false, true);
+            assertEquals(MpvAutoRenderPolicy.Action.ENABLE_VULKAN, decision.action());
+            assertEquals("dv7-fel-reconstruction-vulkan", decision.reason());
+        }
+    }
+
+    @Test
+    public void felStillHonorsManualRenderAndOneShotFallback() {
+        assertEquals(MpvAutoRenderPolicy.Action.KEEP, MpvAutoRenderPolicy.evaluate(
+                false, true, 7, MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN,
+                true, true, false, false, true).action());
+        assertEquals(MpvAutoRenderPolicy.Action.KEEP, MpvAutoRenderPolicy.evaluate(
+                true, true, 7, MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN,
+                true, true, false, true, true).action());
+        assertEquals(MpvAutoRenderPolicy.Action.KEEP, MpvAutoRenderPolicy.evaluate(
+                true, true, 7, MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN,
+                true, false, false, false, true).action());
+        assertEquals(MpvAutoRenderPolicy.Action.KEEP, MpvAutoRenderPolicy.evaluate(
+                true, true, -1, MpvAutoOutputPolicy.DolbyVisionSupport.UNKNOWN,
+                true, true, false, false, true).action());
+    }
+
     private static void assertDecision(MpvAutoRenderPolicy.Action action,
                                        String reason,
                                        boolean renderAutomatic,

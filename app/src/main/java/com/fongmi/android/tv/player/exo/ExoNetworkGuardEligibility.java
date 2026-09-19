@@ -15,6 +15,9 @@ public final class ExoNetworkGuardEligibility {
         if (!request.userUnitSpeed()) return Decision.blocked("user-speed");
         if (!request.speedCommandAvailable()) return Decision.blocked("speed-unsupported");
         if (request.tunnelingRequested()) return Decision.blocked("preserve-tunneling");
+        if (request.audioOutputMode() == AudioPlaybackDiagnostics.OutputMode.UNKNOWN) {
+            return Decision.blocked("audio-output-pending");
+        }
         if (request.audioOutputMode() == AudioPlaybackDiagnostics.OutputMode.PASSTHROUGH) {
             return Decision.blocked("preserve-passthrough");
         }

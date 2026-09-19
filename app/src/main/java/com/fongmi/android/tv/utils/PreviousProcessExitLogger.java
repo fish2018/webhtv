@@ -8,9 +8,14 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 
 import com.github.catvod.crawler.SpiderDebug;
+import com.github.catvod.crawler.DebugLogStore;
+import com.github.catvod.crawler.diagnostics.DiagnosticEvent;
 import com.github.catvod.utils.Prefers;
 
 import java.util.List;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 public final class PreviousProcessExitLogger {
 
@@ -20,20 +25,29 @@ public final class PreviousProcessExitLogger {
     }
 
     public static void log(Context context) {
-        if (!SpiderDebug.isEnabled() || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
-        try {
-            logApi30(context.getApplicationContext());
-        } catch (Throwable error) {
-            SpiderDebug.log("process-exit", "query failed error=%s", error.getClass().getSimpleName());
+        if (!SpiderDebug.isEnabled()) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            DebugLogStore.event(event().unknown("exitReason", DiagnosticEvent.Status.NOT_SUPPORTED));
+            return;
         }
+        Context app = context.getApplicationContext();
+        Task.execute(() -> {
+            if (!SpiderDebug.isEnabled()) return;
+            try { logApi30(app); }
+            catch (Throwable error) {
+                DebugLogStore.event(event().unknown("exitReason", DiagnosticEvent.Status.READ_ERROR)
+                        .observed("javaClass", error.getClass().getSimpleName()));
+                SpiderDebug.log("process-exit", "query failed error=%s", error.getClass().getSimpleName());
+            }
+        });
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
     private static void logApi30(Context context) {
         ActivityManager manager = context.getSystemService(ActivityManager.class);
-        if (manager == null) return;
+        if (manager == null) { DebugLogStore.event(event().unknown("exitReason", DiagnosticEvent.Status.UNAVAILABLE)); return; }
         List<ApplicationExitInfo> exits = manager.getHistoricalProcessExitReasons(context.getPackageName(), 0, 1);
-        if (exits.isEmpty()) return;
+        if (exits.isEmpty()) { DebugLogStore.event(event().unknown("exitReason", DiagnosticEvent.Status.UNAVAILABLE)); return; }
         ApplicationExitInfo exit = exits.get(0);
         long timestamp = exit.getTimestamp();
         if (timestamp <= Prefers.getLong(KEY_LAST_EXIT_TIMESTAMP, 0)) return;
@@ -42,6 +56,43 @@ public final class PreviousProcessExitLogger {
                 "previous reason=%s(%d) status=%d importance=%d timestamp=%d pss=%d rss=%d description=%s",
                 reasonName(exit.getReason()), exit.getReason(), exit.getStatus(), exit.getImportance(),
                 timestamp, exit.getPss(), exit.getRss(), safe(exit.getDescription()));
+        DebugLogStore.event(event().observed("exitReason", reasonName(exit.getReason())).observed("exitStatus", exit.getStatus())
+                .observed("firstSeenMs", timestamp).unknown("previousRun", DiagnosticEvent.Status.UNKNOWN)
+                .observed("reason", "previous-process-exit; correlate with journal, not current trace").pin("previous-process-exit"));
+        captureTrace(exit);
+    }
+
+    private static DiagnosticEvent event() {
+        return new DiagnosticEvent("process.recovery", "none", "process", 0, 0)
+                .source("android", String.valueOf(Build.VERSION.SDK_INT), "app", "ApplicationExitInfo", "previous-process; trace-unresolved",
+                        null, null, 0, android.os.SystemClock.elapsedRealtimeNanos());
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private static void captureTrace(ApplicationExitInfo exit) {
+        try (InputStream input = exit.getTraceInputStream()) {
+            if (input == null) {
+                DebugLogStore.event(event().unknown("traceAvailable", DiagnosticEvent.Status.UNAVAILABLE));
+                return;
+            }
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] part = new byte[1024];
+            int read;
+            while (bytes.size() < 8192 && (read = input.read(part, 0, Math.min(part.length, 8192 - bytes.size()))) > 0) bytes.write(part, 0, read);
+            boolean text = exit.getReason() == ApplicationExitInfo.REASON_ANR;
+            DebugLogStore.event(event().observed("traceAvailable", true).observed("bytes", bytes.size())
+                    .observed("format", text ? "anr-text-prefix" : "platform-trace; binary content not exported")
+                    .observed("truncated", bytes.size() == 8192));
+            if (text) {
+                String trace = new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+                int chunks = (trace.length() + 999) / 1000;
+                for (int i = 0; i < chunks; i++) DebugLogStore.event(event().observed("chunk", i).observed("chunkCount", chunks)
+                        .message(trace.substring(i * 1000, Math.min(trace.length(), (i + 1) * 1000))));
+            }
+        } catch (Exception error) {
+            DebugLogStore.event(event().unknown("traceAvailable", DiagnosticEvent.Status.READ_ERROR)
+                    .observed("javaClass", error.getClass().getSimpleName()));
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

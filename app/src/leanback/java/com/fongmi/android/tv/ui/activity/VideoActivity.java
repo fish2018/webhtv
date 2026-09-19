@@ -54,6 +54,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
+import androidx.media3.mpvplayer.MpvPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.palette.graphics.Palette;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -301,6 +302,10 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     private long mInitialPlaybackPosition = C.TIME_UNSET;
     private boolean pendingLutImport;
     private boolean playerKernelSwitchRefreshing;
+    private MpvPlayer mDiscMenuPlayer;
+    private MpvPlayer mCustomButtonPlayer;
+    private final Runnable mCustomButtonStateListener = this::updateCustomButtonStates;
+    private final Runnable mDiscMenuStateListener = this::updateDiscMenuAction;
 
     private final ActivityResultLauncher<Intent> mLutDir = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) return;
@@ -699,6 +704,15 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.next.setOnClickListener(view -> checkNext());
         mBinding.control.action.prev.setOnClickListener(view -> checkPrev());
         mBinding.control.action.episodes.setOnClickListener(view -> onEpisodes());
+        mBinding.control.action.discMenu.setOnClickListener(view -> {
+            hideControl();
+            openDiscMenu();
+        });
+        mBinding.control.action.discMenu.setOnLongClickListener(view -> {
+            hideControl();
+            showDiscMenuControls();
+            return true;
+        });
         mBinding.control.action.scale.setOnClickListener(view -> onScale());
         mBinding.control.action.lut.setOnClickListener(view -> onLut());
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
@@ -742,7 +756,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.ending.setOnLongClickListener(view -> onEndingReset());
         mBinding.control.action.opening.setOnLongClickListener(view -> onOpeningReset());
         setActionFocusScroll();
-        mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
+        mBinding.video.setOnTouchListener((view, event) -> dispatchDiscMenuTouch(event) || mKeyDown.onTouchEvent(event));
         mBinding.flag.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
@@ -894,6 +908,21 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.PDS, mBinding.control.action.panDiagnostic);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
         setupCustomActionButtons();
+        updateDiscMenuAction();
+    }
+
+    private void updateDiscMenuAction() {
+        updateCustomButtonStates();
+        MpvPlayer mpv = service() != null && isOwner()
+                && player().getPlayer() instanceof MpvPlayer active ? active : null;
+        if (mDiscMenuPlayer != mpv) {
+            if (mDiscMenuPlayer != null) mDiscMenuPlayer.removeDiscMenuStateListener(mDiscMenuStateListener);
+            mDiscMenuPlayer = mpv;
+            if (mpv != null) mpv.addDiscMenuStateListener(mDiscMenuStateListener);
+        }
+        boolean available = mpv != null && mpv.isDiscMenuAvailable();
+        if (!available && mBinding.control.action.discMenu.hasFocus()) mBinding.control.action.playParams.requestFocus();
+        mBinding.control.action.discMenu.setVisibility(available ? View.VISIBLE : View.GONE);
     }
 
     private void addActionButton(String id, View view) {
@@ -911,7 +940,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         List<MpvConfigStore.CustomButton> buttons = MpvConfigStore.customButtons();
         for (int index = 0; index < buttons.size(); index++) {
             MpvConfigStore.CustomButton button = buttons.get(index);
-            if (!button.enabled) continue;
+            if (!button.isButtonVisible()) continue;
             TextView view = new TextView(this);
             view.setTextSize(13);
             view.setTextColor(Color.WHITE);
@@ -925,16 +954,13 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
             view.setMaxWidth(ResUtil.dp2px(144));
             view.setEllipsize(TextUtils.TruncateAt.END);
             view.setContentDescription(button.title);
+            view.setTag(button.id);
             view.setOnClickListener(item -> {
-                if (player().sendMpvCustomButton(button.id, false)) {
-                    toggleCustomButtonState(item);
-                }
+                player().sendMpvCustomButton(button.id, false);
                 setR1Callback();
             });
             view.setOnLongClickListener(item -> {
-                if (player().sendMpvCustomButton(button.id, true)) {
-                    toggleCustomButtonState(item);
-                }
+                player().sendMpvCustomButton(button.id, true);
                 setR1Callback();
                 return true;
             });
@@ -948,8 +974,17 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         updateCustomButtonVisibility();
     }
 
-    private void toggleCustomButtonState(View view) {
-        view.setSelected(!view.isSelected());
+    private void updateCustomButtonStates() {
+        MpvPlayer mpv = service() != null && isOwner()
+                && player().getPlayer() instanceof MpvPlayer active ? active : null;
+        if (mCustomButtonPlayer != mpv) {
+            if (mCustomButtonPlayer != null) mCustomButtonPlayer.removeCustomButtonStateListener(mCustomButtonStateListener);
+            mCustomButtonPlayer = mpv;
+            if (mpv != null) mpv.addCustomButtonStateListener(mCustomButtonStateListener);
+        }
+        for (View view : mCustomActionViews) {
+            view.setSelected(mpv != null && mpv.isCustomButtonActive((String) view.getTag()));
+        }
     }
 
     private void ensureCustomButtonContainers() {
@@ -970,6 +1005,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     private void updateCustomButtonVisibility() {
+        updateCustomButtonStates();
         boolean visible = service() != null && player().isMpv() && isVisible(mBinding.control.getRoot());
         if (mCustomPortraitButtons != null) mCustomPortraitButtons.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
@@ -978,6 +1014,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (mActionButtons != null) PlayerButtonSetting.applyVisibility(mActionButtons);
         updateCustomButtonVisibility();
         updateImmersiveAudioAction();
+        updateDiscMenuAction();
     }
 
     private boolean canRunPanDiagnostic() {
@@ -3725,7 +3762,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
             mHistory.setCreateTime(System.currentTimeMillis());
         }
         if (exit && service() != null) PlaybackEventCollector.get().onStop(player());
-        if (!mHistory.canSave()) return;
+        if (!canSavePlaybackHistory(mHistory)) return;
         History history = mHistory.copy();
         Task.execute(() -> {
             if (history.getDuration() > 0) history.merge().save();
@@ -5543,6 +5580,10 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (!isOwner()) return;
         long position, duration;
         mHistory.setCreateTime(time);
+        if (hasDiscNavigationTimeline()) {
+            if (canSavePlaybackHistory(mHistory) && mHistory.canSync()) syncHistory();
+            return;
+        }
         updatePlaybackHistoryPosition();
         syncKaraokePosition();
         if (mLyrics != null) mLyrics.update(player());
@@ -5557,7 +5598,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     private void updatePlaybackHistoryPosition() {
-        if (mHistory == null) return;
+        if (mHistory == null || hasDiscNavigationTimeline()) return;
         long position = player().getPosition();
         long duration = player().getDuration();
         if (position > 0) mHistory.setPosition(position);
@@ -5583,7 +5624,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     private void setPosition() {
-        if (mHistory == null) return;
+        if (mHistory == null || hasDiscMenu()) return;
         long position = resolveInitialPlaybackPosition();
         if (position <= 0) return;
         if (mInitialPlaybackPosition == position) {
@@ -5960,7 +6001,16 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     }
 
     @Override
+    protected boolean dispatchDiscMenuKey(KeyEvent event) {
+        // Let TV controls own DPAD/ENTER while visible, including the shared
+        // PlaybackActivity dispatch performed by super.dispatchKeyEvent().
+        if (isVisible(mBinding.control.getRoot()) || isVisible(mBinding.lutQuick)) return false;
+        return super.dispatchDiscMenuKey(event);
+    }
+
+    @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (dispatchDiscMenuKey(event)) return true;
         if (KeyUtil.isActionUp(event) && KeyUtil.isBackKey(event) && mBinding.lutQuick.hideIfVisible()) return true;
         if (isVisible(mBinding.lutQuick)) return dispatchLutQuickKey(event);
         if (KeyUtil.isMenuKey(event)) {
@@ -6376,6 +6426,14 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     protected void onDestroy() {
+        if (mCustomButtonPlayer != null) {
+            mCustomButtonPlayer.removeCustomButtonStateListener(mCustomButtonStateListener);
+            mCustomButtonPlayer = null;
+        }
+        if (mDiscMenuPlayer != null) {
+            mDiscMenuPlayer.removeDiscMenuStateListener(mDiscMenuStateListener);
+            mDiscMenuPlayer = null;
+        }
         mLyricsSearchSeq++;
         mLyricsRefreshSeq++;
         dismissLyricsResultDialog();

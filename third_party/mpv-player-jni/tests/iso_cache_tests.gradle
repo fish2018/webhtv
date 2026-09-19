@@ -1,0 +1,9 @@
+// Host-side regression tests for the Java source feeding the ISO JNI callback.
+// Usage: bash gradlew --init-script third_party/mpv-player-jni/tests/iso_cache_tests.gradle \
+//   :app:testMobileArm64_v8aDebugUnitTest --tests 'com.fongmi.android.tv.player.iso.*'
+gradle.beforeProject { project ->
+    project.plugins.withId('com.android.application') {
+        project.android.sourceSets.getByName('test').java.srcDir(
+                new File(project.rootDir, 'third_party/mpv-player-jni/tests/java'))
+    }
+}

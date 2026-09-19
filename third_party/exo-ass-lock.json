@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "scope": "E4-LIBASS gated standalone ASS: full external scripts and Media3 SSA packet bridge; no MPV or FFmpeg linkage",
+  "android": {
+    "ndk": "29.0.14206865",
+    "api": 24,
+    "abis": [
+      "arm64-v8a"
+    ],
+    "stl": "c++_static",
+    "page_size": 16384
+  },
+  "sources": {
+    "freetype2": {
+      "repo": "https://gitlab.freedesktop.org/freetype/freetype.git",
+      "commit": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+      "version": "2.14.3",
+      "meson_options": [
+        "-Dharfbuzz=disabled",
+        "-Dbrotli=disabled",
+        "-Dbzip2=disabled",
+        "-Dpng=disabled",
+        "-Dzlib=internal"
+      ],
+      "licenses": [
+        "LICENSE.TXT",
+        "docs/FTL.TXT",
+        "docs/GPLv2.TXT"
+      ]
+    },
+    "fribidi": {
+      "repo": "https://github.com/fribidi/fribidi.git",
+      "commit": "68162babff4f39c4e2dc164a5e825af93bda9983",
+      "version": "1.0.16",
+      "meson_options": [
+        "-Dtests=false",
+        "-Ddocs=false"
+      ],
+      "licenses": [
+        "COPYING"
+      ]
+    },
+    "harfbuzz": {
+      "repo": "https://github.com/harfbuzz/harfbuzz.git",
+      "commit": "56feae4035bdd48f62ba2b8d8c16232d4d89b3a4",
+      "version": "14.2.1",
+      "meson_options": [
+        "-Dtests=disabled",
+        "-Ddocs=disabled",
+        "-Draster=disabled",
+        "-Dvector=disabled",
+        "-Dgpu=disabled",
+        "-Dsubset=disabled",
+        "-Dglib=disabled",
+        "-Dgobject=disabled",
+        "-Dicu=disabled",
+        "-Dfreetype=enabled"
+      ],
+      "licenses": [
+        "COPYING"
+      ]
+    },
+    "libxml2": {
+      "url": "https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.15.3/libxml2-v2.15.3.tar.gz",
+      "sha256": "0da50c1415f4ec0364569d2119b1436ba837b31df44af28569d234272c23cf1f",
+      "version": "2.15.3",
+      "filename": "libxml2-v2.15.3.tar.gz",
+      "meson_options": [
+        "-Dminimum=true",
+        "-Dpush=enabled",
+        "-Dsax1=enabled",
+        "-Ddocs=disabled",
+        "-Dpython=disabled",
+        "-Diconv=disabled",
+        "-Dicu=disabled",
+        "-Dzlib=disabled"
+      ],
+      "licenses": [
+        "Copyright"
+      ]
+    },
+    "fontconfig": {
+      "repo": "https://gitlab.freedesktop.org/fontconfig/fontconfig.git",
+      "commit": "a4e25ec391d417e4bca052fbfa5cd7ce5f7fd39e",
+      "version": "2.18.2",
+      "meson_options": [
+        "-Ddoc=disabled",
+        "-Dnls=disabled",
+        "-Dtests=disabled",
+        "-Dtests-external-fonts=disabled",
+        "-Dtools=disabled",
+        "-Dcache-build=disabled",
+        "-Dxml-backend=libxml2",
+        "-Diconv=disabled"
+      ],
+      "licenses": [
+        "COPYING"
+      ]
+    },
+    "libass": {
+      "repo": "https://github.com/libass/libass.git",
+      "commit": "89cc0f4e450d64f74281a17d7f11ed05229665e8",
+      "version": "git-89cc0f4e",
+      "meson_options": [
+        "-Dtest=disabled",
+        "-Dcompare=disabled",
+        "-Dprofile=disabled",
+        "-Dfuzz=disabled",
+        "-Dcheckasm=disabled",
+        "-Dfontconfig=enabled",
+        "-Dlibunibreak=disabled",
+        "-Drequire-system-font-provider=true"
+      ],
+      "licenses": [
+        "COPYING"
+      ]
+    }
+  }
+}

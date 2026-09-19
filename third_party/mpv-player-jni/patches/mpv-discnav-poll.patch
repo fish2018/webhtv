@@ -1,0 +1,141 @@
+--- a/demux/demux.c
++++ b/demux/demux.c
+@@ -220,6 +220,7 @@
+     bool hyst_active;
+     bool nav_active;            // disc navigation (DVD/BD menus) is active
+     bool nav_pump;              // one-shot request to force a single read
++    bool nav_poll;              // event-only request, independent of packet demand
+     size_t max_bytes;
+     size_t max_bytes_bw;
+     bool seekable_cache;
+@@ -1302,6 +1303,16 @@
+     mp_mutex_lock(&in->lock);
+     in->nav_pump = true;
+     in->reading = true;
++    mp_cond_signal(&in->wakeup);
++    mp_mutex_unlock(&in->lock);
++}
++
++void demux_poll_nav(struct demuxer *demuxer)
++{
++    struct demux_internal *in = demuxer->in;
++    mp_assert(demuxer == in->d_user);
++    mp_mutex_lock(&in->lock);
++    in->nav_poll = true;
+     mp_cond_signal(&in->wakeup);
+     mp_mutex_unlock(&in->lock);
+ }
+@@ -2687,6 +2698,19 @@
+ 
+     // In case the seekable cache was disabled.
+     free_empty_cached_ranges(in);
++}
++
++// Run on the demux owner, but do not read media or change queue demand. A
++// paused menu must finish authored animation even when all queues are full.
++static bool poll_nav(struct demux_internal *in)
++{
++    if (!in->nav_poll || in->blocked || demux_cancel_test(in->d_thread))
++        return false;
++    in->nav_poll = false;
++    mp_mutex_unlock(&in->lock);
++    stream_control(in->d_thread->stream, STREAM_CTRL_NAV_POLL, NULL);
++    mp_mutex_lock(&in->lock);
++    return true;
+ }
+ 
+ // Make demuxing progress. Return whether progress was made.
+@@ -2716,6 +2740,8 @@
+         execute_seek(in);
+         return true;
+     }
++    if (poll_nav(in))
++        return true;
+     if (read_packet(in))
+         return true; // read_packet unlocked, so recheck conditions
+     if (mp_time_ns() >= in->next_cache_update) {
+@@ -3273,6 +3299,8 @@
+     mp_mutex_lock(&in->lock);
+     if (in->nav_active != active) {
+         in->nav_active = active;
++        if (active)
++            MP_VERBOSE(demuxer, "WebHTV event-only disc navigation polling enabled\n");
+         mp_cond_signal(&in->wakeup);
+     }
+     mp_mutex_unlock(&in->lock);
+--- a/demux/demux.h
++++ b/demux/demux.h
+@@ -350,6 +350,7 @@
+ void demux_set_wakeup_cb(struct demuxer *demuxer, void (*cb)(void *ctx), void *ctx);
+ void demux_start_prefetch(struct demuxer *demuxer);
+ void demux_drive_nav(struct demuxer *demuxer);
++void demux_poll_nav(struct demuxer *demuxer);
+ 
+ bool demux_cancel_test(struct demuxer *demuxer);
+ bool demux_read_interrupted(struct demuxer *demuxer);
+--- a/player/command.c
++++ b/player/command.c
+@@ -7562,6 +7562,10 @@
+         demux_drive_nav(mpctx->demuxer);
+     }
+ 
++    // A rejected click can mean an unfinished button animation. Keep its
++    // event loop alive without pretending the click succeeded or reading ahead.
++    if (mpctx->demuxer)
++        demux_poll_nav(mpctx->demuxer);
+     mp_wakeup_core(mpctx);
+ }
+ 
+--- a/player/discnav.c
++++ b/player/discnav.c
+@@ -427,6 +427,24 @@
+         st->menu_selected_track = NULL;
+         st->menu_saved_track = NULL;
+     }
++}
++
++static void poll_disc_nav(struct MPContext *mpctx, struct stream *s,
++                          const struct stream_nav_state *nav)
++{
++    if (!mpctx->demuxer || !nav->nav_active ||
++        (strcmp(s->info->name, "bd") != 0 &&
++         strcmp(s->info->name, "bdmv/bluray") != 0))
++        return;
++    bool idle = nav->still_active ||
++                (mpctx->video_status == STATUS_EOF &&
++                 mpctx->audio_status == STATUS_EOF);
++    if (idle)
++        demux_drive_nav(mpctx->demuxer);
++    if (nav->menu_active)
++        demux_poll_nav(mpctx->demuxer);
++    if (idle || nav->menu_active)
++        mp_set_timeout(mpctx, 0.033);
+ }
+ 
+ void disc_nav_update(struct MPContext *mpctx)
+@@ -443,21 +461,10 @@
+                    mpctx->disc_nav_still_frame, still);
+     mpctx->disc_nav_still_frame = still;
+ 
+-    // The BD-J VM progresses only on reads, pump them while playback idles
+-    // at EOF or a held still, per libbluray's requirement. Our core wakes up
+-    // at 1s intervals even at pause, but that's not enough for fluid button
+-    // navigation. So, we always drive the VM at least at 20Hz.
+-    if (have && mpctx->demuxer) {
+-        bool bd_idle = (strcmp(s->info->name, "bd") == 0 ||
+-                        strcmp(s->info->name, "bdmv/bluray") == 0) &&
+-                       (still || (mpctx->video_status == STATUS_EOF &&
+-                                  mpctx->audio_status == STATUS_EOF));
+-        if (bd_idle || (nav.menu_active && mpctx->paused)) {
+-            if (bd_idle)
+-                demux_drive_nav(mpctx->demuxer);
+-            mp_set_timeout(mpctx, 0.05);
+-        }
+-    }
++    // Poll HDMV events on the demux thread without demanding media packets.
++    // Merely waking the core while paused leaves button effects stuck forever.
++    if (have)
++        poll_disc_nav(mpctx, s, &nav);
+ 
+     if (!have) {
+         if (st->overlay_visible) {

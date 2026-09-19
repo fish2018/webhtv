@@ -1,0 +1,152 @@
+--- a/libavcodec/mediacodec.c
++++ b/libavcodec/mediacodec.c
+@@ -101,7 +101,9 @@
+         return AVERROR(EINVAL);
+ 
+     MediaCodecDecContext *ctx = buffer->ctx;
++    ff_mutex_lock(&ctx->output_mutex);
+     int released = atomic_fetch_add(&buffer->released, 1);
++    int result = 0;
+ 
+     if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+         atomic_fetch_sub(&ctx->hw_buffer_count, 1);
+@@ -109,10 +111,11 @@
+                "Releasing output buffer %zd (%p) ts=%"PRId64" with render=%d [%d pending]\n",
+                buffer->index, buffer, buffer->pts, render, atomic_load(&ctx->hw_buffer_count));
+         int ret = ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, render);
+-        return ret < 0 ? ret : 1;
++        result = ret < 0 ? ret : 1;
+     }
+ 
+-    return 0;
++    ff_mutex_unlock(&ctx->output_mutex);
++    return result;
+ }
+ 
+ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
+@@ -124,17 +127,20 @@
+ int av_mediacodec_render_buffer_at_time(AVMediaCodecBuffer *buffer, int64_t time)
+ {
+     MediaCodecDecContext *ctx = buffer->ctx;
++    ff_mutex_lock(&ctx->output_mutex);
+     int released = atomic_fetch_add(&buffer->released, 1);
++    int result = 0;
+ 
+     if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+         atomic_fetch_sub(&ctx->hw_buffer_count, 1);
+         av_log(ctx, AV_LOG_DEBUG,
+                "Rendering output buffer %zd (%p) ts=%"PRId64" with time=%"PRId64" [%d pending]\n",
+                buffer->index, buffer, buffer->pts, time, atomic_load(&ctx->hw_buffer_count));
+-        return ff_AMediaCodec_releaseOutputBufferAtTime(ctx->codec, buffer->index, time);
++        result = ff_AMediaCodec_releaseOutputBufferAtTime(ctx->codec, buffer->index, time);
+     }
+ 
+-    return 0;
++    ff_mutex_unlock(&ctx->output_mutex);
++    return result;
+ }
+ 
+ #else
+--- a/libavcodec/mediacodecdec_common.c
++++ b/libavcodec/mediacodecdec_common.c
+@@ -547,6 +547,8 @@
+         }
+ 
+         av_freep(&s->codec_name);
++        if (s->output_mutex_initialized)
++            ff_mutex_destroy(&s->output_mutex);
+         av_freep(&s);
+     }
+ }
+@@ -555,15 +557,7 @@
+ {
+     AVMediaCodecBuffer *buffer = opaque;
+     MediaCodecDecContext *ctx = buffer->ctx;
+-    int released = atomic_load(&buffer->released);
+-
+-    if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+-        atomic_fetch_sub(&ctx->hw_buffer_count, 1);
+-        av_log(ctx, AV_LOG_DEBUG,
+-               "Releasing output buffer %zd (%p) ts=%"PRId64" on free() [%d pending]\n",
+-               buffer->index, buffer, buffer->pts, atomic_load(&ctx->hw_buffer_count));
+-        ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
+-    }
++    av_mediacodec_release_buffer(buffer, 0);
+ 
+     ff_mediacodec_dec_unref(ctx);
+     av_freep(&buffer);
+@@ -1291,18 +1285,22 @@
+     FFAMediaCodec *codec = s->codec;
+     int status;
+ 
++    // Output buffers are held by the VO on another thread. Keep the serial
++    // change and platform flush atomic with their validation/release calls.
++    ff_mutex_lock(&s->output_mutex);
+     s->output_buffer_count = 0;
+ 
+     s->draining = 0;
+     s->flushing = 0;
+     s->eos = 0;
+     atomic_fetch_add(&s->serial, 1);
+-    atomic_init(&s->hw_buffer_count, 0);
++    atomic_store(&s->hw_buffer_count, 0);
+     s->current_input_buffer = -1;
+     mediacodec_packet_props_clear(s);
+     av_buffer_unref(&s->hdr10_plus_metadata);
+ 
+     status = ff_AMediaCodec_flush(codec);
++    ff_mutex_unlock(&s->output_mutex);
+     if (status < 0) {
+         av_log(avctx, AV_LOG_ERROR, "Failed to flush codec\n");
+         return AVERROR_EXTERNAL;
+@@ -1430,6 +1428,13 @@
+     atomic_init(&s->hw_buffer_count, 0);
+     atomic_init(&s->serial, 1);
+     s->current_input_buffer = -1;
++    ret = ff_mutex_init(&s->output_mutex, NULL);
++    if (ret) {
++        ret = AVERROR(ret);
++        goto fail;
++    }
++    s->output_mutex_initialized = true;
++    av_log(avctx, AV_LOG_VERBOSE, "WebHTV MediaCodec output release/flush serialization enabled\n");
+ 
+     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO)
+         ret = mediacodec_dec_get_audio_codec(avctx, s, mime, format);
+@@ -1819,6 +1824,8 @@
+     mediacodec_packet_props_clear(s);
+     av_buffer_unref(&s->hdr10_plus_metadata);
+ 
++    if (s->output_mutex_initialized)
++        ff_mutex_lock(&s->output_mutex);
+     if (s->codec) {
+         if (atomic_load(&s->hw_buffer_count) == 0) {
+             ff_AMediaCodec_stop(s->codec);
+@@ -1828,6 +1835,8 @@
+         }
+     }
+ 
++    if (s->output_mutex_initialized)
++        ff_mutex_unlock(&s->output_mutex);
+     ff_mediacodec_dec_unref(s);
+ 
+     return 0;
+--- a/libavcodec/mediacodecdec_common.h
++++ b/libavcodec/mediacodecdec_common.h
+@@ -30,6 +30,7 @@
+ 
+ #include "libavutil/frame.h"
+ #include "libavutil/pixfmt.h"
++#include "libavutil/thread.h"
+ 
+ #include "avcodec.h"
+ #include "mediacodec_wrapper.h"
+@@ -41,6 +42,8 @@
+     const AVClass *avclass;
+     atomic_int refcount;
+     atomic_int hw_buffer_count;
++    AVMutex output_mutex;
++    bool output_mutex_initialized;
+ 
+     char *codec_name;
+ 

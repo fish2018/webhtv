@@ -33,4 +33,21 @@ public class MpvSurfaceTeardownPolicyTest {
         assertFalse(policy.shouldBindSurface());
         assertFalse(policy.shouldDetachSurface());
     }
+
+    @Test
+    public void newMediaReopensBindingsAfterServiceRetainsPlayer() {
+        MpvSurfaceTeardownPolicy policy = new MpvSurfaceTeardownPolicy();
+
+        policy.requestTerminalRelease();
+        assertFalse(policy.shouldBindSurface());
+        assertFalse(policy.shouldDetachSurface());
+
+        policy.beginNewMedia();
+        assertTrue(policy.shouldBindSurface());
+        assertTrue(policy.shouldDetachSurface());
+
+        assertTrue(policy.requestTerminalRelease());
+        assertFalse(policy.shouldBindSurface());
+        assertFalse(policy.shouldDetachSurface());
+    }
 }

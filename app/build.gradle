@@ -16,6 +16,17 @@ def buildTimestamp = new Date().format('yyyyMMddHHmm', TimeZone.getTimeZone('Asi
 def buildTime = fastRelease ? "fast-${buildTimestamp}" : buildTimestamp
 def releaseTag = (System.getenv('WEBHTV_RELEASE_TAG') ?: '').replace('\\', '\\\\').replace('"', '\\"')
 def apkSuffix = (System.getenv('WEBHTV_APK_SUFFIX') ?: '').replaceAll('[^A-Za-z0-9._-]', '')
+def gitRevision = 'unavailable'
+def gitState = 'unavailable'
+def mpvSourceLock = new groovy.json.JsonSlurper().parse(rootProject.file('third_party/mpv-native-lock.json'))
+def mpvSourceRevisions = ['mpv', 'ffmpeg', 'libplacebo'].collect { name -> "${name}=${mpvSourceLock.sources[name].commit}" }.join(' ') + " framework=${mpvSourceLock.builder.commit}"
+try {
+    def revision = providers.exec { workingDir rootDir; commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.get().trim()
+    if (revision ==~ /[0-9a-f]{40}/) {
+        gitRevision = revision
+        gitState = providers.exec { workingDir rootDir; commandLine 'git', 'status', '--porcelain', '--untracked-files=no' }.standardOutput.asText.get().trim().isEmpty() ? 'clean' : 'dirty'
+    }
+} catch (Exception ignored) { /* Source archives may not contain Git metadata. */ }
 
 android {
     namespace = 'com.fongmi.android.tv'
@@ -31,7 +42,11 @@ android {
         versionName "5.6.0"
         buildConfigField "String", "BUILD_TIME", "\"${buildTime}\""
         buildConfigField "String", "BUILD_TAG", "\"${releaseTag}\""
+        buildConfigField "String", "GIT_REVISION", "\"${gitRevision}\""
+        buildConfigField "String", "GIT_STATE", "\"${gitState}\""
+        buildConfigField "String", "MPV_NATIVE_SOURCES", "\"${mpvSourceRevisions}\""
         buildConfigField "String", "MEDIA3_VERSION", "\"${libs.versions.media3.get()}\""
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -68,6 +83,9 @@ android {
         buildConfig = true
         viewBinding = true
     }
+
+    // ASS rendering is part of normal builds; package the matching prebuilt ABI.
+    sourceSets.main.jniLibs.srcDir(rootProject.file('third_party/exo-ass-native/prebuilt'))
 
     signingConfigs {
         release {
@@ -183,5 +201,7 @@ dependencies {
     annotationProcessor libs.glide.compiler
     coreLibraryDesugaring libs.desugar
     testImplementation libs.junit
+    androidTestImplementation libs.junit
+    androidTestImplementation 'androidx.test:runner:1.7.0'
     testImplementation libs.okhttp.mockwebserver
 }

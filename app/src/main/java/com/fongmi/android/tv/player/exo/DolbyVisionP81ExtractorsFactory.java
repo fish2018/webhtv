@@ -25,6 +25,8 @@ import androidx.media3.extractor.mkv.MatroskaExtractor;
 import androidx.media3.extractor.text.DefaultSubtitleParserFactory;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.player.exo.ass.AssFontMatroskaExtractor;
+import com.fongmi.android.tv.player.exo.ass.AssFontSet;
 import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
 import com.github.catvod.crawler.SpiderDebug;
 import com.suyashbelekar.exoplayerhdrutils.libdovi.FrameInfo;
@@ -59,6 +61,7 @@ final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
 
     private final ExtractorsFactory delegate;
     @Nullable private final ExoDolbyVisionPlaybackState playbackState;
+    @Nullable private final AssFontSet assFonts;
 
     DolbyVisionP81ExtractorsFactory(ExtractorsFactory delegate) {
         this(delegate, null);
@@ -67,8 +70,14 @@ final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
     DolbyVisionP81ExtractorsFactory(
             ExtractorsFactory delegate,
             @Nullable ExoDolbyVisionPlaybackState playbackState) {
+        this(delegate, playbackState, null);
+    }
+
+    DolbyVisionP81ExtractorsFactory(ExtractorsFactory delegate,
+            @Nullable ExoDolbyVisionPlaybackState playbackState, @Nullable AssFontSet assFonts) {
         this.delegate = delegate;
         this.playbackState = playbackState;
+        this.assFonts = assFonts;
     }
 
     @Override
@@ -88,10 +97,12 @@ final class DolbyVisionP81ExtractorsFactory implements ExtractorsFactory {
         for (int i = 0; i < extractors.length; i++) {
             Extractor extractor = extractors[i];
             if (extractor instanceof MatroskaExtractor
-                    && (deferSeekForCues || dv7P81Enabled)) {
+                    && (deferSeekForCues || dv7P81Enabled || assFonts != null)) {
                 int flags = MatroskaExtractor.FLAG_EMIT_RAW_SUBTITLE_DATA
                         | (deferSeekForCues ? MatroskaExtractor.FLAG_DEFER_SEEK_FOR_CUES : 0);
-                extractor = new MatroskaExtractor(
+                extractor = assFonts != null
+                        ? new AssFontMatroskaExtractor(flags, dv7P81Enabled, assFonts)
+                        : new MatroskaExtractor(
                         new DefaultSubtitleParserFactory(),
                         flags,
                         dv7P81Enabled);

@@ -15,6 +15,86 @@ import static org.junit.Assert.assertTrue;
 public class MpvHlsSegmentContentPolicyTest {
 
     @Test
+    public void liveSegmentsAtPlaylistEndpointStayMediaBeforeAndAfterResponse() {
+        String playlist = """
+                #EXTM3U
+                #EXT-X-MEDIA-SEQUENCE:1785796058
+                #EXT-X-TARGETDURATION:6
+                #EXTINF:6.000,
+                cctv5.m3u8?ts=segment-1
+                #EXTINF:4.000,
+                cctv5.m3u8?ts=segment-2
+                """;
+
+        HlsPlaylistRewriter.Result result = HlsPlaylistRewriter.rewrite(
+                playlist, null, (uri, cacheable, context) -> {
+                    assertEquals(HlsPlaylistRewriter.UriRole.MEDIA_SEGMENT, context.role());
+                    assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(context.role(), uri, null));
+                    assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(context.role(), uri, "video/mp2t"));
+                    assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(
+                            context.role(), uri, "application/vnd.apple.mpegurl"));
+                    return new HlsPlaylistRewriter.MappedUri(uri, uri);
+                });
+
+        assertEquals(2, result.segments().size());
+        assertEquals(playlist, result.text());
+    }
+
+    @Test
+    public void byteRangeAndPartialSegmentsRetainTheirMediaRole() {
+        String playlist = """
+                #EXTM3U
+                #EXT-X-PART:DURATION=0.5,URI="live.m3u8?part=1"
+                #EXT-X-PRELOAD-HINT:TYPE=PART,URI="live.m3u8?part=2"
+                #EXTINF:4,
+                #EXT-X-BYTERANGE:1024@188
+                live.m3u8?ts=1
+                """;
+        int[] ranges = {0};
+        int[] items = {0};
+
+        HlsPlaylistRewriter.Result result = HlsPlaylistRewriter.rewrite(
+                playlist, null, (uri, cacheable, context) -> {
+                    items[0]++;
+                    if (context.byteRange()) ranges[0]++;
+                    // serveItem preserves Range whenever this request is media.
+                    assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(context.role(), uri, null));
+                    return new HlsPlaylistRewriter.MappedUri(uri, uri);
+                });
+
+        assertEquals(3, items[0]);
+        assertEquals(1, ranges[0]);
+        assertEquals(playlist, result.text());
+    }
+
+    @Test
+    public void declaredVariantsRemainPlaylistsWithoutUrlOrMimeHints() {
+        HlsPlaylistRewriter.Result result = HlsPlaylistRewriter.rewrite("""
+                #EXTM3U
+                #EXT-X-STREAM-INF:BANDWIDTH=4500000
+                stream?quality=hd
+                """, null, (uri, cacheable, context) -> {
+                    assertTrue(MpvHlsSegmentContentPolicy.isPlaylist(context.role(), uri, null));
+                    assertTrue(MpvHlsSegmentContentPolicy.isPlaylist(
+                            context.role(), uri, "application/octet-stream"));
+                    return new HlsPlaylistRewriter.MappedUri(uri, uri);
+                });
+
+        assertEquals(1, result.variants().size());
+    }
+
+    @Test
+    public void unclassifiedUrisKeepExistingPlaylistHints() {
+        HlsPlaylistRewriter.UriRole role = HlsPlaylistRewriter.UriRole.OTHER;
+        assertTrue(MpvHlsSegmentContentPolicy.isPlaylist(role, "audio.M3U8?lang=zh", null));
+        assertTrue(MpvHlsSegmentContentPolicy.isPlaylist(role, "subtitles.m3u", null));
+        assertTrue(MpvHlsSegmentContentPolicy.isPlaylist(role, "rendition", "application/x-mpegURL"));
+        assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(role, "key?name=secret.m3u8", null));
+        assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(role, "init.mp4", "video/mp4"));
+        assertFalse(MpvHlsSegmentContentPolicy.isPlaylist(role, null, null));
+    }
+
+    @Test
     public void jpgMediaSegmentIsProbedForPngWrapper() {
         assertTrue(MpvHlsSegmentContentPolicy.shouldProbePngPrefix("image/jpg", true));
         assertTrue(MpvHlsSegmentContentPolicy.shouldProbePngPrefix("image/jpeg", true));

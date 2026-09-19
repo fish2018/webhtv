@@ -57,6 +57,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
+import androidx.media3.mpvplayer.MpvPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.palette.graphics.Palette;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -320,6 +321,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private Runnable mR3;
     private Runnable mR4;
     private Clock mClock;
+    private MpvPlayer mDiscMenuPlayer;
+    private MpvPlayer mCustomButtonPlayer;
+    private final Runnable mCustomButtonStateListener = this::updateCustomButtonStates;
+    private final Runnable mDiscMenuStateListener = this::updateDiscMenuTools;
     private PiP mPiP;
     private String mContextWallUrl;
     private String mContextWallLockedUrl;
@@ -817,7 +822,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.karaoke.setOnClickListener(view -> onKaraokeMode());
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
         mBinding.control.action.reset.setOnClickListener(view -> onReset());
+        mBinding.control.action.change2.setOnClickListener(view -> onChange());
         mBinding.control.action.title.setOnClickListener(view -> onTitle());
+        mBinding.control.action.discMenu.setOnClickListener(view -> {
+            hideControl();
+            openDiscMenu();
+        });
+        mBinding.control.action.discMenu.setOnLongClickListener(view -> {
+            hideControl();
+            showDiscMenuControls();
+            return true;
+        });
+        mBinding.discTools.fullscreen.setOnClickListener(view -> onFullscreen());
         mBinding.control.action.player.setOnClickListener(view -> onPlayerKernel());
         mBinding.control.action.player.setOnLongClickListener(view -> onChooseLong());
         mBinding.control.action.prev.setOnClickListener(view -> checkPrev());
@@ -854,7 +870,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.reset.setOnLongClickListener(view -> onResetToggle());
         mBinding.control.action.ending.setOnLongClickListener(view -> onEndingReset());
         mBinding.control.action.opening.setOnLongClickListener(view -> onOpeningReset());
-        mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
+        mBinding.video.setOnTouchListener((view, event) ->
+                (!isVisible(mBinding.control.getRoot()) && dispatchDiscMenuTouch(event))
+                        || mKeyDown.onTouchEvent(event));
         mBinding.control.action.getRoot().setOnTouchListener(this::onActionTouch);
         mBinding.swipeLayout.setOnRefreshListener(this::onSwipeRefresh);
     }
@@ -1040,6 +1058,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         addActionButton(PlayerButtonSetting.PREV, mBinding.control.action.prev);
         addActionButton(PlayerButtonSetting.NEXT, mBinding.control.action.next);
         addActionButton(PlayerButtonSetting.EPISODES, mBinding.control.action.episodes);
+        addActionButton(PlayerButtonSetting.CHANGE, mBinding.control.action.change2);
         addActionButton(PlayerButtonSetting.SETTING, mBinding.control.action.setting);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
         setupCustomActionButtons();
@@ -1063,7 +1082,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         boolean landscape = isLand();
         for (int index = 0; index < buttons.size(); index++) {
             MpvConfigStore.CustomButton button = buttons.get(index);
-            if (!button.enabled) continue;
+            if (!button.isButtonVisible()) continue;
             TextView view = new TextView(this);
             view.setTextSize(13);
             view.setTextColor(Color.WHITE);
@@ -1077,16 +1096,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             view.setMaxWidth(ResUtil.dp2px(144));
             view.setEllipsize(TextUtils.TruncateAt.END);
             view.setContentDescription(button.title);
+            view.setTag(button.id);
             view.setOnClickListener(item -> {
-                if (player().sendMpvCustomButton(button.id, false)) {
-                    toggleCustomButtonState(item);
-                }
+                player().sendMpvCustomButton(button.id, false);
                 setR1Callback();
             });
             view.setOnLongClickListener(item -> {
-                if (player().sendMpvCustomButton(button.id, true)) {
-                    toggleCustomButtonState(item);
-                }
+                player().sendMpvCustomButton(button.id, true);
                 setR1Callback();
                 return true;
             });
@@ -1106,8 +1122,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         updateCustomButtonVisibility();
     }
 
-    private void toggleCustomButtonState(View view) {
-        view.setSelected(!view.isSelected());
+    private void updateCustomButtonStates() {
+        MpvPlayer mpv = service() != null && isOwner()
+                && player().getPlayer() instanceof MpvPlayer active ? active : null;
+        if (mCustomButtonPlayer != mpv) {
+            if (mCustomButtonPlayer != null) mCustomButtonPlayer.removeCustomButtonStateListener(mCustomButtonStateListener);
+            mCustomButtonPlayer = mpv;
+            if (mpv != null) mpv.addCustomButtonStateListener(mCustomButtonStateListener);
+        }
+        for (View view : mCustomActionViews) {
+            view.setSelected(mpv != null && mpv.isCustomButtonActive((String) view.getTag()));
+        }
     }
 
     private void ensureCustomButtonContainers() {
@@ -1174,6 +1199,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void updateCustomButtonVisibility() {
+        updateCustomButtonStates();
         boolean visible = service() != null && player().isMpv() && isVisible(mBinding.control.getRoot());
         if (mCustomLeftButtons != null) mCustomLeftButtons.setVisibility(visible && isLand() ? View.VISIBLE : View.GONE);
         if (mCustomRightButtons != null) mCustomRightButtons.setVisibility(visible && isLand() ? View.VISIBLE : View.GONE);
@@ -4202,6 +4228,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
+        updateDiscMenuTools();
         updateCustomButtonVisibility();
         if (mOsd != null) mOsd.setControlsVisible(true);
         checkFullscreenImg();
@@ -4210,6 +4237,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void hideControl() {
         mBinding.control.getRoot().setVisibility(View.GONE);
+        updateDiscMenuTools();
         updateCustomButtonVisibility();
         if (mOsd != null) mOsd.setControlsVisible(false);
         App.removeCallbacks(mR1);
@@ -4494,7 +4522,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             mHistory.setCreateTime(System.currentTimeMillis());
         }
         if (exit && service() != null) PlaybackEventCollector.get().onStop(player());
-        if (!mHistory.canSave()) return;
+        if (!canSavePlaybackHistory(mHistory)) return;
         History history = mHistory.copy();
         Task.execute(() -> {
             if (history.getDuration() > 0) history.merge().save();
@@ -5925,6 +5953,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (!isOwner()) return;
         long position, duration;
         mHistory.setCreateTime(time);
+        if (hasDiscNavigationTimeline()) {
+            if (canSavePlaybackHistory(mHistory) && mHistory.canSync()) syncHistory();
+            return;
+        }
         updatePlaybackHistoryPosition();
         syncCurrentAudioPlaylistMetadata();
         debugLyricsLoop("clock", false);
@@ -5941,7 +5973,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void updatePlaybackHistoryPosition() {
-        if (mHistory == null) return;
+        if (mHistory == null || hasDiscNavigationTimeline()) return;
         long position = player().getPosition();
         long duration = player().getDuration();
         if (position > 0) mHistory.setPosition(position);
@@ -5973,7 +6005,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void setPosition() {
-        if (mHistory == null) return;
+        if (mHistory == null || hasDiscMenu()) return;
         applyCastHistory();
         if (mHistory.isNearEnding()) {
             SpiderDebug.log("video-flow", "reset near-end history position=%d duration=%d key=%s", mHistory.getPosition(), mHistory.getDuration(), getHistoryKey());
@@ -6071,11 +6103,31 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void setTrackVisible() {
+        mBinding.control.action.discMenu.setVisibility(hasDiscMenu() ? View.VISIBLE : View.GONE);
+        updateDiscMenuTools();
         mBinding.control.action.text.setVisibility(player().haveTrack(C.TRACK_TYPE_TEXT) || player().isVod() ? View.VISIBLE : View.GONE);
         mBinding.control.action.audio.setVisibility(player().haveTrack(C.TRACK_TYPE_AUDIO) ? View.VISIBLE : View.GONE);
         mBinding.control.action.video.setVisibility(player().haveTrack(C.TRACK_TYPE_VIDEO) ? View.VISIBLE : View.GONE);
         applyActionButtonVisibility();
         updateAudioStageControls();
+    }
+
+    private void updateDiscMenuTools() {
+        updateCustomButtonStates();
+        MpvPlayer mpv = service() != null && isOwner()
+                && player().getPlayer() instanceof MpvPlayer active ? active : null;
+        if (mDiscMenuPlayer != mpv) {
+            if (mDiscMenuPlayer != null) mDiscMenuPlayer.removeDiscMenuStateListener(mDiscMenuStateListener);
+            mDiscMenuPlayer = mpv;
+            if (mpv != null) mpv.addDiscMenuStateListener(mDiscMenuStateListener);
+        }
+        boolean visible = mpv != null && mpv.isDiscMenuActive() && !isLock() && !isInPictureInPictureMode()
+                && !mAudioStageVisible && !isVisible(mBinding.control.getRoot());
+        mBinding.discTools.getRoot().setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.discTools.fullscreen.setImageResource(isFullscreen()
+                ? R.drawable.ic_control_fullscreen_exit : R.drawable.ic_control_fullscreen);
+        mBinding.discTools.fullscreen.setContentDescription(getString(isFullscreen()
+                ? R.string.play_exit_fullscreen : R.string.play_fullscreen));
     }
 
     private void setTitleVisible() {
@@ -6232,6 +6284,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setFullscreen(boolean fullscreen) {
         Util.toggleFullscreen(this, this.fullscreen = fullscreen);
+        updateDiscMenuTools();
     }
 
     private boolean isInitAuto() {
@@ -6475,6 +6528,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             restoreContextWall();
             if (isStop()) finish();
         }
+        updateDiscMenuTools();
     }
 
     @Override
@@ -6616,6 +6670,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     protected void onDestroy() {
+        if (mCustomButtonPlayer != null) {
+            mCustomButtonPlayer.removeCustomButtonStateListener(mCustomButtonStateListener);
+            mCustomButtonPlayer = null;
+        }
+        if (mDiscMenuPlayer != null) {
+            mDiscMenuPlayer.removeDiscMenuStateListener(mDiscMenuStateListener);
+            mDiscMenuPlayer = null;
+        }
         dismissKaraokeResultDialogForRecreation();
         mLyricsSearchSeq++;
         cancelKaraokePitchGeneration(false);

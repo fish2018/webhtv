@@ -1,0 +1,15 @@
+﻿[Script Info]
+ScriptType: v4.00+
+ScaledBorderAndShadow: yes
+PlayResX: 1920
+PlayResY: 1080
+YCbCr Matrix: TV.601
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arimo,95,&H00008AFF,&H00FFFFFF,&H00000000,&H00666666,-1,0,0,0,100,100,0,0,1,6,0,8,40,40,60,1
+Style: Default Bas,Arial,95,&H00008AFF,&H00FFFFFF,&H00000000,&H00666666,-1,0,0,0,100,100,0,0,1,6,0,8,40,40,740,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:04.17,0:00:09.82,Default,,0,0,0,fx,{\k90\fad(300,200)}{\k42}So {\k42}we {\k43}can {\k46}find {\k37}our {\kf245}way

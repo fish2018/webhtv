@@ -1,0 +1,21 @@
+{
+  "source": "uavs3/uavs3e",
+  "revision": "e1ff0f37a8d67814e1d650f6b49d495c49dde946",
+  "description": "Synthetic gradients; macOS COMPILE_10BIT guard fixed; one encoder thread. Decoder uses two threads.",
+  "width": 256,
+  "height": 144,
+  "frames": 16,
+  "fps": 25,
+  "streams": {
+    "8": {
+      "sha256": "d0dbd57f983ac27cae2ff70376e22bcc8275a747fd6bc0452b404a124af71cb4",
+      "decoded_sha256": "4af75530b1dc15dd41f1ec2e47f6ad64deb0fddf9f6b46bd772dba6f65589ecb",
+      "decoded_bytes": 884736
+    },
+    "10": {
+      "sha256": "6fb9cfddb8645942b9883304cc5f783da8368d139715dc1e09cd88068f994df7",
+      "decoded_sha256": "745e6cefa14496131199293c118bbf664ac0a1f07dd8333ffd6d36d9e2e39cc4",
+      "decoded_bytes": 1769472
+    }
+  }
+}

@@ -123,6 +123,10 @@ public final class PlaybackMemoryMonitor {
                 system.processImportance(),
                 nativeHeapBytes);
         coordinator.publish(session, snapshot, pssBytes, Build.VERSION.SDK_INT, sampledAt);
+        DiagnosticControls.forTrace(session.traceId(), "play.resources", "existing-memory-monitor", e -> e
+                .observed("javaBytes", javaHeap.usedBytes()).observed("nativeBytes", nativeHeapBytes)
+                .observed("lowRam", system.lowRamDevice()).observed("trimLevel", trimLevel).observed("reason", trigger.name())
+                .observed("metricScope", "existing monitor; no additional proc/PSS polling"));
     }
 
     private boolean shouldSamplePss(long nowElapsedMs) {

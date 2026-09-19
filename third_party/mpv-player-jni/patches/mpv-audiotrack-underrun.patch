@@ -1,0 +1,17 @@
+diff --git a/audio/out/ao_audiotrack.c b/audio/out/ao_audiotrack.c
+--- a/audio/out/ao_audiotrack.c
++++ b/audio/out/ao_audiotrack.c
+@@ -733,6 +733,13 @@ static MP_THREAD_VOID ao_thread(void *arg)
+                 }
+             } else {
+                 int samples = ao_read_data(ao, &p->chunk, read_samples, ts, NULL, false, false);
++                if (samples <= 0) {
++                    // A zero-byte WRITE_BLOCKING does not block. Release the
++                    // mutex while waiting for data or start/uninit to wake us.
++                    // Match the compressed path's bounded underrun wait.
++                    mp_cond_timedwait(&p->wakeup, &p->lock, MP_TIME_MS_TO_NS(20));
++                    continue;
++                }
+                 int ret = AudioTrack_write(ao, NULL, samples * ao->sstride);
+                 if (ret >= 0) {
+                     p->written_frames += ret / ao->sstride;

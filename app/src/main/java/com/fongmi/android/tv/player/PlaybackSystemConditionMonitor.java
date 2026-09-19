@@ -181,6 +181,8 @@ public final class PlaybackSystemConditionMonitor {
         Integer thermalStatus = readThermalStatus(session, powerManager);
         coordinator.publish(session, trigger, network, powerSave, thermalStatus,
                 Build.VERSION.SDK_INT, sampledAt);
+        DiagnosticControls.forTrace(session.traceId(), "play.resources", "existing-system-monitor", e -> e
+                .observed("powerSave", powerSave).observed("thermalStatus", thermalStatus).observed("reason", trigger.name()));
     }
 
     private void registerListenersLocked(PlaybackAutoContext.SessionToken session) {

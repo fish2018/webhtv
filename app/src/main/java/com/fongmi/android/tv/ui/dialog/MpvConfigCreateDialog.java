@@ -34,9 +34,9 @@ import com.google.android.material.switchmaterial.SwitchMaterial;
 public class MpvConfigCreateDialog extends BaseAlertDialog {
 
     public interface Listener {
-        void onText(String name);
+        void onText(String name, boolean buttonEnabled, String trigger);
 
-        void onImport(String name, String path);
+        void onImport(String name, String path, boolean buttonEnabled, String trigger);
     }
 
     private DialogMpvConfigCreateBinding binding;
@@ -104,6 +104,11 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
     protected void initEvent() {
         binding.close.setOnClickListener(view -> dismiss());
         binding.triggerGroup.addOnButtonCheckedListener(this::onTriggerChecked);
+        if (MpvConfigStore.TARGET_SCRIPTS.equals(target)) {
+            updateScriptTrigger(binding.buttonEnabled.isChecked(), triggerId);
+            binding.buttonEnabled.setOnCheckedChangeListener((button, enabled) ->
+                    updateScriptTrigger(enabled, enabled ? R.id.triggerClick : R.id.triggerStartup));
+        }
         binding.scriptCode.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -246,12 +251,16 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
         binding.scriptCode.setVisibility(View.GONE);
         binding.scriptStats.setVisibility(View.GONE);
         binding.scriptEdit.setVisibility(View.VISIBLE);
+        binding.scriptEnabledRow.setVisibility(View.VISIBLE);
+        binding.scriptEnabled.setChecked(sourceButton == null || sourceButton.scriptEnabled);
         binding.buttonEnabled.setChecked(sourceButton != null && sourceButton.enabled);
-        triggerId = triggerIdFor(sourceButton == null ? "click" : sourceButton.trigger);
+        triggerId = triggerIdFor(MpvConfigStore.normalizeScriptTrigger(binding.buttonEnabled.isChecked(),
+                sourceButton == null ? null : sourceButton.trigger));
         binding.triggerGroup.check(triggerId);
         if (Util.isLeanback()) {
             tvFocusable(binding.close);
             tvFocusable(binding.name);
+            tvFocusable(binding.scriptEnabled);
             tvFocusable(binding.buttonEnabled);
             tvFocusable(binding.triggerClick);
             tvFocusable(binding.triggerLong);
@@ -261,8 +270,10 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
             tvFocusable(binding.buttonSave);
             binding.close.setNextFocusDownId(R.id.name);
             binding.name.setNextFocusUpId(R.id.close);
-            binding.name.setNextFocusDownId(R.id.buttonEnabled);
-            binding.buttonEnabled.setNextFocusUpId(R.id.name);
+            binding.name.setNextFocusDownId(R.id.scriptEnabled);
+            binding.scriptEnabled.setNextFocusUpId(R.id.name);
+            binding.scriptEnabled.setNextFocusDownId(R.id.buttonEnabled);
+            binding.buttonEnabled.setNextFocusUpId(R.id.scriptEnabled);
             binding.buttonEnabled.setNextFocusDownId(R.id.triggerClick);
             binding.triggerClick.setNextFocusUpId(R.id.buttonEnabled);
             binding.triggerClick.setNextFocusDownId(R.id.scriptEdit);
@@ -330,12 +341,41 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
 
     private void onTriggerChecked(MaterialButtonToggleGroup group, int checkedId, boolean isChecked) {
         if (!MpvConfigStore.TARGET_SCRIPTS.equals(target) || !isChecked || checkedId == triggerId) return;
+        if (!binding.buttonEnabled.isChecked() && checkedId != R.id.triggerStartup) {
+            group.check(R.id.triggerStartup);
+            return;
+        }
         if (scriptButtonMode) saveCurrentCode();
         triggerId = checkedId;
         if (scriptButtonMode) {
             binding.scriptCode.setText(codeForTrigger(checkedId));
             binding.scriptCode.setSelection(binding.scriptCode.length());
         }
+        updateScriptTriggerFocus();
+    }
+
+    private void updateScriptTrigger(boolean enabled, int selectedId) {
+        // Some Material versions ignore setChecked on disabled buttons.
+        binding.triggerClick.setEnabled(true);
+        binding.triggerLong.setEnabled(true);
+        binding.triggerGroup.check(enabled ? selectedId : R.id.triggerStartup);
+        binding.triggerClick.setEnabled(enabled);
+        binding.triggerLong.setEnabled(enabled);
+        updateScriptTriggerFocus();
+    }
+
+    private void updateScriptTriggerFocus() {
+        if (!Util.isLeanback()) return;
+        boolean enabled = binding.buttonEnabled.isChecked();
+        binding.triggerClick.setFocusable(enabled);
+        binding.triggerLong.setFocusable(enabled);
+        binding.buttonEnabled.setNextFocusDownId(triggerId);
+        binding.triggerClick.setNextFocusUpId(R.id.buttonEnabled);
+        binding.triggerLong.setNextFocusUpId(R.id.buttonEnabled);
+        binding.triggerStartup.setNextFocusUpId(R.id.buttonEnabled);
+        binding.textOption.setNextFocusUpId(triggerId);
+        binding.scriptCode.setNextFocusUpId(triggerId);
+        binding.scriptEdit.setNextFocusUpId(triggerId);
     }
 
     private void saveCurrentCode() {
@@ -380,7 +420,7 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
     private void saveScriptSettings() {
         try {
             String savedId = MpvConfigStore.saveScriptSettings(scriptId, name(), scriptContent,
-                    binding.buttonEnabled.isChecked(), triggerName(triggerId));
+                    binding.buttonEnabled.isChecked(), triggerName(triggerId), binding.scriptEnabled.isChecked());
             if (buttonCallback != null) buttonCallback.run();
             Notify.show(R.string.mpv_config_profile_saved);
             dismissAllowingStateLoss();
@@ -412,9 +452,11 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
 
     private void createText() {
         String name = name();
+        boolean enabled = binding.buttonEnabled.isChecked();
+        String trigger = triggerName(triggerId);
         dismissAllowingStateLoss();
         App.post(() -> {
-            if (listener != null) listener.onText(name);
+            if (listener != null) listener.onText(name, enabled, trigger);
         });
     }
 
@@ -453,9 +495,11 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
         }
         binding.urlLayout.setError(null);
         String name = name();
+        boolean enabled = binding.buttonEnabled.isChecked();
+        String trigger = triggerName(triggerId);
         dismissAllowingStateLoss();
         App.post(() -> {
-            if (listener != null) listener.onImport(name, url);
+            if (listener != null) listener.onImport(name, url, enabled, trigger);
         });
     }
 
@@ -472,9 +516,11 @@ public class MpvConfigCreateDialog extends BaseAlertDialog {
             return;
         }
         String name = binding == null ? "" : name();
+        boolean enabled = binding != null && binding.buttonEnabled.isChecked();
+        String trigger = triggerName(triggerId);
         dismissAllowingStateLoss();
         App.post(() -> {
-            if (listener != null) listener.onImport(name, path);
+            if (listener != null) listener.onImport(name, path, enabled, trigger);
         });
     });
 

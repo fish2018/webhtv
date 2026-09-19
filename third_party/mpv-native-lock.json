@@ -148,6 +148,37 @@
       "describe_tag": "v0.41.0",
       "tag_repo": "https://github.com/mpv-player/mpv.git",
       "history_depth": 1600
+    },
+    "uavs3d": {
+      "repo": "https://github.com/uavs3/uavs3d",
+      "commit": "0e20d2c291853f196c68922a264bcd8471d75b68",
+      "url": "https://codeload.github.com/uavs3/uavs3d/tar.gz/0e20d2c291853f196c68922a264bcd8471d75b68",
+      "sha256": "1c1eb778b6080bc01493180ea7ae671c6444ce3aa760b5d021ba882eb0f9e3a0",
+      "version": "1.2.0-0e20d2c2-10bit"
     }
+  },
+  "avs3_high_decoder": {
+    "repo": "https://github.com/zzZ2001a/avs",
+    "commit": "0c7ac42edfac6d18b92b58a5ef43bca58526ca7a",
+    "subdirectory": "dependencies/hpm-HPM-15.0",
+    "archive": "third_party/avs3-hpm/vendor/hpm-15.0.tar.gz",
+    "sha256": "7cfd796f4052b491af0a53a3a82356b5886ab03fcde3eea1a2f5ac4060370afb",
+    "version": "HPM-15.0-webhtv-1",
+    "simd_adapter": {
+      "repo": "https://github.com/DLTcollab/sse2neon",
+      "commit": "3cf69760cc6fdc45a5d70f0d42a8f079489f9867",
+      "version": "1.8.0",
+      "header": "third_party/avs3-hpm/vendor/sse2neon.h",
+      "sha256": "07723c9f9457dd4316f1fde3dd4eb6f31dd67d9955f6c21f4e609ac1698be48a",
+      "license": "MIT"
+    },
+    "license": "LicenseRef-AVS-HPM-standards-testing-and-promotion",
+    "profiles": [
+      "0x32"
+    ],
+    "bit_depths": [
+      10
+    ],
+    "linkage": "static, separately built for Exo and MPV"
   }
 }

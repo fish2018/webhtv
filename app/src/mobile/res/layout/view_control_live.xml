@@ -76,6 +76,15 @@
                 android:scaleType="center"
                 android:src="@drawable/ic_control_info" />
 
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/osdDiagnostics"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/play_params"
+                android:scaleType="center"
+                android:src="@drawable/ic_osd_diagnostics" />
+
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.appcompat.widget.LinearLayoutCompat>
 

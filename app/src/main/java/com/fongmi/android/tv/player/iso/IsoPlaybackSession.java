@@ -1,6 +1,8 @@
 package com.fongmi.android.tv.player.iso;
 
 import com.github.catvod.crawler.SpiderDebug;
+import com.github.catvod.utils.Path;
+import com.fongmi.android.tv.setting.PlayerSetting;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,15 +18,29 @@ final class IsoPlaybackSession {
 
     private final AtomicBoolean closed = new AtomicBoolean();
     private final CopyOnWriteArrayList<Runnable> metadataListeners = new CopyOnWriteArrayList<>();
-    private final IsoPageCache source;
+    private final RemoteIsoSource source;
     private final long id;
     private volatile IsoTrackMetadataResolver.Snapshot trackMetadata = IsoTrackMetadataResolver.Snapshot.EMPTY;
     private volatile boolean trackMetadataReady;
     private boolean metadataPreparing;
+    private int demandReaders;
+    private long demandStartedNs;
 
     IsoPlaybackSession(long id, String url, Map<String, String> headers) {
         this.id = id;
-        this.source = new IsoPageCache(new HttpRangeIsoSource(url, headers));
+        HttpRangeIsoSource remote = new HttpRangeIsoSource(url, headers);
+        IsoDiskPageStore disk = createDiskStore();
+        this.source = disk == null ? new IsoPageCache(remote) : new ProgressiveIsoPageCache(remote, disk);
+    }
+
+    private static IsoDiskPageStore createDiskStore() {
+        if (!PlayerSetting.isBlurayMenu()) return null;
+        try {
+            return new IsoDiskPageStore(Path.cache("mpv_hls"), PlayerSetting.getPlayCacheSize(PlayerSetting.MPV));
+        } catch (RuntimeException error) {
+            if (SpiderDebug.isEnabled()) SpiderDebug.log("iso-cache", "disk-init fallback=%s", error.getClass().getSimpleName());
+            return null;
+        }
     }
 
     long id() {
@@ -40,9 +56,22 @@ final class IsoPlaybackSession {
         ensureOpen();
         int wanted = Math.min(length, target.remaining());
         byte[] data = new byte[wanted];
-        int read = source.readAt(offset, data, 0, wanted);
-        if (read > 0) target.put(data, 0, read);
-        return read;
+        synchronized (this) {
+            if (demandReaders++ == 0) demandStartedNs = System.nanoTime();
+        }
+        try {
+            int read = source.readAt(offset, data, 0, wanted);
+            if (read > 0) target.put(data, 0, read);
+            return read;
+        } finally {
+            synchronized (this) {
+                if (--demandReaders == 0) demandStartedNs = 0;
+            }
+        }
+    }
+
+    synchronized long demandWaitMs() {
+        return demandReaders == 0 ? 0 : Math.max(0, (System.nanoTime() - demandStartedNs) / 1_000_000);
     }
 
     boolean hasDiscImageSignature() throws IOException {

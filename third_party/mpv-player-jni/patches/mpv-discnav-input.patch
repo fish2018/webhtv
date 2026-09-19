@@ -1,0 +1,541 @@
+diff --git a/player/discnav.c b/player/discnav.c
+--- a/player/discnav.c
++++ b/player/discnav.c
+@@ -119,30 +119,41 @@
+     return NULL;
+ }
+ 
+-bool disc_nav_mouse_pos_to_src(struct MPContext *mpctx, int src_w, int src_h,
+-                               int *out_x, int *out_y)
++bool disc_nav_window_pos_to_src(struct MPContext *mpctx, double wx, double wy,
++                                int src_w, int src_h, int *out_x, int *out_y)
+ {
+     struct vo *vo = mpctx->video_out;
+     if (!vo || !vo->config_ok || src_w <= 0 || src_h <= 0)
+         return false;
+-    int wx, wy, hover;
+-    mp_input_get_mouse_pos(mpctx->input, &wx, &wy, &hover);
+-    struct mp_rect src, dst;
+-    struct mp_osd_res osd; // mandatory out param; ignored
+-    vo_get_src_dst_rects(vo, &src, &dst, &osd);
+-    int dw = dst.x1 - dst.x0;
+-    int dh = dst.y1 - dst.y0;
++
++    // Invert the same published OSD rectangle used by push_bd_overlay().
++    // Negative margins describe zoom/crop; the visible video rectangle alone
++    // would incorrectly map that cropped portion to the entire menu plane.
++    // Unlike vo_get_src_dst_rects(), this snapshot is safe on the core thread.
++    struct mp_osd_res res = osd_get_vo_res(mpctx->osd);
++    int dw = res.w - res.ml - res.mr;
++    int dh = res.h - res.mt - res.mb;
+     if (dw <= 0 || dh <= 0)
+         return false;
+-    double fx = (wx - dst.x0) / (double)dw;
+-    double fy = (wy - dst.y0) / (double)dh;
+-    if (fx < 0 || fx > 1 || fy < 0 || fy > 1)
++    if (!(wx >= 0 && wx < res.w && wy >= 0 && wy < res.h))
+         return false;
++    double fx = (wx - res.ml) / dw;
++    double fy = (wy - res.mt) / dh;
++    if (!(fx >= 0 && fx < 1 && fy >= 0 && fy < 1))
++        return false;
+     *out_x = MPMIN((int)(fx * src_w), src_w - 1);
+     *out_y = MPMIN((int)(fy * src_h), src_h - 1);
+     return true;
+ }
+ 
++bool disc_nav_mouse_pos_to_src(struct MPContext *mpctx, int src_w, int src_h,
++                               int *out_x, int *out_y)
++{
++    int wx, wy, hover;
++    mp_input_get_mouse_pos(mpctx->input, &wx, &wy, &hover);
++    return disc_nav_window_pos_to_src(mpctx, wx, wy, src_w, src_h, out_x, out_y);
++}
++
+ // Push the current menu/highlight state to the dvd_subtitle decoders.
+ static void push_dvd_overlay(struct MPContext *mpctx, struct stream_nav_state *nav)
+ {
+diff --git a/player/core.h b/player/core.h
+--- a/player/core.h
++++ b/player/core.h
+@@ -682,6 +682,8 @@
+ void disc_nav_reset(struct MPContext *mpctx);
+ void disc_nav_destroy(struct MPContext *mpctx);
+ struct stream *disc_nav_get_stream(struct MPContext *mpctx);
++bool disc_nav_window_pos_to_src(struct MPContext *mpctx, double wx, double wy,
++                                int src_w, int src_h, int *out_x, int *out_y);
+ bool disc_nav_mouse_pos_to_src(struct MPContext *mpctx, int src_w, int src_h,
+                                int *out_x, int *out_y);
+ 
+diff --git a/player/command.c b/player/command.c
+--- a/player/command.c
++++ b/player/command.c
+@@ -7528,13 +7528,24 @@
+     if (action == STREAM_NAV_MOUSE_MOVE || action == STREAM_NAV_MOUSE_CLICK) {
+         double nx = cmd->args[1].v.d;
+         double ny = cmd->args[2].v.d;
+-        if (nx >= 0 && ny >= 0) {
+-            if (pre.src_w <= 0 || pre.src_h <= 0 || nx > 1 || ny > 1) {
++        if (cmd->args[3].v.i == 1) {
++            // Carry the pointer in this command: an earlier "mouse" command
++            // only queues an input event and may not have been consumed yet.
++            if (!disc_nav_window_pos_to_src(mpctx, nx, ny, pre.src_w, pre.src_h,
++                                            &nc.x, &nc.y))
++            {
+                 cmd->success = false;
+                 return;
+             }
+-            nc.x = (int)(nx * pre.src_w);
+-            nc.y = (int)(ny * pre.src_h);
++        } else if (nx != -1 || ny != -1) {
++            if (pre.src_w <= 0 || pre.src_h <= 0 ||
++                !(nx >= 0 && nx <= 1 && ny >= 0 && ny <= 1))
++            {
++                cmd->success = false;
++                return;
++            }
++            nc.x = MPMIN((int)(nx * pre.src_w), pre.src_w - 1);
++            nc.y = MPMIN((int)(ny * pre.src_h), pre.src_h - 1);
+         } else if (!disc_nav_mouse_pos_to_src(mpctx, pre.src_w, pre.src_h,
+                                               &nc.x, &nc.y))
+         {
+@@ -7545,7 +7556,9 @@
+ 
+     if (stream_control(s, STREAM_CTRL_NAV_CMD, &nc) < 1) {
+         cmd->success = false;
+-    } else if (mpctx->demuxer && stream_nav_action_activates(action)) {
++    } else if (mpctx->demuxer) {
++        // Hover/cursor input can execute authored auto-actions too. The
++        // demux thread pumps them independently of any cached media packet.
+         demux_drive_nav(mpctx->demuxer);
+     }
+ 
+@@ -8122,7 +8135,9 @@
+             {"mouse-move",  STREAM_NAV_MOUSE_MOVE},
+             {"mouse-click", STREAM_NAV_MOUSE_CLICK})},
+           {"x", OPT_DOUBLE(v.d), OPTDEF_DOUBLE(-1)},
+-          {"y", OPT_DOUBLE(v.d), OPTDEF_DOUBLE(-1)} },
++          {"y", OPT_DOUBLE(v.d), OPTDEF_DOUBLE(-1)},
++          {"coordinates", OPT_CHOICE(v.i,
++              {"normalized", 0}, {"window", 1}), OPTDEF_INT(0)} },
+     },
+ 
+     { "flush-status-line", cmd_flush_status_line, { {"clear", OPT_BOOL(v.b)} } },
+diff --git a/stream/stream_bluray.c b/stream/stream_bluray.c
+--- a/stream/stream_bluray.c
++++ b/stream/stream_bluray.c
+@@ -130,10 +130,15 @@
+     bool overlay_ig_visible;         // IG plane was FLUSHED with non-empty content
+     bool menu_event_active;          // BD_EVENT_MENU == 1
+     bool popup_supported;            // BD_EVENT_POPUP == 1
++    bool input_pending;              // guarded by overlay_lock; pumped by demux
++    int64_t next_nav_poll_ns;         // menu animation must also run over cached packets
++    uint32_t uo_mask;                // last public BD_EVENT_UO_MASK_CHANGED
+     uint32_t nav_change_id;          // bumped on FLUSH/HIDE/MENU/POPUP events
+     uint32_t discontinuity_id;       // bumped on actions that may hop (SELECT...)
+-    bool data_delivered;             // any byte returned from fill_buffer yet
++    bool data_delivered;             // demux writes; input reads under overlay_lock
+     bool still_active;               // holding an indefinite still.
++    bool trace_navigation;           // debug log configuration, immutable after open
++    uint32_t trace_request;          // guarded by overlay_lock
+ };
+ 
+ extern const stream_info_t stream_info_ffmpeg;
+@@ -141,6 +146,113 @@
+ extern const stream_info_t stream_info_bdmv_dir;
+ 
+ static int bluray_stream_open_internal(stream_t *s);
++
++// The libbluray logger is process-global and has no opaque owner. Never retain
++// a stream there: only a synchronous API call may lend it a thread-local owner.
++static thread_local struct {
++    stream_t *stream;
++    const char *phase;
++    uint32_t request;
++    unsigned lines;
++    int64_t window_ns;
++    unsigned window_lines;
++} bd_trace;
++
++static bool bluray_trace_line(const char *text, bool input)
++{
++    if (!text)
++        return false;
++    if (strncmp(text, "hdmv_vm.c:", 10) == 0)
++        return true;
++    if (strncmp(text, "graphics_controller.c:", 22) == 0) {
++        if (strstr(text, "skipping already rendered") ||
++            strstr(text, "not triggered (ANIMATING)"))
++            return false;
++        return strstr(text, "_set_button_page") || strstr(text, "_user_input") ||
++               strstr(text, "_mouse_move") || strstr(text, "auto-activate") ||
++               strstr(text, " activated") || strstr(text, "unknown page") ||
++               (input && (strstr(text, "render button #") ||
++                          strstr(text, "rendering page #")));
++    }
++    return strncmp(text, "bluray.c:", 9) == 0 &&
++           (strstr(text, "bd_menu_call") || strstr(text, "bd_user_input") ||
++            strstr(text, "bd_play_title") || strstr(text, "HDMV"));
++}
++
++static void bluray_trace_log(const char *text)
++{
++    if (!bd_trace.stream || !bluray_trace_line(text, !strcmp(bd_trace.phase, "input")))
++        return;
++    int64_t now = mp_time_ns();
++    if (now - bd_trace.window_ns >= MP_TIME_S_TO_NS(1)) {
++        bd_trace.window_ns = now;
++        bd_trace.window_lines = 0;
++    }
++    if (bd_trace.lines >= 96 || bd_trace.window_lines >= 600) {
++        if (bd_trace.lines == 96 || bd_trace.window_lines == 600) {
++            MP_INFO(bd_trace.stream, "bdnav-debug seq=%u phase=%s trace capped\n",
++                    bd_trace.request, bd_trace.phase);
++            bd_trace.lines++;
++            bd_trace.window_lines++;
++        }
++        return;
++    }
++    bd_trace.lines++;
++    bd_trace.window_lines++;
++    MP_INFO(bd_trace.stream, "bdnav-debug seq=%u phase=%s t_ms=%lld %.900s",
++            bd_trace.request, bd_trace.phase, (long long)(now / 1000000), text);
++}
++
++static void bluray_trace_init(void)
++{
++    bd_set_debug_handler(bluray_trace_log);
++    bd_set_debug_mask(DBG_CRIT | DBG_HDMV | DBG_GC);
++}
++
++static void bluray_trace_begin(stream_t *s, const char *phase)
++{
++    struct bluray_priv_s *b = s->priv;
++    if (!b->trace_navigation)
++        return;
++    mp_mutex_lock(&b->overlay_lock);
++    bd_trace.request = b->trace_request;
++    mp_mutex_unlock(&b->overlay_lock);
++    bd_trace.stream = s;
++    bd_trace.phase = phase;
++    bd_trace.lines = 0;
++}
++
++static void bluray_trace_end(void)
++{
++    bd_trace.stream = NULL;
++}
++
++static void bluray_trace_state(stream_t *s, const char *phase, int result,
++                               int64_t started_ns)
++{
++    struct bluray_priv_s *b = s->priv;
++    if (!b->trace_navigation)
++        return;
++    mp_mutex_lock(&b->overlay_lock);
++    MP_INFO(s, "bdnav-debug seq=%u phase=%s result=%d elapsed_ms=%lld "
++               "menu=%d overlay=%d popup=%d still=%d uo=%u change=%u disc=%u "
++               "plane=%dx%d delivered=%d\n",
++            b->trace_request, phase, result,
++            (long long)((mp_time_ns() - started_ns) / 1000000),
++            b->menu_event_active, b->overlay_ig_visible, b->popup_supported,
++            b->still_active, b->uo_mask, b->nav_change_id, b->discontinuity_id,
++            b->plane_w, b->plane_h, b->data_delivered);
++    mp_mutex_unlock(&b->overlay_lock);
++}
++
++static int bluray_read_ext(stream_t *s, void *buf, int len, BD_EVENT *event)
++{
++    struct bluray_priv_s *b = s->priv;
++    bluray_trace_begin(s, len ? "read" : "poll");
++    int result = bd_read_ext(b->bd, buf, len, event);
++    bluray_trace_end();
++    return result;
++}
+ 
+ // Lazy (re-)allocation for the IG-plane working/publish buffers.
+ static bool bd_ensure_plane(struct bluray_priv_s *priv, int w, int h)
+@@ -418,7 +530,25 @@
+     struct bluray_priv_s *b = s->priv;
+     if (b->hdmv_mode)
+         MP_VERBOSE(s, "bdnav: event %d param %u\n", ev->event, ev->param);
++    if (b->hdmv_mode && b->trace_navigation &&
++        (ev->event == BD_EVENT_TITLE || ev->event == BD_EVENT_PLAYLIST ||
++         ev->event == BD_EVENT_PLAYITEM || ev->event == BD_EVENT_END_OF_TITLE ||
++         ev->event == BD_EVENT_MENU || ev->event == BD_EVENT_POPUP ||
++         ev->event == BD_EVENT_STILL || ev->event == BD_EVENT_STILL_TIME ||
++         ev->event == BD_EVENT_UO_MASK_CHANGED)) {
++        mp_mutex_lock(&b->overlay_lock);
++        MP_INFO(s, "bdnav-debug seq=%u event=%u param=%u\n",
++                b->trace_request, ev->event, ev->param);
++        mp_mutex_unlock(&b->overlay_lock);
++    }
+     switch (ev->event) {
++    case BD_EVENT_UO_MASK_CHANGED:
++        if (b->hdmv_mode) {
++            mp_mutex_lock(&b->overlay_lock);
++            b->uo_mask = ev->param;
++            mp_mutex_unlock(&b->overlay_lock);
++        }
++        break;
+     case BD_EVENT_MENU:
+         // ev->param: 1 if the disc is currently in an HDMV menu, 0 otherwise.
+         if (b->hdmv_mode) {
+@@ -516,13 +646,12 @@
+ 
+ static int bluray_poll_hdmv_events(stream_t *s)
+ {
+-    struct bluray_priv_s *b = s->priv;
+     // User input queues VM commands, not just BD_EVENTs. A zero-byte read
+     // executes those commands even while the current clip holds a still.
+     for (int i = 0; i < 200; i++) {
+         BD_EVENT event = {0};
+         if (mp_cancel_test(s->cancel) ||
+-            bd_read_ext(b->bd, NULL, 0, &event) < 0)
++            bluray_read_ext(s, NULL, 0, &event) < 0)
+             return -1;
+         if (event.event == BD_EVENT_NONE)
+             return 0;
+@@ -560,7 +689,7 @@
+         // parses with the correct codec context.
+         for (int i = 0; i < 200; i++) {
+             uint32_t disc_before = b->discontinuity_id;
+-            int n = bd_read_ext(b->bd, (uint8_t *)buf + total, len - total, &event);
++            int n = bluray_read_ext(s, (uint8_t *)buf + total, len - total, &event);
+             if (n < 0) {
+                 MP_VERBOSE(s, "bdnav: bd_read_ext err iter=%d\n", i);
+                 return -1;
+@@ -582,8 +711,11 @@
+                 return 0;
+             mp_sleep_ns(MP_TIME_MS_TO_NS(5));
+         }
+-        if (total > 0)
++        if (total > 0 && !b->data_delivered) {
++            mp_mutex_lock(&b->overlay_lock);
+             b->data_delivered = true;
++            mp_mutex_unlock(&b->overlay_lock);
++        }
+         if (total == 0)
+             MP_VERBOSE(s, "bdnav: fill returned 0 (events=%d)\n", events_seen);
+         return total;
+@@ -592,6 +724,37 @@
+     while (bd_get_event(b->bd, &event))
+         handle_event(s, &event);
+     return bd_read(b->bd, buf, len);
++}
++
++static int bluray_call_user_menu(stream_t *s)
++{
++    struct bluray_priv_s *b = s->priv;
++    int64_t call_started = mp_time_ns();
++    int result = bd_menu_call(b->bd, -1);
++    bluray_trace_state(s, "menu-normal", result, call_started);
++    if (result > 0)
++        return result;
++
++    mp_mutex_lock(&b->overlay_lock);
++    bool restricted = b->uo_mask & BLURAY_UO_MENU_CALL;
++    bool started = b->data_delivered;
++    mp_mutex_unlock(&b->overlay_lock);
++    // Only an explicit user request may override an authored menu-call mask.
++    // Never do this while opening the disc: FIRST PLAY must run first.
++    if (!restricted || !started ||
++        !bd_set_player_setting(b->bd, BLURAY_PLAYER_SETTING_UO_RESTRICTION_LEVEL,
++                               BLURAY_PLAYER_SETTING_UO_RESTRICTION_DISABLED))
++        return result;
++
++    call_started = mp_time_ns();
++    result = bd_menu_call(b->bd, -1);
++    bluray_trace_state(s, "menu-override", result, call_started);
++    // This instance otherwise uses libbluray's default RELAXED policy. Do not
++    // leave title search, seeking or subsequent input globally unrestricted.
++    bd_set_player_setting(b->bd, BLURAY_PLAYER_SETTING_UO_RESTRICTION_LEVEL,
++                          BLURAY_PLAYER_SETTING_UO_RESTRICTION_RELAXED);
++    MP_INFO(s, "discnav explicit menu override result=%d\n", result);
++    return result;
+ }
+ 
+ static int bluray_stream_control(stream_t *s, int cmd, void *arg)
+@@ -599,6 +762,34 @@
+     struct bluray_priv_s *b = s->priv;
+ 
+     switch (cmd) {
++    case STREAM_CTRL_NAV_POLL: {
++        if (!b->hdmv_mode)
++            return STREAM_UNSUPPORTED;
++        mp_mutex_lock(&b->overlay_lock);
++        bool pending = b->input_pending;
++        int64_t now = mp_time_ns();
++        bool animate = (b->menu_event_active || b->overlay_ig_visible) && now >= b->next_nav_poll_ns;
++        uint32_t before = b->nav_change_id;
++        b->input_pending = false;
++        if (pending || animate)
++            b->next_nav_poll_ns = now + MP_TIME_MS_TO_NS(33);
++        mp_mutex_unlock(&b->overlay_lock);
++        if (pending || animate) {
++            int64_t started = mp_time_ns();
++            int result = bluray_poll_hdmv_events(s);
++            if (pending)
++                bluray_trace_state(s, "pump-complete", result, started);
++            if (result < 0)
++                return STREAM_ERROR;
++            mp_mutex_lock(&b->overlay_lock);
++            uint32_t after = b->nav_change_id;
++            mp_mutex_unlock(&b->overlay_lock);
++            if (pending)
++                MP_INFO(s, "discnav pump change=%u->%u disc=%u\n", before,
++                        after, b->discontinuity_id);
++        }
++        return STREAM_OK;
++    }
+     case STREAM_CTRL_GET_NUM_CHAPTERS: {
+         const BLURAY_TITLE_INFO *ti = b->title_info;
+         if (!ti)
+@@ -740,6 +931,16 @@
+             return STREAM_UNSUPPORTED;
+         struct stream_nav_cmd *nav = arg;
+         uint32_t key = BD_VK_NONE;
++        int64_t input_started = mp_time_ns();
++        int hit = -1, root_result = -1, input_result = -1;
++        bool accepted = false;
++        mp_mutex_lock(&b->overlay_lock);
++        bool popup_supported = b->popup_supported;
++        uint32_t uo_mask = b->uo_mask;
++        b->trace_request++;
++        mp_mutex_unlock(&b->overlay_lock);
++        bluray_trace_begin(s, "input");
++        bluray_trace_state(s, "input-begin", nav->action, input_started);
+         switch (nav->action) {
+         case STREAM_NAV_UP:
+             key = BD_VK_UP;
+@@ -759,30 +960,74 @@
+         case STREAM_NAV_MENU_ROOT:
+         case STREAM_NAV_MENU_TITLE:
+             // BD doesn't distinguish "title menu", both map to disc root.
+-            bd_menu_call(b->bd, -1);
++            input_result = bd_user_input(b->bd, -1, BD_VK_MENU_BACK);
++            accepted = input_result > 0;
++            if (!accepted) {
++                root_result = bluray_call_user_menu(s);
++                accepted = root_result > 0;
++            }
++            if (!accepted && popup_supported)
++                key = BD_VK_POPUP;
+             break;
+         case STREAM_NAV_MENU_POPUP:
+-            key = BD_VK_POPUP;
+-            break;
+         case STREAM_NAV_PREV_MENU:
+-            // No dedicated "previous menu" key; popup-toggle is the closest
+-            // equivalent and behaves like "dismiss current menu" on most
+-            // discs when already in popup.
+-            key = BD_VK_POPUP;
++            // HDMV has no BACK key. Toggle a real popup, otherwise request
++            // the top menu; a non-popup page cannot consume BD_VK_POPUP.
++            if (popup_supported) {
++                input_result = bd_user_input(b->bd, -1, BD_VK_POPUP);
++                accepted = input_result >= 0;
++            }
++            if (!accepted) {
++                input_result = bd_user_input(b->bd, -1, BD_VK_MENU_BACK);
++                accepted = input_result > 0;
++            }
++            if (!accepted) {
++                root_result = bluray_call_user_menu(s);
++                accepted = root_result > 0;
++            }
+             break;
+         case STREAM_NAV_MOUSE_MOVE:
+-            bd_mouse_select(b->bd, -1, nav->x, nav->y);
+-            break;
+         case STREAM_NAV_MOUSE_CLICK:
+-            bd_mouse_select(b->bd, -1, nav->x, nav->y);
+-            key = BD_VK_MOUSE_ACTIVATE;
++            if (nav->x < 0 || nav->y < 0 ||
++                nav->x > UINT16_MAX || nav->y > UINT16_MAX)
++                break;
++            int64_t mouse_started = mp_time_ns();
++            hit = bd_mouse_select(b->bd, -1, nav->x, nav->y);
++            bluray_trace_state(s, "mouse-select", hit, mouse_started);
++            accepted = hit > 0;
++            // 0 means no button at this position, not a successful selection.
++            // Do not activate a stale selection after a missed/failed hit.
++            if (accepted && nav->action == STREAM_NAV_MOUSE_CLICK)
++                key = BD_VK_MOUSE_ACTIVATE;
+             break;
++        default:
++            bluray_trace_end();
++            return STREAM_UNSUPPORTED;
++        }
++        if (key != BD_VK_NONE) {
++            int64_t key_started = mp_time_ns();
++            input_result = bd_user_input(b->bd, -1, key);
++            bluray_trace_state(s, "user-input", input_result, key_started);
++            // Unlike mouse selection and menu_call, 0 is a valid key result.
++            // It does not promise a state change (e.g. a boundary/effect/UO).
++            accepted = input_result >= 0;
+         }
+-        if (key != BD_VK_NONE)
+-            bd_user_input(b->bd, -1, key);
++        if (accepted) {
++            mp_mutex_lock(&b->overlay_lock);
++            b->input_pending = true;
++            mp_mutex_unlock(&b->overlay_lock);
++        }
++        if (nav->action != STREAM_NAV_MOUSE_MOVE) {
++            MP_INFO(s, "discnav action=%d x=%d y=%d hit=%d root=%d key=%u "
++                       "input=%d accepted=%d popup=%d uo=%u\n",
++                    nav->action, nav->x, nav->y, hit, root_result, key,
++                    input_result, accepted, popup_supported, uo_mask);
++        }
+         // The next demux read runs pending VM commands. Only actual disc
+         // events may change the generation; a page/button change is no seek.
+-        return STREAM_OK;
++        bluray_trace_state(s, "input-end", accepted, input_started);
++        bluray_trace_end();
++        return accepted ? STREAM_OK : STREAM_ERROR;
+     }
+     case STREAM_CTRL_GET_NAV_STATE: {
+         struct stream_nav_state *st = arg;
+@@ -928,8 +1173,11 @@
+     b->opts = opts_cache->opts;
+ 
+     int ret = 0;
+-    if (!mp_msg_test(s->log, MSGL_DEBUG))
+-        bd_set_debug_mask(0);
++    b->trace_navigation = mp_msg_test(s->log, MSGL_DEBUG);
++    if (b->trace_navigation) {
++        static mp_once trace_once = MP_STATIC_ONCE_INITIALIZER;
++        mp_exec_once(&trace_once, bluray_trace_init);
++    }
+ 
+     if (b->cfg_stream_url && b->cfg_stream_url[0]) {
+         ret = open_bluray_from_stream(s, b->cfg_stream_url);
+diff --git a/stream/stream.h b/stream/stream.h
+--- a/stream/stream.h
++++ b/stream/stream.h
+@@ -97,6 +97,7 @@
+     STREAM_CTRL_NAV_CMD,             // struct stream_nav_cmd*
+     STREAM_CTRL_GET_NAV_STATE,       // struct stream_nav_state*
+     STREAM_CTRL_GET_NAV_OVERLAY,     // struct stream_nav_overlay_req*
++    STREAM_CTRL_NAV_POLL,            // demux-thread-only pending navigation pump
+ };
+ 
+ // Fetch a BGRA snapshot of the disc-menu overlay (used for Blu-ray HDMV).
+diff --git a/demux/demux_disc.c b/demux/demux_disc.c
+--- a/demux/demux_disc.c
++++ b/demux/demux_disc.c
+@@ -415,6 +415,13 @@
+ {
+     struct priv *p = demuxer->priv;
+ 
++    // Reading one slave packet is not an event pump: libavformat and the
++    // stream can already have buffered packets. Execute pending menu input
++    // before inspecting the generation or consuming any of those packets.
++    if (p->is_bd && p->nav_active &&
++        stream_control(demuxer->stream, STREAM_CTRL_NAV_POLL, NULL) == STREAM_ERROR)
++        return false;
++
+     struct stream_nav_state nav = {0};
+     if (stream_control(demuxer->stream, STREAM_CTRL_GET_NAV_STATE, &nav) >= 1) {
+         if (nav.nav_active != p->nav_active) {

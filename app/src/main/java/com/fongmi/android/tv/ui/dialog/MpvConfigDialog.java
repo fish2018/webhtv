@@ -277,13 +277,13 @@ public class MpvConfigDialog extends BaseAlertDialog implements MpvConfigProfile
     }
 
     @Override
-    public void onText(String name) {
+    public void onText(String name, boolean buttonEnabled, String trigger) {
         String template;
         if (MpvConfigStore.TARGET_SCRIPTS.equals(target)) template = "-- WebHTV MPV script\n\n";
         else if (MpvConfigStore.TARGET_INPUT_CONF.equals(target)) template = "# WebHTV input.conf\n\n";
         else template = "# WebHTV mpv.conf\n\n";
         String displayName = TextUtils.isEmpty(name) ? getString(R.string.mpv_config_untitled) : name;
-        showEditor(null, displayName, template, true);
+        showEditor(null, displayName, template, true, buttonEnabled, trigger);
     }
 
     private void onScriptButtonSaved() {
@@ -292,11 +292,12 @@ public class MpvConfigDialog extends BaseAlertDialog implements MpvConfigProfile
     }
 
     @Override
-    public void onImport(String name, String path) {
+    public void onImport(String name, String path, boolean buttonEnabled, String trigger) {
         String selectedTarget = target;
         runAsync(() -> {
             String id = MpvConfigStore.importProfile(selectedTarget, path, name);
-            if (!MpvConfigStore.TARGET_SCRIPTS.equals(selectedTarget)) MpvConfigStore.selectProfile(selectedTarget, id);
+            if (MpvConfigStore.TARGET_SCRIPTS.equals(selectedTarget)) MpvConfigStore.saveScriptTrigger(id, buttonEnabled, trigger);
+            else MpvConfigStore.selectProfile(selectedTarget, id);
             return id;
         }, id -> {
             if (TextUtils.equals(target, selectedTarget)) reload();
@@ -317,7 +318,7 @@ public class MpvConfigDialog extends BaseAlertDialog implements MpvConfigProfile
                                 profile.name, content, MpvConfigStore.scriptButton(profile.id), this::onScriptButtonSaved);
                     } else {
                         String name = profile.isDefault() ? getString(R.string.mpv_config_default_copy) : profile.name;
-                        showEditor(profile.id, name, content, profile.isDefault());
+                        showEditor(profile.id, name, content, profile.isDefault(), false, "startup");
                     }
                 });
             } catch (Throwable e) {
@@ -329,11 +330,14 @@ public class MpvConfigDialog extends BaseAlertDialog implements MpvConfigProfile
         });
     }
 
-    private void showEditor(String id, String name, String content, boolean creating) {
+    private void showEditor(String id, String name, String content, boolean creating, boolean buttonEnabled, String trigger) {
         MpvConfigEditorDialog.show(getChildFragmentManager(), name, content, creating, text -> {
             try {
                 String savedId = MpvConfigStore.saveTextProfile(target, id, name, text);
-                if (creating && !MpvConfigStore.TARGET_SCRIPTS.equals(target)) MpvConfigStore.selectProfile(target, savedId);
+                if (creating) {
+                    if (MpvConfigStore.TARGET_SCRIPTS.equals(target)) MpvConfigStore.saveScriptTrigger(savedId, buttonEnabled, trigger);
+                    else MpvConfigStore.selectProfile(target, savedId);
+                }
                 if (binding != null) binding.getRoot().post(this::reload);
                 Notify.show(R.string.mpv_config_profile_saved);
                 notifyChanged();

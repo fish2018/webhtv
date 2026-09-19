@@ -2,18 +2,26 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export WEBHTV_ROOT="$ROOT"
 LOCK_FILE="$ROOT/third_party/mpv-native-lock.json"
 OVERRIDE_DIR="$ROOT/third_party/mpv-native-overrides"
 MPV_DISC_PATCH="$ROOT/third_party/patches/mpv-stream-cb-disc-controls.patch"
+MPV_DISC_MENU_PATCH="$ROOT/third_party/patches/mpv-discnav.patch"
+MPV_DISC_INPUT_PATCH="$ROOT/third_party/mpv-player-jni/patches/mpv-discnav-input.patch"
+MPV_DISC_POLL_PATCH="$ROOT/third_party/mpv-player-jni/patches/mpv-discnav-poll.patch"
+LIBBLURAY_HDMV_INPUT_PATCH="$ROOT/third_party/mpv-player-jni/patches/libbluray-hdmv-input.patch"
 MPV_DOVI_SURFACE_PATCH="$ROOT/third_party/patches/mpv-android-dovi-el-surface.patch"
+MPV_ANDROID_FEL_PATCH="$ROOT/third_party/patches/mpv-android-fel.patch"
 MPV_DOVI_HDR10_BL_PATCH="$ROOT/third_party/patches/mpv-dovi-profile7-hdr10-base-layer.patch"
 MPV_DOVI_P81_PATCH="$ROOT/third_party/patches/mpv-dovi-profile7-p81.patch"
 MPV_DOVI_P8_HDR10_PATCH="$ROOT/third_party/patches/mpv-dovi-profile8-hdr10-base-layer.patch"
 MPV_AUDIO_TRUEHD_PATCH="$ROOT/third_party/patches/mpv-audiotrack-truehd-channel-mask.patch"
 MPV_AUDIO_COMPRESSED_PATCH="$ROOT/third_party/patches/mpv-audiotrack-compressed-audio.patch"
+MPV_AUDIO_UNDERRUN_PATCH="$ROOT/third_party/mpv-player-jni/patches/mpv-audiotrack-underrun.patch"
 MPV_OPTIONAL_OSD_PATCH="$ROOT/third_party/patches/mpv-mediacodec-embed-optional-osd.patch"
 MPV_MEDIACODEC_TIMED_RELEASE_PATCH="$ROOT/third_party/patches/mpv-mediacodec-embed-timed-release.patch"
 MPV_MEDIACODEC_TIMING_DIAGNOSTICS_PATCH="$ROOT/third_party/patches/mpv-mediacodec-output-timing-diagnostics.patch"
+MPV_MEDIACODEC_RESET_PATCH="$ROOT/third_party/patches/mpv-mediacodec-embed-reset.patch"
 MPV_VULKAN_CONVERSION_PATCH="$ROOT/third_party/patches/mpv-android-vulkan-conversion-default.patch"
 MPV_VULKAN_SMART_PATCH="$ROOT/third_party/patches/mpv-android-vulkan-smart-backend.patch"
 MPV_VULKAN_LEGACY_PATCH="$ROOT/third_party/patches/mpv-android-vulkan-legacy-backend.patch"
@@ -29,6 +37,10 @@ LIBPLACEBO_P1_ALPHA_PATCH="$ROOT/third_party/patches/libplacebo-p1-alpha.patch"
 FFMPEG_PROXY_RANGE_PATCH="$ROOT/third_party/patches/ffmpeg-webhtv-proxy-range.patch"
 FFMPEG_MEDIACODEC_STARVATION_PATCH="$ROOT/third_party/patches/ffmpeg-mediacodec-port-starvation.patch"
 FFMPEG_AUDIO_MEDIACODEC_HARDWARE_PATCH="$ROOT/third_party/patches/ffmpeg-audio-mediacodec-hardware-first.patch"
+FFMPEG_MEDIACODEC_OUTPUT_PATCH="$ROOT/third_party/patches/ffmpeg-mediacodec-output-serialization.patch"
+FFMPEG_DIAGNOSTICS_PATCH="$ROOT/third_party/patches/ffmpeg-mediacodec-diagnostics.patch"
+FFMPEG_AVS3_MEDIACODEC_PATCH="$ROOT/third_party/patches/ffmpeg-avs3-mediacodec.patch"
+MPV_DIAGNOSTICS_PATCH="$ROOT/third_party/patches/mpv-playback-diagnostics.patch"
 WORK_DIR="${MPV_NATIVE_WORK_DIR:-$ROOT/build/mpv-native}"
 ABI="arm64-v8a"
 JOBS="${MPV_NATIVE_JOBS:-}"
@@ -335,6 +347,8 @@ prepare_framework() {
   cp "$OVERRIDE_DIR/nghttp2.sh" "$BUILDSCRIPTS/scripts/nghttp2.sh"
   cp "$OVERRIDE_DIR/curl.sh" "$BUILDSCRIPTS/scripts/curl.sh"
   cp "$OVERRIDE_DIR/mpv.sh" "$BUILDSCRIPTS/scripts/mpv.sh"
+  cp "$OVERRIDE_DIR/ffmpeg.sh" "$BUILDSCRIPTS/scripts/ffmpeg.sh"
+  cp "$OVERRIDE_DIR/uavs3d.sh" "$BUILDSCRIPTS/scripts/uavs3d.sh"
   local lock_hash
   lock_hash="$(sha256_file "$LOCK_FILE")"
   printf '\n# WebHTV wrapper cache identity: exact selected lock file.\nci_tarball="prefix-webhtv-%s.tgz"\n' \
@@ -437,6 +451,9 @@ prepare_sources() {
     -r "$deps/mbedtls/scripts/basic.requirements.txt"
   checkout_repo dav1d "$DAV1D_REPO" "$DAV1D_COMMIT" "$deps/dav1d"
   checkout_repo FFmpeg "$FFMPEG_REPO" "$FFMPEG_COMMIT" "$deps/ffmpeg"
+  mkdir -p "$deps/uavs3d"
+  git -C "$deps/ffmpeg" apply --check "$ROOT/third_party/patches/ffmpeg-avs3.patch"
+  git -C "$deps/ffmpeg" apply "$ROOT/third_party/patches/ffmpeg-avs3.patch"
   [ -f "$FFMPEG_PROXY_RANGE_PATCH" ] || die "missing FFmpeg proxy range patch: $FFMPEG_PROXY_RANGE_PATCH"
   git -C "$deps/ffmpeg" apply --check "$FFMPEG_PROXY_RANGE_PATCH"
   git -C "$deps/ffmpeg" apply "$FFMPEG_PROXY_RANGE_PATCH"
@@ -446,6 +463,13 @@ prepare_sources() {
   [ -f "$FFMPEG_AUDIO_MEDIACODEC_HARDWARE_PATCH" ] || die "missing FFmpeg hardware audio MediaCodec patch: $FFMPEG_AUDIO_MEDIACODEC_HARDWARE_PATCH"
   git -C "$deps/ffmpeg" apply --check "$FFMPEG_AUDIO_MEDIACODEC_HARDWARE_PATCH"
   git -C "$deps/ffmpeg" apply "$FFMPEG_AUDIO_MEDIACODEC_HARDWARE_PATCH"
+  [ -f "$FFMPEG_MEDIACODEC_OUTPUT_PATCH" ] || die "missing FFmpeg MediaCodec output serialization patch: $FFMPEG_MEDIACODEC_OUTPUT_PATCH"
+  git -C "$deps/ffmpeg" apply --check "$FFMPEG_MEDIACODEC_OUTPUT_PATCH"
+  git -C "$deps/ffmpeg" apply "$FFMPEG_MEDIACODEC_OUTPUT_PATCH"
+  git -C "$deps/ffmpeg" apply --check "$FFMPEG_DIAGNOSTICS_PATCH"
+  git -C "$deps/ffmpeg" apply "$FFMPEG_DIAGNOSTICS_PATCH"
+  git -C "$deps/ffmpeg" apply --check "$FFMPEG_AVS3_MEDIACODEC_PATCH"
+  git -C "$deps/ffmpeg" apply "$FFMPEG_AVS3_MEDIACODEC_PATCH"
   grep -Fq 'WebHTV hardware audio MediaCodec decoder:' "$deps/ffmpeg/libavcodec/mediacodecdec_common.c" || \
     die "FFmpeg hardware audio MediaCodec marker is absent"
   checkout_repo FreeType "$FREETYPE2_REPO" "$FREETYPE2_COMMIT" "$deps/freetype2" "$FREETYPE2_SUBMODULES"
@@ -477,6 +501,10 @@ prepare_sources() {
     extract_archive curl "$CURL_URL" "$CURL_SHA256" "$deps/curl"
   fi
   extract_archive libbluray "$LIBBLURAY_URL" "$LIBBLURAY_SHA256" "$deps/libbluray"
+  [ -f "$LIBBLURAY_HDMV_INPUT_PATCH" ] || die "missing libbluray HDMV input patch: $LIBBLURAY_HDMV_INPUT_PATCH"
+  if ! patch -d "$deps/libbluray" -p1 -R --dry-run < "$LIBBLURAY_HDMV_INPUT_PATCH" >/dev/null 2>&1; then
+    patch -d "$deps/libbluray" -p1 --forward < "$LIBBLURAY_HDMV_INPUT_PATCH"
+  fi
   extract_archive libarchive "$LIBARCHIVE_URL" "$LIBARCHIVE_SHA256" "$deps/libarchive"
   extract_archive libdvdread "$LIBDVDREAD_URL" "$LIBDVDREAD_SHA256" "$deps/libdvdread"
   extract_archive libdvdnav "$LIBDVDNAV_URL" "$LIBDVDNAV_SHA256" "$deps/libdvdnav"
@@ -520,6 +548,15 @@ prepare_sources() {
   [ -f "$MPV_DISC_PATCH" ] || die "missing MPV disc controls patch: $MPV_DISC_PATCH"
   git -C "$deps/mpv" apply --check "$MPV_DISC_PATCH"
   git -C "$deps/mpv" apply "$MPV_DISC_PATCH"
+  [ -f "$MPV_DISC_MENU_PATCH" ] || die "missing MPV disc navigation patch: $MPV_DISC_MENU_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_DISC_MENU_PATCH"
+  git -C "$deps/mpv" apply "$MPV_DISC_MENU_PATCH"
+  [ -f "$MPV_DISC_INPUT_PATCH" ] || die "missing MPV disc input patch: $MPV_DISC_INPUT_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_DISC_INPUT_PATCH"
+  git -C "$deps/mpv" apply "$MPV_DISC_INPUT_PATCH"
+  [ -f "$MPV_DISC_POLL_PATCH" ] || die "missing MPV event-only navigation patch: $MPV_DISC_POLL_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_DISC_POLL_PATCH"
+  git -C "$deps/mpv" apply "$MPV_DISC_POLL_PATCH"
   [ -f "$MPV_DOVI_SURFACE_PATCH" ] || die "missing MPV Android Dolby Vision Surface patch: $MPV_DOVI_SURFACE_PATCH"
   git -C "$deps/mpv" apply --check "$MPV_DOVI_SURFACE_PATCH"
   git -C "$deps/mpv" apply "$MPV_DOVI_SURFACE_PATCH"
@@ -572,6 +609,11 @@ prepare_sources() {
     die "MPV raw compressed decoder flag is absent"
   grep -Fq 'AudioTrack compressed access-unit decoder' "$deps/mpv/audio/decode/ad_spdif.c" || \
     die "MPV compressed AudioTrack decoder registration is absent"
+  [ -f "$MPV_AUDIO_UNDERRUN_PATCH" ] || die "missing MPV AudioTrack underrun patch: $MPV_AUDIO_UNDERRUN_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_AUDIO_UNDERRUN_PATCH"
+  git -C "$deps/mpv" apply "$MPV_AUDIO_UNDERRUN_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_DIAGNOSTICS_PATCH"
+  git -C "$deps/mpv" apply "$MPV_DIAGNOSTICS_PATCH"
   [ -f "$MPV_MEDIACODEC_TIMED_RELEASE_PATCH" ] || die "missing MPV MediaCodec timed-release patch: $MPV_MEDIACODEC_TIMED_RELEASE_PATCH"
   git -C "$deps/mpv" apply --check --recount "$MPV_MEDIACODEC_TIMED_RELEASE_PATCH"
   git -C "$deps/mpv" apply --recount "$MPV_MEDIACODEC_TIMED_RELEASE_PATCH"
@@ -581,6 +623,9 @@ prepare_sources() {
   [ -f "$MPV_MEDIACODEC_TIMING_DIAGNOSTICS_PATCH" ] || die "missing MPV MediaCodec output timing diagnostics patch: $MPV_MEDIACODEC_TIMING_DIAGNOSTICS_PATCH"
   git -C "$deps/mpv" apply --check "$MPV_MEDIACODEC_TIMING_DIAGNOSTICS_PATCH"
   git -C "$deps/mpv" apply "$MPV_MEDIACODEC_TIMING_DIAGNOSTICS_PATCH"
+  [ -f "$MPV_MEDIACODEC_RESET_PATCH" ] || die "missing MPV direct-output reset patch: $MPV_MEDIACODEC_RESET_PATCH"
+  git -C "$deps/mpv" apply --check "$MPV_MEDIACODEC_RESET_PATCH"
+  git -C "$deps/mpv" apply "$MPV_MEDIACODEC_RESET_PATCH"
   [ -f "$MPV_VULKAN_CONVERSION_PATCH" ] || die "missing MPV Android Vulkan conversion-default patch: $MPV_VULKAN_CONVERSION_PATCH"
   git -C "$deps/mpv" apply --check "$MPV_VULKAN_CONVERSION_PATCH"
   git -C "$deps/mpv" apply "$MPV_VULKAN_CONVERSION_PATCH"
@@ -618,6 +663,10 @@ prepare_sources() {
   [ -f "$MPV_P1_HLS_EDITION_PATCH" ] || die "missing MPV HLS edition patch: $MPV_P1_HLS_EDITION_PATCH"
   git -C "$deps/mpv" apply --check "$MPV_P1_HLS_EDITION_PATCH"
   git -C "$deps/mpv" apply "$MPV_P1_HLS_EDITION_PATCH"
+  [ -f "$MPV_ANDROID_FEL_PATCH" ] || die "missing MPV Android FEL patch: $MPV_ANDROID_FEL_PATCH"
+  git -C "$deps/mpv" apply --check --recount "$MPV_ANDROID_FEL_PATCH"
+  git -C "$deps/mpv" apply --recount "$MPV_ANDROID_FEL_PATCH"
+  python3 "$ROOT/scripts/verify_mpv_fel_contract.py" --mpv-source "$deps/mpv"
 }
 
 patch_dynamic_names() {
@@ -689,6 +738,11 @@ verify_directory() {
   grep -Fq "mpv v$MPV_VERSION" <<<"$version_strings" || die "unexpected MPV version in $directory/libmpv.so"
   grep -Fq "v$LIBPLACEBO_VERSION" <<<"$version_strings" || die "unexpected libplacebo version in $directory/libmpv.so"
   grep -Fq "WebHTV stream_cb controls enabled" <<<"$version_strings" || die "MPV stream_cb disc controls patch missing from $directory/libmpv.so"
+  grep -Fq "disc-menu-active" <<<"$version_strings" || die "MPV HDMV disc navigation patch missing from $directory/libmpv.so"
+  grep -Fq "android-dovi-fel" <<<"$version_strings" || die "MPV opt-in FEL option missing from $directory/libmpv.so"
+  grep -Fq "WebHTV Android FEL: software enhancement-layer decoder" <<<"$version_strings" || die "MPV software EL decoder patch missing from $directory/libmpv.so"
+  grep -Fq "WebHTV FEL GPU input: matched EL uploaded with active NLQ." <<<"$version_strings" || die "MPV FEL GPU input diagnostics missing from $directory/libmpv.so"
+  grep -Fq "discnav" <<<"$version_strings" || die "MPV discnav command missing from $directory/libmpv.so"
   grep -Fq "Vulkan AImageReader backend:" <<<"$version_strings" || die "MPV Vulkan AImageReader backend missing from $directory/libmpv.so"
   grep -Fq "Using Vulkan YCbCr AHardwareBuffer sampling" <<<"$version_strings" || die "MPV direct Vulkan AHardwareBuffer sampling missing from $directory/libmpv.so"
   grep -Fq "Vulkan AImageReader sync-fd:" <<<"$version_strings" || die "MPV AImageReader sync-fd support missing from $directory/libmpv.so"
@@ -712,6 +766,8 @@ verify_directory() {
   grep -Fq "WebHTV direct output accepts an optional Android OSD Surface" <<<"$version_strings" || die "MPV optional direct-output OSD patch missing from $directory/libmpv.so"
   grep -Fq "WebHTV timestamped MediaCodec output enabled" <<<"$version_strings" || die "MPV MediaCodec timestamped-release patch missing from $directory/libmpv.so"
   grep -Fq "MediaCodec VO drop timing" <<<"$version_strings" || die "MPV MediaCodec output timing diagnostics missing from $directory/libmpv.so"
+  grep -Fq "WebHTV MediaCodec reset discards pending output" <<<"$version_strings" || die "MPV direct-output reset missing from $directory/libmpv.so"
+  grep -Fq "WebHTV event-only disc navigation polling enabled" <<<"$version_strings" || die "MPV event-only navigation pump missing from $directory/libmpv.so"
   grep -Fq "WebHTV Vulkan auto backend prefers direct AHardwareBuffer sampling" <<<"$version_strings" || die "MPV Android Vulkan smart backend patch missing from $directory/libmpv.so"
   grep -Fq "WebHTV Vulkan auto uses a queue-safe four-output bounded-fence pool" <<<"$version_strings" || die "MPV Android Vulkan queue-safe conversion pool missing from $directory/libmpv.so"
   grep -Fq "CPU-precomputed UV transform" <<<"$version_strings" || die "MPV Android Vulkan low-power coordinate transform missing from $directory/libmpv.so"
@@ -721,8 +777,16 @@ verify_directory() {
   grep -Fq "WebHTV AImageReader uses stable release/acquire flow" <<<"$version_strings" || die "MPV Android stable AImageReader release/acquire patch missing from $directory/libmpv.so"
   grep -Fq "Using declared Matroska segment end for seek metadata." <<<"$version_strings" || die "MPV Matroska segment seek patch missing from $directory/libmpv.so"
   grep -Fq "libarcdav3a AV3A" <<<"$codec_strings" || die "FFmpeg AV3A decoder missing from $directory/libmvcodec.so"
+  grep -Fq "libuavs3d" <<<"$codec_strings" || die "FFmpeg AVS3 decoder missing from $directory/libmvcodec.so"
+  grep -Fq "avs3_mediacodec" <<<"$codec_strings" || die "FFmpeg AVS3 MediaCodec decoder missing from $directory/libmvcodec.so"
+  grep -Fq "No hardware AVS3 MediaCodec decoder" <<<"$codec_strings" || die "FFmpeg AVS3 hardware-only selection missing from $directory/libmvcodec.so"
+  grep -Fq "AVS3 MediaCodec requires an explicit hardware context" <<<"$codec_strings" || die "FFmpeg AVS3 manual decode selection missing from $directory/libmvcodec.so"
+  grep -Fq "WebHTV HPM 15.0" <<<"$codec_strings" || die "FFmpeg AVS3 High 10-bit decoder missing from $directory/libmvcodec.so"
   grep -Fq "failing hardware decode so the player can fall back" <<<"$codec_strings" || die "FFmpeg MediaCodec fallback patch missing from $directory/libmvcodec.so"
   grep -Fq "WebHTV hardware audio MediaCodec decoder:" <<<"$codec_strings" || die "FFmpeg hardware audio MediaCodec patch missing from $directory/libmvcodec.so"
+  grep -Fq "WebHTV MediaCodec output release/flush serialization enabled" <<<"$codec_strings" || die "FFmpeg MediaCodec output serialization missing from $directory/libmvcodec.so"
+  grep -Fq "WebHTV AV-DIAG codec-lookup v=1" <<<"$codec_strings" || die "FFmpeg diagnostic lookup hook missing from $directory/libmvcodec.so"
+  grep -Fq "WebHTV AV-DIAG audio-write v=1" <<<"$version_strings" || die "MPV diagnostic AudioTrack hook missing from $directory/libmpv.so"
   grep -Fq "libaribcaption" <<<"$codec_strings" || die "FFmpeg ARIB caption decoder missing from $directory/libmvcodec.so"
   grep -Fq "Timed Text Markup Language subtitle" <<<"$codec_strings" || die "FFmpeg TTML decoder missing from $directory/libmvcodec.so"
   grep -Fq "MMT protocol over TLV packets" <<<"$format_strings" || die "FFmpeg MMT/TLV demuxer missing from $directory/libmvformat.so"
@@ -833,7 +897,7 @@ build_abi() {
   export WEBHTV_ANDROID_API_LEVEL="$ANDROID_API_LEVEL"
   local targets=(
     libiconv uchardet bzip2 xz zstd mbedtls dav1d libxml2 freetype2
-    libaribcaption ffmpeg fontconfig fribidi harfbuzz unibreak libass lua
+    libaribcaption uavs3d ffmpeg fontconfig fribidi harfbuzz unibreak libass lua
     shaderc libplacebo
   )
   if [ "$ENABLE_LIBCURL" -eq 1 ]; then
@@ -862,6 +926,8 @@ build_abi() {
       libxml2) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libxml2.a" ] ;;
       freetype2) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libfreetype.a" ] ;;
       libaribcaption) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libaribcaption.a" ] ;;
+      uavs3d) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libuavs3d.a" ] &&
+        [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libwebhtvhpm.a" ] ;;
       ffmpeg) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libavcodec.so" ] ;;
       fontconfig) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libfontconfig.a" ] ;;
       fribidi) [ -f "$BUILDSCRIPTS/prefix/$prefix_name/lib/libfribidi.a" ] ;;

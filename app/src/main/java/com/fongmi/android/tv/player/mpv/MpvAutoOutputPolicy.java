@@ -63,6 +63,16 @@ public final class MpvAutoOutputPolicy {
         return new Decision(true, "tv-hardware-decode");
     }
 
+    /** A same-item rebuild must not retry an output that already failed. */
+    public static Decision afterSurfaceFailure(Decision candidate, boolean failedForItem) {
+        return failedForItem ? new Decision(false, "surface-direct-failed-for-item") : candidate;
+    }
+
+    /** A manually selected FEL reconstruction needs both layers in gpu-next. */
+    public static Decision forFelReconstruction(Decision candidate, boolean enabled) {
+        return enabled ? new Decision(false, "dv7-fel-reconstruction") : candidate;
+    }
+
     /** Select the initial TV output before MPV has reported a video size. */
     public static boolean canStartSurfaceDirect(boolean hardDecode, boolean leanback,
                                                  boolean lutOrFilterActive,

@@ -66,8 +66,16 @@ public class TrackUtil {
     }
 
     private static TrackInfo find(Player player, Track track) {
-        if (track.getFormat() == null) return null;
         Tracks currentTracks = player.getCurrentTracks();
+        if (track.getPlayerId() != null) {
+            for (Tracks.Group group : currentTracks.getGroups()) {
+                if (group.getType() != track.getType()) continue;
+                for (int i = 0; i < group.length; i++) {
+                    if (track.getPlayerId().equals(group.getTrackFormat(i).id)) return new TrackInfo(group, i);
+                }
+            }
+        }
+        if (track.getFormat() == null) return null;
         for (Tracks.Group trackGroup : currentTracks.getGroups()) {
             if (trackGroup.getType() != track.getType()) continue;
             for (int i = 0; i < trackGroup.length; i++) {
@@ -78,6 +86,12 @@ public class TrackUtil {
             }
         }
         return null;
+    }
+
+    /** Resolves a current runtime id first, falling back to a persisted format preference. */
+    public static TrackSelectionOverride findOverride(Player player, Track track) {
+        TrackInfo info = find(player, track);
+        return info == null ? null : new TrackSelectionOverride(info.trackGroup.getMediaTrackGroup(), info.trackIndex);
     }
 
     public static void setTrackSelection(Player player, List<Track> tracks) {

@@ -161,13 +161,18 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
             if (trackGroup.getType() != type) continue;
             for (int j = 0; j < trackGroup.length; j++) {
                 Format format = trackGroup.getTrackFormat(j);
+                // One subtitle cannot occupy both roles (the same rule is enforced by MPV).
+                if (type == C.TRACK_TYPE_TEXT && (secondarySubtitle
+                        ? player.isPrimarySubtitleSelected(format) : player.isSecondarySubtitleSelected(format))) continue;
                 String name = provider.getTrackName(format);
                 Log.d("TrackDialog", "track type=" + type + " id=" + format.id + " label=" + format.label + " lang=" + format.language + " codec=" + format.codecs + " mime=" + format.sampleMimeType + " name=" + name);
                 // Keep the player's native track id with the visible item. Runtime track
                 // switching must target this stable id directly; the formatted description
                 // is only persisted for restoring a preference on the next playback.
                 Track item = new Track(type, name, PlayerHelper.describeFormat(format)).playerId(format.id);
-                item.setSelected(secondarySubtitle ? player.isSecondarySubtitleSelected(format) : trackGroup.isTrackSelected(j));
+                item.setSelected(type == C.TRACK_TYPE_TEXT
+                        ? secondarySubtitle ? player.isSecondarySubtitleSelected(format) : player.isPrimarySubtitleSelected(format)
+                        : trackGroup.isTrackSelected(j));
                 items.add(item);
             }
         }

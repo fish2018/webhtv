@@ -259,6 +259,15 @@ public class PlayerSetting {
         Prefers.put("player_auto_play", autoPlay);
     }
 
+    /** Whether MPV should enter the HDMV Blu-ray menu instead of the main title. */
+    public static boolean isBlurayMenu() {
+        return Prefers.getBoolean("playback_bluray_menu", false);
+    }
+
+    public static void putBlurayMenu(boolean enabled) {
+        Prefers.put("playback_bluray_menu", enabled);
+    }
+
     public static int getBackground() {
         int stored = Prefers.getInt("background", BackgroundPlaybackPolicy.ON);
         int normalized = BackgroundPlaybackPolicy.normalize(stored);

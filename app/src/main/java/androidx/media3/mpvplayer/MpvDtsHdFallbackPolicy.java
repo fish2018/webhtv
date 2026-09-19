@@ -13,6 +13,13 @@ final class MpvDtsHdFallbackPolicy {
     private MpvDtsHdFallbackPolicy() {
     }
 
+    /** Check the log/configuration before asking native code for any audio state. */
+    static boolean shouldInspectAudioState(String configuredCodecs, String logLine,
+                                           boolean attempted) {
+        return !attempted && isAudioTrackInitFailure(logLine)
+                && containsCodec(configuredCodecs, DTS_HD);
+    }
+
     static Decision evaluate(String configuredCodecs, String audioFormat,
                              String codecProfile, String logLine,
                              boolean attempted) {

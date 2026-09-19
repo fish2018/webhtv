@@ -7,9 +7,14 @@ import org.junit.Test;
 public final class MpvHardwareDecodePolicyTest {
 
     @Test
-    public void disablesAutomaticSoftwareFallback() {
+    public void hardwareModeDisablesAutomaticSoftwareFallback() {
         assertEquals("hwdec-software-fallback",
                 MpvPlayerEngine.HWDEC_SOFTWARE_FALLBACK_OPTION);
-        assertEquals("no", MpvPlayerEngine.hardwareDecodeSoftwareFallbackOption());
+        assertEquals("no", MpvPlayerEngine.hardwareDecodeSoftwareFallbackOption(PlayerEngine.HARD));
+    }
+
+    @Test
+    public void explicitSoftwareModeAllowsSoftwareDecoder() {
+        assertEquals("yes", MpvPlayerEngine.hardwareDecodeSoftwareFallbackOption(PlayerEngine.SOFT));
     }
 }

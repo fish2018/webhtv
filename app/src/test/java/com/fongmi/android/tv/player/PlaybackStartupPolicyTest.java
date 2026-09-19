@@ -12,7 +12,8 @@ public class PlaybackStartupPolicyTest {
     }
 
     @Test
-    public void mpvReadyMapsPlaybackRestartToFirstFrame() {
+    public void mpvVideoRequiresFrameEvidenceInAdditionToReady() {
+        assertEquals(PlaybackStartupPolicy.Completion.NONE, PlaybackStartupPolicy.resolve(true, false, true, true));
         assertEquals(PlaybackStartupPolicy.Completion.FIRST_FRAME, PlaybackStartupPolicy.resolve(true, true, true, true));
     }
 

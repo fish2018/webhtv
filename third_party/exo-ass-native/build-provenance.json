@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "artifact": {
+    "path": "prebuilt/arm64-v8a/libexo_ass.so",
+    "sha256": "31e04a1d26c606dd2f5df0b0b81f2916ed0b29c13b3415515a77cff540e83cc2",
+    "bytes": 2775600
+  },
+  "android": {
+    "ndk": "29.0.14206865",
+    "api": 24,
+    "abis": [
+      "arm64-v8a"
+    ],
+    "stl": "c++_static",
+    "page_size": 16384
+  },
+  "inputs": {
+    "third_party/exo-ass-lock.json": "b524b2904218465093a9d20ebc8e5419529eae322650adfe331b48474fa67000",
+    "scripts/build_exo_ass_native.py": "be7828a4ba01788258c2ef67328e87b808df57d6d55eed9938df7c0fd286fdb4",
+    "third_party/exo-ass-native/CMakeLists.txt": "4abec300900d0588502938c62c3e7a90f9fc5cc2a832f0446689356e5df29266",
+    "third_party/exo-ass-native/exo_ass.cpp": "b333e896881a9a13a8a618cc147a5472914b7570290264db732bda624f4f8470",
+    "third_party/exo-ass-native/mask_copy.h": "8fa89ecb7904ad82bb3bafd551517e77f1cef6463278897fcf198d12e42db574"
+  },
+  "sources": {
+    "freetype2": "0a0221a1347e2f1e07c395263540026e9a0aa7c7",
+    "fribidi": "68162babff4f39c4e2dc164a5e825af93bda9983",
+    "harfbuzz": "56feae4035bdd48f62ba2b8d8c16232d4d89b3a4",
+    "libxml2": "0da50c1415f4ec0364569d2119b1436ba837b31df44af28569d234272c23cf1f",
+    "fontconfig": "a4e25ec391d417e4bca052fbfa5cd7ce5f7fd39e",
+    "libass": "89cc0f4e450d64f74281a17d7f11ed05229665e8"
+  },
+  "static_archives": {
+    "libass.a": "f46dbfa6513f2f705ff66a9f1f155bf4cacf8c3e6fd8f5ba9bd5d8e02859ca39",
+    "libfontconfig.a": "7592cd41dd0e7e5b6716a2f136bcd7df5fa32a2b1372e1774423a9211b6f5d2b",
+    "libfreetype.a": "03943122ae723a657845c8b34c39d244c1f28640dc5593ca945d89ff4d8b3042",
+    "libfribidi.a": "4145184909bb7db4421caad799c64c2755d5ea7784916fe3681d1cdd1e4cd07e",
+    "libharfbuzz.a": "4b3f5576a47c6a73e5cb38bd59adeb818292cedced60da381666c10311ad8de8",
+    "libxml2.a": "c0e3eb83598b02b7ca1fc5d76aad0acc43bb4df08f8bcba45f8b14d4d181f4c2"
+  },
+  "licenses": {
+    "licenses/fontconfig/COPYING": "51a51aa9823704fd90bccc616cdd17ebabb5b2b3e9cbde886ca02c7002288067",
+    "licenses/freetype2/LICENSE.TXT": "bd36c8b474855fa294c2ec5c184544478ef3720aad37d65a6296a4f264fd2d3b",
+    "licenses/freetype2/docs/FTL.TXT": "5a5ee54c5001bbad1cdc1a57cc3dd4c42199b2da09d39c7ee41fab002d02967f",
+    "licenses/freetype2/docs/GPLv2.TXT": "c4120c6752c910c299e3bd9cb3a46ff262c268303ca2069b61f92f10a5656c18",
+    "licenses/fribidi/COPYING": "864bc96d476874ee37d009212ad5d2df0904b43780e5cbcc1cb726485ca6dae4",
+    "licenses/harfbuzz/COPYING": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
+    "licenses/libass/COPYING": "f7e30699d02798351e7f839e3d3bfeb29ce65e44efa7735c225464c4fd7dfe9c",
+    "licenses/libxml2/Copyright": "5d4873884a890122a4b9b20ad56ac6f7da1d796a5bfcf04a427970ac96217626"
+  },
+  "compiler": "Android (13989888, +pgo, -bolt, +lto, -mlgo, based on r563880c) clang version 21.0.0 (https://android.googlesource.com/toolchain/llvm-project 5e96669f06077099aa41290cdb4c5e6fa0f59349)\nTarget: arm64-apple-darwin23.4.0\nThread model: posix\nInstalledDir: /Users/macbookpro/Downloads/bizhi/android-sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/darwin-x86_64/bin",
+  "tools": {
+    "cmake": "cmake version 4.0.2",
+    "meson": "1.11.2",
+    "ninja": "1.13.2"
+  },
+  "rebuild": "python3 scripts/build_exo_ass_native.py --jobs 6 --install",
+  "cache_note": "Source caches supply fixed Git objects only; all static archives belong to this independent build."
+}

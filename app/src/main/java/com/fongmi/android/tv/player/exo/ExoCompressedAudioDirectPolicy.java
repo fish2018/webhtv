@@ -42,6 +42,7 @@ public final class ExoCompressedAudioDirectPolicy
     private final Set<OutputKey> vendorDirectConfigs;
     private final Set<OutputKey> failedVendorDirectConfigs;
     private final AtomicReference<OutputKey> pendingPcmFallback = new AtomicReference<>();
+    private final ExoAudioOutputState audioOutputState = new ExoAudioOutputState();
 
     public ExoCompressedAudioDirectPolicy(Context context) {
         this(new DefaultAudioOffloadSupportProvider(context.getApplicationContext()),
@@ -71,6 +72,10 @@ public final class ExoCompressedAudioDirectPolicy
     }
 
     AudioOutputProvider wrapOutputProvider(AudioOutputProvider delegate) {
+        return wrapOutputProvider(delegate, null);
+    }
+
+    AudioOutputProvider wrapOutputProvider(AudioOutputProvider delegate, ExoDiagnosticCollector diagnostics) {
         return new ForwardingAudioOutputProvider(delegate) {
             @Override
             public AudioOutputProvider.FormatSupport getFormatSupport(
@@ -78,7 +83,9 @@ public final class ExoCompressedAudioDirectPolicy
                 AudioOutputProvider.FormatSupport standard =
                         super.getFormatSupport(config);
                 OutputKey key = OutputKey.from(config.format);
-                if (key == null || !supportsEncodedFrames(key.encoding())) {
+                // Tunneling is a shared audio/video contract. This vendor-only output cannot
+                // supply HW_AV_SYNC timestamps, so let Media3 choose a standard output/decoder.
+                if (config.enableTunneling || key == null || !supportsEncodedFrames(key.encoding())) {
                     if (key != null) vendorDirectConfigs.remove(key);
                     return standard;
                 }
@@ -116,7 +123,7 @@ public final class ExoCompressedAudioDirectPolicy
                     AudioOutputProvider.FormatConfig config)
                     throws AudioOutputProvider.ConfigurationException {
                 OutputKey key = OutputKey.from(config.format);
-                if (key == null || !vendorDirectConfigs.contains(key)) {
+                if (config.enableTunneling || key == null || !vendorDirectConfigs.contains(key)) {
                     try {
                         return super.getOutputConfig(config);
                     } catch (RuntimeException error) {
@@ -162,14 +169,13 @@ public final class ExoCompressedAudioDirectPolicy
             @Override
             public AudioOutput getAudioOutput(AudioOutputProvider.OutputConfig config)
                     throws AudioOutputProvider.InitializationException {
-                boolean vendorDirect = usesVendorDirect(config.encoding,
-                        config.sampleRate, config.channelMask);
+                boolean vendorDirect = usesVendorDirect(config);
                 try {
                     AudioOutput output = vendorDirect
                             ? createVendorDirectAudioOutput(config)
                             : super.getAudioOutput(config);
-                    if (!vendorDirect) return output;
-                    return new ForwardingAudioOutput(output) {
+                    output = ExoDiagnosticAudioOutput.wrap(output, config, diagnostics);
+                    if (vendorDirect) output = new ForwardingAudioOutput(output) {
                         @Override
                         public boolean write(ByteBuffer buffer, int accessUnitCount,
                                              long presentationTimeUs)
@@ -184,6 +190,7 @@ public final class ExoCompressedAudioDirectPolicy
                             }
                         }
                     };
+                    return audioOutputState.track(output, config);
                 } catch (AudioOutputProvider.InitializationException error) {
                     if (vendorDirect) {
                         disableVendorDirect(config, "initialization");
@@ -257,13 +264,11 @@ public final class ExoCompressedAudioDirectPolicy
 
     void modifyAudioTrackBuilder(
             AudioTrack.Builder builder, AudioOutputProvider.OutputConfig config) {
-        OutputKey key = new OutputKey(config.encoding, config.sampleRate,
-                config.channelMask);
-        if (!vendorDirectConfigs.contains(key)) return;
+        if (!usesVendorDirect(config)) return;
         if (SpiderDebug.isEnabled()) {
             SpiderDebug.log("exo-audio-direct",
                     "builder encoding=%d sampleRate=%d channelMask=0x%X directSession=0",
-                    key.encoding(), key.sampleRate(), key.channelMask());
+                    config.encoding, config.sampleRate, config.channelMask);
         }
         builder.setBufferSizeInBytes(VENDOR_DIRECT_BUFFER_SIZE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -274,6 +279,17 @@ public final class ExoCompressedAudioDirectPolicy
     boolean usesVendorDirect(int encoding, int sampleRate, int channelMask) {
         return vendorDirectConfigs.contains(new OutputKey(encoding, sampleRate,
                 channelMask));
+    }
+
+    private boolean usesVendorDirect(AudioOutputProvider.OutputConfig config) {
+        // A capability query can cache this encoding while another standard output is being
+        // configured. The final output mode, not that cache, owns tunneling and offload.
+        return !config.isTunneling && !config.isOffload
+                && usesVendorDirect(config.encoding, config.sampleRate, config.channelMask);
+    }
+
+    public ExoAudioOutputState.Snapshot getAudioOutputSnapshot() {
+        return audioOutputState.snapshot();
     }
 
     public boolean consumePcmFallbackRequest() {

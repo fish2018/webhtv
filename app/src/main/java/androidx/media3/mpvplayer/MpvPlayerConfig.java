@@ -42,6 +42,7 @@ public final class MpvPlayerConfig {
     private final boolean automaticCacheTime;
     private final boolean automaticHlsVariant;
     private final boolean deferStartupTrackRefresh;
+    private final boolean restoreFelAutomaticSubtitles;
     private final Map<String, String> extraOptions;
 
     private MpvPlayerConfig(Builder builder) {
@@ -71,6 +72,7 @@ public final class MpvPlayerConfig {
         automaticCacheTime = builder.automaticCacheTime;
         automaticHlsVariant = builder.automaticHlsVariant;
         deferStartupTrackRefresh = builder.deferStartupTrackRefresh;
+        restoreFelAutomaticSubtitles = builder.restoreFelAutomaticSubtitles;
         extraOptions = Collections.unmodifiableMap(new LinkedHashMap<>(builder.extraOptions));
     }
 
@@ -184,6 +186,10 @@ public final class MpvPlayerConfig {
         return deferStartupTrackRefresh;
     }
 
+    public boolean restoreFelAutomaticSubtitles() {
+        return restoreFelAutomaticSubtitles;
+    }
+
     public Map<String, String> extraOptions() {
         return extraOptions;
     }
@@ -217,6 +223,7 @@ public final class MpvPlayerConfig {
         private boolean automaticCacheTime;
         private boolean automaticHlsVariant;
         private boolean deferStartupTrackRefresh;
+        private boolean restoreFelAutomaticSubtitles;
 
         private Builder(Context context) {
             Context app = context.getApplicationContext();
@@ -352,6 +359,11 @@ public final class MpvPlayerConfig {
 
         public Builder deferStartupTrackRefresh(boolean deferStartupTrackRefresh) {
             this.deferStartupTrackRefresh = deferStartupTrackRefresh;
+            return this;
+        }
+
+        public Builder restoreFelAutomaticSubtitles(boolean restore) {
+            restoreFelAutomaticSubtitles = restore;
             return this;
         }
 

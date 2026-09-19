@@ -19,6 +19,7 @@ public class PlaybackPerformanceSetting {
 
     public static final int DV7_HANDLING_P81 = 0;
     public static final int DV7_HANDLING_HDR10 = 1;
+    public static final int DV7_HANDLING_FEL = 2;
 
     public static final String KEY_PROFILE = "playback_performance_profile";
     private static final String KEY_PROFILE_MIGRATED = "playback_performance_profile_per_kernel";
@@ -429,7 +430,7 @@ public class PlaybackPerformanceSetting {
     public static int getMpvDv7HandlingMode() {
         ensureInitialized();
         if (Prefers.getPrefers().contains(KEY_MPV_DV7_HANDLING))
-            return clampDv7Handling(Prefers.getInt(KEY_MPV_DV7_HANDLING, DV7_HANDLING_P81));
+            return clampMpvDv7Handling(Prefers.getInt(KEY_MPV_DV7_HANDLING, DV7_HANDLING_P81));
         if (Prefers.getPrefers().contains(KEY_DV7_HDR10_FALLBACK_LEGACY)) {
             return Prefers.getBoolean(KEY_DV7_HDR10_FALLBACK_LEGACY, true)
                     ? DV7_HANDLING_HDR10 : DV7_HANDLING_P81;
@@ -438,18 +439,34 @@ public class PlaybackPerformanceSetting {
     }
 
     public static void putMpvDv7HandlingMode(int mode) {
-        putCustom(KEY_MPV_DV7_HANDLING, clampDv7Handling(mode),
+        putCustom(KEY_MPV_DV7_HANDLING, clampMpvDv7Handling(mode),
                 PlaybackPerformanceCatalog.DV7_HDR10_FALLBACK);
     }
 
     public static String getMpvDv7HandlingText() {
-        return getMpvDv7HandlingMode() == DV7_HANDLING_P81
-                ? "升级P8.1" : "降级HDR10";
+        return mpvDv7HandlingText(getMpvDv7HandlingMode());
+    }
+
+    static String mpvDv7HandlingText(int mode) {
+        return switch (clampMpvDv7Handling(mode)) {
+            case DV7_HANDLING_HDR10 -> "降级HDR10";
+            case DV7_HANDLING_FEL -> "FEL 双层重建";
+            default -> "升级P8.1";
+        };
+    }
+
+    public static int nextMpvDv7HandlingMode(int mode) {
+        return (clampMpvDv7Handling(mode) + 1) % 3;
     }
 
     public static String getMpvDv7HandlingOption() {
-        return getMpvDv7HandlingMode() == DV7_HANDLING_P81
-                ? "p81" : "hdr10";
+        return switch (getMpvDv7HandlingMode()) {
+            case DV7_HANDLING_HDR10 -> "hdr10";
+            // FEL needs the original BL, EL and RPU; it must not run P8.1's
+            // destructive enhancement-layer filter.
+            case DV7_HANDLING_FEL -> "preserve";
+            default -> "p81";
+        };
     }
 
     public static boolean isSoftVideoTuneEnabled() {
@@ -565,6 +582,10 @@ public class PlaybackPerformanceSetting {
 
     private static int clampDv7Handling(int mode) {
         return mode == DV7_HANDLING_HDR10 ? DV7_HANDLING_HDR10 : DV7_HANDLING_P81;
+    }
+
+    static int clampMpvDv7Handling(int mode) {
+        return mode == DV7_HANDLING_FEL ? DV7_HANDLING_FEL : clampDv7Handling(mode);
     }
 
     private static void put(String key, boolean value) {

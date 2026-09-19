@@ -8,6 +8,14 @@ import java.util.Set;
 
 final class MpvOptionPriorityPolicy {
 
+    static final String HARDWARE_CODECS = "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1,avs3";
+
+    // Native applies the decoder/renderer contract to the selected DV7 chain.
+    // Protect only the request and original bitstream; a FEL preference must
+    // not override ordinary videos' VO, decoder shortcuts, or mpv.conf priority.
+    private static final Set<String> FEL_REQUIRED_OPTIONS = Set.of(
+            "android-dovi-fel", "android-dovi-fel-vulkan", "demuxer-dovi-profile7");
+
     private static final Set<String> PERFORMANCE_MANAGED_OPTIONS = Set.of(
             "vo",
             "gpu-context",
@@ -32,6 +40,8 @@ final class MpvOptionPriorityPolicy {
             "demuxer-hysteresis-secs",
             "demuxer-dovi-profile7",
             "demuxer-dovi-profile8",
+            "android-dovi-fel",
+            "android-dovi-fel-vulkan",
             "framedrop",
             "video-sync",
             "interpolation",
@@ -44,14 +54,16 @@ final class MpvOptionPriorityPolicy {
     }
 
     static Map<String, String> resolvePerformanceOverlay(MpvPlayerConfig config) {
-        if (!MpvStartupBufferPolicy.shouldApplyPerformanceOverlay(config.performanceOptionsPriority())) return Collections.emptyMap();
+        boolean fel = "yes".equals(config.extraOptions().get("android-dovi-fel"));
+        if (!MpvStartupBufferPolicy.shouldApplyPerformanceOverlay(config.performanceOptionsPriority())
+                && !fel) return Collections.emptyMap();
         Map<String, String> candidates = new LinkedHashMap<>();
         candidates.put("vo", config.vo());
         candidates.put("gpu-context", config.gpuContext());
         if (config.gpuApi() != null && !config.gpuApi().isEmpty()) candidates.put("gpu-api", config.gpuApi());
-        if (config.openglEs()) candidates.put("opengl-es", "yes");
+        if (config.openglEs() || fel) candidates.put("opengl-es", config.openglEs() ? "yes" : "no");
         candidates.put("hwdec", config.hwdec());
-        candidates.put("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1");
+        candidates.put("hwdec-codecs", HARDWARE_CODECS);
         candidates.put("ao", config.ao());
         candidates.put("ad", MpvAudioDecoderPolicy.hardwareFirstDecoderList());
         candidates.put("audio-spdif", config.audioSpdif());
@@ -67,14 +79,19 @@ final class MpvOptionPriorityPolicy {
         candidates.put("demuxer-readahead-secs", String.valueOf(config.demuxerReadaheadSeconds()));
         candidates.put("demuxer-hysteresis-secs", String.valueOf(config.demuxerHysteresisSeconds()));
         candidates.putAll(config.extraOptions());
-        return selectPerformanceOverlay(true, candidates);
+        return selectPerformanceOverlay(config.performanceOptionsPriority(), candidates);
     }
 
     static Map<String, String> selectPerformanceOverlay(boolean performanceOptionsPriority, Map<String, String> candidates) {
-        if (!performanceOptionsPriority || candidates == null || candidates.isEmpty()) return Collections.emptyMap();
+        if (candidates == null || candidates.isEmpty()) return Collections.emptyMap();
+        boolean fel = "yes".equals(candidates.get("android-dovi-fel"));
+        if (!performanceOptionsPriority && !fel) return Collections.emptyMap();
         Map<String, String> overlay = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : candidates.entrySet()) {
-            if (isPerformanceManaged(entry.getKey()) && entry.getValue() != null) overlay.put(entry.getKey(), entry.getValue());
+            if (entry.getValue() != null && (performanceOptionsPriority && isPerformanceManaged(entry.getKey())
+                    || fel && FEL_REQUIRED_OPTIONS.contains(entry.getKey()))) {
+                overlay.put(entry.getKey(), entry.getValue());
+            }
         }
         return Collections.unmodifiableMap(overlay);
     }

@@ -2,6 +2,18 @@
 
 本文是 WebHTV 重新生成 `libmpv.so` 及其 FFmpeg 依赖的权威说明。
 
+2026-09-17 C-AVS3 MediaCodec：`ffmpeg-avs3-mediacodec.patch` 接在FFmpeg diagnostics补丁后，加入 `avs3_mediacodec` / `video/avs3`，将raw/av3c序列配置交给现有MediaCodec会话。显式硬件上下文与hardware-only查询均为必需，无NDK按MIME绕过筛选的兜底；设备不支持时不自动软解，软件后端保留。正式FFmpeg override显式启用并校验该decoder，日常Debug/Release直接打包已提交资产。仅更新两ARM codec，其他18个MPV库保持；依赖锁定revision、JNI/渲染/HPM与Exo制品不变。两ABI/16KB/导出、9项Java检查和手机JNI/NDK无硬件拒绝已通过；AVS3硬件实际出帧/profile兼容/性能仍需目标设备验收。精确制品、补丁哈希、原始结果与回滚见 [C-AVS3 MediaCodec](../docs/C-AVS3-video-decoding.md#mpv-avs3-mediacodec2026-09-17)。
+
+2026-09-17 C-AVS3 高级档次：在原有 uavs3d 之外，加入固定 HPM 15.0 `0c7ac42edfac6d18b92b58a5ef43bca58526ca7a` 的 `0x32` 软件后端，由 `build_avs3_native.sh` 强制调用 `build_hpm_native.sh`，按 MPV 自有 NDK29/ABI 独立静态链接。HPM 内部符号统一隔离，ARM SIMD 使用固定 SSE2NEON；输入、分配、错误、时间戳与 flush 由适配层管理。只更新两 ABI codec，保留其他 MPV/FEL/字幕库；硬解模式不自动切软件。原 HPM 许可证限定标准开发、测试与推广，原文与 SSE2NEON MIT 许可随 nextlib AAR/APK 提供，本地构建成功不代表已取得对外商业分发授权。具体已验收范围、性能与未验收项以 [C-AVS3 当前记录](../docs/C-AVS3-video-decoding.md) 为准。
+
+2026-09-17 P2-4第9.25节：FEL起播的GPU上下文选项改用mpv原有 `m_option_copy` 管理对象列表所有权，修复配置析构释放静态内存导致的native abort。仅修改FEL patch的 `vo_gpu_next.c` 块并增量重建两ARM ABI的libmpv，保留完整FEL、渲染回退和手动视频解码合同；其余18个MPV库（包括AVS3 codec/JNI）逐字节不变，依赖锁和公开导出不变。真实ta/option析构的ASan/UBSan先复现旧错误再通过修复；构建命令、最终产物与手机验证见[任务第9.25节](../docs/P2-4-mpv-android-fel.md)。普通Gradle构建直接包含修复后的assets。
+
+2026-09-16 C-AVS3：固定 uavs3d `0e20d2c291853f196c68922a264bcd8471d75b68`，由共享 `build_avs3_native.sh` 按 MPV 自有 NDK/prefix 构建并静态链接到 codec；支持基准档次 0x20/0x22 的 8/10-bit，未实现 High profile 0x30/0x32。Android ARMv7 使用 softfp，pthread 来自 libc；FFmpeg 包装补丁处理初始化数据边界、错误传播及 flush。只更新两 ABI 的 `libmvcodec.so`，其余 MPV/渲染/FEL/字幕库保持基线字节；Exo 另建 `libavcodec.so`，两套命名空间不混用。来源、手机逐像素证据、限制和回滚见 [C-AVS3](../docs/C-AVS3-video-decoding.md)。日常 APK 构建直接包含提交的能力，不需要额外开关。
+
+2026-09-16 P2-4第9.18节：为无ADB电视补充`WebHTV FEL wait sample`，仅FEL/视频INFO记录开启时每3秒采样一次descriptor bind/push的线程调度计数、CPU/墙钟及acquire fence的poll(0)状态，权限/计数缺失明确未知，采样开销独立记录。`WebHTV FEL descriptors: capability-v=1`独立记录GPU/驱动/API和push扩展支持/启用情况；不改变扩展启用、重建、位深、同步或线程。两ABI同锁libmpv、host与13项Java检查、TV64 APK验证通过，其余18库不变；来源、原始日志、哈希、判读限制及回滚见[任务第9.18节](../docs/P2-4-mpv-android-fel.md)。这是一份诊断候选，电视卡顿尚待新Web日志裁决。
+
+2026-09-14 P2-4第9.17节续修：首次实际FEL硬件draw另设有界10s初始化，结束只排除占用时间、普通帧仍750ms，seek/轮询不续期。FEL stable按实际启用的KHR扩展/入口/YCbCr数量门控push descriptors，布局创建失败回普通set；每帧仍完整绑定当前图像并ONE_TIME录制，不重放旧命令，不改10bit/NLQ与同步。新增`WebHTV FEL renderer init`、`WebHTV FEL descriptors`（mode/reason/max-push）和`push-descriptors`耗时进入有界App日志。两ABI/产物及实际SHA-256以[任务第9.17节](../docs/P2-4-mpv-android-fel.md)为准；本单元仅重编两份libmpv、其余18库不变。host缓存/生命周期测试需给`test_mpv_fel_contract.sh`提供`ANDROID_NDK_HOME`或`VULKAN_HEADERS_INCLUDE`，只用Vulkan声明，不加载GPU驱动。电视实际扩展能力、画面正确性及实时性能仍须实测验收。
+
 ## 两种构建必须分开
 
 日常 App 构建不会编译 MPV native。仓库已经提交以下目录中的 `.so`，Gradle 和 GitHub Actions 直接把它们作为 assets 打进 APK：
@@ -26,6 +38,14 @@ scripts/build_mpv_native.sh
 该脚本没有挂接到 Gradle，也不会被 GitHub Actions 自动执行。Android Release Action 只对仓库已提交的 native assets 做完整性和 ELF 依赖校验，不会现场重新编译 MPV。
 
 ## 固定输入
+
+P9 2026-09-10 修复保留以下独立补丁（顺序由脚本锁定）：
+
+- `mpv-discnav-poll.patch` 接在原盘输入补丁之后，在demux线程处理纯导航事件；菜单动画不再依赖暂停时的媒体包需求。
+- `ffmpeg-mediacodec-output-serialization.patch` 接在硬件音频补丁之后，将每个decoder context的输出释放、serial检查、flush与stop串行化，沿用原引用计数生命周期。
+- `mpv-mediacodec-embed-reset.patch` 接在输出时序诊断补丁之后，在VO reset时丢弃待提交图像/旧PTS，保留硬件直出与双Surface。
+
+这些补丁不改变库版本或公开JNI API。重建必须覆盖两ABI的FFmpeg和MPV，再由`--stage-only --install`验证并安装整套产物；不能仅复制旧prefix声称已构建。已有同锁缓存可在完整补丁应用验证后，显式调用框架的`buildall.sh -n --arch <arm64|armv7l> ffmpeg`及`mpv`增量重编受影响组件，并保存实际编译与链接日志。JNI源/头未改时不重编`libplayer.so`。
 
 所有上游仓库、commit、tar 包 SHA-256、NDK 和 Meson/Ninja 版本统一记录在：
 
@@ -235,6 +255,51 @@ scripts/build_mpv_player_jni.sh
 P2-2 在现有 `mpv-dovi-profile7-hdr10-base-layer.patch` 内完成 Profile 7 HDR10 fallback 的 metadata/codecpar/error 完整性修复：缺少 `dv_el_present` 时仍仅对显式 HDR10 fallback 创建 `dovi_split=mode=bl`，检查 codec parameter 转换、BSF option/init 返回值，将成功过滤后的 `par_out` 原子同步回 decoder 参数并清除 EL 标记，同时在 packet 长度转换前拒绝超过 `INT_MAX` 的输入。现有三态 packet ownership、精确零拷贝、Surface Direct、单 Surface EL gate、DV7 设置和 FFmpeg `libmv*` 命名空间均保留；未升级 lock、FFmpeg、libplacebo、JNI 或启用 Android EL。
 
 本阶段使用 NDK r29 对 `arm64-v8a` 与 `armeabi-v7a` 完整重建并安装 native assets；一次 `scripts/verify_mpv_native_assets.sh --require-elf` 通过，APK `app-mobile-arm64_v8a-debug.apk` 内十个 arm64 MPV 资产与工作区完全一致，两个 `libplayer.so` 保持字节不变。用户在 USB 连接的 vivo V2453A 上确认安装后的 DV7 及邻接播放验证通过。实现提交为 `ba47756d7e463abeb9377088b819a2520e150935`，恢复 tag 为 `recovery/P2-2-MPV-DV7-METADATA-CODECPAR/20260829065811-ba47756d7e46`。完整来源、哈希、验证和回滚记录见 [P2-2-mpv-dv7-metadata-codecpar.md](../docs/P2-2-mpv-dv7-metadata-codecpar.md)。
+
+## P2-4 Android FEL 双层重建（2026-09-12）
+
+独立补丁 `mpv-android-fel.patch` 在现有补丁序列末尾应用，不升级任何锁定依赖。`android-dovi-fel` 默认关闭；只有 App 手动选择「FEL 双层重建」、识别源 Profile 7 并使用 `gpu-next` 时才开启软件 EL 配对。原 `VO_CAP_GPU_DOVI_EL` Android gate 保留，新增的软件 EL 能力不能启动第二路 MediaCodec。
+
+补丁适配 `FongMi/mpv@06ec6e1746e5cbdcd271e613fdb1f7f7ecd36042` 的 EL force_swdec 必要接线，不吸收其 Surface/HDR/OSD 重写。可靠性续修参考 mpv #18375 的预热/持帧问题，仅在新模式将 BL 待配对/预取限制为1/1、EL为8/4；两路独立有界队列，不能把 `hwdec-extra-frames` 当成 MediaCodec Surface 扩池。保持 PTS/NLQ，连续8次解码错误且无成功帧时结束失败解码，不改变禁止 BL 软回退的策略。现有 FFmpeg、libplacebo、原盘/音频补丁保持原样。
+
+日志31进一步暴露配对之外的图像持有：FEL 的 Vulkan auto/direct 实例内部改用既有 stable 原始YUV暂存池，不写回用户后端设置，也不改变非FEL选择。暂存至少10-bit，不允许8-bit降级；GPU复制提交后以最多100ms的有界fence等待尝试及时归还AImage，超时仍保留图像所有权，不提前释放或CPU回读。`WebHTV FEL GPU staging`和`WebHTV FEL GPU pool`将实际后端、提交/完成、仍持有图像、位深与等待时间写入App调试日志；旧的direct/fence实现不改。该适配增加新FEL模式的GPU拷贝/显存需求，实际花屏、持续播放和性能仍需电视验证。
+
+本阶段使用同锁温缓存，只重编两 ABI 的 `mpv`：**串行**执行 `buildall.sh -n --arch arm64 mpv` 与 `--arch armv7l mpv`（当前脚本会修改共享 `meson.build` 的 iconv 路径，不能并行），随后 `scripts/build_mpv_native.sh --abi all --stage-only --install`。可靠性续修还修改 canonical JNI 的 NODE 回调，必须 `scripts/build_mpv_player_jni.sh --abi all --install` 重建 `libplayer.so`，使 Java 和二进制成套交付。NODE 序列化有深度、节点及字节限制，轨道/章节通过订阅快照传递，缺值不回退逐项 JNI 查询；不改现有串行 mutation/Surface/shutdown 队列。
+
+不得跳过实际编译而仅复制旧 prefix。`scripts/test_mpv_fel_contract.sh` 执行 NODE 与 FEL 策略的 host ASan/UBSan 检查及生产 patch 静态契约；`scripts/verify_mpv_native_assets.sh --require-elf` 额外要求队列/失败与 JNI NODE 标记。它们不代表真机重建、画质、性能或恢复页生命周期验收通过。
+
+日志31续修未再改JNI，因此复用本单元已经编译和验证的两份`libplayer.so`，只需重编两份`libmpv.so`后重新打APK；不能为未改变的FFmpeg/libplacebo或JNI重复全链构建。
+
+日志32续修切断FEL只读状态查询的native循环等待：`hwdec-current`通过wrapper缓存读取，包含真实探测可用状态和独立名称副本；不得调用decoder dispatch锁等待硬解端口。缓存先于async producer的帧发布更新，seek/reinit使旧状态失效；仅FEL的固定container FPS也不取decoder锁。修改型控制仍同步，普通模式不变。`WebHTV FEL status snapshot`输出查询次数、发布序号和可用状态，便于在不能ADB的电视上辨别新路径；host回归直接编译生产wrapper函数，以禁止decoder等待的stub验证读路径，并检查旧模式/重置型控制仍同步。此轮同样仅重编mpv，不改JNI、FFmpeg、libplacebo。
+
+日志33确认上述状态快照已生效但连续播放仍失败，不能把它当作完整根因。新增`WebHTV FEL pipeline diagnostics v=1`：每个VO实例用always-lock-free原子值记录core/BL/EL/VO当前步骤和阶段起点，另外记录收发计数及VO请求帧预算；只在原fatal错误内格式化`WebHTV FEL pipeline:`，不逐帧输出、不同步查询native、不新增线程，不改变解码/渲染/超时策略。该消息复用App的fatal限流豁免，电视没有ADB也可从调试日志取证。host C测试直接编译生产header，覆盖禁用、时钟回绕、缓冲截断及并发；两ABI都必须通过lock-free编译断言和新标记校验。
+
+日志35暴露VO丢帧接线缺口：核心持有未来帧等待第二帧，VO已空闲，但丢帧分支跳过了原本在`draw_frame`中的Surface暂存。FEL+MediaCodec+gpu-next现在通过内部`VOCTRL_PREPARE_FEL_FRAME`在丢弃显示时仍准备当前/未来帧，映射在VO锁外执行，复用既有GPU缓存，不做EL合成或呈现；暂时未就绪请求保留帧重绘，永久失败报告backend error。核心双帧时序、插帧设置及正常/非FEL路径不变。`WebHTV FEL dropped-frame staging`和fatal快照中的`surface-drops/drop-prepared/drop-retries`用于电视验证，fatal与pipeline放在同一物理行保证限流豁免。真实`render_frame()`/暂存函数的host有限缓冲测试证明旧代码停滞、新代码可归还输出；这仍不是电视持续播放验收。
+
+日志36后曾用`dovi_split=bl_rpu`隔离EL；日志38证明全部6帧暂存归还后仍停止，不能把该版本称已修复。当前FEL候选只为Profile 7 FEL的MediaCodec BL使用已有`dovi_split=bl`，硬件输入不含RPU/EL，私有decoder context和packet移除DOVI/HEVC EL配置；共享demux/codec及独立软件EL/RPU不变。现有PTS配对函数从EL继承原始DV映射，GPU仍执行FEL重建。独立packet ref承接BSF所有权，支持EAGAIN重试/seek清理，错误失败关闭，旧模式不扫描码流；不增加公开符号、依赖或JNI变更，仅两ABI mpv增量重建。host测试涵盖真实BSF格式/所有权/输入载荷、软件EL逐帧RPU/PTS/NLQ和实际继承函数（第二参数传GIJoe Profile 7样片路径；需本机FFmpeg开发库和pkg-config）。`WebHTV FEL BL input isolation: pure-bl`、`RPU-source=EL`、配对RPU来源/缺失统计和fatal同行`BL-input={...}`供无ADB电视取证。此候选仍需电视实播，不能据host/编译通过宣称已稳定。
+
+日志39/40否决pure-BL候选的可靠性与实时性能。生产者交接续修在独立BL worker发布硬件帧前，通过已有非阻塞VO暂存接口等待GPU完成且AImage归还；共享AVBuffer原子标记保证源归还先于发布及下一次decode，2ms轮询、750ms总界限，不新增App/core同步等待。缓存命中继续推进fence，FEL mapper保持raw-YUV存储以兼容稍后从EL继承RPU，不增加第二次像素拷贝或降位深。`WebHTV FEL producer handoff`和`WebHTV FEL decoder cost`记录交接及BL/EL耗时；非FEL不进入新增计时路径。`fel_producer_handoff_test.c`直接编译生产函数体验证有限输出进展与所有权顺序，仍不能替代电视验收。
+
+日志41的751ms超时暴露“mapper已返回纹理但源未完成→确认后重入→ready快速路径不清请求槽”。VO先确认自己的请求，映射成功但源未归还时保留同槽重试。FEL stable若支持SYNC_FD导出，则用独立source-release semaphore随GPU copy提交，导出fd交`AImage_deleteAsync`，使CPU不必逐帧等待GPU；libplacebo的render-ready semaphore不被导出消费，原VkFence继续保护GPU input/output/command资源。原子状态区分安全交还源和GPU完成。无能力、信号量创建或fd导出失败时保留有界CPU等待；失败后禁止再次signal未消费的source semaphore。不改变默认模式、位深、EL/RPU、缓存上限和超时预算。
+
+新`WebHTV FEL source release`、`map cost`、`async-returns`及producer的`gpu-complete`供无ADB电视取证。定向回归编译实际VO/submit/export/finish/producer函数，涵盖120帧CPU归还、120帧异步归还、延迟完成、fd=-1/失败/复用、独立两信号和准入隔离；它们不是电视画质/实时性能验收。
+
+日志42三次首帧751ms失败否决上一候选：冷启动GPU资源/compute pipeline创建也被算进逐帧750ms。当前修正用同一共享lease的单调phase位标记真实冷初始化，仅此阶段单独有界10秒，普通排队/交接仍750ms，不由“第几帧”或轮询次数续期。BL待交接帧由wrapper持有，每次process检查一次后返回已有dispatch（2ms可中断等待），reset/stop取消自己的VO lease，generation防止旧回写。FEL失败只发送一次EOF且停止feed，避免零样本权重的信号队列空转。`WebHTV FEL GPU init`区分outputs/pipeline/总初始化耗时，`handoff timeout: phase=`与`wait=async`进入App调试日志。
+
+日志29三次进入播放但稳态约10–12fps，不能认为此前交接修复完成实时性能需求。当前增量加入仅FEL/INFO启用的冷/热map分段墙钟、线程CPU、既有copy fence完成后的无WAIT GPU timestamp、既有libplacebo pass均值，以及render/flush/submit/swap和实际decoder线程信息；不支持/失败时只停用计时，不改变像素或生命周期。App纯性能记录按严格来源/级别识别并独立限流，只写一次现有调试日志存储，不重复排队主线程/漂亮Logcat，错误路径不变。
+
+当前状态、实际资产 SHA-256、验证结果与回滚以 [P2-4-mpv-android-fel.md](../docs/P2-4-mpv-android-fel.md) 第9.14节为准。早先NODE可靠性单元替换过两 ABI 的 `libmpv.so` 和 `libplayer.so`；本轮以`1620bac1566727f4067eda631647a11652082e74`为基线，**仅重编/替换两份libmpv，其余18库（含JNI）逐字节不变**。host计时/所有权契约、23项Java定向测试、双ABI/ELF/导出、两个debug APK各10库/签名/封装结构通过。GPU区间可能含依赖等待，pass缓存不是整帧墙钟，线程数也不等于CPU利用率；目标电视画质、可靠性、性能与生命周期仍须新日志验证，不以构建通过标记任务完成。
+
+## AV-DIAG-01 诊断窄补丁（2026-09-15）
+
+本单元不改变`mpv-native-lock.json`版本及既有DV/字幕/音频/网络补丁，追加：
+
+- `third_party/patches/ffmpeg-mediacodec-diagnostics.patch`：实际查名访问/拒绝/profile比较、查询失败stage、Java提前返回/NDK by-MIME与真实create/configure/start；SHA256 `bf3ad167b8811f661e2c47f33f6ec41e2887125727caa115f3553e814a1710e9`。
+- `third_party/patches/mpv-playback-diagnostics.patch`：原AudioTrack内的配置/重建、原始write结果和单位、已有head/timestamp缓存、低频actual route；跨输出生命周期独立编号；SHA256 `0a62ef78d2cdce3a8e3d843319b364d644a70bda13291452640d86a12c2a136c`。INFO关闭时不做新增写入统计/时间采样。
+
+当前锁定输入：framework `99a60ad2141d5ace94453590903c2c6b9a0a2443`、MPV `cca559b41ceb0bb7731cf6ef2e1f33276cd30c42`、FFmpeg `177f090e0503b7e013922ca903bde14b1c375f18`、libplacebo `b694a21bf2dc176c1e98b8a13c6421a0de5f3da5`，NDK29/API24。两ARM ABI从同一缓存补丁链增量构建，随后`bash scripts/build_mpv_native.sh --abi all --stage-only --install`；不reset已应用补丁的缓存，不重编未改变contract的`libplayer.so`。
+
+`verify_mpv_native_assets.sh --require-elf`已通过，包含新增lookup/write marker和原命名空间/依赖门禁；arm64 libmpv SHA256 `8213150b467bc2dd9501bbd8e484ac8db04f537ebc8276133a845c18fda1b01a`，armv7 `2a0e1f749b8d57377da086a5c150db588b90cf65b656eddce36e6a3ba194709d`。完整实现、产物/验证日志、设备验收边界及原子回滚仅记录在[AV-DIAG-01](../docs/AV-DIAG-01-playback-diagnostics.md)的14.12–14.14；没有将构建通过记为设备实播通过。
 
 ## 提交前验证
 

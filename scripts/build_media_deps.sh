@@ -249,6 +249,9 @@ apply_media_patches() {
     "$patch_dir/media3-exo-av3a-mp4.patch"
     "$patch_dir/media3-exo-av3a-dash-channel-config.patch"
     "$patch_dir/media3-exo-alac-wave.patch"
+    "$patch_dir/media3-exo-ass-observer.patch"
+    "$patch_dir/media3-playback-diagnostics.patch"
+    "$patch_dir/media3-exo-avs3.patch"
   )
   for patch_file in "${patches[@]}"; do
     [[ -f "$patch_file" ]] || continue
@@ -264,6 +267,7 @@ apply_nextlib_patches() {
     "$THIRD_PARTY_DIR/patches/nextlib-ffmpeg-soft-load-shedding.patch"
     "$THIRD_PARTY_DIR/patches/nextlib-av3a.patch"
     "$THIRD_PARTY_DIR/patches/nextlib-ape-support.patch"
+    "$THIRD_PARTY_DIR/patches/nextlib-avs3.patch"
   )
   for patch_file in "${patches[@]}"; do
     if [[ ! -f "$patch_file" ]]; then
@@ -426,7 +430,23 @@ verify_nextlib_aar() {
       echo "Missing $abi AV3A Audio Vivid marker in $aar" >&2
       return 1
     fi
+    if ! grep -aFq "libuavs3d" "$temp_dir/jni/$abi/libavcodec.so"; then
+      echo "Missing $abi AVS3 video decoder in $aar" >&2
+      return 1
+    fi
+    if ! grep -aFq "WebHTV HPM 15.0" "$temp_dir/jni/$abi/libavcodec.so"; then
+      echo "Missing $abi AVS3 High 10-bit decoder in $aar" >&2
+      return 1
+    fi
   done
+  [[ -s "$temp_dir/assets/licenses/uavs3d.txt" ]] || {
+    echo "Missing uavs3d license in $aar" >&2
+    return 1
+  }
+  [[ -s "$temp_dir/assets/licenses/hpm-avs3.txt" && -s "$temp_dir/assets/licenses/sse2neon.txt" ]] || {
+    echo "Missing HPM/sse2neon notices in $aar" >&2
+    return 1
+  }
   rm -rf "$temp_dir"
 }
 

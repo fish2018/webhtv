@@ -11,6 +11,19 @@ final class MpvHlsSegmentContentPolicy {
     private MpvHlsSegmentContentPolicy() {
     }
 
+    static boolean isPlaylist(HlsPlaylistRewriter.UriRole role, String url, String contentType) {
+        // Dynamic endpoints may serve both playlists and segments at *.m3u8.
+        // The role declared by the parent playlist takes precedence over hints.
+        if (role == HlsPlaylistRewriter.UriRole.MEDIA_SEGMENT) return false;
+        if (role == HlsPlaylistRewriter.UriRole.VARIANT_PLAYLIST) return true;
+        String mime = contentType == null ? "" : contentType.toLowerCase(Locale.US);
+        if (mime.contains("mpegurl") || mime.contains("m3u8")) return true;
+        String lower = url == null ? "" : url.toLowerCase(Locale.US);
+        int query = lower.indexOf('?');
+        if (query >= 0) lower = lower.substring(0, query);
+        return lower.endsWith(".m3u8") || lower.endsWith(".m3u");
+    }
+
     static boolean shouldProbePngPrefix(String contentType, boolean mediaSegment) {
         String mime = contentType == null ? "" : contentType.trim().toLowerCase(Locale.US);
         if (mime.startsWith("image/png")) return true;

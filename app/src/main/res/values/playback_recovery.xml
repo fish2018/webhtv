@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_recovery_title">播放器暂时无响应</string>
+    <string name="playback_recovery_description">您可以继续等待，或结束本次故障播放并返回首页。不会自动重播视频，未保存的播放进度可能丢失。</string>
+    <string name="playback_recovery_wait">继续等待</string>
+    <string name="playback_recovery_waiting">正在等待播放恢复。您随时可以结束本次播放；恢复响应后将自动返回播放器。</string>
+    <string name="playback_recovery_exit">结束播放并返回首页</string>
+    <string name="playback_recovery_home">返回首页</string>
+    <string name="playback_recovery_already_responsive">播放已恢复响应或原进程已结束，不需要强制退出。</string>
+    <string name="playback_recovery_refused">无法安全结束故障进程。您仍可继续等待或使用系统的强制停止功能。</string>
+</resources>

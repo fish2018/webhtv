@@ -22,6 +22,7 @@ final class ExoRuntimeAwareVideoRenderer extends MediaCodecVideoRenderer {
 
     private final ExoDecoderRuntimeSession runtimeSession;
     private final ExoDecoderRuntimeSession.OutputConfig output;
+    private final ExoDiagnosticCollector diagnostics;
 
     ExoRuntimeAwareVideoRenderer(
             Context context,
@@ -34,7 +35,7 @@ final class ExoRuntimeAwareVideoRenderer extends MediaCodecVideoRenderer {
             ExoDecoderRuntimeSession runtimeSession,
             ExoDecoderRuntimeSession.OutputConfig output,
             ExoFrameSchedulingExperimentPolicy.Decision
-                    frameSchedulingDecision) {
+                    frameSchedulingDecision, ExoDiagnosticCollector diagnostics) {
         super(builder(
                 context,
                 codecAdapterFactory,
@@ -46,6 +47,7 @@ final class ExoRuntimeAwareVideoRenderer extends MediaCodecVideoRenderer {
                 frameSchedulingDecision));
         this.runtimeSession = runtimeSession;
         this.output = output;
+        this.diagnostics = diagnostics;
     }
 
     @Override
@@ -69,12 +71,17 @@ final class ExoRuntimeAwareVideoRenderer extends MediaCodecVideoRenderer {
         List<MediaCodecInfo> allowed = new ArrayList<>(infos.size());
         long nowEpochMs = System.currentTimeMillis();
         for (MediaCodecInfo info : infos) {
-            if (info == null || runtimeSession.shouldExclude(
-                    info.name, format, secure, output, nowEpochMs)) {
+            boolean excluded = info == null || runtimeSession.shouldExclude(
+                    info.name, format, secure, output, nowEpochMs);
+            if (info != null && diagnostics != null) diagnostics.log.emit("video.candidates", "runtime-profile-selector", e -> e
+                    .observed("decoderName", info.name).observed("accepted", !excluded)
+                    .observed("reason", excluded ? "existing-runtime-profile-exclusion" : "runtime-profile-allowed"));
+            if (excluded) {
                 continue;
             }
             allowed.add(info);
         }
+        ExoDiagnosticCodecAdapter.candidates(diagnostics, allowed, format.sampleMimeType, secure, output.tunneling(), "runtime-renderer-final-order");
         return allowed;
     }
 

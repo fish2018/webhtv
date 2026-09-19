@@ -1,0 +1,57 @@
+[
+  {
+    "path": "regression/.fonts/Aileron-Regular.otf",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/.fonts/Aileron-Regular.otf",
+    "sha256": "2762f4fc2ebad8323264aea52ffa2260b86c9677493d3ce2dc4f34e5851d2aa2"
+  },
+  {
+    "path": "regression/.fonts/Arimo-Bold.ttf",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/.fonts/Arimo-Bold.ttf",
+    "sha256": "0b5422b854f9a76ff56f894dc76d440eaca6489c119168f00cd176a5a8617013"
+  },
+  {
+    "path": "regression/.fonts/Arimo-Regular.ttf",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/.fonts/Arimo-Regular.ttf",
+    "sha256": "e9aae1ebba96d3a4137e5b355040506d025ee690db24213fcad650200dbbbf42"
+  },
+  {
+    "path": "regression/blurs/blur+t.ass",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/blurs/blur%2Bt.ass",
+    "sha256": "85e2085db7d8ec26ac264214a02211b62025fcafb42f96b125d8bf13cc5dc18f"
+  },
+  {
+    "path": "regression/karaoke/357-k-and-kf-desynced.ass",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/karaoke/357-k-and-kf-desynced.ass",
+    "sha256": "534d2d14ebcab56046569007387488f1aae7b3649e2213247a1e8511c2c2ac89"
+  },
+  {
+    "path": "regression/blurs/blur+t-1000.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/blurs/blur%2Bt-1000.png",
+    "sha256": "6a9b95a3806361c90a0f046f15dd3b0a85a36dbec7c93375bbd102c078eecc39"
+  },
+  {
+    "path": "regression/blurs/blur+t-1500.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/blurs/blur%2Bt-1500.png",
+    "sha256": "76041ba11928ed1715c867610c8fc2b4a561180c7671f7cddd6795667ead33e4"
+  },
+  {
+    "path": "regression/blurs/blur+t-1900.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/blurs/blur%2Bt-1900.png",
+    "sha256": "49622343cf17fe56bd1ede65e446b8aaddabcb285c5e3b39745afd2a12a46998"
+  },
+  {
+    "path": "regression/karaoke/357-k-and-kf-desynced-6798.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/karaoke/357-k-and-kf-desynced-6798.png",
+    "sha256": "2aa7b22593900f717e500c840e0f5627d78f3f1680f9fcdc73873415c88041bf"
+  },
+  {
+    "path": "regression/karaoke/357-k-and-kf-desynced-7170.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/karaoke/357-k-and-kf-desynced-7170.png",
+    "sha256": "9328d2259972374025b603723f6dcfc06f7fb1ceb4e8ac818196354779a864c1"
+  },
+  {
+    "path": "regression/karaoke/357-k-and-kf-desynced-8170.png",
+    "url": "https://raw.githubusercontent.com/libass/libass-tests/10edd9ecd8054f2c4678d36b379d8372d0e573c6/regression/karaoke/357-k-and-kf-desynced-8170.png",
+    "sha256": "57e38c4dbdcc9853496d0514724add7610a9cd22e0cabe5279131ffc44b36dbb"
+  }
+]

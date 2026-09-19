@@ -1,0 +1,261 @@
+diff --git a/libavcodec/libuavs3d.c b/libavcodec/libuavs3d.c
+--- a/libavcodec/libuavs3d.c
++++ b/libavcodec/libuavs3d.c
+@@ -32,14 +32,18 @@
+ #include "codec_internal.h"
+ #include "decode.h"
+ #include "uavs3d.h"
++#include "webhtv_hpm.h"
+ 
+ typedef struct uavs3d_context {
+     AVCodecContext  *avctx;
+     void            *dec_handle;
++    WebHpm          *hpm;
+     int              frame_threads;
+     int              got_seqhdr;
+     uavs3d_io_frm_t  dec_frame;
+ } uavs3d_context;
++
++#include "webhtv_hpm_ffmpeg.h"
+ 
+ #define UAVS3D_CHECK_START_CODE(data_ptr, PIC_START_CODE) \
+         (AV_RL32(data_ptr) != (PIC_START_CODE << 24) + AVS3_NAL_START_CODE)
+@@ -108,6 +112,9 @@
+     uavs3d_io_frm_t *frm_dec = &h->dec_frame;
+     struct uavs3d_com_seqh_t *seqh = frm_dec->seqhdr;
+     int ret;
++
++    if (!seqh)
++        return AVERROR_INVALIDDATA;
+ 
+     if (UAVS3D_CHECK_INVALID_RANGE(seqh->frame_rate_code, 0, 15)) {
+         av_log(avctx, AV_LOG_ERROR, "Invalid frame rate code: %d.\n", seqh->frame_rate_code);
+@@ -144,6 +151,40 @@
+     return 0;
+ }
+ 
++static int libuavs3d_check_sequence_header(AVCodecContext *avctx,
++                                         const uint8_t *header, int size)
++{
++    if (size < 6 || UAVS3D_CHECK_START_CODE(header, AVS3_SEQ_START_CODE))
++        return AVERROR_INVALIDDATA;
++
++    uavs3d_context *h = avctx->priv_data;
++    if (header[4] == 0x32) {
++        if (!h->hpm) {
++            h->hpm = webhtv_hpm_create();
++            if (!h->hpm)
++                return AVERROR(ENOMEM);
++            if (h->dec_handle) {
++                uavs3d_delete(h->dec_handle);
++                h->dec_handle = NULL;
++            }
++            h->got_seqhdr = 0;
++            av_log(avctx, AV_LOG_INFO, "AVS3 software backend: %s\n", webhtv_hpm_version());
++        }
++        return 0;
++    }
++    if (h->hpm)
++        return AVERROR_PATCHWELCOME;
++    // uavs3d's release build coerces unknown profiles to baseline. Reject the
++    // original byte before parsing either extradata or an in-band sequence.
++    if (header[4] != 0x20 && header[4] != 0x22) {
++        av_log(avctx, AV_LOG_ERROR,
++               "Unsupported AVS3 profile 0x%02x; libuavs3d supports only 0x20/0x22.\n",
++               header[4]);
++        return AVERROR_PATCHWELCOME;
++    }
++    return 0;
++}
++
+ static int libuavs3d_decode_extradata(AVCodecContext *avctx)
+ {
+     uavs3d_context *h = avctx->priv_data;
+@@ -151,19 +192,33 @@
+     int header_size = avctx->extradata_size;
+     uavs3d_io_frm_t *frm_dec = &h->dec_frame;
+ 
+-    if (avctx->extradata_size < 4) {
+-        av_log(avctx, AV_LOG_WARNING, "Invalid extradata size %d\n",
+-               avctx->extradata_size);
+-        return 0;
+-    }
++    int ret;
++
++    if (header_size < 6)
++        return AVERROR_INVALIDDATA;
+ 
+     if (header[0] == 1) {
+-        // Skip configurationVersion and sequence_header_length
++        int sequence_size = AV_RB16(header + 1);
++        if (sequence_size < 6 || sequence_size > header_size - 4)
++            return AVERROR_INVALIDDATA;
+         header += 3;
+-        // Also remove library_dependency_idc at the end
+-        header_size -= 4;
+-    }
+-
++        header_size = sequence_size;
++    }
++    ret = libuavs3d_check_sequence_header(avctx, header, header_size);
++    if (ret < 0)
++        return ret;
++
++    if (h->hpm) {
++        WebHpmFrame unused;
++        int consumed;
++        ret = webhtv_hpm_decode(h->hpm, header, header_size,
++                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, &consumed, &unused);
++        if (ret < 0)
++            return libhpm_error(avctx, ret);
++        if (ret || consumed != header_size)
++            return AVERROR_INVALIDDATA;
++        return libhpm_update_info(avctx);
++    }
+     frm_dec->nal_type = 0;
+     frm_dec->pkt_pos = 0;
+     frm_dec->pkt_size = header_size;
+@@ -171,24 +226,21 @@
+     frm_dec->bs_len = header_size;
+     frm_dec->pts = 0;
+     frm_dec->dts = 0;
+-    uavs3d_decode(h->dec_handle, frm_dec);
+-    if (frm_dec->nal_type == NAL_SEQ_HEADER) {
+-        int ret = libuavs3d_on_seq_header(avctx);
+-        if (ret < 0)
+-            av_log(avctx, AV_LOG_WARNING,
+-                   "Process sequence header failed, %s\n", av_err2str(ret));
+-    } else {
+-        av_log(avctx, AV_LOG_WARNING,
+-               "Missing sequence header in extradata\n");
+-    }
+-
+-    return 0;
++    ret = uavs3d_decode(h->dec_handle, frm_dec);
++    if (ret < 0) {
++        av_log(avctx, AV_LOG_ERROR,
++               "AVS3 sequence header rejected (%d); supported profiles: 0x20/0x22\n", ret);
++        return ret == ERR_OUT_OF_MEMORY ? AVERROR(ENOMEM) : AVERROR_INVALIDDATA;
++    }
++    if (frm_dec->nal_type != NAL_SEQ_HEADER)
++        return AVERROR_INVALIDDATA;
++    return libuavs3d_on_seq_header(avctx);
+ }
+ 
+ static av_cold int libuavs3d_init(AVCodecContext *avctx)
+ {
+     uavs3d_context *h = avctx->priv_data;
+-    uavs3d_cfg_t cdsc;
++    uavs3d_cfg_t cdsc = { 0 };
+ 
+     cdsc.frm_threads = avctx->thread_count > 0 ? avctx->thread_count : av_cpu_count();
+     cdsc.check_md5 = 0;
+@@ -214,6 +266,8 @@
+         uavs3d_delete(h->dec_handle);
+         h->dec_handle = NULL;
+     }
++    webhtv_hpm_close(h->hpm);
++    h->hpm = NULL;
+     h->got_seqhdr = 0;
+ 
+     return 0;
+@@ -223,8 +277,16 @@
+ {
+     uavs3d_context *h = avctx->priv_data;
+ 
++    if (h->hpm) {
++        webhtv_hpm_flush(h->hpm);
++        h->got_seqhdr = 0;
++        if (avctx->extradata && libuavs3d_decode_extradata(avctx) < 0)
++            av_log(avctx, AV_LOG_ERROR, "AVS3 HPM sequence reset failed\n");
++    }
+     if (h->dec_handle) {
+         uavs3d_reset(h->dec_handle);
++        h->dec_frame.got_pic = 0;
++        h->dec_frame.priv = NULL;
+     }
+ }
+ 
+@@ -240,6 +302,13 @@
+     int ret, finish = 0;
+ 
+     *got_frame = 0;
++    if (buf_size >= 6 && !UAVS3D_CHECK_START_CODE(buf, AVS3_SEQ_START_CODE)) {
++        ret = libuavs3d_check_sequence_header(avctx, buf, buf_size);
++        if (ret < 0)
++            return ret;
++    }
++    if (h->hpm)
++        return libhpm_decode_frame(avctx, frm, got_frame, avpkt);
+     frm->pts = -1;
+     frm->pict_type = AV_PICTURE_TYPE_NONE;
+ 
+@@ -261,6 +330,11 @@
+         while (!finish) {
+             int bs_len;
+ 
++            if (buf_end - buf_ptr < 4) {
++                av_frame_unref(frm);
++                return AVERROR_INVALIDDATA;
++            }
++
+             if (h->got_seqhdr) {
+                 if (!frm->data[0] && (ret = ff_get_buffer(avctx, frm, 0)) < 0) {
+                     return ret;
+@@ -274,11 +348,31 @@
+                 bs_len = buf_end - buf_ptr;
+                 finish = 1;
+             }
++            if (!UAVS3D_CHECK_START_CODE(buf_ptr, AVS3_SEQ_START_CODE)) {
++                ret = libuavs3d_check_sequence_header(avctx, buf_ptr, bs_len);
++                if (ret < 0) {
++                    av_frame_unref(frm);
++                    return ret;
++                }
++            }
++            if (h->hpm) {
++                AVPacket remainder = *avpkt;
++                remainder.data = (uint8_t *)buf_ptr;
++                remainder.size = buf_end - buf_ptr;
++                av_frame_unref(frm);
++                ret = libhpm_decode_frame(avctx, frm, got_frame, &remainder);
++                return ret < 0 ? ret : (int)(buf_ptr - buf) + ret;
++            }
+             frm_dec->bs = (unsigned char *)buf_ptr;
+             frm_dec->bs_len = bs_len;
+             frm_dec->pts = avpkt->pts;
+             frm_dec->dts = avpkt->dts;
+-            uavs3d_decode(h->dec_handle, frm_dec);
++            ret = uavs3d_decode(h->dec_handle, frm_dec);
++            if (ret < 0) {
++                av_log(avctx, AV_LOG_ERROR, "AVS3 decode failed (%d)\n", ret);
++                av_frame_unref(frm);
++                return ret == ERR_OUT_OF_MEMORY ? AVERROR(ENOMEM) : AVERROR_INVALIDDATA;
++            }
+             buf_ptr += bs_len;
+ 
+             if (frm_dec->nal_type == NAL_SEQ_HEADER) {
+@@ -298,12 +392,12 @@
+         av_frame_unref(frm);
+     }
+ 
+-    return buf_ptr - buf;
++    return buf_size ? buf_ptr - buf : 0;
+ }
+ 
+ const FFCodec ff_libuavs3d_decoder = {
+     .p.name         = "libuavs3d",
+-    CODEC_LONG_NAME("libuavs3d AVS3-P2/IEEE1857.10"),
++    CODEC_LONG_NAME("AVS3-P2/IEEE1857.10 (uavs3d baseline / HPM 15.0 High 10-bit)"),
+     .p.type         = AVMEDIA_TYPE_VIDEO,
+     .p.id           = AV_CODEC_ID_AVS3,
+     .priv_data_size = sizeof(uavs3d_context),
+@@ -311,7 +405,7 @@
+     .close          = libuavs3d_end,
+     FF_CODEC_DECODE_CB(libuavs3d_decode_frame),
+     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS,
+-    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
++    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                       FF_CODEC_CAP_AUTO_THREADS,
+     .flush          = libuavs3d_flush,
+     .p.wrapper_name = "libuavs3d",

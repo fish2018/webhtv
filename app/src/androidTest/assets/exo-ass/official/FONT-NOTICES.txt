@@ -1,0 +1,6 @@
+Test-only fixed fonts from libass/libass-tests 10edd9ecd8054f2c4678d36b379d8372d0e573c6.
+Aileron-Regular.otf name table copyright: No Rights Reserved.
+Arimo-Bold.ttf and Arimo-Regular.ttf name table copyright: Copyright 2010 Google Inc. All Rights Reserved.
+Both Arimo files explicitly declare SIL Open Font License 1.1 (name IDs 13/14).
+Arimo-OFL.txt contains the standard OFL 1.1 text retrieved from google/fonts/ofl/arimo/OFL.txt on 2026-09-14; its current project copyright header is supplemental to the 2010 embedded notices above.
+All file identities and source URLs are recorded in sources.json. These fonts are not shipped in production APKs.

@@ -9,8 +9,10 @@ import androidx.leanback.widget.Presenter;
 
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.Product;
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.databinding.AdapterVodBinding;
+import com.fongmi.android.tv.utils.HistoryProgressFormatter;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
@@ -78,6 +80,9 @@ public class HistoryPresenter extends Presenter {
         holder.binding.site.setVisibility(item.getSiteVisible());
         holder.binding.delete.setVisibility(!delete ? View.GONE : View.VISIBLE);
         holder.binding.remark.setVisibility(delete || same ? View.GONE : View.VISIBLE);
+        String watchedTime = HistoryProgressFormatter.format(item.getPosition(), item.getDuration());
+        holder.binding.historyProgress.setText(watchedTime.isEmpty() ? "" : holder.view.getContext().getString(R.string.history_watched_time, watchedTime));
+        holder.binding.historyProgress.setVisibility(delete || watchedTime.isEmpty() ? View.GONE : View.VISIBLE);
         ImgUtil.load(item.getVodName(), item.getVodPic(), holder.binding.image);
     }
 

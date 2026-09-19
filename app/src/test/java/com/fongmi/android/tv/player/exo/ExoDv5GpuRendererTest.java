@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.player.exo;
 
+import com.fongmi.android.tv.player.PlaybackExperimentPolicy;
+
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -13,16 +15,22 @@ import static org.junit.Assert.assertTrue;
 public class ExoDv5GpuRendererTest {
 
     @Test
-    public void rendererFactoryRequiresExplicitOptInAndCompleteProbe() {
+    public void rendererFactoryIsEnabledWithStablePlaybackDefaults() {
         ExoDv5Native.Probe available = new ExoDv5Native.Probe(
                 true, ExoDv5Native.REQUIRED_CAPABILITIES, "available");
+
+        assertFalse(PlaybackExperimentPolicy.State.stable()
+                .domainEnabled(PlaybackExperimentPolicy.Domain.EXO));
+        assertTrue(ExoDv5GpuRendererFactory.shouldCreate(available));
+    }
+
+    @Test
+    public void rendererFactoryRejectsUnavailableOrMissingBackend() {
         ExoDv5Native.Probe unavailable = new ExoDv5Native.Probe(
                 false, ExoDv5Native.CAPABILITY_IMAGE_READER, "missing-capability");
 
-        assertFalse(ExoDv5GpuRendererFactory.shouldCreate(false, available));
-        assertFalse(ExoDv5GpuRendererFactory.shouldCreate(true, unavailable));
-        assertFalse(ExoDv5GpuRendererFactory.shouldCreate(true, null));
-        assertTrue(ExoDv5GpuRendererFactory.shouldCreate(true, available));
+        assertFalse(ExoDv5GpuRendererFactory.shouldCreate(unavailable));
+        assertFalse(ExoDv5GpuRendererFactory.shouldCreate(null));
     }
 
     @Test

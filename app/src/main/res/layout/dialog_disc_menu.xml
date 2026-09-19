@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/shape_disc_menu_panel"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="@string/disc_menu_navigation"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/close"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/dialog_close"
+            android:src="@drawable/ic_dialog_close" />
+    </LinearLayout>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:text="@string/disc_menu_touch_hint"
+        android:textColor="@color/white_80"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <GridLayout
+            android:layout_width="144dp"
+            android:layout_height="144dp"
+            android:columnCount="3"
+            android:rowCount="3">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/up"
+                style="@style/DiscMenuButton"
+                android:contentDescription="@string/disc_menu_up"
+                android:text="↑"
+                android:textSize="24sp"
+                android:layout_column="1"
+                android:layout_row="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/left"
+                style="@style/DiscMenuButton"
+                android:contentDescription="@string/disc_menu_left"
+                android:text="←"
+                android:textSize="24sp"
+                android:layout_column="0"
+                android:layout_row="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/select"
+                style="@style/DiscMenuButton"
+                android:text="@string/dialog_confirm"
+                android:layout_column="1"
+                android:layout_row="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/right"
+                style="@style/DiscMenuButton"
+                android:contentDescription="@string/disc_menu_right"
+                android:text="→"
+                android:textSize="24sp"
+                android:layout_column="2"
+                android:layout_row="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/down"
+                style="@style/DiscMenuButton"
+                android:contentDescription="@string/disc_menu_down"
+                android:text="↓"
+                android:textSize="24sp"
+                android:layout_column="1"
+                android:layout_row="2" />
+        </GridLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/rootMenu"
+                style="@style/DiscMenuButton"
+                android:layout_width="match_parent"
+                android:text="@string/disc_menu_root" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/popup"
+                style="@style/DiscMenuButton"
+                android:layout_width="match_parent"
+                android:text="@string/disc_menu_popup" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/previous"
+                style="@style/DiscMenuButton"
+                android:layout_width="match_parent"
+                android:text="@string/disc_menu_previous" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

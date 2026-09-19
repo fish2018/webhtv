@@ -673,6 +673,20 @@ public class Setting {
 
     public static void logDebugEnvironment(String reason) {
         boolean hardwareAccelerated = (App.get().getApplicationInfo().flags & ApplicationInfo.FLAG_HARDWARE_ACCELERATED) != 0;
+        DebugLogStore.event(new com.github.catvod.crawler.diagnostics.DiagnosticEvent("env.device", "none", "process", 0, 0)
+                .observed("reason", reason).observed("appVersion", BuildConfig.VERSION_NAME).observed("versionCode", BuildConfig.VERSION_CODE)
+                .observed("buildTime", BuildConfig.BUILD_TIME).observed("buildTag", BuildConfig.BUILD_TAG)
+                .observed("gitRevision", BuildConfig.GIT_REVISION).observed("state", BuildConfig.GIT_STATE)
+                .observed("fingerprintDigest", com.fongmi.android.tv.player.NativeLibraryDiagnostics.digestText(Build.FINGERPRINT))
+                .observed("media3Version", BuildConfig.MEDIA3_VERSION).observed("flavor", BuildConfig.FLAVOR_mode)
+                .observed("abi", BuildConfig.FLAVOR_abi).observed("process64Bit", android.os.Process.is64Bit())
+                .observed("android", Build.VERSION.RELEASE).observed("api", Build.VERSION.SDK_INT)
+                .observed("targetSdk", App.get().getApplicationInfo().targetSdkVersion)
+                .observed("manufacturer", Build.MANUFACTURER).observed("model", Build.MODEL)
+                .observed("device", Build.DEVICE).observed("hardwareAccelerated", hardwareAccelerated)
+                .pin("device"));
+        com.fongmi.android.tv.player.NativeLibraryDiagnostics.request();
+        com.fongmi.android.tv.player.PlaybackDiagnosticSession.captureActive(android.os.SystemClock.elapsedRealtime());
         SpiderDebug.log("env", "reason=%s app=%s(%s) mode=%s abi=%s debug=%s hardware=%s android=%s sdk=%s incremental=%s manufacturer=%s brand=%s model=%s device=%s product=%s supportedAbis=%s",
                 reason,
                 BuildConfig.VERSION_NAME,

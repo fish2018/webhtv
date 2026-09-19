@@ -80,6 +80,7 @@ public class LiveControlDialog extends BaseBottomSheetDialog {
         binding.sheetWall.setVisibility(View.GONE);
         binding.player.setText(parent.control.action.player.getText());
         binding.decode.setText(parent.control.action.decode.getText());
+        binding.playParams.setSelected(parent.control.action.playParams.isSelected());
         binding.invert.setSelected(parent.control.action.invert.isSelected());
         binding.across.setSelected(parent.control.action.across.isSelected());
         binding.change.setSelected(parent.control.action.change.isSelected());
@@ -117,6 +118,7 @@ public class LiveControlDialog extends BaseBottomSheetDialog {
         binding.player.setOnClickListener(v -> dismiss(parent.control.action.player));
         binding.player.setOnLongClickListener(v -> longClick(binding.player, parent.control.action.player));
         binding.decode.setOnClickListener(v -> click(binding.decode, parent.control.action.decode));
+        binding.playParams.setOnClickListener(v -> dismiss(parent.control.action.playParams));
         binding.text.setOnClickListener(v -> onTrack(binding.text));
         binding.audio.setOnClickListener(v -> onTrack(binding.audio));
         binding.video.setOnClickListener(v -> onTrack(binding.video));
@@ -162,6 +164,7 @@ public class LiveControlDialog extends BaseBottomSheetDialog {
         if (binding == null || parent == null) return;
         binding.player.setText(parent.control.action.player.getText());
         binding.decode.setText(parent.control.action.decode.getText());
+        binding.playParams.setSelected(parent.control.action.playParams.isSelected());
         setTrackVisible();
     }
 

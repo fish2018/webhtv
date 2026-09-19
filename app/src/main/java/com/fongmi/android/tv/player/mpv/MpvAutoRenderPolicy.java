@@ -13,10 +13,29 @@ public final class MpvAutoRenderPolicy {
                                     boolean deviceVulkan,
                                     boolean currentlyVulkan,
                                     boolean disabledForItem) {
+        return evaluate(renderAutomatic, hardDecode, dolbyVisionProfile,
+                dolbyVisionSupport, nativeVulkan, deviceVulkan,
+                currentlyVulkan, disabledForItem, false);
+    }
+
+    public static Decision evaluate(boolean renderAutomatic,
+                                    boolean hardDecode,
+                                    int dolbyVisionProfile,
+                                    MpvAutoOutputPolicy.DolbyVisionSupport dolbyVisionSupport,
+                                    boolean nativeVulkan,
+                                    boolean deviceVulkan,
+                                    boolean currentlyVulkan,
+                                    boolean disabledForItem,
+                                    boolean felReconstruction) {
         if (disabledForItem) return keep("item-fallback");
         if (currentlyVulkan) return keep("already-vulkan");
         if (!renderAutomatic) return keep("render-overridden");
         if (!hardDecode) return keep("software-decode");
+        if (dolbyVisionProfile == 7 && felReconstruction) {
+            return nativeVulkan && deviceVulkan
+                    ? new Decision(Action.ENABLE_VULKAN, "dv7-fel-reconstruction-vulkan")
+                    : keep("vulkan-unavailable");
+        }
         if (dolbyVisionProfile != 5) return keep("not-dv5");
         if (dolbyVisionSupport != MpvAutoOutputPolicy.DolbyVisionSupport.UNSUPPORTED) {
             return keep(dolbyVisionSupport == MpvAutoOutputPolicy.DolbyVisionSupport.SUPPORTED

@@ -1,0 +1,117 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.anilbeesetti",
+    "module": "nextlib-media3ext",
+    "version": "1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5.aar",
+          "url": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5.aar",
+          "size": 7517095,
+          "sha512": "0c0cd380ce42e0d1e03e968ce12ac0fe835aaa5e718e0e529a6ca1eddad1c48ef9f4daf6223e1d0feba102698633278724a02471f6f6c30db2784f8aa3b9d7f6",
+          "sha256": "398a266d31ad756b66a05af8be077f77298436994408cf3644a5554ee73f4773",
+          "sha1": "c8ef7351af094c97a9445938bf3aa70487fcb8ee",
+          "md5": "77f20c8c2402895ed582612b876a56f6"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.media3",
+          "module": "media3-exoplayer",
+          "version": {
+            "requires": "1.10.0"
+          }
+        },
+        {
+          "group": "com.google.errorprone",
+          "module": "error_prone_annotations",
+          "version": {
+            "requires": "2.48.0"
+          }
+        },
+        {
+          "group": "androidx.annotation",
+          "module": "annotation",
+          "version": {
+            "requires": "1.9.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5.aar",
+          "url": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5.aar",
+          "size": 7517095,
+          "sha512": "0c0cd380ce42e0d1e03e968ce12ac0fe835aaa5e718e0e529a6ca1eddad1c48ef9f4daf6223e1d0feba102698633278724a02471f6f6c30db2784f8aa3b9d7f6",
+          "sha256": "398a266d31ad756b66a05af8be077f77298436994408cf3644a5554ee73f4773",
+          "sha1": "c8ef7351af094c97a9445938bf3aa70487fcb8ee",
+          "md5": "77f20c8c2402895ed582612b876a56f6"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseSourcePublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5-sources.jar",
+          "url": "nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-avs3-ffmpeg901-r5-sources.jar",
+          "size": 20596,
+          "sha512": "c1006d82fcabfe7cadfd6cd5ab4192efa5d5d5800bbada19b9b0258893be710c37a8d6d84c2833e25073a7fed7e704acfcd245ca9c282cd29d0b785c7c3eba49",
+          "sha256": "2a08cc5f58718a3da3dc437784891680a0710c376b322a385cd6e5adcde01492",
+          "sha1": "4dcf1b82052adcd579a12b69577979e9f7a2a70e",
+          "md5": "e6d36f1ffc240c9a5a0961248be0e90b"
+        }
+      ]
+    }
+  ]
+}

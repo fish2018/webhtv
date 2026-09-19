@@ -213,6 +213,9 @@ bool init_methods_cache(JNIEnv *env)
         cache_static_method(
             env, &mpv_MPVLib_eventProperty_SS, mpv_MPVLib,
             "eventProperty", "(Ljava/lang/String;Ljava/lang/String;)V") &&
+        cache_static_method(
+            env, &mpv_MPVLib_eventPropertyNode_SS, mpv_MPVLib,
+            "eventPropertyNode", "(Ljava/lang/String;Ljava/lang/String;)V") &&
         cache_static_method(env, &mpv_MPVLib_event, mpv_MPVLib,
                             "event", "(I)V") &&
         cache_static_method(env, &mpv_MPVLib_eventCommandReply_Ji, mpv_MPVLib,
