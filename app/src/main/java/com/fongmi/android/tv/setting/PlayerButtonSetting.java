@@ -34,6 +34,8 @@ public class PlayerButtonSetting {
     public static final String VIDEO = "video";
     public static final String OPENING = "opening";
     public static final String ENDING = "ending";
+    public static final String SUB_HEAD = "sub_head";
+    public static final String SUB_TAIL = "sub_tail";
     public static final String DANMAKU = "danmaku";
     public static final String TITLE = "title";
     public static final String PREV = "prev";
@@ -58,13 +60,14 @@ public class PlayerButtonSetting {
             new Item(SCALE, R.string.play_scale),
             new Item(OPENING, R.string.play_op),
             new Item(ENDING, R.string.play_ed),
+            new Item(SUB_HEAD, R.string.play_sub_head),
+            new Item(SUB_TAIL, R.string.play_sub_tail),
             new Item(VIDEO, R.string.play_track_video),
             new Item(AUDIO, R.string.play_track_audio),
             new Item(RESET, R.string.play_reset),
             new Item(REPEAT, R.string.play_repeat),
             new Item(TIMER, R.string.play_timer),
             new Item(PUSH, R.string.push),
-            new Item(SETTING, R.string.play_setting),
             new Item(CHANGE, R.string.play_change),
             new Item(PLAY_PARAMS, R.string.play_params),
             new Item(CODEC_CAPABILITY, R.string.codec_capability_short),
@@ -73,7 +76,8 @@ public class PlayerButtonSetting {
             new Item(DANMAKU, R.string.danmaku),
             new Item(TITLE, R.string.play_title),
             new Item(FULLSCREEN, R.string.play_fullscreen),
-            new Item(PDS, R.string.pan_diagnostic_entry)
+            new Item(PDS, R.string.pan_diagnostic_entry),
+            new Item(SETTING, R.string.play_setting)
     );
 
     public static List<Item> getItems() {
@@ -169,7 +173,7 @@ public class PlayerButtonSetting {
 
     private static List<String> getDefaultHiddenIds() {
         List<String> hidden = new ArrayList<>(List.of(
-                PLAY_PARAMS, CODEC_CAPABILITY, LUT, TEXT, DANMAKU, TITLE, FULLSCREEN, PDS, CHANGE
+                PLAY_PARAMS, CODEC_CAPABILITY, LUT, TEXT, DANMAKU, TITLE, FULLSCREEN, PDS
         ));
         if (Util.isLeanback()) hidden.add(SETTING);
         else hidden.add(PUSH);

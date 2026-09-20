@@ -699,6 +699,10 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.ending.setDownListener(this::onEndingSub);
         mBinding.control.action.opening.setUpListener(this::onOpeningAdd);
         mBinding.control.action.opening.setDownListener(this::onOpeningSub);
+        mBinding.control.action.subHead.setUpListener(this::onSubHeadAdd);
+        mBinding.control.action.subHead.setDownListener(this::onSubHeadSub);
+        mBinding.control.action.subTail.setUpListener(this::onSubTailAdd);
+        mBinding.control.action.subTail.setDownListener(this::onSubTailSub);
         mBinding.control.action.text.setUpListener(this::onSubtitleClick);
         mBinding.control.action.text.setDownListener(this::onSubtitleClick);
         mBinding.control.action.next.setOnClickListener(view -> checkNext());
@@ -726,6 +730,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.codecCapability.setOnClickListener(view -> onCodecCapability());
         mBinding.control.action.immersiveAudio.setOnClickListener(view -> toggleImmersiveAudioMode());
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
+        mBinding.control.action.subHead.setOnClickListener(view -> onSubHead());
+        mBinding.control.action.subTail.setOnClickListener(view -> onSubTail());
         mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
         mBinding.control.action.change2.setOnClickListener(view -> onChange());
         mBinding.control.action.fullscreen.setOnClickListener(view -> onFullscreen());
@@ -755,6 +761,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.reset.setOnLongClickListener(view -> onResetToggle());
         mBinding.control.action.ending.setOnLongClickListener(view -> onEndingReset());
         mBinding.control.action.opening.setOnLongClickListener(view -> onOpeningReset());
+        mBinding.control.action.subHead.setOnLongClickListener(view -> onSubHeadReset());
+        mBinding.control.action.subTail.setOnLongClickListener(view -> onSubTailReset());
         setActionFocusScroll();
         mBinding.video.setOnTouchListener((view, event) -> dispatchDiscMenuTouch(event) || mKeyDown.onTouchEvent(event));
         mBinding.flag.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
@@ -899,13 +907,15 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.VIDEO, mBinding.control.action.video);
         addActionButton(PlayerButtonSetting.OPENING, mBinding.control.action.opening);
         addActionButton(PlayerButtonSetting.ENDING, mBinding.control.action.ending);
+        addActionButton(PlayerButtonSetting.SUB_HEAD, mBinding.control.action.subHead);
+        addActionButton(PlayerButtonSetting.SUB_TAIL, mBinding.control.action.subTail);
         addActionButton(PlayerButtonSetting.DANMAKU, mBinding.control.action.danmaku);
         addActionButton(PlayerButtonSetting.TITLE, mBinding.control.action.title);
         addActionButton(PlayerButtonSetting.REPEAT, mBinding.control.action.repeat);
-        addActionButton(PlayerButtonSetting.SETTING, mBinding.control.action.setting);
         addActionButton(PlayerButtonSetting.PUSH, mBinding.control.action.cast);
         addActionButton(PlayerButtonSetting.TIMER, mBinding.control.action.timer);
         addActionButton(PlayerButtonSetting.PDS, mBinding.control.action.panDiagnostic);
+        addActionButton(PlayerButtonSetting.SETTING, mBinding.control.action.setting);
         PlayerButtonSetting.applyOrder(mBinding.control.action.container, mActionButtons);
         setupCustomActionButtons();
         updateDiscMenuAction();
@@ -3353,6 +3363,40 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         return true;
     }
 
+    private void onSubHead() {
+        setSubHead(player().getPosition());
+    }
+
+    private void onSubHeadAdd() {
+        setSubHead(Math.max(0, Math.max(0, mHistory.getSubHead()) + 1000));
+    }
+
+    private void onSubHeadSub() {
+        setSubHead(Math.max(0, Math.max(0, mHistory.getSubHead()) - 1000));
+    }
+
+    private boolean onSubHeadReset() {
+        setSubHead(0);
+        return true;
+    }
+
+    private void onSubTail() {
+        setSubTail(player().getPosition());
+    }
+
+    private void onSubTailAdd() {
+        setSubTail(Math.max(0, Math.max(0, mHistory.getSubTail()) + 1000));
+    }
+
+    private void onSubTailSub() {
+        setSubTail(Math.max(0, Math.max(0, mHistory.getSubTail()) - 1000));
+    }
+
+    private boolean onSubTailReset() {
+        setSubTail(0);
+        return true;
+    }
+
     private void onChoose() {
         PlayerHelper.choose(this, player().getUrl(), player().getHeaders(), player().isVod(), player().getPosition(), mBinding.widget.title.getText());
         setRedirect(true);
@@ -3684,6 +3728,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (Setting.isIncognito() && mHistory.getKey().equals(getHistoryKey())) mHistory.delete();
         mBinding.control.action.opening.setText(mHistory.getOpening() <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
         mBinding.control.action.ending.setText(mHistory.getEnding() <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
+        mBinding.control.action.subHead.setText(mHistory.getSubHead() <= 0 ? getString(R.string.play_sub_head) : Util.timeMs(mHistory.getSubHead()));
+        mBinding.control.action.subTail.setText(mHistory.getSubTail() <= 0 ? getString(R.string.play_sub_tail) : Util.timeMs(mHistory.getSubTail()));
         mOsd.setEnding(mHistory.getEnding());
         mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getDefaultSpeed()));
         mHistory.setSpeed(player().getSpeed());
@@ -4795,6 +4841,18 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         syncHistory();
     }
 
+    private void setSubHead(long head) {
+        mHistory.setSubHead(head);
+        mBinding.control.action.subHead.setText(head <= 0 ? getString(R.string.play_sub_head) : Util.timeMs(head));
+        syncHistory();
+    }
+
+    private void setSubTail(long tail) {
+        mHistory.setSubTail(tail);
+        mBinding.control.action.subTail.setText(tail <= 0 ? getString(R.string.play_sub_tail) : Util.timeMs(tail));
+        syncHistory();
+    }
+
     private String getKaraokeDelayText() {
         return formatLyricsOffset(PlayerSetting.getKaraokeMicDelayMs());
     }
@@ -5595,6 +5653,10 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         if (mHistory.getEnding() > 0 && duration > 0 && mHistory.getEnding() + position >= duration) {
             checkEnded(false);
         }
+        long subHead = mHistory.getSubHead(), subTail = mHistory.getSubTail();
+        if (subHead > 0 && subTail > subHead && position >= subHead && position < subTail) {
+            controller().seekTo(subTail);
+        }
     }
 
     private void updatePlaybackHistoryPosition() {
@@ -6327,7 +6389,13 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     public void onKeyDown() {
-        showControl(getFocus2());
+        if (mHistory.getSubHead() > 0 && mBinding.control.action.subTail.getVisibility() == View.VISIBLE && mHistory.getSubTail() <= 0) {
+            showControl(mBinding.control.action.subTail);
+        } else if (mBinding.control.action.subHead.getVisibility() == View.VISIBLE) {
+            showControl(mBinding.control.action.subHead);
+        } else {
+            showControl(getFocus2());
+        }
     }
 
     @Override

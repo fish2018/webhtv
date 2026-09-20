@@ -64,4 +64,20 @@ public class Migrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_PlaybackDeleteTombstone_deletedAt` ON `PlaybackDeleteTombstone` (`deletedAt`)");
         }
     };
+
+    public static final Migration MIGRATION_37_38 = new Migration(37, 38) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE History ADD COLUMN playerType INTEGER");
+            database.execSQL("ALTER TABLE History ADD COLUMN player TEXT DEFAULT NULL");
+        }
+    };
+
+    public static final Migration MIGRATION_38_39 = new Migration(38, 39) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE History ADD COLUMN subHead INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE History ADD COLUMN subTail INTEGER NOT NULL DEFAULT 0");
+        }
+    };
 }

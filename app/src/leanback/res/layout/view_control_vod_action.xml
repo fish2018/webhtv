@@ -156,6 +156,18 @@
             android:layout_marginEnd="8dp"
             android:text="@string/play_ed" />
 
+        <com.fongmi.android.tv.ui.custom.CustomUpDownView
+            android:id="@+id/sub_head"
+            style="@style/Control"
+            android:layout_marginEnd="8dp"
+            android:text="@string/play_sub_head" />
+
+        <com.fongmi.android.tv.ui.custom.CustomUpDownView
+            android:id="@+id/sub_tail"
+            style="@style/Control"
+            android:layout_marginEnd="8dp"
+            android:text="@string/play_sub_tail" />
+
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/danmaku"
             style="@style/Control"

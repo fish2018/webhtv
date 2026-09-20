@@ -58,6 +58,10 @@ public class History implements Diffable<History> {
     private long opening;
     @SerializedName("ending")
     private long ending;
+    @SerializedName("subHead")
+    private long subHead;
+    @SerializedName("subTail")
+    private long subTail;
     @SerializedName("position")
     private long position;
     @SerializedName("duration")
@@ -80,6 +84,8 @@ public class History implements Diffable<History> {
         this.scale = -1;
         this.ending = C.TIME_UNSET;
         this.opening = C.TIME_UNSET;
+        this.subHead = C.TIME_UNSET;
+        this.subTail = C.TIME_UNSET;
         this.position = C.TIME_UNSET;
         this.duration = C.TIME_UNSET;
     }
@@ -98,6 +104,8 @@ public class History implements Diffable<History> {
         item.createTime = createTime;
         item.opening = opening;
         item.ending = ending;
+        item.subHead = subHead;
+        item.subTail = subTail;
         item.position = position;
         item.duration = duration;
         item.playerType = playerType;
@@ -263,6 +271,22 @@ public class History implements Diffable<History> {
         this.ending = ending;
     }
 
+    public long getSubHead() {
+        return subHead;
+    }
+
+    public void setSubHead(long subHead) {
+        this.subHead = subHead;
+    }
+
+    public long getSubTail() {
+        return subTail;
+    }
+
+    public void setSubTail(long subTail) {
+        this.subTail = subTail;
+    }
+
     public long getPosition() {
         return position;
     }
@@ -375,6 +399,8 @@ public class History implements Diffable<History> {
     private History copyTo(History item) {
         if (getOpening() > 0) item.setOpening(getOpening());
         if (getEnding() > 0) item.setEnding(getEnding());
+        if (getSubHead() > 0) item.setSubHead(getSubHead());
+        if (getSubTail() > 0) item.setSubTail(getSubTail());
         if (getSpeed() != 1) item.setSpeed(getSpeed());
         return this;
     }

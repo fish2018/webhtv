@@ -33,6 +33,8 @@
     <string name="pause">暫停</string>
     <string name="play_op">片頭</string>
     <string name="play_ed">片尾</string>
+    <string name="play_sub_head">字幕頭</string>
+    <string name="play_sub_tail">字幕尾</string>
     <string name="play_exo">EXO</string>
     <string name="play_next">下集</string>
     <string name="play_prev">上集</string>

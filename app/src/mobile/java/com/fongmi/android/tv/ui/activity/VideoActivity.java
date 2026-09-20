@@ -841,6 +841,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.decode.setOnClickListener(view -> onDecode());
         mBinding.control.action.playParams.setOnClickListener(view -> onPlayParams());
         mBinding.control.action.ending.setOnClickListener(view -> onEnding());
+        mBinding.control.action.subHead.setOnClickListener(view -> onSubHead());
+        mBinding.control.action.subTail.setOnClickListener(view -> onSubTail());
         mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
         mBinding.control.action.opening.setOnClickListener(view -> onOpening());
         mBinding.control.action.danmaku.setOnClickListener(view -> onDanmaku());
@@ -870,6 +872,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.reset.setOnLongClickListener(view -> onResetToggle());
         mBinding.control.action.ending.setOnLongClickListener(view -> onEndingReset());
         mBinding.control.action.opening.setOnLongClickListener(view -> onOpeningReset());
+        mBinding.control.action.subHead.setOnLongClickListener(view -> onSubHeadReset());
+        mBinding.control.action.subTail.setOnLongClickListener(view -> onSubTailReset());
         mBinding.video.setOnTouchListener((view, event) ->
                 (!isVisible(mBinding.control.getRoot()) && dispatchDiscMenuTouch(event))
                         || mKeyDown.onTouchEvent(event));
@@ -1053,6 +1057,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         addActionButton(PlayerButtonSetting.VIDEO, mBinding.control.action.video);
         addActionButton(PlayerButtonSetting.OPENING, mBinding.control.action.opening);
         addActionButton(PlayerButtonSetting.ENDING, mBinding.control.action.ending);
+        addActionButton(PlayerButtonSetting.SUB_HEAD, mBinding.control.action.subHead);
+        addActionButton(PlayerButtonSetting.SUB_TAIL, mBinding.control.action.subTail);
         addActionButton(PlayerButtonSetting.DANMAKU, mBinding.control.action.danmaku);
         addActionButton(PlayerButtonSetting.TITLE, mBinding.control.action.title);
         addActionButton(PlayerButtonSetting.PREV, mBinding.control.action.prev);
@@ -4003,6 +4009,38 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.action.opening.setText(opening <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
     }
 
+    private void onSubHead() {
+        setSubHead(player().getPosition());
+        setR1Callback();
+    }
+
+    private boolean onSubHeadReset() {
+        setR1Callback();
+        setSubHead(0);
+        return true;
+    }
+
+    private void setSubHead(long head) {
+        mHistory.setSubHead(head);
+        mBinding.control.action.subHead.setText(head <= 0 ? getString(R.string.play_sub_head) : Util.timeMs(head));
+    }
+
+    private void onSubTail() {
+        setSubTail(player().getPosition());
+        setR1Callback();
+    }
+
+    private boolean onSubTailReset() {
+        setR1Callback();
+        setSubTail(0);
+        return true;
+    }
+
+    private void setSubTail(long tail) {
+        mHistory.setSubTail(tail);
+        mBinding.control.action.subTail.setText(tail <= 0 ? getString(R.string.play_sub_tail) : Util.timeMs(tail));
+    }
+
     private void onEpisodes() {
         syncSelectedEpisode(getFlag());
         EpisodeListDialog.create().flags(mFlagAdapter.getItems()).reverse(mHistory.isRevSort()).show(this);
@@ -4448,6 +4486,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (Setting.isIncognito() && mHistory.getKey().equals(getHistoryKey())) mHistory.delete();
         mBinding.control.action.opening.setText(mHistory.getOpening() <= 0 ? getString(R.string.play_op) : Util.timeMs(mHistory.getOpening()));
         mBinding.control.action.ending.setText(mHistory.getEnding() <= 0 ? getString(R.string.play_ed) : Util.timeMs(mHistory.getEnding()));
+        mBinding.control.action.subHead.setText(mHistory.getSubHead() <= 0 ? getString(R.string.play_sub_head) : Util.timeMs(mHistory.getSubHead()));
+        mBinding.control.action.subTail.setText(mHistory.getSubTail() <= 0 ? getString(R.string.play_sub_tail) : Util.timeMs(mHistory.getSubTail()));
         mOsd.setEnding(mHistory.getEnding());
         mBinding.control.action.speed.setText(player().setSpeed(PlayerSetting.getDefaultSpeed()));
         mHistory.setSpeed(player().getSpeed());
@@ -5969,6 +6009,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (mHistory.canSave() && mHistory.canSync()) syncHistory();
         if (mHistory.getEnding() > 0 && duration > 0 && mHistory.getEnding() + position >= duration) {
             checkEnded(false);
+        }
+        long subHead = mHistory.getSubHead(), subTail = mHistory.getSubTail();
+        if (subHead > 0 && subTail > subHead && position >= subHead && position < subTail) {
+            controller().seekTo(subTail);
         }
     }
 

@@ -36,7 +36,7 @@ import java.util.List;
 @Database(entities = {Keep.class, Site.class, Live.class, Track.class, Config.class, Device.class, History.class, PlaybackDeleteTombstone.class}, version = AppDatabase.VERSION)
 public abstract class AppDatabase extends RoomDatabase {
 
-    public static final int VERSION = 38;
+    public static final int VERSION = 39;
     public static final String NAME = "tv";
     public static final String SYMBOL = "@@@";
     public static final String AUTO_PREFIX = "bak-auto-";
@@ -131,6 +131,8 @@ public abstract class AppDatabase extends RoomDatabase {
                 .addMigrations(Migrations.MIGRATION_34_35)
                 .addMigrations(Migrations.MIGRATION_35_36)
                 .addMigrations(Migrations.MIGRATION_36_37)
+                .addMigrations(Migrations.MIGRATION_37_38)
+                .addMigrations(Migrations.MIGRATION_38_39)
                 .fallbackToDestructiveMigration(true)
                 .allowMainThreadQueries().build();
     }
