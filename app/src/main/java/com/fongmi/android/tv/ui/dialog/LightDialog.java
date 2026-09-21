@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
@@ -77,7 +78,13 @@ public final class LightDialog {
         }
 
         if (content != null) {
-            LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            LinearLayout.LayoutParams contentParams;
+            if (content instanceof ScrollView) {
+                contentParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
+                contentParams.weight = 1f;
+            } else {
+                contentParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            }
             contentParams.topMargin = title == null ? 0 : ResUtil.dp2px(16);
             root.addView(content, contentParams);
         }
@@ -142,12 +149,23 @@ public final class LightDialog {
         WindowManager.LayoutParams params = window.getAttributes();
         boolean land = ResUtil.isLand(context);
         params.width = Math.min(Math.round(ResUtil.getScreenWidth(context) * (land ? landFactor : portFactor)), ResUtil.dp2px(maxDp));
-        params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        params.height = hasScrollContent(window) ? Math.round(ResUtil.getScreenHeight(context) * 0.85f) : WindowManager.LayoutParams.WRAP_CONTENT;
         params.dimAmount = 0.58f;
         window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         window.getDecorView().setPadding(0, 0, 0, 0);
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
         window.setAttributes(params);
         window.setLayout(params.width, params.height);
+    }
+
+    private static boolean hasScrollContent(Window window) {
+        View contentParent = window.getDecorView().findViewById(android.R.id.content);
+        if (!(contentParent instanceof ViewGroup)) return false;
+        View root = ((ViewGroup) contentParent).getChildAt(0);
+        if (!(root instanceof ViewGroup)) return false;
+        for (int i = 0; i < ((ViewGroup) root).getChildCount(); i++) {
+            if (((ViewGroup) root).getChildAt(i) instanceof ScrollView) return true;
+        }
+        return false;
     }
 }
