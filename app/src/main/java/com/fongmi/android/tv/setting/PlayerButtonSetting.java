@@ -25,6 +25,7 @@ public class PlayerButtonSetting {
     public static final String CODEC_CAPABILITY = "codec_capability";
     public static final String SPEED = "speed";
     public static final String SCALE = "scale";
+    public static final String ROTATE = "rotate";
     public static final String LUT = "lut";
     public static final String KARAOKE = "karaoke";
     public static final String RESET = "reset";
@@ -58,6 +59,7 @@ public class PlayerButtonSetting {
             new Item(DECODE, R.string.play_decode),
             new Item(SPEED, R.string.play_speed),
             new Item(SCALE, R.string.play_scale),
+            new Item(ROTATE, R.string.play_rotate),
             new Item(OPENING, R.string.play_op),
             new Item(ENDING, R.string.play_ed),
             new Item(SUB_HEAD, R.string.play_sub_head),
@@ -176,7 +178,10 @@ public class PlayerButtonSetting {
                 PLAY_PARAMS, CODEC_CAPABILITY, LUT, TEXT, DANMAKU, TITLE, FULLSCREEN, PDS
         ));
         if (Util.isLeanback()) hidden.add(SETTING);
-        else hidden.add(PUSH);
+        else {
+            hidden.add(PUSH);
+            hidden.add(ROTATE);
+        }
         return hidden;
     }
 

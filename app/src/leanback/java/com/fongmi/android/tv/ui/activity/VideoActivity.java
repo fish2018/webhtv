@@ -718,6 +718,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
             return true;
         });
         mBinding.control.action.scale.setOnClickListener(view -> onScale());
+        mBinding.control.action.rotate.setOnClickListener(view -> onRotate());
         mBinding.control.action.lut.setOnClickListener(view -> onLut());
         mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
         mBinding.control.action.reset.setOnClickListener(view -> onReset());
@@ -901,6 +902,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         addActionButton(PlayerButtonSetting.CODEC_CAPABILITY, mBinding.control.action.codecCapability);
         addActionButton(PlayerButtonSetting.SPEED, mBinding.control.action.speed);
         addActionButton(PlayerButtonSetting.SCALE, mBinding.control.action.scale);
+        addActionButton(PlayerButtonSetting.ROTATE, mBinding.control.action.rotate);
         addActionButton(PlayerButtonSetting.LUT, mBinding.control.action.lut);
         addActionButton(PlayerButtonSetting.TEXT, mBinding.control.action.text);
         addActionButton(PlayerButtonSetting.AUDIO, mBinding.control.action.audio);
@@ -3141,6 +3143,13 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         int index = getScale();
         String[] array = ResUtil.getStringArray(R.array.select_scale);
         setScale(index == array.length - 1 ? 0 : ++index);
+    }
+
+    private void onRotate() {
+        int next = (getVideoRotation() + 90) % 360;
+        setVideoRotation(next);
+        String[] labels = {"0°", "90°", "180°", "270°"};
+        mBinding.control.action.rotate.setText(labels[next / 90]);
     }
 
     private void onLut() {
@@ -5619,12 +5628,14 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
     @Override
     protected void onSizeChanged(VideoSize size) {
         applyResizeMode(getScale());
+        applyVideoRotation();
         mBinding.widget.size.setText(player().getSizeText());
     }
 
     @Override
     protected void onSurfaceAttached() {
         applyResizeMode(getScale());
+        applyVideoRotation();
     }
 
     @Override

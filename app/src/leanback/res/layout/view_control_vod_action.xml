@@ -104,6 +104,12 @@
             android:text="@string/play_scale" />
 
         <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/rotate"
+            style="@style/Control"
+            android:layout_marginEnd="8dp"
+            android:text="@string/play_rotate" />
+ 
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/lut"
             style="@style/Control"
             android:layout_marginEnd="8dp"

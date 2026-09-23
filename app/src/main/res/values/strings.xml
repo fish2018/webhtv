@@ -61,6 +61,7 @@
     <string name="play_timer">Timer</string>
     <string name="play_title">Chapter</string>
     <string name="play_scale">Default</string>
+    <string name="play_rotate">Rotate</string>
     <string name="play_lut">LUT</string>
     <string name="play_config">Config</string>
     <string name="play_cast">Cast</string>

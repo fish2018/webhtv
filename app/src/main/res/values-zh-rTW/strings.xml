@@ -60,6 +60,7 @@
     <string name="play_timer">定時</string>
     <string name="play_title">章節</string>
     <string name="play_scale">原始</string>
+    <string name="play_rotate">旋轉</string>
     <string name="play_lut">LUT</string>
     <string name="play_config">配置</string>
     <string name="play_cast">投屏</string>
