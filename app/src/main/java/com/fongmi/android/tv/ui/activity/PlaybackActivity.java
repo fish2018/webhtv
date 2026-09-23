@@ -72,6 +72,8 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private int render = -1;
     private int requestedResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT;
     private int videoRotation = 0;
+    private boolean rotationEngaged = false;
+    private boolean applyingRotation = false;
     private View.OnLayoutChangeListener rotationLayoutListener;
     private ExoOutputModeManager exoOutputModeManager;
     private ExoAssSession attachedAssSession;
@@ -302,7 +304,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void applyResizeMode(int resizeMode) {
         requestedResizeMode = resizeMode;
         int effectiveResizeMode;
-        if (videoRotation != 0 && mService != null && player().isExo()) {
+        if (videoRotation != 0 && rotationEngaged && mService != null && player().isExo()) {
             effectiveResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL;
         } else {
             effectiveResizeMode = effectiveResizeMode(resizeMode);
@@ -325,6 +327,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected void setVideoRotation(int rotation) {
         videoRotation = ((rotation % 360) + 360) % 360;
+        if (mService != null && player().isExo() && videoRotation != 0) {
+            rotationEngaged = true;
+        }
         if (mService != null && player().isExo() && render != getRender()) {
             setRender();
         } else {
@@ -337,6 +342,16 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
  
     protected void applyVideoRotation() {
+        if (applyingRotation) return;
+        applyingRotation = true;
+        try {
+            applyVideoRotationInternal();
+        } finally {
+            applyingRotation = false;
+        }
+    }
+ 
+    private void applyVideoRotationInternal() {
         PlayerView view = getExoView();
         if (view == null) return;
         View surface = view.getVideoSurfaceView();
@@ -680,7 +695,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private int getRender() {
         if (mService != null && player().isNativePlayer()) return 0;
         if (mService != null && player().requiresTextureRenderForLut()) return PlayerSetting.RENDER_TEXTURE;
-        if (videoRotation != 0 && mService != null && player().isExo()) return PlayerSetting.RENDER_TEXTURE;
+        if (rotationEngaged && mService != null && player().isExo()) return PlayerSetting.RENDER_TEXTURE;
         return PlayerSetting.getRender();
     }
 
