@@ -123,6 +123,7 @@ import com.fongmi.android.tv.ui.adapter.QuickAdapter;
 import com.fongmi.android.tv.ui.custom.CustomKeyDownVod;
 import com.fongmi.android.tv.ui.custom.CustomMovement;
 import com.fongmi.android.tv.ui.custom.CustomSeekView;
+import com.fongmi.android.tv.ui.custom.FlagSelectionListener;
 import com.fongmi.android.tv.ui.custom.AudioPlayerBackgroundDrawable;
 import com.fongmi.android.tv.ui.custom.KaraokeResultView;
 import com.fongmi.android.tv.ui.custom.PlayerOsdController;
@@ -772,12 +773,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mBinding.control.action.subTail.setOnLongClickListener(view -> onSubTailReset());
         setActionFocusScroll();
         mBinding.video.setOnTouchListener((view, event) -> dispatchDiscMenuTouch(event) || mKeyDown.onTouchEvent(event));
-        mBinding.flag.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
-            @Override
-            public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
-                if (mFlagAdapter.getItemCount() > 0) onItemClick(mFlagAdapter.get(position));
-            }
-        });
+        mBinding.flag.addOnChildViewHolderSelectedListener(new FlagSelectionListener(mBinding.flag, mFlagAdapter, this));
         mBinding.episode.addOnChildViewHolderSelectedListener(new OnChildViewHolderSelectedListener() {
             @Override
             public void onChildViewHolderSelected(@NonNull RecyclerView parent, @Nullable RecyclerView.ViewHolder child, int position, int subposition) {
@@ -1299,7 +1295,7 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
 
     @Override
     public void onItemClick(Flag item) {
-        if (mFlagAdapter.getItemCount() == 0 || item.isSelected()) return;
+        if (isFinishing() || isDestroyed() || mFlagAdapter.getItemCount() == 0 || item.isSelected()) return;
         int oldPosition = mFlagAdapter.getSelectedPosition();
         mFlagAdapter.setSelected(item);
         int newPosition = mFlagAdapter.getSelectedPosition();

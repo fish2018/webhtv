@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player;
 
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.StuckPlayerException;
 import androidx.media3.mpvplayer.MpvPlayer;
 
 import java.io.IOException;
@@ -21,6 +22,13 @@ public final class PlaybackErrorClassifier {
 
         Failure marked = classifyStableMarker(message, error.errorCode, resolution);
         if (marked != null) return marked;
+
+        // The player can time out while data is already buffered. Its stuck detector
+        // alone identifies neither network I/O nor a particular audio/video renderer.
+        if (hasCause(error, StuckPlayerException.class)) {
+            return failure(Stage.UNKNOWN, Confidence.CONFIRMED, "playback-stuck",
+                    error.errorCode, resolution);
+        }
 
         if (isLocalConnectFailure(error, resolution)) {
             String evidence = hasCause(error, ConnectException.class) || hasCause(error, NoRouteToHostException.class)
@@ -52,6 +60,8 @@ public final class PlaybackErrorClassifier {
 
     private static Stage exactStage(int errorCode) {
         return switch (errorCode) {
+            // IJK also maps its native timed-out errors to this legacy code. Keep
+            // that contract; typed Media3 playback stalls are handled above.
             case PlaybackException.ERROR_CODE_TIMEOUT,
                     PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
                     PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,

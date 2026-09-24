@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player;
 
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.StuckPlayerException;
 import androidx.media3.mpvplayer.MpvPlayer;
 
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -105,6 +107,31 @@ public class PlaybackErrorClassifierTest {
         assertFalse(summary.contains("movie"));
         assertFalse(summary.contains("secret"));
         assertFalse(summary.contains("token"));
+    }
+
+    @Test
+    public void typedPlaybackStall_isNeitherNetworkNorUnprovenAudioFailure() {
+        PlaybackRoute.Resolution route = PlaybackRoute.resolve("https://cdn.example/video");
+        for (int type : new int[]{StuckPlayerException.STUCK_PLAYING_NO_PROGRESS,
+                StuckPlayerException.STUCK_BUFFERING_NO_PROGRESS,
+                StuckPlayerException.STUCK_PLAYING_NOT_ENDING}) {
+            PlaybackErrorClassifier.Failure failure = PlaybackErrorClassifier.classify(
+                    error("timeout", new IllegalStateException(new StuckPlayerException(type, 10_000)),
+                            PlaybackException.ERROR_CODE_TIMEOUT), route);
+            assertEquals(PlaybackErrorClassifier.Stage.UNKNOWN, failure.stage());
+            assertEquals("playback-stuck", failure.evidence());
+        }
+    }
+
+    @Test
+    public void untypedTimeout_preservesLegacyIjkAndNetworkClassification() {
+        PlaybackRoute.Resolution route = PlaybackRoute.resolve("https://cdn.example/video");
+        assertEquals(PlaybackErrorClassifier.Stage.NETWORK_IO, PlaybackErrorClassifier.classify(
+                error("timeout", null, PlaybackException.ERROR_CODE_TIMEOUT), route).stage());
+        assertEquals(PlaybackErrorClassifier.Stage.NETWORK_IO, PlaybackErrorClassifier.classify(
+                error("timeout", new SocketTimeoutException(), PlaybackException.ERROR_CODE_TIMEOUT), route).stage());
+        assertEquals(PlaybackErrorClassifier.Stage.NETWORK_IO, PlaybackErrorClassifier.classify(
+                error("Player stuck", null, PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT), route).stage());
     }
 
     private static PlaybackException error(String message, Throwable cause, int code) {

@@ -62,7 +62,7 @@
 
 | 顺序 | 任务 ID | 类别 | 功能/能力 | 状态 | 唯一文档 |
 | ---: | --- | --- | --- | --- | --- |
-| 既有任务续修 | `E11` | Exo/App | 压缩音频输出、跳转释放状态与隧道一致性 | 2026-09-18 获批代码修复完成：实际输出实例隔离、UNKNOWN 输出暂停调速、隧道委托标准 provider；App Java 编译及 25 项定向测试通过，随本次原子提交/tag 闭环；受影响设备 seek 表现未实测 | [E11-exo-compressed-audio-direct.md](E11-exo-compressed-audio-direct.md) |
+| 既有任务续修 | `E11` | Exo/App | 压缩音频输出、跳转释放状态、隧道一致性与起播恢复 | A 为 `123d871c027eb686702766bca995f616e8d2bd1e`，首次起播研究为 `e9fef2b90ee8aa634327c2c179eb3dc5d22cb1be`，直通开关修复为 `24fa078d2dc8a404fad23fc30972e5fc4a8a1b5b`。首次快速恢复现已实现：完整 AU 供数及启动门槛读回后，以 800 ms 窗口和原始播放头/路由复核判错，使用 Media3 内部恢复复用当前媒体与缓存；保留正常直出与关闭开关的 PCM 行为。3 项集成用例、TV32 Debug 与签名/ABI 检查通过，APK SHA256 `15c31a01404a1e1678020cecb20df5085508b67ccd880904fb9ef02072654fd5`；策略补跑未选中测试，用户要求忽略剩余测试，不宣称全量通过。guard `E11-first-playback-recovery` 原子提交/tag。按要求不联机，实际时延/性能未实测；不满足早判条件仍有 10 秒兜底，跨媒体经验扩展及音频独占重启未实现 | [E11-exo-compressed-audio-direct.md](E11-exo-compressed-audio-direct.md) |
 | 插入修复 | `P11` | MPV/App | AV3A 直播使用 `.m3u8?ts=…` 媒体端点时保持分片语义，修复代理误报 HTTP 400 | 已修复；19 项定向测试、Debug/快速 Release 构建和手机同源实播通过，持续超过 6 分钟、AV3A 音频输出无写入错误；Release 已安装，视频手动解码合同保持；源内迅雷插件 Debug JNI 问题独立记录 | [P11-mpv-live-av3a.md](P11-mpv-live-av3a.md) |
 | 插入需求 | `P10` | MPV/App | 全局智能去广开关接入，复用Exo识别并保持HLS时间轴/跳转 | 已实现并续修误跳正文、广告闪帧及Surface复用；原生输出边界fixture零广告帧，原链接正常跨广告；25项广告测试与4项Surface测试通过，Mobile64已安装且用户确认正常；原生库保持 | [P10-mpv-smart-adblock.md](P10-mpv-smart-adblock.md) |
 | 插入需求 | `C-AVS3` | 通用，Exo → MPV | AVS3 视频解码，基准档次与 High profile 分阶段验证 | baseline/0x32软件后端及MPV MediaCodec接入已交付；手机不具备AVS3硬件，硬解实际出帧与性能待目标设备验证 | [C-AVS3-video-decoding.md](C-AVS3-video-decoding.md) |

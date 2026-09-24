@@ -106,6 +106,7 @@ public class ExoPlayerEngine implements PlayerEngine {
 
         @Override
         public void onIsPlayingChanged(boolean isPlaying) {
+            if (isPlaying) compressedAudioDirectPolicy.setSelectedAudioFormat(player.getAudioFormat());
             if (isPlaying && firstFrameRendered) {
                 armTunnelingProgressWatchdog();
                 armDecoderRuntimeStableWindow();
@@ -113,6 +114,11 @@ public class ExoPlayerEngine implements PlayerEngine {
                 cancelTunnelingProgressWatchdog();
                 cancelDecoderRuntimeStableWindow();
             }
+        }
+
+        @Override
+        public void onTracksChanged(Tracks tracks) {
+            compressedAudioDirectPolicy.setSelectedAudioFormat(player.getAudioFormat());
         }
 
         @Override
@@ -200,6 +206,7 @@ public class ExoPlayerEngine implements PlayerEngine {
 
     @Override
     public void release() {
+        compressedAudioDirectPolicy.resetOutputProgress();
         Runnable cacheRelease = null;
         if (cacheSessionActive) {
             cacheSessionActive = false;
@@ -224,6 +231,7 @@ public class ExoPlayerEngine implements PlayerEngine {
     public Player rebuild(Player.Listener listener) {
         ExoFrameSchedulingPlayerSettings schedulingSettings =
                 settingsForRebuild();
+        compressedAudioDirectPolicy.resetOutputProgress();
         preCache.stop("engine-rebuild");
         cancelTunnelingWatchdog();
         cancelTunnelingProgressWatchdog();
@@ -541,6 +549,7 @@ public class ExoPlayerEngine implements PlayerEngine {
 
     @Override
     public void stop() {
+        compressedAudioDirectPolicy.resetOutputProgress();
         preCache.stop("player-stop");
         cancelDecoderRuntimeStableWindow();
         finishDecoderRuntimeAttempt();
@@ -838,7 +847,8 @@ public class ExoPlayerEngine implements PlayerEngine {
 
     @Override
     public ErrorAction handleError(PlaybackException e) {
-        if (isAudioOutputFailure(e)
+        if ((isAudioOutputFailure(e)
+                || compressedAudioDirectPolicy.requestPcmFallbackForStuckPlayback(e))
                 && compressedAudioDirectPolicy.consumePcmFallbackRequest()) {
             if (retryAudioOutputWithPcm()) {
                 PlaybackTrace.log(
@@ -864,7 +874,7 @@ public class ExoPlayerEngine implements PlayerEngine {
         boolean shouldPlay = playWhenReady;
         preCache.stop("audio-output-pcm-fallback");
         try {
-            startInternal(position, shouldPlay);
+            startInternal(position, shouldPlay, true);
             if (SpiderDebug.isEnabled()) {
                 SpiderDebug.log(
                         "exo-audio-direct",
@@ -974,6 +984,11 @@ public class ExoPlayerEngine implements PlayerEngine {
     }
 
     private void startInternal(long position, boolean playWhenReady) {
+        startInternal(position, playWhenReady, false);
+    }
+
+    private void startInternal(long position, boolean playWhenReady, boolean pcmRetry) {
+        compressedAudioDirectPolicy.prepareForPlayback(spec.getUrl(), pcmRetry);
         this.playWhenReady = playWhenReady;
         firstFrameRendered = false;
         cancelTunnelingProgressWatchdog();
