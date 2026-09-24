@@ -8,6 +8,7 @@ import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
@@ -31,6 +32,10 @@ public class UaDialog extends BaseAlertDialog {
 
     private DialogUaBinding binding;
     private boolean append = true;
+
+    public static void show(Fragment fragment) {
+        new UaDialog().show(fragment.getChildFragmentManager(), null);
+    }
 
     public static void show(FragmentActivity activity) {
         new UaDialog().show(activity.getSupportFragmentManager(), null);
@@ -95,7 +100,7 @@ public class UaDialog extends BaseAlertDialog {
     }
 
     private void onPositive(View view) {
-        ((UaListener) requireActivity()).setUa(binding.text.getText().toString().trim());
+        ((UaListener) requireParentFragment()).setUa(binding.text.getText().toString().trim());
         dismiss();
     }
 

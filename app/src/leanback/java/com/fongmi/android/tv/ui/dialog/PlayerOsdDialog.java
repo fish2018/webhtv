@@ -38,6 +38,18 @@ public final class PlayerOsdDialog extends DialogFragment {
         void onApply(boolean[] vodChecked, boolean[] liveChecked);
     }
 
+    public static void show(Fragment fragment, String[] items, boolean[] vodChecked, boolean[] liveChecked, Callback callback) {
+        for (Fragment child : fragment.getChildFragmentManager().getFragments()) {
+            if (child instanceof PlayerOsdDialog) return;
+        }
+        PlayerOsdDialog dialog = new PlayerOsdDialog();
+        dialog.items = items == null ? new String[0] : Arrays.copyOf(items, items.length);
+        dialog.vodChecked = vodChecked == null ? new boolean[0] : Arrays.copyOf(vodChecked, vodChecked.length);
+        dialog.liveChecked = liveChecked == null ? new boolean[0] : Arrays.copyOf(liveChecked, liveChecked.length);
+        dialog.callback = callback;
+        dialog.show(fragment.getChildFragmentManager(), PlayerOsdDialog.class.getSimpleName());
+    }
+
     public static void show(FragmentActivity activity, String[] items, boolean[] vodChecked, boolean[] liveChecked, Callback callback) {
         for (Fragment fragment : activity.getSupportFragmentManager().getFragments()) {
             if (fragment instanceof PlayerOsdDialog) return;
