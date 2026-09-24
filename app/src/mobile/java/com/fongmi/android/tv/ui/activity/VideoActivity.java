@@ -3890,7 +3890,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mHistory.setSpeed(player().getSpeed());
     }
 
-    private void onReset() {
+    @Override
+    public void onReset() {
         if (isReplay()) onReplay();
         else onRefresh();
     }

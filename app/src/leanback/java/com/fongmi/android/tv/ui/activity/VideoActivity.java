@@ -3305,7 +3305,8 @@ public class VideoActivity extends PlaybackActivity implements CustomKeyDownVod.
         mHistory.setSpeed(player().getSpeed());
     }
 
-    private void onReset() {
+    @Override
+    public void onReset() {
         if (isReplay()) onReplay();
         else onRefresh();
     }

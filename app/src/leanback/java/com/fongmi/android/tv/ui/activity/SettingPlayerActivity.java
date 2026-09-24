@@ -36,6 +36,8 @@ import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
+import com.github.catvod.crawler.SpiderDebug;
+
 import java.text.DecimalFormat;
 
 public class SettingPlayerActivity extends BaseActivity implements UaListener, BufferListener, SpeedListener {
@@ -66,14 +68,6 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, B
 
     @Override
     protected void initView(Bundle savedInstanceState) {
-        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        View root = mBinding.getRoot();
-        android.graphics.drawable.Drawable bg = root.getBackground();
-        if (bg != null) {
-            bg = bg.mutate();
-            bg.setAlpha(235);
-            root.setBackground(bg);
-        }
         setVisible();
         format = new DecimalFormat("0.#");
         PlaybackPerformanceSetting.ensureInitialized();
