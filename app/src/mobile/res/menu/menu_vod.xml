@@ -33,6 +33,11 @@
 
         <menu>
             <item
+                android:id="@+id/multi_repo"
+                android:icon="@drawable/ic_setting_home"
+                android:title="@string/multi_repo" />
+ 
+            <item
                 android:id="@+id/refresh"
                 android:icon="@drawable/ic_popup_refresh"
                 android:title="@string/live_refresh" />

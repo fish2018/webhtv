@@ -1599,4 +1599,23 @@
     <string name="dialog_clear_history_message">是否清空播放历史，删除后无法恢复！</string>
     <string name="dialog_clear_keep">清空收藏视频</string>
     <string name="dialog_clear_keep_message">是否清空收藏视频，删除后无法恢复！</string>
+ 
+    <!-- 多仓 -->
+    <string name="multi_repo">多仓</string>
+    <string name="multi_repo_empty">暂无仓库，请先新增</string>
+    <string name="multi_repo_manage_title">接口仓库维护</string>
+    <string name="multi_repo_add">新增仓库</string>
+    <string name="multi_repo_add_title">增加接口仓库</string>
+    <string name="multi_repo_name">仓库名称</string>
+    <string name="multi_repo_url">仓库链接</string>
+    <string name="multi_repo_name_hint">输入仓库名称…</string>
+    <string name="multi_repo_url_hint">输入仓库链接…</string>
+    <string name="multi_repo_name_empty">请输入仓库名称</string>
+    <string name="multi_repo_url_empty">请输入仓库链接</string>
+    <string name="multi_repo_fetch_fail">仓库加载失败</string>
+    <string name="multi_repo_config_list">接口列表</string>
+    <string name="multi_repo_site_list">站点列表</string>
+    <string name="multi_repo_site_empty">该接口暂无站点</string>
+    <string name="multi_repo_first_open">未配置任何接口仓库，是否现在新增？</string>
+    <string name="multi_repo_settings">多仓设置</string>
 </resources>

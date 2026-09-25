@@ -60,6 +60,7 @@ import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomSelector;
 import com.fongmi.android.tv.ui.custom.CustomTitleView;
 import com.fongmi.android.tv.ui.dialog.HomeMenuDialog;
+import com.fongmi.android.tv.ui.dialog.MultiRepoDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
 import com.fongmi.android.tv.ui.presenter.FuncPresenter;
 import com.fongmi.android.tv.ui.presenter.HeaderPresenter;
@@ -687,11 +688,12 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
         List<Func> funcs = getFuncItems();
         boolean hasRecommend = mHomeResult != null && !mHomeResult.getList().isEmpty();
         List<Class> types = mHomeResult == null ? new ArrayList<>() : mHomeResult.getTypes();
-        mMenuButtonCount = 1 + funcs.size();
+        mMenuButtonCount = 2 + funcs.size(); // 选站 + 多仓 + funcs
         int categoryCount = (hasRecommend ? 1 : 0) + types.size();
         String[] items = new String[mMenuButtonCount + 1 + categoryCount];
         items[0] = ResUtil.getString(R.string.home_switch);
-        for (int i = 0; i < funcs.size(); i++) items[1 + i] = funcs.get(i).getText();
+        items[1] = ResUtil.getString(R.string.multi_repo);
+        for (int i = 0; i < funcs.size(); i++) items[2 + i] = funcs.get(i).getText();
         items[mMenuButtonCount] = ResUtil.getString(R.string.home_refresh);
         int offset = mMenuButtonCount + 1;
         if (hasRecommend) items[offset++] = ResUtil.getString(R.string.home_recommend);
@@ -705,8 +707,12 @@ public class HomeActivity extends BaseActivity implements CustomTitleView.Listen
             showDialog();
             return;
         }
-        if (which < mMenuButtonCount) {
-            onItemClick(getFuncItems().get(which - 1));
+        if (which == 1) {
+            MultiRepoDialog.show(this);
+            return;
+        }
+        if (which >= 2 && which < mMenuButtonCount) {
+            onItemClick(getFuncItems().get(which - 2));
             return;
         }
         if (which == mMenuButtonCount) {

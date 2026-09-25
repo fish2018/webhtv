@@ -1583,4 +1583,23 @@
     <string name="dialog_clear_history_message">是否清空播放歷史，刪除後無法恢復！</string>
     <string name="dialog_clear_keep">清空收藏影片</string>
     <string name="dialog_clear_keep_message">是否清空收藏影片，刪除後無法恢復！</string>
+
+    <!-- 多倉 -->
+    <string name="multi_repo">多倉</string>
+    <string name="multi_repo_empty">暫無倉庫，請先新增</string>
+    <string name="multi_repo_manage_title">接口倉庫維護</string>
+    <string name="multi_repo_add">新增倉庫</string>
+    <string name="multi_repo_add_title">增加接口倉庫</string>
+    <string name="multi_repo_name">倉庫名稱</string>
+    <string name="multi_repo_url">倉庫連結</string>
+    <string name="multi_repo_name_hint">輸入倉庫名稱…</string>
+    <string name="multi_repo_url_hint">輸入倉庫連結…</string>
+    <string name="multi_repo_name_empty">請輸入倉庫名稱</string>
+    <string name="multi_repo_url_empty">請輸入倉庫連結</string>
+    <string name="multi_repo_fetch_fail">倉庫載入失敗</string>
+    <string name="multi_repo_config_list">接口列表</string>
+    <string name="multi_repo_site_list">站點列表</string>
+    <string name="multi_repo_site_empty">該接口暫無站點</string>
+    <string name="multi_repo_first_open">未配置任何接口倉庫，是否現在新增？</string>
+    <string name="multi_repo_settings">多倉設置</string>
 </resources>

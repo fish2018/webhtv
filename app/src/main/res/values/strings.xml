@@ -1607,4 +1607,23 @@
     <string name="dialog_clear_history_message">Clear all watch history? This cannot be undone.</string>
     <string name="dialog_clear_keep">Clear favorites</string>
     <string name="dialog_clear_keep_message">Clear all favorites? This cannot be undone.</string>
+
+    <!-- Multi-repo -->
+    <string name="multi_repo">Multi Repo</string>
+    <string name="multi_repo_empty">No repos yet, please add one</string>
+    <string name="multi_repo_manage_title">Repo Management</string>
+    <string name="multi_repo_add">Add Repo</string>
+    <string name="multi_repo_add_title">Add Repo Source</string>
+    <string name="multi_repo_name">Repo Name</string>
+    <string name="multi_repo_url">Repo URL</string>
+    <string name="multi_repo_name_hint">Enter repo name…</string>
+    <string name="multi_repo_url_hint">Enter repo URL…</string>
+    <string name="multi_repo_name_empty">Please enter repo name</string>
+    <string name="multi_repo_url_empty">Please enter repo URL</string>
+    <string name="multi_repo_fetch_fail">Failed to load repo</string>
+    <string name="multi_repo_config_list">Config list</string>
+    <string name="multi_repo_site_list">Site list</string>
+    <string name="multi_repo_site_empty">No sites in this interface</string>
+    <string name="multi_repo_first_open">No repo configured. Add one now?</string>
+    <string name="multi_repo_settings">Multi Repo Settings</string>
 </resources>
