@@ -37,6 +37,7 @@ public class QuickSearchDialog extends BaseBottomSheetDialog implements QuickAda
     private DialogQuickSearchBinding binding;
     private QuickAdapter.OnClickListener listener;
     private OnSearchListener searchListener;
+    private OnDismissListener dismissListener;
     private QuickAdapter adapter;
     private String keyword;
     private String title;
@@ -51,6 +52,10 @@ public class QuickSearchDialog extends BaseBottomSheetDialog implements QuickAda
 
     public interface OnSearchListener {
         void onSearch(String keyword);
+    }
+
+    public interface OnDismissListener {
+        void onDismiss();
     }
 
     public QuickSearchDialog title(String title) {
@@ -70,6 +75,11 @@ public class QuickSearchDialog extends BaseBottomSheetDialog implements QuickAda
 
     public QuickSearchDialog searchListener(OnSearchListener listener) {
         this.searchListener = listener;
+        return this;
+    }
+
+    public QuickSearchDialog dismissListener(OnDismissListener listener) {
+        this.dismissListener = listener;
         return this;
     }
 
@@ -203,5 +213,11 @@ public class QuickSearchDialog extends BaseBottomSheetDialog implements QuickAda
     public void onItemClick(Vod item) {
         if (listener != null) listener.onItemClick(item);
         dismiss();
+    }
+
+    @Override
+    public void onDismiss(@NonNull android.content.DialogInterface dialog) {
+        super.onDismiss(dialog);
+        if (dismissListener != null) dismissListener.onDismiss();
     }
 }

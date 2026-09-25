@@ -4,13 +4,15 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
+import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.History;
+import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.player.PlayerManager;
 
 import java.lang.ref.WeakReference;
 import java.util.UUID;
 
-final class PlaybackRuntime {
+public final class PlaybackRuntime {
 
     private static volatile History currentHistory;
     private static volatile WeakReference<PlayerManager> currentPlayer = new WeakReference<>(null);
@@ -46,6 +48,34 @@ final class PlaybackRuntime {
         if (!TextUtils.isEmpty(historyKey) && !TextUtils.equals(history.getKey(), historyKey)) return null;
         return history;
     }
+
+    public static SiteIdentity currentSiteIdentity(String fallbackDomain) {
+        History history = currentHistory();
+        if (history != null) {
+            String siteKey = safe(history.getSiteKey()).trim();
+            if (!siteKey.isEmpty()) {
+                try {
+                    Site site = VodConfig.get().getSite(siteKey);
+                    String siteName = site == null || site.isEmpty() ? siteKey : site.getDisplayName();
+                    return new SiteIdentity(siteKey, siteName, safe(fallbackDomain));
+                } catch (Throwable ignored) {
+                    return new SiteIdentity(siteKey, siteKey, safe(fallbackDomain));
+                }
+            }
+        }
+        return new SiteIdentity("", "未知站点", safe(fallbackDomain));
+    }
+
+    public static PlaybackIdentity currentPlaybackIdentity() {
+        History history = currentHistory();
+        if (history == null) return new PlaybackIdentity("", "", "");
+        return new PlaybackIdentity(safe(history.getVodName()), safe(history.getVodFlag()),
+                safe(history.getVodRemarks()));
+    }
+
+    public record SiteIdentity(String siteKey, String siteName, String siteDomain) {}
+
+    public record PlaybackIdentity(String vodName, String lineName, String episodeName) {}
 
     static synchronized String ensureSession(History history) {
         String signature = signature(history);

@@ -1,13 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.fongmi.android.tv.ui.custom.CustomRecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/recycler"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/shape_config_history_dialog"
-    android:clipChildren="false"
-    android:clipToPadding="false"
-    android:overScrollMode="never"
-    android:padding="24dp"
-    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-    app:maxHeight="352dp" />
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <com.fongmi.android.tv.ui.custom.CustomRecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:maxHeight="640dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/add"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:text="@string/remote_trust_config_add"
+        android:textColor="@color/config_history_text"
+        app:backgroundTint="@color/dialog_outlined_button_bg"
+        app:icon="@drawable/ic_action_plus"
+        app:iconTint="@color/config_history_icon"
+        app:strokeColor="@color/dialog_outlined_button_stroke" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

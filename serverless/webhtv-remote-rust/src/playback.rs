@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env,
     fs::{self, OpenOptions},
     io::Write,
@@ -39,6 +39,8 @@ static PLAYBACK_PERSISTENT: AtomicBool = AtomicBool::new(false);
 struct PlaybackDiskState {
     version: u32,
     spaces: HashMap<String, PlaybackSpace>,
+    #[serde(default)]
+    identities: HashMap<String, IdentityRegistry>,
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -94,9 +96,65 @@ struct PlaybackEvent {
     payload: Value,
 }
 
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityRegistry {
+    #[serde(default)]
+    epoch: i64,
+    #[serde(default)]
+    identities: HashMap<String, IdentityEntry>,
+    #[serde(default)]
+    aliases: HashMap<String, IdentityAlias>,
+    #[serde(default)]
+    updated_at: i64,
+    #[serde(default)]
+    requests: HashMap<String, Value>,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityEntry {
+    canonical_interface_key: String,
+    #[serde(default)]
+    strict_address_keys: Vec<String>,
+    #[serde(default)]
+    endpoint_match_keys: Vec<String>,
+    #[serde(default)]
+    host_match_keys: Vec<String>,
+    #[serde(default)]
+    legacy_config_keys: Vec<String>,
+    #[serde(default)]
+    created_at: i64,
+    #[serde(default)]
+    updated_at: i64,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityAlias {
+    canonical_interface_key: String,
+    kind: String,
+}
+
+#[derive(Clone, Default)]
+struct IdentityInput {
+    schema: String,
+    operation: String,
+    config_type: String,
+    interface_key: String,
+    strict_address_keys: Vec<String>,
+    endpoint_match_keys: Vec<String>,
+    host_match_keys: Vec<String>,
+    legacy_config_keys: Vec<String>,
+    source_data_state: String,
+    confirm: bool,
+    request_id: String,
+}
+
 pub struct PlaybackService {
     path: Option<PathBuf>,
     spaces: HashMap<String, PlaybackSpace>,
+    identities: HashMap<String, IdentityRegistry>,
     load_error: Option<String>,
 }
 
@@ -119,6 +177,7 @@ impl PlaybackService {
         let mut service = Self {
             path,
             spaces: HashMap::new(),
+            identities: HashMap::new(),
             load_error: None,
         };
         if let Err(error) = service.load() {
@@ -141,6 +200,75 @@ impl PlaybackService {
         self.path.is_some()
     }
 
+
+    fn resolve_config_key(&self, token: &str, config_type: &str, config_key: &str, aliases: Vec<String>) -> Result<String, AppError> {
+        let registry = self.identities.get(&identity_registry_key(token, config_type));
+        let Some(registry) = registry else { return Ok(config_key.to_string()); };
+        let mut candidates = HashSet::new();
+        for key in std::iter::once(config_key.to_string()).chain(aliases.into_iter()) {
+            if let Some(alias) = registry.aliases.get(&key) { candidates.insert(alias.canonical_interface_key.clone()); }
+            if registry.identities.contains_key(&key) { candidates.insert(key); }
+        }
+        if candidates.len() > 1 { return Err(AppError::new(StatusCode::CONFLICT, "Identity alias maps to multiple canonical interfaces")); }
+        Ok(candidates.into_iter().next().unwrap_or_else(|| config_key.to_string()))
+    }
+
+    fn resolve_identity(&mut self, token: &str, headers: &HeaderMap, payload: &Value) -> Result<Value, AppError> {
+        let object = payload.as_object().ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "Invalid identity request"))?;
+        let input = parse_identity_input(object, headers)?;
+        if input.schema != "webhtv.playback.identity.v1" || input.operation != "resolve" {
+            return Ok(identity_response("invalid", &input, json!({"error": "Unsupported identity request"}), 400));
+        }
+        let registry_key = format!("{}:{}", sha256_hex(token), input.config_type);
+        let mut registry = self.identities.remove(&registry_key).unwrap_or_default();
+        if !input.request_id.is_empty() {
+            if let Some(cached) = registry.requests.get(&input.request_id).cloned() {
+                self.identities.insert(registry_key, registry);
+                return Ok(cached);
+            }
+        }
+        let resolution = choose_identity(&registry, &input);
+        let action = resolution.get("action").and_then(Value::as_str).unwrap_or("invalid").to_string();
+        if action == "conflict" || action == "confirm_required" {
+            let response = identity_response(&action, &input, resolution, if action == "conflict" { 409 } else { 200 });
+            if !input.request_id.is_empty() { registry.requests.insert(input.request_id.clone(), response.clone()); }
+            self.identities.insert(registry_key, registry);
+            return Ok(response);
+        }
+        let canonical = resolution.get("canonicalInterfaceKey").and_then(Value::as_str).unwrap_or(&input.interface_key).to_string();
+        let now = now_ms();
+        {
+            let identity = registry.identities.entry(canonical.clone()).or_insert_with(|| IdentityEntry { canonical_interface_key: canonical.clone(), created_at: now, ..Default::default() });
+            add_identity_keys(identity, &input);
+        }
+        if (action == "adopt" || action == "merge") && input.interface_key != canonical { registry.aliases.insert(input.interface_key.clone(), IdentityAlias { canonical_interface_key: canonical.clone(), kind: "interface".to_string() }); }
+        let keys = registry.identities.get(&canonical).map(|identity| identity.strict_address_keys.iter().chain(identity.endpoint_match_keys.iter()).chain(identity.host_match_keys.iter()).chain(identity.legacy_config_keys.iter()).cloned().collect::<Vec<_>>()).unwrap_or_default();
+        for key in keys { registry.aliases.entry(key).or_insert_with(|| IdentityAlias { canonical_interface_key: canonical.clone(), kind: "alias".to_string() }); }
+        registry.epoch += 1; registry.updated_at = now;
+        let migrated = self.migrate_identity_spaces(token, &input.config_type, &canonical, [&input.legacy_config_keys[..], std::slice::from_ref(&input.interface_key)].concat());
+        let final_action = if migrated { "migration_pending" } else { action.as_str() };
+        let response = identity_response(final_action, &input, json!({"canonicalInterfaceKey": canonical, "identityEpoch": registry.epoch.to_string(), "migrationRequired": migrated, "migrationDone": migrated, "resetSince": migrated, "nextSince": if migrated { "0" } else { "" }, "sourceInterfaceKey": input.interface_key}), 200);
+        if !input.request_id.is_empty() { registry.requests.insert(input.request_id.clone(), response.clone()); }
+        self.identities.insert(registry_key, registry.clone());
+        self.save().map_err(|_| AppError::new(StatusCode::SERVICE_UNAVAILABLE, "Playback identity registry write failed"))?;
+        Ok(response)
+    }
+
+    fn migrate_identity_spaces(&mut self, token: &str, config_type: &str, canonical: &str, sources: Vec<String>) -> bool {
+        let canonical_key = playback_space_key_type(token, config_type, canonical);
+        let mut target = self.spaces.remove(&canonical_key).unwrap_or_default();
+        let mut migrated = false;
+        for source in sources.into_iter().filter(|key| !key.is_empty() && key != canonical) {
+            let source_key = playback_space_key_type(token, config_type, &source);
+            let Some(source_space) = self.spaces.get(&source_key).cloned() else { continue };
+            for (key, item) in source_space.items { if target.items.get(&key).map(|old| old.updated_at >= item.updated_at).unwrap_or(false) { continue; } let mut item = item; target.sequence += 1; item.seq = target.sequence; target.items.insert(key, item); migrated = true; }
+            for (key, tombstone) in source_space.tombstones { if target.tombstones.get(&key).map(|old| old.deleted_at >= tombstone.deleted_at).unwrap_or(false) { continue; } let mut tombstone = tombstone; target.sequence += 1; tombstone.seq = target.sequence; target.tombstones.insert(key, tombstone); migrated = true; }
+            for (key, value) in source_space.events { target.events.entry(key).or_insert(value); }
+        }
+        if migrated { self.spaces.insert(canonical_key, target); }
+        migrated
+    }
+
     fn ensure_available(&self) -> Result<(), AppError> {
         if self.available() {
             Ok(())
@@ -152,9 +280,22 @@ impl PlaybackService {
         }
     }
 
-    fn ingest(
+    fn ingest(&mut self, token: &str, config_key: &str, body: &Value, fallback_event_id: &str, now: i64) -> Result<Value, AppError> {
+        self.ingest_type(token, "vod", config_key, body, fallback_event_id, now)
+    }
+
+    fn pull(&self, token: &str, config_key: &str, since: i64, limit: usize) -> Value {
+        self.pull_type(token, "vod", config_key, since, limit)
+    }
+
+    fn status(&self, token: &str, config_key: &str, endpoint: String) -> Value {
+        self.status_type(token, "vod", config_key, endpoint)
+    }
+
+    fn ingest_type(
         &mut self,
         token: &str,
+        config_type: &str,
         config_key: &str,
         body: &Value,
         fallback_event_id: &str,
@@ -179,7 +320,7 @@ impl PlaybackService {
             .map(|raw| normalize_playback_event(raw, config_key, now, fallback_event_id))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let space_key = playback_space_key(token, config_key);
+        let space_key = playback_space_key_type(token, config_type, config_key);
         let previous = self.spaces.get(&space_key).cloned();
         let mut working = previous.clone().unwrap_or_default();
         cleanup_playback_space(&mut working, now);
@@ -235,11 +376,11 @@ impl PlaybackService {
         }))
     }
 
-    fn pull(&self, token: &str, config_key: &str, since: i64, limit: usize) -> Value {
+    fn pull_type(&self, token: &str, config_type: &str, config_key: &str, since: i64, limit: usize) -> Value {
         let empty = PlaybackSpace::default();
         let space = self
             .spaces
-            .get(&playback_space_key(token, config_key))
+            .get(&playback_space_key_type(token, config_type, config_key))
             .unwrap_or(&empty);
         let cutoff = now_ms() - RETENTION_MS;
         let mut changes = space
@@ -269,11 +410,11 @@ impl PlaybackService {
         })
     }
 
-    fn status(&self, token: &str, config_key: &str, endpoint: String) -> Value {
+    fn status_type(&self, token: &str, config_type: &str, config_key: &str, endpoint: String) -> Value {
         let empty = PlaybackSpace::default();
         let space = self
             .spaces
-            .get(&playback_space_key(token, config_key))
+            .get(&playback_space_key_type(token, config_type, config_key))
             .unwrap_or(&empty);
         let cutoff = now_ms() - RETENTION_MS;
         let tombstones = space
@@ -286,6 +427,9 @@ impl PlaybackService {
         json!({
             "ok": true,
             "configKey": config_key,
+            "identityProtocol": "webhtv.playback.identity.v1",
+            "addressMatchVersion": 1,
+            "capabilities": {"playbackSync": true, "identityResolve": true, "identityAliases": true, "legacyUrlHashMigration": true, "identityMerge": true},
             "items": space.items.len(),
             "tombstones": tombstones.len(),
             "nextSince": latest_item.max(latest_tombstone).to_string(),
@@ -309,6 +453,7 @@ impl PlaybackService {
             return Err("Unsupported playback storage version".to_string());
         }
         self.spaces = disk.spaces;
+        self.identities = disk.identities;
         Ok(())
     }
 
@@ -319,6 +464,7 @@ impl PlaybackService {
         let disk = PlaybackDiskState {
             version: STORAGE_VERSION,
             spaces: self.spaces.clone(),
+            identities: self.identities.clone(),
         };
         let data = serde_json::to_vec(&disk).map_err(|error| error.to_string())?;
         let parent = path.parent().filter(|value| !value.as_os_str().is_empty());
@@ -359,6 +505,25 @@ pub fn playback_persistent() -> bool {
     PLAYBACK_PERSISTENT.load(Ordering::Relaxed)
 }
 
+
+pub async fn post_identity_resolve(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> AppResult {
+    if body.len() > MAX_BODY_BYTES {
+        return Err(AppError::new(StatusCode::PAYLOAD_TOO_LARGE, "Identity payload is too large"));
+    }
+    let payload = serde_json::from_slice::<Value>(&body)
+        .map_err(|_| AppError::new(StatusCode::BAD_REQUEST, "Invalid JSON body"))?;
+    let token = require_playback_token(&headers)?;
+    let mut service = state.playback.lock().await;
+    let response = service.resolve_identity(&token, &headers, &payload)?;
+    let status = response.get("status").and_then(Value::as_u64).unwrap_or(200) as u16;
+    let body = response.get("body").cloned().unwrap_or_else(|| json!({"ok": false}));
+    Ok(json_response(StatusCode::from_u16(status).unwrap_or(StatusCode::OK), body))
+}
+
 pub async fn post_sync(
     State(state): State<SharedState>,
     headers: HeaderMap,
@@ -379,10 +544,17 @@ pub async fn post_sync(
     let payload = serde_json::from_slice::<Value>(&body)
         .map_err(|_| AppError::new(StatusCode::BAD_REQUEST, "Invalid JSON body"))?;
     let token = require_playback_token(&headers)?;
-    let config_key = require_config_key(&headers, Some(&payload))?;
+    let submitted_config_key = require_config_key(&headers, Some(&payload))?;
+    let config_type = normalize_config_type(&first_non_empty(&[
+        header_string(&headers, "x-webhtv-config-type"),
+        payload.get("configType").map(value_string).unwrap_or_default(),
+    ]));
     let fallback_event_id = first_header(&headers, &["x-webhtv-webhook-id", "idempotency-key"]);
-    let response = state.playback.lock().await.ingest(
+    let mut service = state.playback.lock().await;
+    let config_key = service.resolve_config_key(&token, &config_type, &submitted_config_key, request_aliases(&headers, &payload))?;
+    let response = service.ingest_type(
         &token,
+        &config_type,
         &config_key,
         &payload,
         &clean_string(&fallback_event_id, 160),
@@ -397,7 +569,13 @@ pub async fn get_sync(
     OriginalUri(uri): OriginalUri,
 ) -> AppResult {
     let token = require_playback_token(&headers)?;
-    let config_key = require_config_key(&headers, None)?;
+    let submitted_config_key = require_config_key(&headers, None)?;
+    let config_type = normalize_config_type(&first_non_empty(&[
+        header_string(&headers, "x-webhtv-config-type"),
+        query_param(&uri, "configType"),
+    ]));
+    let service = state.playback.lock().await;
+    let config_key = service.resolve_config_key(&token, &config_type, &submitted_config_key, request_aliases(&headers, &Value::Null))?;
     let since = parse_cursor(&first_non_empty(&[
         header_string(&headers, "x-webhtv-since"),
         query_param(&uri, "since"),
@@ -406,11 +584,10 @@ pub async fn get_sync(
         header_string(&headers, "x-webhtv-limit"),
         query_param(&uri, "limit"),
     ]));
-    let service = state.playback.lock().await;
     service.ensure_available()?;
     Ok(json_response(
         StatusCode::OK,
-        service.pull(&token, &config_key, since, limit),
+        service.pull_type(&token, &config_type, &config_key, since, limit),
     ))
 }
 
@@ -420,18 +597,23 @@ pub async fn get_status(
     OriginalUri(uri): OriginalUri,
 ) -> AppResult {
     let token = require_playback_token(&headers)?;
-    let config_key = require_config_key(&headers, None)?;
+    let submitted_config_key = require_config_key(&headers, None)?;
+    let config_type = normalize_config_type(&first_non_empty(&[
+        header_string(&headers, "x-webhtv-config-type"),
+        query_param(&uri, "configType"),
+    ]));
+    let service = state.playback.lock().await;
+    let config_key = service.resolve_config_key(&token, &config_type, &submitted_config_key, request_aliases(&headers, &Value::Null))?;
     let base = if uri.path().starts_with("/playback/") {
         "/playback/sync"
     } else {
         "/api/playback/sync"
     };
     let endpoint = format!("{}{}", server_origin(&headers), base);
-    let service = state.playback.lock().await;
     service.ensure_available()?;
     Ok(json_response(
         StatusCode::OK,
-        service.status(&token, &config_key, endpoint),
+        service.status_type(&token, &config_type, &config_key, endpoint),
     ))
 }
 
@@ -974,6 +1156,27 @@ fn record_event(space: &mut PlaybackSpace, event_id: &str, received_at: i64) {
     }
 }
 
+
+fn parse_identity_input(object: &JsonMap, headers: &HeaderMap) -> Result<IdentityInput, AppError> {
+    let mut input = IdentityInput { schema: first_string(object, &["schema"]), operation: first_string(object, &["operation"]).to_lowercase(), config_type: normalize_config_type(&first_string(object, &["configType"])), interface_key: first_string(object, &["interfaceKey"]), strict_address_keys: string_array(object.get("strictAddressKeys")), endpoint_match_keys: string_array(object.get("endpointMatchKeys")), host_match_keys: string_array(object.get("hostMatchKeys")), legacy_config_keys: string_array(object.get("legacyConfigKeys")), source_data_state: first_string(object, &["sourceDataState"]).to_lowercase(), confirm: object.get("confirm").and_then(Value::as_bool).unwrap_or(false), request_id: first_string(object, &["requestId"]) };
+    if input.schema.is_empty() { input.schema = "webhtv.playback.identity.v1".to_string(); }
+    if input.operation.is_empty() { input.operation = "resolve".to_string(); }
+    if input.source_data_state != "empty" && input.source_data_state != "has_data" { input.source_data_state = "unknown".to_string(); }
+    if input.interface_key.is_empty() { input.interface_key = header_string(headers, "x-webhtv-config-key"); }
+    if input.request_id.is_empty() { input.request_id = header_string(headers, "x-webhtv-request-id"); }
+    input.interface_key = validate_identity_key(&input.interface_key, "interfaceKey")?;
+    for keys in [&input.strict_address_keys, &input.endpoint_match_keys, &input.host_match_keys, &input.legacy_config_keys] { if keys.len() > 32 { return Err(AppError::new(StatusCode::BAD_REQUEST, "identity key list is too long")); } for key in keys.iter() { validate_identity_key(key, "identity key")?; } }
+    Ok(input)
+}
+
+fn string_array(value: Option<&Value>) -> Vec<String> { value.and_then(Value::as_array).map(|values| values.iter().map(value_string).filter(|value| !value.is_empty()).collect()).unwrap_or_default() }
+fn validate_identity_key(value: &str, label: &str) -> Result<String, AppError> { let value = value.trim().to_lowercase(); if value.is_empty() || value.len() > 128 || !value.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || ".:_-".contains(c)) { return Err(AppError::new(StatusCode::BAD_REQUEST, format!("{label} is invalid"))); } Ok(value) }
+fn request_aliases(headers: &HeaderMap, payload: &Value) -> Vec<String> { let mut result = header_string(headers, "x-webhtv-config-aliases").split(',').map(|value| value.trim().to_string()).filter(|value| !value.is_empty()).collect::<Vec<_>>(); if let Some(values) = payload.get("configAliases").and_then(Value::as_array) { result.extend(values.iter().map(value_string).filter(|value| !value.is_empty())); } result.sort(); result.dedup(); result.truncate(16); result }
+fn identity_registry_key(token: &str, config_type: &str) -> String { format!("{}:{}", sha256_hex(token), normalize_config_type(config_type)) }
+fn identity_response(action: &str, input: &IdentityInput, extra: Value, status: u16) -> Value { let mut body = json!({"ok": status < 400, "schema":"webhtv.playback.identity.v1", "identityProtocol":"webhtv.playback.identity.v1", "addressMatchVersion":1, "action":action, "canonicalInterfaceKey":"", "sourceInterfaceKey":input.interface_key, "matchedBy":"none", "matchedKeys":[], "migrationRequired":false, "migrationDone":false, "resetSince":false, "nextSince":"", "identityEpoch":"", "capabilities":{"playbackSync":true,"identityResolve":true,"identityAliases":true,"legacyUrlHashMigration":true,"identityMerge":true}}); if let (Some(target), Some(source)) = (body.as_object_mut(), extra.as_object()) { for (key, value) in source { target.insert(key.clone(), value.clone()); } } json!({"status": status, "body": body}) }
+fn add_identity_keys(identity: &mut IdentityEntry, input: &IdentityInput) { identity.updated_at = now_ms(); for (target, source) in [(&mut identity.strict_address_keys, &input.strict_address_keys), (&mut identity.endpoint_match_keys, &input.endpoint_match_keys), (&mut identity.host_match_keys, &input.host_match_keys), (&mut identity.legacy_config_keys, &input.legacy_config_keys)] { for value in source { if target.len() < 32 && !target.contains(value) { target.push(value.clone()); } } } }
+fn choose_identity(registry: &IdentityRegistry, input: &IdentityInput) -> Value { let bound = registry.identities.get(&input.interface_key).map(|_| input.interface_key.clone()).or_else(|| registry.aliases.get(&input.interface_key).map(|alias| alias.canonical_interface_key.clone())); let candidates = |keys: &Vec<String>| -> Vec<String> { let mut output = HashSet::new(); for key in keys { if let Some(alias) = registry.aliases.get(key) { output.insert(alias.canonical_interface_key.clone()); } for (canonical, identity) in &registry.identities { if identity.strict_address_keys.contains(key) || identity.endpoint_match_keys.contains(key) || identity.host_match_keys.contains(key) || identity.legacy_config_keys.contains(key) { output.insert(canonical.clone()); } } } let mut result = output.into_iter().collect::<Vec<_>>(); result.sort(); result }; let strict = candidates(&input.strict_address_keys); let endpoint = candidates(&input.endpoint_match_keys); let strong = if !strict.is_empty() { (strict, "strictAddressKey") } else if !endpoint.is_empty() { (endpoint, "endpointMatchKey") } else { (candidates(&input.legacy_config_keys), "legacyConfigKey") }; if let Some(bound) = bound { return json!({"action":"keep","canonicalInterfaceKey":bound,"matchedBy":"interfaceKey"}); } if strong.0.len() > 1 { return json!({"action":"conflict","matchedBy":strong.1,"candidates":strong.0,"error":"Address clues belong to multiple identities"}); } if strong.0.len() == 1 { if input.source_data_state != "empty" { if input.confirm { return json!({"action":"merge","canonicalInterfaceKey":strong.0[0],"matchedBy":strong.1}); } return json!({"action":"confirm_required","canonicalInterfaceKey":strong.0[0],"matchedBy":strong.1,"candidates":strong.0,"error":"Existing source data requires explicit merge confirmation"}); } return json!({"action":"adopt","canonicalInterfaceKey":strong.0[0],"matchedBy":strong.1}); } let weak = candidates(&input.host_match_keys); if weak.len() == 1 && input.confirm { return json!({"action":"merge","canonicalInterfaceKey":weak[0],"matchedBy":"hostMatchKey"}); } if !weak.is_empty() { return json!({"action":"confirm_required","matchedBy":"hostMatchKey","candidates":weak,"error":"Host-only match requires confirmation"}); } json!({"action":"create","canonicalInterfaceKey":input.interface_key,"matchedBy":"none"}) }
+
 fn require_playback_token(headers: &HeaderMap) -> Result<String, AppError> {
     let direct = header_string(headers, "x-webhtv-token");
     let token = if !direct.is_empty() {
@@ -1094,6 +1297,15 @@ fn playback_marker_key(scope: &str, item_key: &str, site_key: &str) -> String {
 
 fn playback_space_key(token: &str, config_key: &str) -> String {
     format!("{}:{}", sha256_hex(token), sha256_hex(config_key))
+}
+
+fn playback_space_key_type(token: &str, config_type: &str, config_key: &str) -> String {
+    let base = playback_space_key(token, config_key);
+    if normalize_config_type(config_type) == "vod" { base } else { format!("{}:{}", base, normalize_config_type(config_type)) }
+}
+
+fn normalize_config_type(value: &str) -> String {
+    match value.trim().to_lowercase().as_str() { "1" | "live" => "live".to_string(), "2" | "wall" => "wall".to_string(), _ => "vod".to_string() }
 }
 
 fn history_parts(history_key: &str) -> (String, String) {

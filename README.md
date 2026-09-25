@@ -38,6 +38,8 @@ https://github.com/user-attachments/assets/984c274f-8a9b-4857-b641-d251e061f5cc
 
 ## 文档
 
+按功能模块拆分的接入文档见 [**开发者接入文档**](docs/integration/README.md)，覆盖总配置、点播源、Spider、Result/Vod、直播/EPG/回看、解析器、字幕、弹幕、播放结果、本地代理和扩展包。字段说明以当前仓库实际代码为准。
+
 完整开发说明见 [**应用完整开发文档.md**](webhome-devkit/docs/应用完整开发文档.md),包含:
 
 - App 配置字段(点播、解析、直播、样式)

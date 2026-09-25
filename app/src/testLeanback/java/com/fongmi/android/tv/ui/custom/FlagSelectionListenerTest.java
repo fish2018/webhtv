@@ -93,10 +93,11 @@ public class FlagSelectionListenerTest {
         setComputingLayout(true);
         IllegalStateException focusError = assertThrows(IllegalStateException.class,
                 () -> adapter.setNextFocusDown(R.id.array));
-        IllegalStateException episodeError = assertThrows(IllegalStateException.class,
-                () -> adapter.toggle(flags.get(1).getEpisodes().get(0)));
         assertTrue(focusError.getMessage().contains("computing a layout or scrolling"));
-        assertTrue(episodeError.getMessage().contains("computing a layout or scrolling"));
+        // Local FlagAdapter.toggle deliberately stays notify-free during layout (cb21feb422),
+        // so only the focus refresh still asserts. The listener must still defer the whole
+        // route switch, because that refresh runs inside the selection dispatch.
+        adapter.toggle(flags.get(1).getEpisodes().get(0));
     }
 
     @Test

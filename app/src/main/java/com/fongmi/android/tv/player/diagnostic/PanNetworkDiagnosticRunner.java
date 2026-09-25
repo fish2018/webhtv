@@ -11,6 +11,7 @@ import androidx.media3.datasource.okhttp.OkHttpDataSource;
 import com.fongmi.android.tv.App;
 import com.github.catvod.crawler.SpiderDebug;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.Proxy;
 import java.util.ArrayList;
@@ -48,10 +49,10 @@ public final class PanNetworkDiagnosticRunner {
     private static final int READ_TIMEOUT_SECONDS = 20;
     private static final long PROGRESS_INTERVAL_MS = 250;
     private static final long STAGE_COOLDOWN_MS = 350;
-    private static final long PROXY_WARMUP_BYTES = 512 * 1024L;
     private static final long MIB = 1024L * 1024L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final PanDiagnosticRunGeneration runGeneration = new PanDiagnosticRunGeneration();
     private final Set<Call> calls = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final AtomicBoolean cancelled = new AtomicBoolean();
     private final OkHttpClient client;
@@ -64,6 +65,15 @@ public final class PanNetworkDiagnosticRunner {
                 .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .connectionPool(new ConnectionPool(0, 1, TimeUnit.MILLISECONDS))
+                .addNetworkInterceptor(chain -> {
+                    Request request = chain.request();
+                    HttpUrl originalUrl = chain.call().request().url();
+                    String originalHost = originalUrl.host();
+                    if (!PanNetworkSafety.isLoopbackHost(originalHost) || !originalHost.equalsIgnoreCase(request.url().host())) {
+                        PanNetworkSafety.requireSafeRemoteHost(request.url().host());
+                    }
+                    return chain.proceed(PanNetworkSafety.stripSensitiveHeadersOnRedirect(request, originalUrl));
+                })
                 .protocols(List.of(Protocol.HTTP_1_1))
                 .followRedirects(true)
                 .followSslRedirects(true)
@@ -73,12 +83,15 @@ public final class PanNetworkDiagnosticRunner {
     public void start(RequestConfig config, Listener listener) {
         cancel();
         cancelled.set(false);
-        future = executor.submit(() -> run(config, listener));
+        long runId = runGeneration.next();
+        future = executor.submit(() -> run(config, currentListener(runId, listener)));
     }
 
     public void cancel() {
+        runGeneration.invalidate();
         cancelled.set(true);
         Future<?> running = future;
+        future = null;
         if (running != null) running.cancel(true);
         for (Call call : calls) call.cancel();
         calls.clear();
@@ -96,12 +109,37 @@ public final class PanNetworkDiagnosticRunner {
         executor.shutdownNow();
     }
 
+    private Listener currentListener(long runId, Listener listener) {
+        return new Listener() {
+            @Override
+            public void onProgress(Progress progress) {
+                runGeneration.runIfCurrent(runId, () -> listener.onProgress(progress));
+            }
+
+            @Override
+            public void onComplete(Report report) {
+                runGeneration.runIfCurrent(runId, () -> listener.onComplete(report));
+            }
+
+            @Override
+            public void onCancelled() {
+                runGeneration.runIfCurrent(runId, listener::onCancelled);
+            }
+
+            @Override
+            public void onError(String message) {
+                runGeneration.runIfCurrent(runId, () -> listener.onError(message));
+            }
+        };
+    }
+
     private void run(RequestConfig config, Listener listener) {
         try {
             PanEndpoint endpoint = PanEndpointParser.parse(config.playbackUrl, config.playbackHeaders);
             String directUrl = endpoint.hasDirectUpstream() ? endpoint.upstreamUrl() : endpoint.playbackUrl();
             Map<String, String> directHeaders = endpoint.hasDirectUpstream() ? endpoint.upstreamHeaders() : config.playbackHeaders;
             boolean proxied = endpoint.hasDirectUpstream() && !sameUrl(endpoint.playbackUrl(), endpoint.upstreamUrl());
+            if (endpoint.hasDirectUpstream()) PanNetworkSafety.requireSafeRemoteHost(endpoint.upstreamHost());
             List<Integer> threads = PanBenchmarkPlan.sanitizeThreads(config.threadValues);
             int repeats = PanBenchmarkPlan.repeats(config.mode);
             int directGroups = 0;
@@ -291,9 +329,16 @@ public final class PanNetworkDiagnosticRunner {
             if (!response.isSuccessful() && response.code() != 416) throw httpError(response, label);
             long length = totalLength(response);
             ResponseBody body = response.body();
-            if (body != null && body.contentLength() >= 0 && body.contentLength() <= 64 * 1024) {
+            if (body != null && body.contentLength() >= 0 && body.contentLength() <= PanBenchmarkPlan.PROBE_BYTES) {
                 byte[] buffer = new byte[1024];
-                while (body.byteStream().read(buffer) >= 0) ensureRunning();
+                long bytes = 0;
+                InputStream stream = body.byteStream();
+                while (bytes < PanBenchmarkPlan.PROBE_BYTES) {
+                    ensureRunning();
+                    int read = stream.read(buffer, 0, (int) Math.min(buffer.length, PanBenchmarkPlan.PROBE_BYTES - bytes));
+                    if (read < 0) break;
+                    bytes += read;
+                }
             }
             if (SpiderDebug.isEnabled()) SpiderDebug.log("pan-diagnostic", "stage=%s length=%d contentLength=%d hasContentRange=%s", label, length, response.body() == null ? -1 : response.body().contentLength(), response.header("Content-Range") != null);
             return new Probe(length, response.code(), response.header("Accept-Ranges", ""));
@@ -302,12 +347,12 @@ public final class PanNetworkDiagnosticRunner {
 
     private void warmUpProxy(String url, Map<String, String> headers, long length, Listener listener,
                              int totalRounds) throws CancelledException {
-        post(listener, new Progress("正在预热Go代理", 0, totalRounds, 0, 0, PROXY_WARMUP_BYTES, 0, 0, Collections.emptyList()));
+        post(listener, new Progress("正在预热Go代理", 0, totalRounds, 0, 0, PanBenchmarkPlan.PROXY_WARMUP_BYTES, 0, 0, Collections.emptyList()));
         IOException lastError = null;
         for (int attempt = 0; attempt < 2; attempt++) {
-            long maxStart = Math.max(0, length - PROXY_WARMUP_BYTES);
-            long position = length <= 0 ? 0 : Math.min(maxStart, Math.max(0, length / 20 + attempt * PROXY_WARMUP_BYTES * 2));
-            Request request = request(url, headers).header("Range", "bytes=" + position + "-" + safeEnd(position, PROXY_WARMUP_BYTES)).build();
+            long maxStart = Math.max(0, length - PanBenchmarkPlan.PROXY_WARMUP_BYTES);
+            long position = length <= 0 ? 0 : Math.min(maxStart, Math.max(0, length / 20 + attempt * PanBenchmarkPlan.PROXY_WARMUP_BYTES * 2));
+            Request request = request(url, headers).header("Range", "bytes=" + position + "-" + safeEnd(position, PanBenchmarkPlan.PROXY_WARMUP_BYTES)).build();
             long bytes = 0;
             try (Response response = execute(request)) {
                 logResponse("Go代理预热", url, response.code());
@@ -315,9 +360,9 @@ public final class PanNetworkDiagnosticRunner {
                 ResponseBody body = response.body();
                 if (body == null) throw new IOException("Go代理预热响应没有数据");
                 byte[] buffer = new byte[64 * 1024];
-                while (bytes < PROXY_WARMUP_BYTES) {
+                while (bytes < PanBenchmarkPlan.PROXY_WARMUP_BYTES) {
                     ensureRunning();
-                    int read = body.byteStream().read(buffer, 0, (int) Math.min(buffer.length, PROXY_WARMUP_BYTES - bytes));
+                    int read = body.byteStream().read(buffer, 0, (int) Math.min(buffer.length, PanBenchmarkPlan.PROXY_WARMUP_BYTES - bytes));
                     if (read < 0) break;
                     bytes += read;
                 }
@@ -332,7 +377,7 @@ public final class PanNetworkDiagnosticRunner {
             cooldown();
         }
         String message = lastError == null ? "未知错误" : readableError(lastError);
-        post(listener, new Progress("Go代理预热未完成：" + message, 0, totalRounds, 0, 0, PROXY_WARMUP_BYTES, 0, 0, Collections.emptyList()));
+        post(listener, new Progress("Go代理预热未完成：" + message, 0, totalRounds, 0, 0, PanBenchmarkPlan.PROXY_WARMUP_BYTES, 0, 0, Collections.emptyList()));
     }
 
     private Measurement measureProxySafe(PanEndpoint endpoint, RequestConfig config, long preferredPosition, long length,

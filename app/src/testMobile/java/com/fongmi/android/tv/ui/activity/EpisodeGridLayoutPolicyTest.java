@@ -32,4 +32,20 @@ public class EpisodeGridLayoutPolicyTest {
         assertEquals(6, EpisodeGridLayoutPolicy.getMaxSpan(true, false));
         assertEquals(6, EpisodeGridLayoutPolicy.getMaxSpan(false, true));
     }
+
+    @Test
+    public void originalEnhancedFallbackUsesOneColumnForSingleEpisode() {
+        assertEquals(1, EpisodeGridLayoutPolicy.getOriginalEnhancedFallbackSpan(1, 40, 2));
+    }
+
+    @Test
+    public void originalEnhancedFallbackUsesThreeColumnsForShortTitles() {
+        assertEquals(3, EpisodeGridLayoutPolicy.getOriginalEnhancedFallbackSpan(12, 11, 2));
+    }
+
+    @Test
+    public void originalEnhancedFallbackHonoursTheUserEpisodeColumnForLongTitles() {
+        assertEquals(2, EpisodeGridLayoutPolicy.getOriginalEnhancedFallbackSpan(12, 12, 2));
+        assertEquals(1, EpisodeGridLayoutPolicy.getOriginalEnhancedFallbackSpan(12, 48, 1));
+    }
 }

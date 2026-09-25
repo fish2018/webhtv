@@ -1,0 +1,45 @@
+{
+  "protocol": "webhtv-subtitle",
+  "version": 1,
+  "name": "WebHTV built-in Python subtitle sources",
+  "subtitles": [
+    {
+      "key": "assrt",
+      "name": "ASSRT",
+      "type": 3,
+      "api": "py",
+      "ext": "assets://subtitle_sources/builtin/assrt.py",
+      "enabled": 1,
+      "priority": 30,
+      "protocolVersion": 1,
+      "params": {"token": "${ASSRT_TOKEN}"},
+      "languages": ["zh", "en"],
+      "formats": ["srt", "ass", "ssa", "vtt"]
+    },
+    {
+      "key": "xunlei",
+      "name": "Xunlei Subtitle",
+      "type": 3,
+      "api": "py",
+      "ext": "assets://subtitle_sources/builtin/xunlei.py",
+      "enabled": 1,
+      "priority": 20,
+      "protocolVersion": 1,
+      "languages": ["zh", "en"],
+      "formats": ["srt", "ass", "ssa", "vtt"]
+    },
+    {
+      "key": "shooter",
+      "name": "Shooter",
+      "type": 3,
+      "api": "py",
+      "ext": "assets://subtitle_sources/builtin/shooter.py",
+      "enabled": 1,
+      "priority": 10,
+      "queryIndependent": true,
+      "protocolVersion": 1,
+      "languages": ["zh", "en"],
+      "formats": ["srt", "ass", "ssa", "vtt"]
+    }
+  ]
+}

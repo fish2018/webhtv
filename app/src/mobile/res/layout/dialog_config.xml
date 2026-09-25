@@ -57,7 +57,9 @@
         app:endIconDrawable="@drawable/ic_action_choose"
         app:endIconMode="custom"
         app:endIconTint="@color/dialog_text_button"
-        app:hintTextColor="#5F6368">
+        app:hintTextColor="#5F6368"
+        app:startIconContentDescription="@string/dialog_config_choose_dir"
+        app:startIconDrawable="@drawable/ic_folder">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/url"
@@ -68,6 +70,29 @@
             android:inputType="text"
             android:scrollHorizontally="true"
             android:singleLine="true"
+            android:textColor="#202124"
+            android:textColorHint="#8A8F98" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="@string/dialog_config_addresses"
+        app:boxBackgroundColor="@color/white"
+        app:boxStrokeColor="@color/dialog_outlined_button_stroke"
+        app:hintTextColor="#5F6368">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/addresses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top|start"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine"
+            android:maxLines="4"
+            android:minLines="2"
             android:textColor="#202124"
             android:textColorHint="#8A8F98" />
 

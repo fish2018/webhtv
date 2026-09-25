@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/shape_site_dialog"
     android:orientation="vertical"
     android:padding="12dp">
@@ -44,9 +44,40 @@
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
-    <androidx.appcompat.widget.LinearLayoutCompat
+    <HorizontalScrollView
+        android:id="@+id/groupScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/groupList"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+    </HorizontalScrollView>
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/groupHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:accessibilityLiveRegion="polite"
+        android:importantForAccessibility="yes"
+        android:text="@string/site_group_sort_tv_hint"
+        android:textColor="@color/text"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
         <com.fongmi.android.tv.ui.custom.CustomRecyclerView
@@ -61,7 +92,7 @@
             android:paddingTop="0dp"
             android:paddingEnd="8dp"
             android:paddingBottom="4dp"
-            app:maxHeight="344dp"
+            app:maxHeight="360dp"
             tools:itemCount="5"
             tools:listitem="@layout/adapter_site" />
 

@@ -326,7 +326,7 @@ A 的源码、测试、本文和索引按 `E11-audio-startup-admission` guard �
 - Evidence：Sony BRAVIA 4K VH2 / Android 12 / armeabi-v7a；反馈日志中 AAC-LC 44.1 kHz stereo 的 encoded AudioTrack 接收 1,929,665 bytes、writeErrors=0、headFrames=0；10 秒后 `STUCK_PLAYING_NO_PROGRESS` / code 1003 被按 FATAL 处理。日志标记的基线 `88aceb110959ff50afc23b10d9b9abe3e0f53255` 与本次基线的策略/引擎文件一致；反馈 APK 标记 dirty，不能仅凭 revision 证明其全部内容。
 - Plan status：类型明确的错误路由、vendor 输出进度观察和 attempt/输出隔离已实现；Leanback armeabi-v7a 编译与 33 项定向测试通过，进入原子提交/tag 收尾。
 - Unverified edits：无未验证代码；任务内两个生产文件、一个测试文件及本文/索引待原子提交。本轮未打包 APK。
-- Risk / limit：本轮依据反馈日志和截图实施，尚未在反馈 Sony 上执行同片源回归；主机测试验证控制流与生命周期，不能冒充 Sony HAL 已通过回归。
+- Risk / limit：本轮依据反馈日志和截图实施，尚未在反馈 Sony 上执行同片源回归；主机测试验证控制流与生命周期，不能冒充 Sony HAL 已通过回归。2026-09-21 合并至 `dev2`（C4 第六轮）后复跑 26 项策略 + 7 项输出所有权测试，全部通过；使用 `unitTests.returnDefaultValues=true` 临时 init 脚本补足 `android.os.SystemClock` 等未打桩 Android API，未修改生产构建配置。
 - Rollback：本次 App 源码、测试、文档作为一个原子提交，可 revert 该提交；不涉及依赖或 native 制品。
 - Next action：使用当前 guard 原子提交并创建恢复 tag；完成后以该提交和 `recovery/E11-audio-direct-stall-fallback/*` 的 Git 记录作为恢复点，不为回填 ID 另开文档提交。
 
@@ -546,3 +546,29 @@ A 的源码、测试、本文和索引按 `E11-audio-startup-admission` guard �
 | `A14_Vorbis/Vorbis_2.0_44.1kHz_160kbps.ogg` | Vorbis，44.1 kHz，2.0，160 kbps，Ogg | AndroidX Media3 `2bc207851df311340767e913931ca7b28cab1794` `media.exolist.json`; `https://storage.googleapis.com/exoplayer-test-media-1/ogg/play.ogg` | `d5bdb7257d6b9bb2d22c005685e4fa0984db32ac1963b792414916ee79352f62` |
 
 `samples.ffmpeg.org` 是 MPlayer/FFmpeg 测试样本集合，新增样本仅用于本地/测试设备验证，不对外重新分发。
+
+### 单测门禁修复：夹具脱离 android.os.SystemClock（2026-09-21）
+
+- 问题：合并 `f836d419518d1a93d4ff77414a88558f3854c7e3` 后，以仓库真实单测配置（未开启 `unitTests.returnDefaultValues`）执行 `:app:testMobileArm64_v8aDebugUnitTest` 得到 4765 项 / 12 失败 / 1 跳过，失败全部在 `ExoCompressedAudioDirectPolicyTest`：夹具用 media3 `PlaybackException` 的公开构造函数，其内部调用 `android.os.SystemClock.elapsedRealtime()`，该 native 方法在 JVM 单测桩上抛出 `Method ... not mocked`。上游基线不含本地仓库的严格桩配置，因此该依赖在本地才暴露。
+- 修法：测试夹具改为经 `playbackError(errorCode, cause)` 构造 `TestPlaybackException`（`PlaybackException` 的带时间戳 protected 构造函数，显式 timestamp 0），只影响测试代码；生产路径 `requestPcmFallbackForStuckPlayback(PlaybackException)` 及其读取的 `errorCode`/`getCause()` 语义不变。
+- 拒绝的替代：全局开启 `testOptions.unitTests.returnDefaultValues = true`，会把所有单测的未实现框架方法静默降级为默认值，放宽既有门禁。
+- 验证（真实构建配置，无临时 init 脚本）：`:app:testMobileArm64_v8aDebugUnitTest` 全量 4765 项（失败 0、错误 0、跳过 1）`BUILD SUCCESSFUL`；`:app:testLeanbackArmeabi_v7aDebugUnitTest` 以 `com.fongmi.android.tv.player.exo.*` 与 `FlagSelectionListenerTest` 过滤执行 75 个测试类共 553 项（失败 0、错误 0、跳过 0）`BUILD SUCCESSFUL`，其中含被修复的 `ExoCompressedAudioDirectPolicyTest` 26 项。
+
+### 切换播放器后厂商直出初始化失败导致延迟卡顿（2026-09-21）
+
+- 用户现象：0904 版本音乐来回切换播放器顺畅；0921 版本才恢复音乐播放，但 MPV -> EXO 后 EXO 可显示首帧却不出声、界面持续缓冲，按下一曲或退出重开才恢复；MPV 也存在切换后长时间等待。两份用户日志：`webhtv-debug-log (21).txt`、`webhtv-debug-log_3.txt`。
+- 现场证据：`webhtv-debug-log_3.txt` 中 `p-6mbtnm-4` 于 `14:33:03.382` 开始连续 `AudioTrack init failed 0 Config(48000,12,10,262144/131072/100000)`，`p-6mcun2-7` 于 `14:33:52.065` 以 44100Hz 重复同一失败；两次都只记录 sink 回调与首帧，之后没有 `onPlayerError`、没有 PCM fallback，直到用户清播放或退出。对照初始起播的 `p-6mbmjg-2`，Media3 在 `14:32:54.448` 最终上报 `ERROR_CODE_AUDIO_TRACK_INIT_FAILED`，随后现有逻辑成功执行 `fallback=pcm`。
+- 根因：锁定 Media3 `1.11.0-alpha01-fongmi` 的 `DefaultAudioSink` 对非 offload 的 `AudioOutputProvider.InitializationException` 不立即上抛，而是放入 `PendingExceptionHolder`；其计时起点被全局 `pendingReleaseCount` 阻塞。切内核时旧 `AudioTrackAudioOutput.release()` 走异步释放，若 `onReleased` 未及时回到旧的 playback thread，新 sink 的初始化失败会被无限期延迟，App 层 `ExoPlayerEngine.handleError()` 因此没有机会执行已有 PCM 回退。0904 基线没有这套 vendor-direct 失败路径，所以切换不触发该等待。
+- 本地源码复核：`ExoCompressedAudioDirectPolicy.getAudioOutput()` 已在厂商直出初始化异常时执行 `disableVendorDirect()` 并设置 `pendingPcmFallback`；但 `ExoPlayerEngine` 只在最终 `PlaybackException` 到达时消费该请求，和日志断层完全对应。
+- 修法：策略层新增每输出 attempt 仅一次的 `InitializationFailureListener`，在初始化异常现场通知引擎；`ExoPlayerEngine` 用 attempt generation 与 request sequence 去重，将 PCM 重启投递到主线程，并在 `handleError()` 保留原最终错误回退作为兜底。`startInternal()`、`release()`、`rebuild()`、`stop()` 推进 generation，避免旧切换的延迟回调误重启新播放；`resetOutputProgress()` 清理本 attempt 的通知与请求状态。
+- 拒绝的替代：等待 Media3 固定延迟上抛会把用户可见卡顿保留；把 vendor-direct `OutputConfig` 伪装成 offload 会改变 Media3 的 offload/gapless/回退语义；修改锁定 AAR 需要额外二进制重建与更宽回滚范围，均不符合本次局部修复合同。
+- 验证：`:app:testLeanbackArmeabi_v7aDebugUnitTest --tests com.fongmi.android.tv.player.exo.ExoCompressedAudioDirectPolicyTest` 通过（含新增“初始化失败必须通知一次”用例），主源码 Java 编译通过。随后以 `scripts/build_arm64_debug_install.sh --serial 192.168.50.3:5557` 覆盖安装 mobile/arm64-v8a Debug 到 dev2，安装成功且未卸载原包；安装后 EXO 正常 PCM 播放会话中 `OMX.google.aac.decoder`、`audio.output.playhead` 持续前进。
+- 设备验证边界：dev2 对同一个 HLS AAC 样例返回 `exo-audio-direct: ... reason=no-direct-support`，没有进入用户 Sony 日志中的 `reason=vendor-direct` 失败分支，因此本轮不能把“原设备切换已通过”冒充为已验证结论；需要在会触发 vendor-direct 初始化失败的设备/片源上复测 MPV -> EXO 和 EXO -> MPV，预期日志应在首次 `disable ... reason=initialization` 后立即出现 `fallback=pcm`，而不是等待最终 `onPlayerError`。
+
+### dev5 未推送改动复评与 beta 交付准备（2026-09-21）
+
+- 冻结基线：`dev5@8325175e633951edc4c54c67671d239b0567b2fa`；`origin/beta@150e29340200a1cb2173880a3ef7b92651bc2879`；`upstream/main@8e4d9333de8ea7346491e71a0b1ab6858a852298`。远端 beta 和 fish2018/main 均为当前 HEAD 的祖先，合并树没有待解决差异。
+- 首轮审查范围：相对 `origin/beta` 的 5 个上游 Exo 修复提交、双父 merge、本地立即初始化失败回退接线、失败记忆、启动停滞 renderer 包装及对应测试。逐项检查了 attempt generation、初始化失败去重、失败配置禁用、PCM 确认与 TTL/容量清理，以及直通关闭时 format/config/output 三层准入；没有发现需要修改生产代码的缺陷。
+- 定向门禁：`bash ./gradlew --console=plain :app:testLeanbackArmeabi_v7aDebugUnitTest --tests com.fongmi.android.tv.player.exo.ExoCompressedAudioDirectPolicyTest --tests com.fongmi.android.tv.player.exo.ExoAudioDirectFailureMemoryTest --tests com.fongmi.android.tv.player.exo.ExoStartupRecoveryIntegrationTest --tests com.fongmi.android.tv.player.PlaybackErrorClassifierTest :app:compileLeanbackArm64_v8aDebugJavaWithJavac :app:compileMobileArm64_v8aDebugJavaWithJavac` 通过：81 项中 0 failure、0 error、1 项显式 `@Ignore`；Leanback/Mobile ARM64 Java 编译均通过，Gradle `BUILD SUCCESSFUL in 37s`。
+- 第二轮审查：对照仓库锁定 Media3 `1.11.0-alpha01-fongmi` 源码确认，`ExoStartupAudioRenderer` 发出的 `isRecoverable=true` renderer error 会进入 `ExoPlayerImplInternal.attemptRendererErrorRecovery()` / `reselectTracksInternalAndSeek()`，复用当前 prepared period；`DefaultAudioSink.flush()` 只释放旧输出，不会清除已记录的失败证据。结合测试结果再次核对未推送差异，未发现新增问题，因此没有为“修测试而修代码”的无效改动。
+- 交付边界：本轮没有连接模拟器或目标电视，不把主机控制流、Java 编译或受控 Media3 集成测试扩大为真实 HAL/Sony 播放验收；未改依赖锁、native 资产、AAR 或 MPV。未推送改动通过本次 guard 原子记录后推送 `dev5`，并以 `dev5 -> beta` PR 交付。

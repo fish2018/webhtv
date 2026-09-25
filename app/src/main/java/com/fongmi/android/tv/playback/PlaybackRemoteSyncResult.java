@@ -11,12 +11,23 @@ public class PlaybackRemoteSyncResult {
     public String message;
     public String configKey;
     public String nextSince;
+    public java.util.Map<String, String> cursors;
+    public String identityState;
+    public String identityEpoch;
+    public boolean identitySupported;
+    public String identityCanonicalKey;
+    public String identityMatchedBy;
+    public String identityMessage;
 
     public static PlaybackRemoteSyncResult success(PlaybackProgressBatchResult batch) {
         return success(batch, "", "");
     }
 
     public static PlaybackRemoteSyncResult success(PlaybackProgressBatchResult batch, String configKey, String nextSince) {
+        return success(batch, configKey, nextSince, null);
+    }
+
+    public static PlaybackRemoteSyncResult success(PlaybackProgressBatchResult batch, String configKey, String nextSince, java.util.Map<String, String> cursors) {
         PlaybackRemoteSyncResult result = new PlaybackRemoteSyncResult();
         result.success = true;
         result.fetched = batch == null ? 0 : batch.total;
@@ -27,6 +38,13 @@ public class PlaybackRemoteSyncResult {
         result.message = "";
         result.configKey = configKey == null ? "" : configKey;
         result.nextSince = nextSince == null ? "" : nextSince;
+        result.cursors = cursors;
+        result.identityState = "unknown";
+        result.identityEpoch = "";
+        result.identitySupported = false;
+        result.identityCanonicalKey = "";
+        result.identityMatchedBy = "";
+        result.identityMessage = "";
         return result;
     }
 
@@ -36,6 +54,13 @@ public class PlaybackRemoteSyncResult {
         result.message = message == null ? "" : message;
         result.configKey = "";
         result.nextSince = "";
+        result.cursors = null;
+        result.identityState = "unknown";
+        result.identityEpoch = "";
+        result.identitySupported = false;
+        result.identityCanonicalKey = "";
+        result.identityMatchedBy = "";
+        result.identityMessage = "";
         return result;
     }
 }

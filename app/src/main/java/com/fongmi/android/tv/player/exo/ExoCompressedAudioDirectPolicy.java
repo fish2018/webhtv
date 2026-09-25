@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class ExoCompressedAudioDirectPolicy
@@ -103,6 +104,9 @@ public final class ExoCompressedAudioDirectPolicy
     private final OutputEnvironment environment;
     private volatile boolean audioPassthroughEnabled = true;
     private final AtomicReference<OutputKey> pendingPcmFallback = new AtomicReference<>();
+    private final AtomicBoolean initializationFailureNotified = new AtomicBoolean();
+    private final AtomicReference<Runnable> initializationFailureListener =
+            new AtomicReference<>();
     private final ExoAudioOutputState audioOutputState = new ExoAudioOutputState();
     private final AtomicReference<OutputAttempt> outputAttempt =
             new AtomicReference<>(new OutputAttempt());
@@ -325,10 +329,12 @@ public final class ExoCompressedAudioDirectPolicy
                     attempt.currentOutput.set(output);
                     return audioOutputState.track(output, config);
                 } catch (AudioOutputProvider.InitializationException error) {
-                    synchronized (outputAttempt) {
-                        if (vendorDirect && outputAttempt.get() == attempt) {
+                    if (vendorDirect && outputAttempt.get() == attempt) {
+                        synchronized (outputAttempt) {
+                            if (outputAttempt.get() != attempt) throw error;
                             disableVendorDirect(config, "initialization");
                         }
+                        notifyInitializationFailure();
                     }
                     throw error;
                 }
@@ -405,9 +411,18 @@ public final class ExoCompressedAudioDirectPolicy
         return pendingPcmFallback.getAndSet(null) != null;
     }
 
+    /**
+     * Registers a listener that can begin the PCM fallback without waiting for Media3's
+     * delayed audio initialization error.
+     */
+    public void setInitializationFailureListener(Runnable listener) {
+        initializationFailureListener.set(listener);
+    }
+
     /** Forget retired output evidence without retrying a failed configuration. */
     public void resetOutputProgress() {
         synchronized (outputAttempt) {
+            initializationFailureNotified.set(false);
             outputAttempt.get().cancelRecovery();
             outputAttempt.set(new OutputAttempt());
             pendingPcmFallback.set(null);
@@ -418,6 +433,7 @@ public final class ExoCompressedAudioDirectPolicy
     public void prepareForPlayback(String url, boolean pcmRetry) {
         String media = ExoAudioDirectFailureMemory.mediaId(url);
         synchronized (outputAttempt) {
+            initializationFailureNotified.set(false);
             OutputAttempt previous = outputAttempt.get();
             Recovery recovery = pcmRetry && media != null && media.equals(previous.media)
                     ? previous.failure : null;
@@ -576,9 +592,9 @@ public final class ExoCompressedAudioDirectPolicy
     private boolean remembersFailure(AudioOutputProvider.FormatConfig config,
                                      AudioAttributes attributes) {
         OutputAttempt attempt = outputAttempt.get();
+        if (config.preferredDevice != null || attempt.media == null) return false;
         long nowMs = clock.elapsedRealtime();
-        if (config.preferredDevice != null
-                || !failureMemory.hasMedia(attempt.media, nowMs)) return false;
+        if (!failureMemory.hasMedia(attempt.media, nowMs)) return false;
         ExoAudioDirectFailureMemory.Route route = environment.expectedRoute(attributes);
         if (route == null) return false;
         return failureMemory.contains(new ExoAudioDirectFailureMemory.Key(attempt.media,
@@ -735,6 +751,12 @@ public final class ExoCompressedAudioDirectPolicy
                     "disable encoding=%d sampleRate=%d channelMask=0x%X reason=%s",
                     key.output.encoding(), key.output.sampleRate(), key.output.channelMask(), reason);
         }
+    }
+
+    private void notifyInitializationFailure() {
+        if (!initializationFailureNotified.compareAndSet(false, true)) return;
+        Runnable listener = initializationFailureListener.get();
+        if (listener != null) listener.run();
     }
 
     private static final class OutputAttempt {

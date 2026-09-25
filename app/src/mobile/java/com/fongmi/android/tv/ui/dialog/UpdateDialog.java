@@ -48,8 +48,9 @@ public class UpdateDialog extends BaseAlertDialog {
 
     public UpdateDialog selected(String selected) {
         this.selected = selected;
-        this.stableExpanded = !Update.CHANNEL_BETA.equals(selected);
-        this.betaExpanded = Update.CHANNEL_BETA.equals(selected);
+        boolean betaAvailable = hasBeta();
+        this.stableExpanded = !betaAvailable && !Update.CHANNEL_BETA.equals(selected);
+        this.betaExpanded = betaAvailable && Update.CHANNEL_BETA.equals(selected);
         return this;
     }
 

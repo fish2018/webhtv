@@ -535,6 +535,7 @@ function normalizeSyncOptions(options) {
     search: options.search !== false,
     keep: options.keep !== false,
     history: options.history !== false,
+    follow: options.follow === true,
     settings: options.settings === true,
     paths: typeof options.paths === 'string' ? options.paths : undefined
   };

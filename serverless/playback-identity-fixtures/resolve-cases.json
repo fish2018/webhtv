@@ -1,0 +1,6 @@
+[
+  {"name":"empty registration","configType":"vod","sourceDataState":"empty","expected":"create"},
+  {"name":"exact address adopts","configType":"vod","sourceDataState":"empty","expected":"adopt"},
+  {"name":"host only confirms","configType":"vod","sourceDataState":"empty","expected":"confirm_required"},
+  {"name":"same token type isolated","configType":"live","sourceDataState":"empty","expected":"create"}
+]

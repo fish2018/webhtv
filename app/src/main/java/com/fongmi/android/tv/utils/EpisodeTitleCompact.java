@@ -80,14 +80,31 @@ public final class EpisodeTitleCompact {
     }
 
     public static void apply(List<Episode> episodes) {
-        if (episodes == null || episodes.isEmpty()) return;
-        if (!Setting.isCompactEpisodeTitle()) {
-            for (Episode episode : episodes) episode.setDisplayName(null);
-            return;
-        }
-        List<String> rawNames = new ArrayList<>();
+        apply(episodes, compute(episodes, Setting.isCompactEpisodeTitle()));
+    }
+
+    public static List<String> compute(List<Episode> episodes, boolean compactEnabled) {
+        if (episodes == null || episodes.isEmpty()) return new ArrayList<>();
+        List<String> rawNames = new ArrayList<>(episodes.size());
         for (Episode episode : episodes) rawNames.add(episode.getRawDisplayName());
-        List<String> displayNames = compact(rawNames);
+        return computeRaw(rawNames, compactEnabled);
+    }
+
+    public static List<String> computeRaw(List<String> rawNames, boolean compactEnabled) {
+        List<String> displayNames = new ArrayList<>();
+        if (rawNames == null || rawNames.isEmpty()) return displayNames;
+        if (!compactEnabled) {
+            for (int i = 0; i < rawNames.size(); i++) displayNames.add(null);
+            return displayNames;
+        }
+        return compact(rawNames);
+    }
+
+    public static void apply(List<Episode> episodes, List<String> displayNames) {
+        if (episodes == null || episodes.isEmpty()) return;
+        if (displayNames == null || displayNames.size() != episodes.size()) {
+            throw new IllegalArgumentException("Display names must match episode count");
+        }
         for (int i = 0; i < episodes.size(); i++) episodes.get(i).setDisplayName(displayNames.get(i));
     }
 

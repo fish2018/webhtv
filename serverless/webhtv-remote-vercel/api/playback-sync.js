@@ -1,4 +1,6 @@
+import { parseIdentityRequest, resolveIdentity, resolveConfigKey, normalizeConfigType, identityCapabilities } from '../../playback-identity-fixtures/identity.js';
 const PLAYBACK_SYNC_PATHS = new Set(['/api/playback/sync', '/playback/sync']);
+const IDENTITY_RESOLVE_PATHS = new Set(['/api/playback/identity/resolve', '/playback/identity/resolve']);
 const PLAYBACK_SCHEMA = 'webhtv.playback.v1';
 const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -12,7 +14,7 @@ export function isPlaybackSyncPath(pathname) {
   const path = normalizePath(pathname);
   if (PLAYBACK_SYNC_PATHS.has(path)) return true;
   for (const base of PLAYBACK_SYNC_PATHS) if (path === `${base}/status`) return true;
-  return false;
+  return IDENTITY_RESOLVE_PATHS.has(path);
 }
 
 export async function handlePlaybackSyncRequest(request, store) {
@@ -25,6 +27,12 @@ export async function handlePlaybackSyncRequest(request, store) {
 
     const url = new URL(request.url);
     const path = normalizePath(url.pathname);
+    if (IDENTITY_RESOLVE_PATHS.has(path)) {
+      if (request.method !== 'POST') throw playbackHttpError(405, 'Method not allowed');
+      const input = parseIdentityRequest(await readPlaybackJson(request), request.headers);
+      const result = await resolveIdentity(store, token, input);
+      return playbackCors(playbackJson(result.body, result.status));
+    }
     const statusPath = [...PLAYBACK_SYNC_PATHS].some((base) => path === `${base}/status`);
     if (statusPath && request.method !== 'GET') throw playbackHttpError(405, 'Method not allowed');
     if (!statusPath && !PLAYBACK_SYNC_PATHS.has(path)) throw playbackHttpError(404, 'Not found');
@@ -32,11 +40,13 @@ export async function handlePlaybackSyncRequest(request, store) {
     if (request.method === 'POST' && !statusPath) return playbackCors(await ingestPlayback(request, store, token));
     if (request.method === 'GET') {
       const configKey = requireConfigKey(request);
-      const spaceKey = await playbackSpaceKey(token, configKey);
+      const configType = normalizeConfigType(request.headers.get('x-webhtv-config-type') || url.searchParams.get('configType'));
+      const canonicalKey = await resolveConfigKey(store, token, configType, configKey, requestAliases(request));
+      const spaceKey = await playbackSpaceKey(token, canonicalKey, configType);
       const snapshot = await loadPlaybackStore(store, spaceKey);
       const state = normalizePlaybackState(snapshot.state);
       return playbackCors(statusPath
-        ? playbackStatus(state, configKey, url)
+        ? playbackStatus(state, canonicalKey, url)
         : pullPlayback(state, request, url));
     }
     throw playbackHttpError(405, 'Method not allowed');
@@ -71,7 +81,9 @@ export function createMemoryPlaybackStore() {
 
 async function ingestPlayback(request, store, token) {
   const body = await readPlaybackJson(request);
-  const configKey = requireConfigKey(request, body);
+  const submittedConfigKey = requireConfigKey(request, body);
+  const configType = normalizeConfigType(request.headers.get('x-webhtv-config-type') || body.configType || 'vod');
+  const configKey = await resolveConfigKey(store, token, configType, submittedConfigKey, requestAliases(request, body));
   const rawEvents = extractPlaybackEvents(body);
   if (!rawEvents.length) throw playbackHttpError(400, 'Playback event is empty');
   if (rawEvents.length > MAX_BATCH_ITEMS) throw playbackHttpError(413, `Too many playback events; maximum is ${MAX_BATCH_ITEMS}`);
@@ -81,7 +93,7 @@ async function ingestPlayback(request, store, token) {
     : '';
   const now = Date.now();
   const events = rawEvents.map((raw) => normalizePlaybackEvent(raw, configKey, now, sharedEventId));
-  const spaceKey = await playbackSpaceKey(token, configKey);
+  const spaceKey = await playbackSpaceKey(token, configKey, configType);
 
   for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
     const snapshot = await loadPlaybackStore(store, spaceKey);
@@ -183,6 +195,9 @@ function playbackStatus(state, configKey, url) {
   return playbackJson({
     ok: true,
     configKey,
+    identityProtocol: 'webhtv.playback.identity.v1',
+    addressMatchVersion: 1,
+    capabilities: identityCapabilities(),
     items: Object.keys(state.items).length,
     tombstones: tombstones.length,
     nextSince: String(latest),
@@ -416,6 +431,13 @@ async function readPlaybackJson(request) {
   }
 }
 
+function requestAliases(request, body = null) {
+  const header = String(request.headers.get('x-webhtv-config-aliases') || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const bodyAliases = body && !Array.isArray(body) && Array.isArray(body.configAliases) ? body.configAliases.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  if (header.length && bodyAliases.length && JSON.stringify(header) !== JSON.stringify(bodyAliases)) throw playbackHttpError(400, 'configAliases does not match X-WebHTV-Config-Aliases');
+  return [...new Set([...header, ...bodyAliases])].slice(0, 16);
+}
+
 function requireConfigKey(request, body = null) {
   const header = validatedConfigKey(request.headers.get('x-webhtv-config-key'));
   const bodyKey = body && !Array.isArray(body) ? validatedConfigKey(body.configKey || body.config_key) : '';
@@ -511,9 +533,10 @@ function playbackToken(request) {
   return match ? String(match[1] || '').trim() : '';
 }
 
-async function playbackSpaceKey(token, configKey) {
+async function playbackSpaceKey(token, configKey, configType = 'vod') {
   const [tokenHash, configHash] = await Promise.all([sha256(token), sha256(configKey)]);
-  return `${tokenHash}:${configHash}`;
+  const type = normalizeConfigType(configType);
+  return type === 'vod' ? `${tokenHash}:${configHash}` : `${tokenHash}:${type}:${configHash}`;
 }
 
 function basePlaybackPath(pathname) {
@@ -585,6 +608,11 @@ function playbackCors(response) {
     'x-webhtv-token',
     'x-webhtv-config-key',
     'x-webhtv-config-name',
+    'x-webhtv-config-aliases',
+    'x-webhtv-config-type',
+    'x-webhtv-identity-version',
+    'x-webhtv-address-match-version',
+    'x-webhtv-request-id',
     'x-webhtv-timestamp',
     'x-webhtv-since',
     'x-webhtv-limit',

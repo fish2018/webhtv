@@ -1,5 +1,7 @@
 package com.fongmi.android.tv.utils;
 
+import com.fongmi.android.tv.bean.Episode;
+
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -417,6 +419,24 @@ public class EpisodeTitleCompactTest {
                 "ファイナルライブ2010 [1.86GB]",
                 "銀幕版 天下分け目の戦 [1.52GB]"
         ), displays.subList(51, 57));
+    }
+
+    @Test
+    public void computesDisplayNamesWithoutMutatingEpisodesUntilApplied() {
+        Episode first = Episode.create("Show S01E01 Alpha 1080p.mkv", "https://example.test/1");
+        Episode second = Episode.create("Show S01E02 Beta 1080p.mkv", "https://example.test/2");
+        List<Episode> episodes = List.of(first, second);
+
+        List<String> displayNames = EpisodeTitleCompact.compute(episodes, true);
+
+        assertEquals(List.of("S01E01 Alpha", "S01E02 Beta"), displayNames);
+        assertEquals(first.getRawDisplayName(), first.getDisplayName());
+        assertEquals(second.getRawDisplayName(), second.getDisplayName());
+
+        EpisodeTitleCompact.apply(episodes, displayNames);
+
+        assertEquals("S01E01 Alpha", first.getDisplayName());
+        assertEquals("S01E02 Beta", second.getDisplayName());
     }
 
     private List<String> loadFixture(String resource) throws Exception {

@@ -14,6 +14,7 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.impl.SiteListener;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.textview.MaterialTextView;
@@ -48,8 +49,18 @@ public class CustomTitleView extends MaterialTextView {
         });
     }
 
+    public void setSiteLocked(boolean locked) {
+        setCompoundDrawablesRelativeWithIntrinsicBounds(locked ? R.drawable.ic_home_lock : 0, 0, 0, 0);
+    }
+
+    private boolean isSiteSwitchKey(KeyEvent event) {
+        return KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event);
+    }
+
     private boolean hasEvent(KeyEvent event) {
-        return !getHome().isEmpty() && (KeyUtil.isLeftKey(event) || KeyUtil.isRightKey(event) || (KeyUtil.isUpKey(event) && !coolDown));
+        if (getHome().isEmpty()) return false;
+        if (KeyUtil.isUpKey(event)) return !coolDown;
+        return isSiteSwitchKey(event);
     }
 
     @Override
@@ -61,6 +72,7 @@ public class CustomTitleView extends MaterialTextView {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (Setting.isHomeSiteLock() && isSiteSwitchKey(event)) return true;
         if (!hasEvent(event)) return super.dispatchKeyEvent(event);
         onKeyDown(event);
         return true;

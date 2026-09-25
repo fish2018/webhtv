@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="64dp"
+    android:background="@drawable/selector_ad_rule"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/siteName"
+                android:layout_width="180dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/siteDomain"
+                android:layout_width="150dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/playbackContext"
+                android:layout_width="170dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/lineName"
+                android:layout_width="130dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/episodeName"
+                android:layout_width="170dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/ruleDomain"
+                android:layout_width="170dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/adDomain"
+                android:layout_width="170dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/blockedAt"
+                android:layout_width="160dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/segmentStart"
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/segmentEnd"
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/segmentDuration"
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/pipeline"
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="2"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="13sp" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

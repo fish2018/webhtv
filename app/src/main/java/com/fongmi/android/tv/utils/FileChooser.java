@@ -21,13 +21,23 @@ import com.fongmi.android.tv.ui.activity.FileActivity;
 import com.github.catvod.utils.Path;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class FileChooser {
+
+    private static final long MAX_IMPORT_BYTES = 32L * 1024L * 1024L;
 
     private final ActivityResultLauncher<Intent> launcher;
 
@@ -86,6 +96,11 @@ public class FileChooser {
         return getPathFromUri(App.get(), uri);
     }
 
+    /** 为长期保存的配置导入项返回持久路径，避免系统 cache 清理或同名文件覆盖。 */
+    public static String getPersistentPathFromUri(Uri uri) {
+        return getPathFromUri(App.get(), uri, true);
+    }
+
     public static List<String> getPathsFromIntent(Intent intent) {
         List<String> paths = new ArrayList<>();
         if (intent == null) return paths;
@@ -103,12 +118,36 @@ public class FileChooser {
     }
 
     private static String getPathFromUri(Context context, Uri uri) {
+        return getPathFromUri(context, uri, false);
+    }
+
+    private static String getPathFromUri(Context context, Uri uri, boolean persistent) {
         if (uri == null) return null;
         String path = null;
+        boolean encoded = true;
         if (DocumentsContract.isDocumentUri(context, uri)) path = getPathFromDocumentUri(context, uri);
         else if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) path = getDataColumn(context, uri);
-        else if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme())) path = uri.getPath();
-        return path != null ? URLDecoder.decode(path, StandardCharsets.UTF_8) : createFileFromUri(context, uri);
+        else if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(uri.getScheme())) {
+            // FileActivity 用 Uri.fromFile 生成，getPath() 已是明文；再解码会把 `+` 变成空格。
+            path = uri.getPath();
+            encoded = false;
+        }
+        if (path != null) {
+            String decoded = encoded ? decodePath(path) : path;
+            // 解码可能猜错：document/content 拿到的路径其实也已是明文，而 `+` 会被解成空格。
+            // 解码结果不存在、原文存在时一律用原文——非持久分支同样受影响（字幕/弹幕都走这里）。
+            if (!decoded.equals(path) && !new File(decoded).exists() && new File(path).exists()) return path;
+            if (!persistent || new File(decoded).exists()) return decoded;
+        }
+        return createFileFromUri(context, uri, persistent);
+    }
+
+    private static String decodePath(String path) {
+        try {
+            return URLDecoder.decode(path, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return path;
+        }
     }
 
     private static String getPathFromDocumentUri(Context context, Uri uri) {
@@ -148,18 +187,87 @@ public class FileChooser {
         };
     }
 
-    private static String createFileFromUri(Context context, Uri uri) {
+    private static String createFileFromUri(Context context, Uri uri, boolean persistent) {
         String[] projection = {MediaStore.MediaColumns.DISPLAY_NAME};
         try (Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null)) {
             if (cursor == null || !cursor.moveToFirst()) return null;
-            InputStream is = context.getContentResolver().openInputStream(uri);
-            if (is == null) return null;
             int column = cursor.getColumnIndexOrThrow(projection[0]);
-            File file = Path.cache(cursor.getString(column));
-            Path.copy(is, file);
-            return file.getAbsolutePath();
+            String name = cursor.getString(column);
+            try (InputStream is = context.getContentResolver().openInputStream(uri)) {
+                if (is == null) return null;
+                if (!persistent) {
+                    File target = Path.cache(name);
+                    Path.copy(is, target);
+                    return target.isFile() && target.length() > 0 ? target.getAbsolutePath() : null;
+                }
+                return persistentImport(is, name, Path.files("cat_source_imports"));
+            }
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    /**
+     * 导入目录在内部存储里，系统「清理缓存」清不掉，所以不能每次导入都留一份新副本。
+     *
+     * <p>按内容 md5 命名做天然去重：反复导入同一个包只占一份，而不同内容各自独立，
+     * 也不需要删除任何文件——已保存的配置仍指向自己那一份。先写临时文件再原子移动，
+     * 中断不会留下残缺文件。temp 在拿到流之后才建，避免 {@code openInputStream}
+     * 返回 null 时留下 0 字节的 {@code .import-*.tmp}。
+     *
+     * <p>{@code dir} 由调用方传入，好让单测不依赖 {@code Path.files()} 背后的 Android Context。
+     */
+    static String persistentImport(InputStream is, String name, File dir) throws IOException {
+        dir.mkdirs();
+        File temp = File.createTempFile(".import-", ".tmp", dir);
+        try {
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException e) {
+                throw new IOException("MD5 不可用", e);
+            }
+            long total = 0;
+            try (FileOutputStream out = new FileOutputStream(temp)) {
+                byte[] buffer = new byte[65536];
+                int length;
+                while ((length = is.read(buffer)) != -1) {
+                    total += length;
+                    if (total > MAX_IMPORT_BYTES) throw new IOException("导入文件超过大小限制");
+                    digest.update(buffer, 0, length);
+                    out.write(buffer, 0, length);
+                }
+            }
+            if (total == 0) throw new IOException("导入文件为空");
+            File target = new File(dir, hex(digest.digest()) + "_" + safeName(name));
+            if (target.isFile() && target.length() == total) {
+                temp.delete();
+                return target.getAbsolutePath();
+            }
+            moveImport(temp, target);
+            return target.isFile() && target.length() > 0 ? target.getAbsolutePath() : null;
+        } catch (Exception e) {
+            if (temp.exists()) temp.delete();
+            throw e;
+        }
+    }
+
+    private static String safeName(String name) {
+        String base = name == null ? "import" : new File(name).getName();
+        return base.replaceAll("[^A-Za-z0-9._-]", "_");
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder value = new StringBuilder(bytes.length * 2);
+        for (byte item : bytes) value.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+        return value.toString();
+    }
+
+    private static void moveImport(File source, File target) throws IOException {
+        try {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

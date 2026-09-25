@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/following_page_bg"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingTop="28dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/check"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:nextFocusRight="@id/filter"
+                android:nextFocusDown="@id/recycler"
+                android:text="@string/following_check_all"
+                android:textSize="13sp"
+                android:textColor="@color/following_button_primary_text"
+                app:backgroundTint="@color/following_button_primary_bg" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/readAll"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:nextFocusLeft="@id/check"
+                android:nextFocusRight="@id/filter"
+                android:nextFocusDown="@id/recycler"
+                android:text="@string/following_read_all"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="13sp"
+                app:backgroundTint="@color/following_button_secondary_bg" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/filter"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:nextFocusLeft="@id/readAll"
+                android:nextFocusRight="@id/alistImport"
+                android:nextFocusDown="@id/recycler"
+                android:layout_marginStart="8dp"
+                android:text="@string/following_filter_updates"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="13sp"
+                app:backgroundTint="@color/following_button_secondary_bg" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/alistImport"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:nextFocusLeft="@id/filter"
+                android:nextFocusDown="@id/recycler"
+                android:layout_marginStart="8dp"
+                android:text="@string/following_server_import"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="13sp"
+                app:backgroundTint="@color/following_button_secondary_bg" />
+
+            <TextView
+                android:id="@+id/summary"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/following_text_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingTop="4dp"
+                android:paddingBottom="18dp"
+                android:scrollbars="vertical" />
+
+            <LinearLayout
+                android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_home_following" />
+
+                <TextView
+                    android:id="@+id/emptyText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:text="@string/following_empty"
+                    android:textColor="@color/following_text_secondary"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>

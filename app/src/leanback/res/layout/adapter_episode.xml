@@ -1,17 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- TV版选集按钮 - 简单文本模式 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/text"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:background="@drawable/selector_video_item"
-    android:ellipsize="marquee"
-    android:focusable="true"
-    android:focusableInTouchMode="true"
-    android:gravity="center"
-    android:nextFocusUp="@id/array"
-    android:nextFocusDown="@id/part"
-    android:singleLine="true"
-    android:textColor="@color/text"
-    android:textSize="16sp"
-    tools:text="20" />
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/selector_video_item"
+        android:ellipsize="marquee"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:nextFocusUp="@id/array"
+        android:nextFocusDown="@id/part"
+        android:scrollHorizontally="true"
+        android:singleLine="true"
+        android:textColor="@color/text"
+        android:textSize="16sp"
+        tools:text="第20集" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/nativeFileSize"
+        android:layout_width="wrap_content"
+        android:layout_height="22dp"
+        android:layout_gravity="start|center_vertical"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/shape_episode_card_badge"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxWidth="88dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:singleLine="true"
+        android:textColor="@android:color/white"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="[44.01GB]"
+        tools:visibility="visible" />
+
+</FrameLayout>

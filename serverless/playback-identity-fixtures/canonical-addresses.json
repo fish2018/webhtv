@@ -1,0 +1,10 @@
+[
+  {"a":"HTTPS://API.Example.com:443/config.json#x","b":"https://api.example.com/config.json","strict":"same","endpoint":"same"},
+  {"a":"http://api.example.com:80/config.json","b":"https://api.example.com/config.json","strict":"different","endpoint":"same"},
+  {"a":"https://api.example.com/a.json","b":"https://api.example.com/b.json","strict":"different","endpoint":"different","host":"same"},
+  {"a":"https://api.example.com/a.json?x=1&y=2","b":"https://api.example.com/a.json?y=2&x=1","endpoint":"different"},
+  {"a":"https://api.example.com/a.json","b":"https://api.example.com/a.json#fragment","strict":"same"},
+  {"a":"https://api.example.com/a/../b.json","b":"https://api.example.com/b.json","endpoint":"same"},
+  {"a":"https://a.example.com/api.json","b":"https://b.example.com/api.json","endpoint":"different"},
+  {"a":"https://api.example.com","b":"https://api.example.com/","endpoint":"same"}
+]

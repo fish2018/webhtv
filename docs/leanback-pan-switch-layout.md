@@ -25,7 +25,7 @@
 
 - Leanback armeabi-v7a Debug Java 编译通过。
 - Robolectric 4.16 / Android 9（API 28），`FlagSelectionListenerTest` 共 8 项，0 失败、0 错误、0 跳过，测试耗时 20.536 秒；最终 Gradle 运行 `BUILD SUCCESSFUL`，共 46 秒。
-- 真实 RecyclerView 观察者确认 `setNextFocusDown` 和 `toggle` 在布局临界区都会抛出截图中的异常。
+- 真实 RecyclerView 观察者确认 `setNextFocusDown` 在布局临界区会抛出截图中的异常。`toggle` 在本地 `cb21feb42287e2299b3cbc9a6c911254b58060aa` 已改为布局期不通知列表（上游 `fa09d226f9` 的 `notifyDataSetChanged()` 是不同基线），因此合并到 `dev2` 后该测试只断言焦点刷新异常，不再要求 `toggle` 抛出。
 - 真实 Leanback 布局确实触发选择回调，修复后在布局结束才切换线路并更新焦点与剧集。
 - 快速连续切换只执行最后一次；无效位置、同名线路对象替换、adapter 替换及视图离开窗口均不执行旧选择。
 
@@ -38,6 +38,7 @@
 ## Recovery anchor
 
 - 已完成：截图/本地调用链分析、任务保护、最小修复、Java 编译及 8 项 Android 9 回归。
+- 2026-09-21 C4 第六轮合并复核：本地 `onVideoTouch`（含 `dispatchDiscMenuTouch` 前置）优先于上游整行替换，保留触摸优化与蓝光菜单触摸；`FlagSelectionListener` 按上游引入并在 `dev2` 上重跑 8 项测试通过。
 - 未验证：受影响 XGIMI 实机的网盘播放全流程。
 - 回滚：本任务单独提交，可整体 revert；上一个已验证状态为上述基线。
 - 本记录随修复原子提交，恢复标签使用 `recovery/leanback-pan-switch-layout/` 前缀。

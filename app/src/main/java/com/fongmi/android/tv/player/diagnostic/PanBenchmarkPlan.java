@@ -11,6 +11,8 @@ public final class PanBenchmarkPlan {
     public static final int DEFAULT_MAX_THREADS = 8;
     public static final int MAX_THREADS = 256;
     public static final int MAX_DIRECT_CONCURRENCY = 32;
+    public static final long PROBE_BYTES = 64L * 1024L;
+    public static final long PROXY_WARMUP_BYTES = 512L * 1024L;
     private static final long MIB = 1024L * 1024L;
     private static final long MIN_BYTES_PER_WORKER = 4L * MIB;
     private static final int[] STANDARD_STEPS = {1, 2, 4, 8, 16, 32, 64, 128, 256};
@@ -75,6 +77,33 @@ public final class PanBenchmarkPlan {
         return total;
     }
 
+    public static long estimatePlannedBytes(long requiredBitsPerSecond, Collection<Integer> threads, Mode mode, boolean proxied) {
+        List<Integer> values = sanitizeThreads(threads);
+        int maxThreads = values.get(values.size() - 1);
+        int appThreads = proxied ? maxThreads : 1;
+        return estimatePlannedBytes(requiredBitsPerSecond, values, mode, proxied, appThreads);
+    }
+
+    public static long estimatePlannedBytes(long requiredBitsPerSecond, Collection<Integer> threads, Mode mode, boolean proxied, int appThreads) {
+        List<Integer> values = sanitizeThreads(threads);
+        int repeats = repeats(mode);
+        int normalizedAppThreads = normalizeThreads(appThreads);
+        long total = PROBE_BYTES;
+        if (proxied) total = addSaturated(total, multiplySaturated(PROXY_WARMUP_BYTES, 2));
+        for (int repeat = 0; repeat < repeats; repeat++) {
+            total = addSaturated(total, roundBudgetBytes(requiredBitsPerSecond, 1, mode));
+            if (proxied) {
+                for (int value : values) {
+                    total = addSaturated(total, retryableBudgetBytes(requiredBitsPerSecond, value, mode));
+                    if (value > 1) total = addSaturated(total, roundBudgetBytes(requiredBitsPerSecond, directConcurrency(value), mode));
+                }
+            }
+            total = addSaturated(total, retryableBudgetBytes(requiredBitsPerSecond, normalizedAppThreads, mode));
+            if (proxied && repeats > 1) total = addSaturated(total, retryableBudgetBytes(requiredBitsPerSecond, normalizedAppThreads, mode));
+        }
+        return total;
+    }
+
     public static int normalizeThreads(int value) {
         return Math.max(1, Math.min(value, MAX_THREADS));
     }
@@ -87,6 +116,10 @@ public final class PanBenchmarkPlan {
         if (left <= 0 || right <= 0) return 0;
         if (left > Long.MAX_VALUE / right) return Long.MAX_VALUE;
         return left * right;
+    }
+
+    private static long retryableBudgetBytes(long requiredBitsPerSecond, int threads, Mode mode) {
+        return multiplySaturated(roundBudgetBytes(requiredBitsPerSecond, threads, mode), 2);
     }
 
     private static long addSaturated(long left, long right) {

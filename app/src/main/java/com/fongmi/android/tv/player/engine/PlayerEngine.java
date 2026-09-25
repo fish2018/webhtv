@@ -53,8 +53,39 @@ public interface PlayerEngine {
         start(spec, position, playWhenReady);
     }
 
+    /**
+     * Whether this engine can append one already-resolved VOD item without replacing playback.
+     * Native and system engines remain unsupported unless they implement the full contract.
+     */
+    default boolean supportsPlaylistQueue() {
+        return false;
+    }
+
+    /** Appends one prepared source to the current playlist without starting or preparing it. */
+    default boolean appendPlaylistItem(PlaySpec spec, String mediaId) {
+        return false;
+    }
+
+    /** Removes only media items after the currently playing item. */
+    default boolean removePlaylistItemsAfterCurrent() {
+        return false;
+    }
+
+    /** Configures bounded playlist preloading; unsupported engines keep the old path. */
+    default boolean setPlaylistPreloadDurationMs(long durationMs) {
+        return false;
+    }
+
+    /** Commits business/diagnostic context after a natural transition to a queued item. */
+    default boolean commitPlaylistTransition(PlaySpec spec) {
+        return false;
+    }
+
     default void stop() {
         getPlayer().stop();
+    }
+
+    default void cancelPendingPrepare() {
     }
 
     void setMetadata(MediaMetadata data);
@@ -66,6 +97,10 @@ public interface PlayerEngine {
     void setTrack(List<Track> tracks);
 
     void resetTrack();
+
+default void resetTrack(int type) {
+        resetTrack();
+    }
 
     default void restoreVideoTrack() {
     }
@@ -79,6 +114,9 @@ public interface PlayerEngine {
     }
 
     default void setVideoEffects(List<Effect> effects) {
+    }
+
+    default void setVideoAspect(float aspectRatio, boolean stretch) {
     }
 
     default boolean supportsNativeLut() {

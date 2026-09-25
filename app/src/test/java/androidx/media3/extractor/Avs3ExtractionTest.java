@@ -22,7 +22,15 @@ import org.junit.Test;
 /** Runs against the shipped extractor classes and independent encoder fixtures. */
 public class Avs3ExtractionTest {
   private static byte[] fixture(int depth) throws IOException {
-    return Files.readAllBytes(Path.of(System.getProperty("avs3.fixtures"), "baseline-" + depth + ".avs3"));
+    Path name = Path.of("baseline-" + depth + ".avs3");
+    String configured = System.getProperty("avs3.fixtures");
+    if (configured != null && !configured.isBlank()) {
+      Path path = Path.of(configured).resolve(name);
+      if (Files.exists(path)) return Files.readAllBytes(path);
+    }
+    Path appRelative = Path.of("app/src/test/java/androidx/media3/extractor/fixtures").resolve(name);
+    Path moduleRelative = Path.of("src/test/java/androidx/media3/extractor/fixtures").resolve(name);
+    return Files.readAllBytes(Files.exists(appRelative) ? appRelative : moduleRelative);
   }
 
   private static byte[] sequence(byte[] stream) {

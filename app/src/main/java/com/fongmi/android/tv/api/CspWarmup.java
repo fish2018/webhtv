@@ -7,7 +7,9 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.Task;
+import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
+import com.github.catvod.crawler.SpiderNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,7 +82,11 @@ public final class CspWarmup {
         long start = System.currentTimeMillis();
         try {
             SpiderDebug.log("csp-warmup", "init start reason=%s site=%s api=%s jar=%s", reason, site.getKey(), site.getApi(), jarKey(site));
-            site.recent().spider();
+            Spider spider = site.recent().spider();
+            if (spider == null || spider instanceof SpiderNull) {
+                SpiderDebug.log("csp-warmup", "init unavailable reason=%s site=%s api=%s cost=%sms", reason, site.getKey(), site.getApi(), System.currentTimeMillis() - start);
+                return false;
+            }
             SpiderDebug.log("csp-warmup", "init done reason=%s site=%s api=%s cost=%sms", reason, site.getKey(), site.getApi(), System.currentTimeMillis() - start);
             return true;
         } catch (Throwable e) {

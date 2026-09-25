@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
@@ -50,14 +51,18 @@ abstract class BaseConfig {
     protected void onLoadSuccess() {
     }
 
-    public synchronized void ensureLoaded() {
+    public void ensureLoaded() {
         try {
             if (isLoaded()) return;
-            beforeLoad();
-            if (config == null) config = defaultConfig();
-            Server.get().start();
-            load(config);
-            onLoadSuccess();
+            BaseLoader.get().awaitClear();
+            synchronized (this) {
+                if (isLoaded()) return;
+                beforeLoad();
+                if (config == null) config = defaultConfig();
+                Server.get().start();
+                load(config);
+                onLoadSuccess();
+            }
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -89,14 +94,24 @@ abstract class BaseConfig {
 
     public void load(Callback callback) {
         beforeLoad();
+        Config loadingConfig = getConfig();
         int id = taskId.incrementAndGet();
         if (future != null && !future.isDone()) future.cancel(true);
-        future = Task.submit(() -> loadConfig(id, config, callback));
+        future = Task.submit(() -> loadConfig(id, loadingConfig, callback));
         callback.start();
+    }
+
+    protected void cancelLoad(boolean interrupt) {
+        taskId.incrementAndGet();
+        if (interrupt) {
+            if (future != null && !future.isDone()) future.cancel(true);
+            OkHttp.cancel(getTag());
+        }
     }
 
     protected void loadConfig(int id, Config config, Callback callback) {
         try {
+            BaseLoader.get().awaitClear();
             Server.get().start();
             OkHttp.cancel(getTag());
             load(config);
@@ -110,6 +125,7 @@ abstract class BaseConfig {
             if (isCanceled(e)) return;
             if (taskId.get() != id) return;
             if (TextUtils.isEmpty(config.getUrl())) App.post(() -> callback.error(""));
+            else if (this instanceof VodConfig) ((VodConfig) this).onConfigFailure(config, callback, e);
             else App.post(() -> callback.error(Notify.getError(R.string.error_config_get, e)));
         } finally {
             if (taskId.get() == id) postEvent();

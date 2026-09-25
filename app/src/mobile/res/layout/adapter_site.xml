@@ -21,11 +21,15 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:ellipsize="marquee"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:scrollHorizontally="true"
         android:singleLine="true"
-        android:textColor="@color/dialog_outlined_button_text"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
-        app:backgroundTint="@color/dialog_outlined_button_bg"
-        app:strokeColor="@color/dialog_outlined_button_stroke"
+        app:backgroundTint="?attr/colorSurfaceContainer"
+        app:strokeColor="?attr/colorOutline"
         tools:text="泥巴" />
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -35,7 +39,7 @@
         android:layout_marginStart="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_site_search"
-        app:tint="@color/dialog_outlined_button_text" />
+        app:tint="?attr/colorPrimary" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/change"
@@ -44,6 +48,6 @@
         android:layout_marginStart="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_site_change"
-        app:tint="@color/dialog_outlined_button_text" />
+        app:tint="?attr/colorPrimary" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

@@ -104,7 +104,7 @@ public class MpvConfigStoreTest {
         String lua = MpvConfigStore.buildCustomButtonScript(Collections.singletonList(button), script -> "toggle_script()");
 
         assertTrue(lua.contains("buttons[\"startup\"].short = function()\ntoggle_script()\nend\n"));
-        assertTrue(lua.contains("run(buttons[\"startup\"].short)\n"));
+        assertTrue(lua.contains("if run(buttons[\"startup\"].short) then webhtv_toggle_button_state(\"startup\") end\n"));
         assertEquals(lua.indexOf("toggle_script()"), lua.lastIndexOf("toggle_script()"));
         assertFalse(lua.contains("stale_metadata"));
         assertFalse(lua.contains(".long ="));

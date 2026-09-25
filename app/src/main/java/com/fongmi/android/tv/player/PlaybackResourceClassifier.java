@@ -32,6 +32,13 @@ public final class PlaybackResourceClassifier {
     private PlaybackResourceClassifier() {
     }
 
+    public static boolean isHlsUrl(String url) {
+        String lower = lower(url);
+        if (lower.contains("m3u8") || lower.contains("type=hls") || lower.contains("format=hls")) return true;
+        String path = urlPath(lower);
+        return path.endsWith("/live.php") || path.contains("/live/");
+    }
+
     public static Classification classifyRequest(String playerUri, String mimeType, String format) {
         return classify(playerUri, null, mimeType, format, Map.of(), null);
     }
@@ -713,6 +720,20 @@ public final class PlaybackResourceClassifier {
 
     private static String lower(String value) {
         return value == null ? "" : value.toLowerCase(Locale.US);
+    }
+
+    private static String urlPath(String value) {
+        try {
+            String path = URI.create(value).getPath();
+            if (path != null) return path;
+        } catch (IllegalArgumentException ignored) {
+        }
+        int end = value.length();
+        int query = value.indexOf('?');
+        int fragment = value.indexOf('#');
+        if (query >= 0) end = Math.min(end, query);
+        if (fragment >= 0) end = Math.min(end, fragment);
+        return value.substring(0, end);
     }
 
     private static boolean hasProgressiveExtension(String value) {

@@ -226,6 +226,8 @@ async fn main() {
         )
         .route("/api/playback/sync/status", get(playback::get_status))
         .route("/playback/sync/status", get(playback::get_status))
+        .route("/api/playback/identity/resolve", post(playback::post_identity_resolve))
+        .route("/playback/identity/resolve", post(playback::post_identity_resolve))
         .route("/api/device/register", post(register_device))
         .route("/api/device/bind-code", post(create_bind_code))
         .route("/api/device/poll", post(poll_device))
@@ -1618,6 +1620,7 @@ fn normalize_sync_options(options: Option<&Value>) -> Value {
         "search": bool_value(object.and_then(|m| m.get("search")), true),
         "keep": bool_value(object.and_then(|m| m.get("keep")), true),
         "history": bool_value(object.and_then(|m| m.get("history")), true),
+        "follow": bool_value(object.and_then(|m| m.get("follow")), false),
         "settings": bool_value(object.and_then(|m| m.get("settings")), false),
         "remoteRelay": bool_value(object.and_then(|m| m.get("remoteRelay")), false),
         "paths": object

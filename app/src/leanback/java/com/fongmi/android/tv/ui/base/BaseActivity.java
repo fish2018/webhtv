@@ -8,9 +8,13 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,16 +24,23 @@ import com.fongmi.android.tv.Updater;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.server.process.ApkUrlPush;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.theme.ThemeController;
+import com.fongmi.android.tv.theme.ThemeTokens;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
+import com.fongmi.android.tv.ui.helper.TouchOptimizationHelper;
 import com.fongmi.android.tv.utils.Util;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import me.jessyan.autosize.AutoSizeConfig;
 import me.jessyan.autosize.AutoSizeCompat;
 
 public abstract class BaseActivity extends AppCompatActivity {
+
+    private static final int DESIGN_WIDTH_IN_DP = 960;
+    private static final int DESIGN_HEIGHT_IN_DP = 540;
 
     protected abstract ViewBinding getBinding();
 
@@ -40,24 +51,35 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeController.applyNightMode(this);
         super.onCreate(savedInstanceState);
+        registerFragmentLifecycleCallbacks();
         setContentView(getBinding().getRoot());
+        if (applyGlobalTheme()) {
+            ThemeController.apply(this);
+            ThemeController.applyLeanback(this);
+        }
         EventBus.getDefault().register(this);
         initView(savedInstanceState);
         Util.hideSystemUI(this);
         setBackCallback();
         initEvent();
+        // Some detail/player controls are inflated during initView; bind them after the Activity tree is complete.
+        if (applyGlobalTheme()) {
+            ThemeController.apply(this);
+            ThemeController.applyLeanback(this);
+        }
     }
 
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
-        if (!customWall()) return;
-        addCustomWall();
+        if (customWall()) addCustomWall();
+        TouchOptimizationHelper.sync(getWindow().getDecorView());
     }
 
     private void addCustomWall() {
-        ((ViewGroup) findViewById(android.R.id.content)).addView(new CustomWallView(this, null), 0, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
+        ((ViewGroup) findViewById(android.R.id.content)).addView(new CustomWallView(this, null).setMotionEnabled(customWallMotion()), 0, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
     }
 
     protected FragmentActivity getActivity() {
@@ -65,6 +87,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected boolean customWall() {
+        return true;
+    }
+
+    /**
+     * 动态壁纸（视频/GIF）是否允许在本页面播放。返回 false 时壁纸降级为首帧静态图，
+     * 避免与页面自身的播放器争抢 MediaCodec 硬解实例并按壁纸帧率重绘整个界面。
+     */
+    protected boolean customWallMotion() {
         return true;
     }
 
@@ -122,6 +152,8 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     private Resources hackResources(Resources resources) {
         try {
+            // Keep the TV AutoSize pipeline and express the user scale through its design size.
+            applyUiScale();
             AutoSizeCompat.autoConvertDensityOfGlobal(resources);
             return resources;
         } catch (Exception ignored) {
@@ -129,9 +161,26 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
     }
 
+    private void applyUiScale() {
+        AutoSizeConfig config = AutoSizeConfig.getInstance();
+        float factor = Setting.getUiScaleFactor(Setting.getUiScale());
+        config.setDesignWidthInDp(Math.round(DESIGN_WIDTH_IN_DP / factor));
+        config.setDesignHeightInDp(Math.round(DESIGN_HEIGHT_IN_DP / factor));
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSubscribe(Object o) {
-        if (o instanceof RefreshEvent event && event.getType() == RefreshEvent.Type.LANGUAGE) recreate();
+        if (!(o instanceof RefreshEvent event)) return;
+        if (event.getType() == RefreshEvent.Type.THEME && preserveDetailThemeState()) return;
+        if (event.getType() == RefreshEvent.Type.LANGUAGE || event.getType() == RefreshEvent.Type.UI_SCALE || event.getType() == RefreshEvent.Type.THEME) recreate();
+    }
+
+    protected boolean applyGlobalTheme() {
+        return true;
+    }
+
+    protected boolean preserveDetailThemeState() {
+        return false;
     }
 
     @Override
@@ -158,8 +207,31 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        TouchOptimizationHelper.sync(getWindow().getDecorView());
         Updater.create().resume(this);
         ApkUrlPush.get().resume(this);
+    }
+
+    private void registerFragmentLifecycleCallbacks() {
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
+            @Override
+            public void onFragmentViewCreated(@NonNull FragmentManager fragmentManager, @NonNull Fragment fragment, @NonNull View view, Bundle savedInstanceState) {
+                TouchOptimizationHelper.sync(view);
+            }
+
+            @Override
+            public void onFragmentStarted(@NonNull FragmentManager fragmentManager, @NonNull Fragment fragment) {
+                if (!(fragment instanceof DialogFragment dialog) || dialog.getDialog() == null) return;
+                Window window = dialog.getDialog().getWindow();
+                if (window == null) return;
+                window.getDecorView().post(() -> {
+                    ThemeTokens tokens = ThemeController.resolve(BaseActivity.this);
+                    ThemeController.apply(window.getDecorView(), tokens);
+                    ThemeController.applyLeanback(window.getDecorView(), tokens);
+                    TouchOptimizationHelper.sync(window.getDecorView());
+                });
+            }
+        }, true);
     }
 
     @Override

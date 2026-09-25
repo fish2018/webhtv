@@ -13,26 +13,31 @@ import com.bumptech.glide.RequestBuilder;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
+import com.fongmi.android.tv.databinding.AdapterSearchListBinding;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder> {
+public class SearchAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final float LIST_POSTER_RATIO = 0.72f;
 
     private final OnClickListener listener;
     private final List<Vod> items;
     private final List<Vod> source;
+    private final boolean list;
     private final int height;
     private final int width;
 
-    public SearchAdapter(OnClickListener listener, int width, int height) {
+    public SearchAdapter(OnClickListener listener, int width, int height, boolean list) {
         this.listener = listener;
         this.items = new ArrayList<>();
         this.source = new ArrayList<>();
         this.width = width;
         this.height = height;
+        this.list = list;
     }
 
     public interface OnClickListener {
@@ -95,15 +100,23 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
     public RequestBuilder<?> getPreloadRequest(int position) {
         if (position < 0 || position >= items.size()) return null;
         Vod item = items.get(position);
-        return Glide.with(App.get()).load(ImgUtil.getUrl(item.getPic())).override(width, height).centerCrop();
+        return Glide.with(App.get()).load(ImgUtil.getUrl(item.getPic())).override(getImageWidth(), getImageHeight()).centerCrop();
     }
 
     public void preload(int start, int count) {
         int end = Math.min(items.size(), start + count);
         for (int i = Math.max(0, start); i < end; i++) {
             RequestBuilder<?> request = getPreloadRequest(i);
-            if (request != null) request.preload(width, height);
+            if (request != null) request.preload(getImageWidth(), getImageHeight());
         }
+    }
+
+    private int getImageWidth() {
+        return list ? Math.max(1, (int) (getImageHeight() * LIST_POSTER_RATIO)) : width;
+    }
+
+    private int getImageHeight() {
+        return height;
     }
 
     @Override
@@ -113,38 +126,80 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ViewHolder holder = new ViewHolder(AdapterSearchBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (list) return createListHolder(parent);
+        GridHolder holder = new GridHolder(AdapterSearchBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
         holder.binding.getRoot().getLayoutParams().width = width;
         holder.binding.getRoot().getLayoutParams().height = height + ResUtil.dp2px(34);
         holder.binding.image.getLayoutParams().height = height;
         return holder;
     }
 
+    private ListHolder createListHolder(@NonNull ViewGroup parent) {
+        ListHolder holder = new ListHolder(AdapterSearchListBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        holder.binding.getRoot().getLayoutParams().width = width;
+        holder.binding.getRoot().getLayoutParams().height = height;
+        holder.binding.image.getLayoutParams().width = getImageWidth();
+        holder.binding.image.getLayoutParams().height = getImageHeight();
+        return holder;
+    }
+
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Vod item = items.get(position);
-        holder.bindName(item.getName());
-        holder.binding.site.setText(item.getSiteName());
-        holder.binding.remark.setText(item.getRemarks());
-        holder.binding.site.setVisibility(item.getSiteVisible());
-        holder.binding.remark.setVisibility(item.getRemarkVisible());
-        holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
-        holder.binding.getRoot().setOnKeyListener((v, keyCode, event) -> listener.onItemKey(holder.getBindingAdapterPosition(), keyCode, event));
-        ImgUtil.load(item.getName(), item.getPic(), holder.binding.image, width, height);
+        if (holder instanceof ListHolder listHolder) {
+            listHolder.initView(item);
+        } else if (holder instanceof GridHolder gridHolder) {
+            gridHolder.initView(item);
+        }
     }
 
     @Override
-    public void onViewRecycled(@NonNull ViewHolder holder) {
-        Glide.with(holder.binding.image).clear(holder.binding.image);
-        holder.setMarquee(false);
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        if (holder instanceof ListHolder listHolder) {
+            Glide.with(listHolder.binding.image).clear(listHolder.binding.image);
+            listHolder.setMarquee(false);
+        }
+        if (holder instanceof GridHolder gridHolder) {
+            Glide.with(gridHolder.binding.image).clear(gridHolder.binding.image);
+            gridHolder.setMarquee(false);
+        }
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    public class ListHolder extends RecyclerView.ViewHolder {
+
+        private final AdapterSearchListBinding binding;
+
+        ListHolder(@NonNull AdapterSearchListBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+            binding.getRoot().setOnFocusChangeListener((v, hasFocus) -> setMarquee(hasFocus));
+        }
+
+        private void initView(Vod item) {
+            binding.name.setText(item.getName());
+            binding.site.setText(item.getSiteName());
+            binding.remark.setText(item.getRemarks());
+            binding.site.setVisibility(item.getSiteVisible());
+            binding.remark.setVisibility(item.getRemarkVisible());
+            binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
+            binding.getRoot().setOnKeyListener((v, keyCode, event) -> listener.onItemKey(getBindingAdapterPosition(), keyCode, event));
+            setMarquee(binding.getRoot().hasFocus());
+            ImgUtil.load(item.getName(), item.getPic(), binding.image, getImageWidth(), getImageHeight());
+        }
+
+        private void setMarquee(boolean selected) {
+            binding.name.setSelected(selected);
+            binding.site.setSelected(selected);
+            binding.remark.setSelected(selected);
+        }
+    }
+
+    public class GridHolder extends RecyclerView.ViewHolder {
 
         private final AdapterSearchBinding binding;
 
-        ViewHolder(@NonNull AdapterSearchBinding binding) {
+        GridHolder(@NonNull AdapterSearchBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
             binding.name.setSingleLine(true);
@@ -153,14 +208,23 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ViewHolder
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
         }
 
-        private void bindName(String name) {
-            binding.name.setText(name);
+        private void initView(Vod item) {
+            binding.name.setText(item.getName());
+            binding.site.setText(item.getSiteName());
+            binding.remark.setText(item.getRemarks());
+            binding.site.setVisibility(item.getSiteVisible());
+            binding.remark.setVisibility(item.getRemarkVisible());
+            binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
+            binding.getRoot().setOnKeyListener((v, keyCode, event) -> listener.onItemKey(getBindingAdapterPosition(), keyCode, event));
             setMarquee(binding.getRoot().hasFocus());
+            ImgUtil.load(item.getName(), item.getPic(), binding.image, width, height);
         }
 
         private void setMarquee(boolean focused) {
             binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
             binding.name.setSelected(focused);
+            binding.site.setSelected(focused);
+            binding.remark.setSelected(focused);
         }
     }
 }

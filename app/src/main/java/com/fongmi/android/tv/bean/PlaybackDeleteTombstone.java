@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
+import androidx.room.ColumnInfo;
 
 /**
  * A durable marker for a playback record that was deleted.  The marker is
@@ -26,6 +27,13 @@ public class PlaybackDeleteTombstone {
     public String siteKey = "";
     @NonNull
     public String vodId = "";
+    @NonNull
+    @ColumnInfo(defaultValue = "")
+    public String mediaType = "";
+    @ColumnInfo(defaultValue = "0")
+    public int tmdbId;
+    @ColumnInfo(defaultValue = "-1")
+    public int seasonNumber = -1;
     public long deletedAt;
 
     public PlaybackDeleteTombstone() {

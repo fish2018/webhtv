@@ -32,6 +32,14 @@
         android:textColor="?attr/colorOnPrimary" />
 
     <com.google.android.material.button.MaterialButton
+        android:id="@+id/silentRestart"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/crash_silent_restart" />
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/details"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="wrap_content"

@@ -1361,6 +1361,7 @@ func normalizeSyncOptions(options map[string]any) map[string]any {
 		"search":      boolVal(options["search"], true),
 		"keep":        boolVal(options["keep"], true),
 		"history":     boolVal(options["history"], true),
+		"follow":      boolVal(options["follow"], false),
 		"settings":    boolVal(options["settings"], false),
 		"remoteRelay": boolVal(options["remoteRelay"], false),
 		"paths":       optionalString(options["paths"]),

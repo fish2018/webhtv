@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/text"
+    android:layout_width="match_parent"
+    android:layout_height="34dp"
+    android:layout_margin="4dp"
+    android:background="@drawable/selector_download_episode"
+    android:ellipsize="marquee"
+    android:gravity="center"
+    android:marqueeRepeatLimit="-1"
+    android:singleLine="true"
+    android:textColor="@color/selector_download_episode_text"
+    android:textSize="13sp" />

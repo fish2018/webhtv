@@ -24,20 +24,28 @@
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/info"
             android:layout_width="match_parent"
+            android:focusable="false"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:focusable="true"
             android:lineSpacingExtra="4dp"
             android:maxLines="3"
             android:textColor="#3C4043"
             android:textSize="18sp"
             tools:text="@string/push_info" />
 
-        <com.google.android.material.textview.MaterialTextView
+        <com.fongmi.android.tv.ui.custom.CustomEditText
             android:id="@+id/name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:nextFocusDown="@id/text"
             android:layout_height="wrap_content"
-            android:visibility="gone" />
+            android:layout_marginTop="8dp"
+            android:hint="@string/dialog_config_name"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="#202124"
+            android:textColorHint="#8A8F98"
+            android:textSize="18sp" />
 
         <com.fongmi.android.tv.ui.custom.CustomEditText
             android:id="@+id/text"
@@ -48,11 +56,29 @@
             android:imeOptions="actionDone"
             android:importantForAutofill="no"
             android:inputType="text"
-            android:nextFocusDown="@id/positive"
+            android:nextFocusDown="@id/addresses"
+            android:nextFocusUp="@id/name"
             android:singleLine="true"
             android:textColor="#202124"
             android:textColorHint="#8A8F98"
             android:textSize="18sp" />
+
+        <com.fongmi.android.tv.ui.custom.CustomEditText
+            android:id="@+id/addresses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="top|start"
+            android:hint="@string/dialog_config_addresses"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine"
+            android:maxLines="4"
+            android:minLines="2"
+            android:nextFocusDown="@id/choose"
+            android:nextFocusUp="@id/text"
+            android:textColor="#202124"
+            android:textColorHint="#8A8F98"
+            android:textSize="16sp" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/bottom"
@@ -65,6 +91,9 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/choose"
                 android:layout_width="0dp"
+                android:nextFocusDown="@id/positive"
+                android:nextFocusRight="@id/chooseDir"
+                android:nextFocusUp="@id/addresses"
                 android:layout_height="40dp"
                 android:layout_weight="1"
                 android:focusable="true"
@@ -89,8 +118,42 @@
                 app:strokeWidth="1dp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/chooseDir"
+                android:layout_width="0dp"
+                android:nextFocusDown="@id/positive"
+                android:nextFocusLeft="@id/choose"
+                android:nextFocusRight="@id/positive"
+                android:nextFocusUp="@id/addresses"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:singleLine="true"
+                android:text="@string/setting_choose_dir"
+                android:textAllCaps="false"
+                android:textColor="@color/dialog_outlined_button_text"
+                android:textSize="14sp"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform"
+                app:backgroundTint="@color/dialog_outlined_button_bg"
+                app:strokeColor="@color/dialog_outlined_button_stroke"
+                app:strokeWidth="1dp" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/positive"
                 android:layout_width="0dp"
+                android:nextFocusLeft="@id/chooseDir"
+                android:nextFocusRight="@id/negative"
+                android:nextFocusUp="@id/addresses"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
@@ -118,6 +181,8 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/negative"
                 android:layout_width="0dp"
+                android:nextFocusLeft="@id/positive"
+                android:nextFocusUp="@id/addresses"
                 android:layout_height="40dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"

@@ -1,0 +1,102 @@
+name: Delayed Dev Promotion
+
+# Git does not retain per-commit remote push timestamps. This workflow promotes
+# the newest first-parent dev commit whose commit timestamp is older than the delay.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      delay_hours:
+        description: "Hours a dev commit must age before it is promoted"
+        required: false
+        default: "24"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: delayed-dev-promotion
+  cancel-in-progress: false
+
+env:
+  TZ: Asia/Shanghai
+  SOURCE_BRANCH: dev
+  TARGET_BRANCH: main
+  DEFAULT_DELAY_HOURS: "24"
+
+jobs:
+  promote:
+    name: Promote delayed dev commit to main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Promote eligible dev commit
+        env:
+          DELAY_HOURS_INPUT: ${{ github.event.inputs.delay_hours }}
+        run: |
+          set -euo pipefail
+
+          delay_hours="${DELAY_HOURS_INPUT:-$DEFAULT_DELAY_HOURS}"
+          if ! printf '%s' "$delay_hours" | grep -Eq '^[0-9]+$'; then
+            echo "::error title=Invalid delay_hours::Expected a positive integer, got: $delay_hours"
+            exit 1
+          fi
+          if [ "$delay_hours" -lt 1 ]; then
+            echo "::error title=Invalid delay_hours::Expected delay_hours to be at least 1."
+            exit 1
+          fi
+
+          git fetch origin \
+            "+refs/heads/${SOURCE_BRANCH}:refs/remotes/origin/${SOURCE_BRANCH}" \
+            "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
+
+          cutoff="$(date -u -d "${delay_hours} hours ago" +'%Y-%m-%dT%H:%M:%SZ')"
+          eligible="$(git rev-list --first-parent -n 1 --before="$cutoff" "origin/${SOURCE_BRANCH}" || true)"
+
+          if [ -z "$eligible" ]; then
+            echo "No ${SOURCE_BRANCH} commit is older than ${delay_hours} hours."
+            exit 0
+          fi
+
+          short="$(git rev-parse --short=12 "$eligible")"
+          subject="$(git log -1 --format=%s "$eligible")"
+          echo "Eligible ${SOURCE_BRANCH} commit: ${short} ${subject}"
+          echo "Cutoff (UTC): ${cutoff}"
+
+          if git merge-base --is-ancestor "$eligible" "origin/${TARGET_BRANCH}"; then
+            echo "${short} is already reachable from ${TARGET_BRANCH}."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$TARGET_BRANCH" "origin/${TARGET_BRANCH}"
+
+          if ! git merge --no-ff --no-edit "$eligible"; then
+            echo "::error title=Promotion merge conflict::${SOURCE_BRANCH}@${short} cannot be merged into ${TARGET_BRANCH} cleanly."
+            exit 1
+          fi
+
+          if ! git push origin "HEAD:refs/heads/${TARGET_BRANCH}"; then
+            echo "::error title=Promotion push failed::${TARGET_BRANCH} changed concurrently or rejects direct Actions pushes; no force push was attempted."
+            exit 1
+          fi
+
+          {
+            echo "## Delayed dev promotion"
+            echo
+            echo "Promoted \`${SOURCE_BRANCH}\` commit \`${short}\` to \`${TARGET_BRANCH}\`."
+            echo
+            echo "- Delay: ${delay_hours} hours"
+            echo "- Cutoff (UTC): ${cutoff}"
+            echo "- Subject: ${subject}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -12,19 +12,26 @@ import static org.junit.Assert.assertTrue;
 public class MpvAudioDecoderPolicyTest {
 
     @Test
-    public void prioritizesOnlyBuiltAudioMediaCodecDecoders() {
-        String decoderList = MpvAudioDecoderPolicy.hardwareFirstDecoderList();
+    public void noCompressedOutputRouteUsesStableSoftwareAudioDecoders() {
+        assertEquals(
+                "aac,mp3,amrnb,amrwb",
+                MpvAudioDecoderPolicy.decoderList(""));
+        assertFalse(MpvAudioDecoderPolicy.decoderList("").contains("mediacodec"));
+    }
 
+    @Test
+    public void compressedOutputRouteKeepsHardwareAudioPriority() {
         assertEquals(
                 "aac_mediacodec,mp3_mediacodec,amrnb_mediacodec,amrwb_mediacodec",
-                decoderList);
-        assertFalse(decoderList.endsWith("-"));
+                MpvAudioDecoderPolicy.decoderList("aac,mp3"));
+        assertEquals(MpvAudioDecoderPolicy.hardwareFirstDecoderList(),
+                MpvAudioDecoderPolicy.decoderList("aac,mp3"));
     }
 
     @Test
     public void performancePriorityManagesAudioDecoderOrder() {
         Map<String, String> candidates = new LinkedHashMap<>();
-        candidates.put("ad", MpvAudioDecoderPolicy.hardwareFirstDecoderList());
+        candidates.put("ad", MpvAudioDecoderPolicy.decoderList(""));
 
         assertTrue(MpvOptionPriorityPolicy.isPerformanceManaged("ad"));
         assertEquals(candidates,

@@ -3,8 +3,10 @@ package com.fongmi.android.tv.server.process;
 import android.text.TextUtils;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.bean.AiConfig;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.server.impl.Process;
+import com.fongmi.android.tv.service.AiLogDiagnosisService;
 import com.fongmi.android.tv.setting.Setting;
 import com.github.catvod.crawler.DebugLogStore;
 import com.github.catvod.crawler.diagnostics.DiagnosticLogBuffer;
@@ -31,11 +33,12 @@ public class DebugLogs implements Process {
 
     @Override
     public boolean isRequest(IHTTPSession session, String url) {
-        return url.startsWith("/debug/diag/") || url.startsWith("/debug/logs") || url.startsWith("/debug/mpd") || url.startsWith("/debug/stream") || url.startsWith("/debug/clear") || url.startsWith("/debug/enable") || url.startsWith("/debug/disable");
+        return url.startsWith("/debug/diagnose") || url.startsWith("/debug/diag/") || url.startsWith("/debug/logs") || url.startsWith("/debug/mpd") || url.startsWith("/debug/stream") || url.startsWith("/debug/clear") || url.startsWith("/debug/enable") || url.startsWith("/debug/disable");
     }
 
     @Override
     public Response doResponse(IHTTPSession session, String url, Map<String, String> files) {
+        if (url.startsWith("/debug/diagnose")) return diagnose();
         if (url.startsWith("/debug/diag/")) return diagnosticAction(session, url, files);
         if (url.startsWith("/debug/enable") || url.startsWith("/debug/disable") || url.startsWith("/debug/clear")) {
             Response rejection = controlRequestError(session);
@@ -81,6 +84,14 @@ public class DebugLogs implements Process {
         response.addHeader("X-Content-Type-Options", "nosniff");
         response.addHeader("X-Diagnostic-Completeness", export.partial ? "partial" : "declared-window");
         return noCache(response, null);
+    }
+
+    private Response diagnose() {
+        String result = new AiLogDiagnosisService(AiConfig.objectFrom(Setting.getAiConfig())).diagnose(DebugLogStore.text());
+        String html = "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\"><title>AI诊断</title><style>" + css() + "</style></head><body>"
+                + "<main><header class=\"console-head\"><div class=\"brand\"><h1>AI诊断</h1></div><div class=\"primary-actions\"><a class=\"action\" href=\"/debug/logs\">返回日志</a><a class=\"action\" href=\"/debug/logs.txt\" download=\"webhtv-debug-log.txt\">下载日志</a></div></header>"
+                + "<pre class=\"fallback\">" + escape(result) + "</pre></main></body></html>";
+        return noCache(NanoHTTPD.newFixedLengthResponse(Response.Status.OK, "text/html; charset=utf-8", html), null);
     }
 
     private boolean originAllowed(IHTTPSession session) {
@@ -217,11 +228,12 @@ public class DebugLogs implements Process {
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">"
                 + "<title>调试日志</title><style>" + css() + "</style></head><body>"
                 + "<main><header class=\"console-head\"><div class=\"brand\"><h1>调试日志</h1><span id=\"meta\" class=\"meta\" data-version=\"" + DebugLogStore.version() + "\">" + (enabled ? "记录中" : "已关闭") + " · " + DebugLogStore.bytes() / 1024 + " KB</span></div>"
-                + "<div class=\"primary-actions\"><a id=\"download\" class=\"action\" href=\"/debug/logs.txt\" download=\"webhtv-debug-log.txt\" title=\"下载 TXT 日志\" aria-label=\"下载 TXT 日志\">下载</a><button id=\"clear\" class=\"danger\" data-debug-action=\"/debug/clear\" aria-label=\"清空日志\">清空</button><button id=\"pause\" aria-pressed=\"false\">暂停</button><button id=\"tools-open\" aria-haspopup=\"dialog\" aria-controls=\"log-drawer\">工具<span id=\"filter-count\" class=\"count\" hidden></span></button></div>"
+                + "<div class=\"primary-actions\"><a class=\"action\" href=\"/debug/diagnose\">AI诊断</a><a id=\"download\" class=\"action\" href=\"/debug/logs.txt\" download=\"webhtv-debug-log.txt\" title=\"下载 TXT 日志\" aria-label=\"下载 TXT 日志\">下载</a><button id=\"clear\" class=\"danger\" data-debug-action=\"/debug/clear\" aria-label=\"清空日志\">清空</button><button id=\"pause\" aria-pressed=\"false\">暂停</button><button id=\"tools-open\" aria-haspopup=\"dialog\" aria-controls=\"log-drawer\">工具<span id=\"filter-count\" class=\"count\" hidden></span></button></div>"
                 + "<div id=\"search-panel\" class=\"search-panel\" hidden><input id=\"filter\" type=\"search\" aria-label=\"搜索日志\" placeholder=\"搜索日志关键词\"><button id=\"search-hide\">收起</button></div>"
                 + "<div class=\"category-row\"><nav class=\"tabs\" aria-label=\"日志分类\"><button class=\"chip on\" data-mode=\"all\" aria-pressed=\"true\">全部</button><button class=\"chip\" data-mode=\"diagnostic\">音视频诊断</button><button class=\"chip\" data-mode=\"console\">Console</button><button class=\"chip\" data-mode=\"player\">播放</button><button class=\"chip\" data-mode=\"proxy\">代理</button><button class=\"chip\" data-mode=\"webhome\">WebHome</button><button class=\"chip\" data-mode=\"webview\">WebView</button><button class=\"chip\" data-mode=\"api\">站源</button><button class=\"chip\" data-mode=\"pan\">网盘</button><button class=\"chip\" data-mode=\"server\">服务</button><button class=\"chip\" data-mode=\"sync\">同步</button><button class=\"chip\" data-mode=\"startup\">启动</button><button class=\"chip\" data-mode=\"error\">错误</button></nav><button id=\"search-toggle\" aria-expanded=\"false\" aria-controls=\"search-panel\">搜索</button></div></header>"
                 + "<div id=\"logs\" class=\"logs\"></div><pre id=\"raw\" class=\"fallback\">" + logs + "</pre></main>"
                 + diagnosticHtml(localUrl, lanUrl, enabled)
+                + "<button id=\"topBtn\" class=\"backtop\" type=\"button\" aria-label=\"回到顶部\" title=\"回到顶部\">↑ 顶部</button>"
                 + "<script>" + scriptEnhanced() + diagnosticScript() + toolbarScript() + "</script></body></html>";
     }
 
@@ -266,6 +278,8 @@ public class DebugLogs implements Process {
             .detail,.rawline,.fallback{overflow-wrap:anywhere;word-break:break-all;white-space:pre-wrap}.detail{margin-top:4px;color:#57606a}
             .rawline{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed #d8dee4;color:#6e7781}
             .rawline,.fallback{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}body.simple .rawline{display:none}
+            .backtop{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;height:38px;min-width:72px;padding:0 13px;border-radius:999px;border-color:#d0d7de;background:rgba(255,255,255,.94);color:#0969da;font-size:14px;font-weight:650;line-height:1;box-shadow:0 6px 18px rgba(31,35,40,.16)}.backtop:active{background:#f6f8fa}.backtop:focus-visible{outline:3px solid rgba(9,105,218,.22);outline-offset:2px}
+            @media(max-width:680px){.backtop{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));height:36px;min-width:64px;padding:0 11px;font-size:13px}}
             @media(min-width:800px){.console-head{grid-template-columns:minmax(0,1fr) 260px auto;grid-template-areas:"brand search actions" "tabs tabs tabs"}.search-panel{padding:0}#search-hide{display:none}.tabs .chip{min-height:36px}.primary-actions button,.primary-actions a.action{min-height:40px}}
             @media(max-width:600px){.log-drawer{top:auto;right:0;bottom:0;left:0;width:100%;height:auto;max-height:88vh;max-height:88dvh;border-radius:16px 16px 0 0;box-shadow:0 -8px 32px #1f232826}.drawer-body{padding-bottom:20px;padding-bottom:max(20px,env(safe-area-inset-bottom))}.drawer-body button,.drawer-body a.action,.drawer-body select,.drawer-body input:not([type=checkbox]){min-height:44px}}
             @media(max-width:480px){main{padding:0 4px 4px}.console-head{padding:4px 6px 0}.title{white-space:normal}.time{display:none}.entry{padding:7px 8px}.detail{font-size:13px}}
@@ -285,7 +299,7 @@ public class DebugLogs implements Process {
                 + "function parse(line){const a=line.indexOf(' ['),b=line.indexOf('] ',a+2),c=line.indexOf(': ',b+2);return{line,time:a>0?line.slice(0,a):'',thread:a>0&&b>0?line.slice(a+2,b):'',tag:b>0&&c>0?line.slice(b+2,c):'',msg:c>0?line.slice(c+2):line}}"
                 + "function base(r){const e={kind:'raw',state:'raw',badge:r.tag||'日志',title:r.tag||'原始日志',detail:r.msg||r.line,raw:r.line,time:r.time};if(r.tag==='av-diag'){try{e.diag=JSON.parse(r.msg)}catch(ignore){}}return e}"
                 + "function crawlerConsole(r){const name=r.tag==='quickjs'?'QuickJS':r.tag==='python-spider'?'Python':'';if(!name)return null;const e=base(r),match=/^\\[(DEBUG|INFO|WARN|ERROR|STDERR)\\] ?/.exec(r.msg),level=match?match[1]:'';e.kind='console';e.badge=name;e.detail=match?r.msg.slice(match[0].length):r.msg;e.state=level==='ERROR'?'err':level==='WARN'?'warn':level==='STDERR'?'raw':'ok';if(!match)e.state=/error|exception|uncaught/i.test(r.msg)?'err':/warning|warn/i.test(r.msg)?'warn':'raw';e.title=name+(level==='STDERR'?' 标准错误流':level?' · '+level:' 控制台输出');return e}"
-                + "function explain(r){const crawler=crawlerConsole(r);if(crawler)return crawler;const text=(r.tag+': '+r.msg),low=text.toLowerCase();let e=base(r);if(r.tag==='av-diag'){try{const d=JSON.parse(r.msg);if(d.schemaVersion===1&&typeof d.event==='string'){e.kind='diagnostic';e.state=d.level==='error'?'err':d.level==='warn'?'warn':'raw';e.badge='音视频诊断';e.title=d.event;e.detail=JSON.stringify(d);return e}}catch(ignore){}}if(r.tag==='webview-console'||r.tag==='webhome-console'){e.kind='console';e.state=(low.includes('error')||low.includes('exception')||low.includes('uncaught'))?'err':(low.includes('warning')||low.includes('warn'))?'warn':'ok';e.badge='Console';e.title=r.tag==='webhome-console'?'WebHome 控制台输出':'网页控制台输出';e.detail=r.msg;return e}if(r.tag==='server'){e.kind='server';e.state='raw';e.badge='服务';e.title='App 本机 HTTP 服务收到请求';e.detail=r.msg;return e}if(low.includes('error')||low.includes('exception')||low.includes('failed')||low.includes('timeout')||low.includes('失败')||low.includes('崩溃')||low.includes('异常')){e.kind='error';e.state='err';e.badge='错误';e.title='发现错误或异常';return e}"
+                + "function explain(r){const crawler=crawlerConsole(r);if(crawler)return crawler;const text=(r.tag+': '+r.msg),low=text.toLowerCase();let e=base(r);if(r.tag==='av-diag'){try{const d=JSON.parse(r.msg);if(d.schemaVersion===1&&typeof d.event==='string'){e.kind='diagnostic';e.state=d.level==='error'?'err':d.level==='warn'?'warn':'raw';e.badge='音视频诊断';e.title=d.event;e.detail=JSON.stringify(d);return e}}catch(ignore){}}if(r.tag==='webview-console'||r.tag==='webhome-console'){e.kind='console';e.state=(low.includes('error')||low.includes('exception')||low.includes('uncaught'))?'err':(low.includes('warning')||low.includes('warn'))?'warn':'ok';e.badge='Console';e.title=r.tag==='webhome-console'?'WebHome 控制台输出':'网页控制台输出';e.detail=r.msg;return e}if(r.tag==='server'){e.kind='server';e.state='raw';e.badge='服务';e.title='App 本机 HTTP 服务收到请求';e.detail=r.msg;return e}if(r.tag&&r.tag.startsWith('ai-')){e.kind='ai';e.state=low.includes('failed')||low.includes('error')||low.includes('success=false')?'err':'ok';e.badge='AI';e.title=r.msg.includes('ai request')?'AI 调用入参':r.msg.includes('ai response')?'AI 调用出参':r.msg.includes('ai error')?'AI 调用异常':'AI 调用状态';e.detail=r.msg;return e}if(low.includes('error')||low.includes('exception')||low.includes('failed')||low.includes('timeout')||low.includes('失败')||low.includes('崩溃')||low.includes('异常')){e.kind='error';e.state='err';e.badge='错误';e.title='发现错误或异常';return e}"
                 + "if(r.tag==='startup'){e.kind='startup';e.state='ok';e.badge='启动';e.title='启动阶段耗时';e.detail=r.msg;return e}"
                 + "if(r.tag==='debug'){e.kind='server';e.state='ok';e.badge='调试';e.title=r.msg.includes('ready')?'调试日志服务已准备':'调试日志状态变化';e.detail=r.msg;return e}"
                 + "if(r.tag==='env'){e.kind='startup';e.state='ok';e.badge='环境';e.title='设备和系统环境';e.detail=r.msg;return e}"
@@ -394,6 +408,8 @@ public class DebugLogs implements Process {
             function hideSearch(){searchExpanded=false;layoutSearch();searchToggle.focus({preventScroll:true})}
             searchToggle.onclick=()=>{searchExpanded=!searchExpanded;layoutSearch();if(searchExpanded)filter.focus()};document.getElementById('search-hide').onclick=hideSearch;
             filter.addEventListener('keydown',event=>{if(event.key==='Escape'&&!wideSearch.matches){event.preventDefault();hideSearch()}});
+            function scrollToTop(){stick=false;try{scrollTo({top:0,behavior:'smooth'})}catch(e){scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}resetX()}
+            topBtn.onclick=scrollToTop;
             if(wideSearch.addEventListener)wideSearch.addEventListener('change',layoutSearch);else wideSearch.addListener(layoutSearch);
             function updateFilterState(){const count=['trace','attempt','domain','priority'].filter(id=>diagEl(id).value).length+(filter.value.trim()?1:0),badge=document.getElementById('filter-count');badge.textContent=count;badge.hidden=!count;toolsButton.classList.toggle('filtered',count>0);toolsButton.setAttribute('aria-label',count?'日志工具，'+count+'项筛选生效':'日志工具');searchToggle.classList.toggle('on',!!filter.value.trim());searchToggle.title=filter.value.trim()?'搜索：'+filter.value.trim():'搜索日志'}
             document.getElementById('filter-reset').onclick=()=>{filter.value='';['trace','attempt','domain','priority'].forEach(id=>diagEl(id).value='');updateFilterState();selectCategory(document.querySelector('[data-mode=all]'))};

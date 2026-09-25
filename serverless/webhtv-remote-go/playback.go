@@ -25,15 +25,17 @@ const (
 )
 
 type playbackService struct {
-	mu      sync.Mutex
-	path    string
-	spaces  map[string]*playbackSpace
-	loadErr error
+	mu         sync.Mutex
+	path       string
+	spaces     map[string]*playbackSpace
+	identities map[string]*playbackIdentityRegistry
+	loadErr    error
 }
 
 type playbackDiskState struct {
-	Version int                       `json:"version"`
-	Spaces  map[string]*playbackSpace `json:"spaces"`
+	Version    int                                  `json:"version"`
+	Spaces     map[string]*playbackSpace            `json:"spaces"`
+	Identities map[string]*playbackIdentityRegistry `json:"identities,omitempty"`
 }
 
 type playbackSpace struct {
@@ -93,7 +95,7 @@ func playbackDataPath() string {
 }
 
 func newPlaybackService(path string) *playbackService {
-	service := &playbackService{path: path, spaces: map[string]*playbackSpace{}}
+	service := &playbackService{path: path, spaces: map[string]*playbackSpace{}, identities: map[string]*playbackIdentityRegistry{}}
 	if err := service.load(); err != nil {
 		service.loadErr = err
 		log.Printf("WebHTV playback storage unavailable: %v", err)
@@ -114,7 +116,8 @@ func (s *playbackService) persistent() bool {
 func isPlaybackSyncPath(path string) bool {
 	path = strings.TrimRight(path, "/")
 	return path == "/api/playback/sync" || path == "/playback/sync" ||
-		path == "/api/playback/sync/status" || path == "/playback/sync/status"
+		path == "/api/playback/sync/status" || path == "/playback/sync/status" ||
+		path == "/api/playback/identity/resolve" || path == "/playback/identity/resolve"
 }
 
 func (s *playbackService) handle(w http.ResponseWriter, r *http.Request, path string) error {
@@ -127,6 +130,12 @@ func (s *playbackService) handle(w http.ResponseWriter, r *http.Request, path st
 	}
 	if len(token) > 512 {
 		return httpErrorf(http.StatusBadRequest, "X-WebHTV-Token is too long")
+	}
+	if strings.HasSuffix(strings.TrimRight(path, "/"), "/playback/identity/resolve") {
+		if r.Method != http.MethodPost {
+			return httpErrorf(http.StatusMethodNotAllowed, "Method not allowed")
+		}
+		return s.identityResolve(w, r, token)
 	}
 	statusPath := strings.HasSuffix(path, "/status")
 	if statusPath && r.Method != http.MethodGet {
@@ -142,8 +151,11 @@ func (s *playbackService) handle(w http.ResponseWriter, r *http.Request, path st
 	if err != nil {
 		return err
 	}
-	spaceKey := playbackSpaceKey(token, configKey)
+	configType := playbackConfigType(r.Header.Get("x-webhtv-config-type"))
+	aliases := playbackRequestAliases(r, nil)
 	s.mu.Lock()
+	configKey = s.resolvePlaybackConfigKeyLocked(token, configType, configKey, aliases)
+	spaceKey := playbackSpaceKeyType(token, configKey, configType)
 	defer s.mu.Unlock()
 	space := s.spaces[spaceKey]
 	if space == nil {
@@ -168,6 +180,11 @@ func (s *playbackService) ingest(w http.ResponseWriter, r *http.Request, token s
 	if err != nil {
 		return err
 	}
+	configType := playbackConfigType(r.Header.Get("x-webhtv-config-type"))
+	if object, ok := body.(map[string]any); ok && r.Header.Get("x-webhtv-config-type") == "" {
+		configType = playbackConfigType(playbackString(object["configType"]))
+	}
+	configKey = s.resolvePlaybackConfigKey(token, configType, configKey, playbackRequestAliases(r, body))
 	rawEvents := extractPlaybackEvents(body)
 	if len(rawEvents) == 0 {
 		return httpErrorf(http.StatusBadRequest, "Playback event is empty")
@@ -189,7 +206,7 @@ func (s *playbackService) ingest(w http.ResponseWriter, r *http.Request, token s
 		events = append(events, event)
 	}
 
-	spaceKey := playbackSpaceKey(token, configKey)
+	spaceKey := playbackSpaceKeyType(token, configKey, configType)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	previous := s.spaces[spaceKey]
@@ -346,7 +363,9 @@ func playbackStatus(space *playbackSpace, configKey string, r *http.Request) map
 		base = "/playback/sync"
 	}
 	return map[string]any{
-		"ok": true, "configKey": configKey, "items": len(space.Items), "tombstones": tombstones,
+		"ok": true, "configKey": configKey, "identityProtocol": playbackIdentitySchema, "addressMatchVersion": 1,
+		"capabilities": map[string]any{"playbackSync": true, "identityResolve": true, "identityAliases": true, "legacyUrlHashMigration": true, "identityMerge": true},
+		"items":        len(space.Items), "tombstones": tombstones,
 		"nextSince": strconv.FormatInt(latest, 10), "retentionDays": 90, "endpoint": serverOrigin(r) + base,
 	}
 }
@@ -739,6 +758,12 @@ func (s *playbackService) load() error {
 	if disk.Spaces != nil {
 		s.spaces = disk.Spaces
 	}
+	if disk.Identities != nil {
+		s.identities = disk.Identities
+	}
+	if s.identities == nil {
+		s.identities = map[string]*playbackIdentityRegistry{}
+	}
 	for key, space := range s.spaces {
 		s.spaces[key] = normalizePlaybackSpace(space)
 	}
@@ -749,7 +774,7 @@ func (s *playbackService) saveLocked() error {
 	if !s.persistent() {
 		return nil
 	}
-	disk := playbackDiskState{Version: playbackStorageVersion, Spaces: s.spaces}
+	disk := playbackDiskState{Version: playbackStorageVersion, Spaces: s.spaces, Identities: s.identities}
 	data, err := json.Marshal(disk)
 	if err != nil {
 		return err
@@ -979,4 +1004,57 @@ func playbackCompact(input map[string]any) map[string]any {
 		result[key] = value
 	}
 	return result
+}
+
+func playbackRequestAliases(r *http.Request, body any) []string {
+	result := []string{}
+	for _, item := range strings.Split(r.Header.Get("x-webhtv-config-aliases"), ",") {
+		if value := strings.TrimSpace(item); value != "" {
+			result = append(result, value)
+		}
+	}
+	if object, ok := body.(map[string]any); ok {
+		if values, ok := object["configAliases"].([]any); ok {
+			for _, item := range values {
+				if value := strings.TrimSpace(playbackString(item)); value != "" {
+					result = append(result, value)
+				}
+			}
+		}
+	}
+	return result
+}
+
+func (s *playbackService) resolvePlaybackConfigKey(token, configType, configKey string, aliases []string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.resolvePlaybackConfigKeyLocked(token, configType, configKey, aliases)
+}
+
+func (s *playbackService) resolvePlaybackConfigKeyLocked(token, configType, configKey string, aliases []string) string {
+	registry := normalizePlaybackIdentityRegistry(s.identities[playbackIdentityRegistryKey(token, configType)])
+	candidates := map[string]bool{}
+	for _, key := range append([]string{configKey}, aliases...) {
+		if identity := registry.Aliases[key]; identity != nil {
+			candidates[identity.CanonicalInterfaceKey] = true
+		}
+		if registry.Identities[key] != nil {
+			candidates[key] = true
+		}
+	}
+	if len(candidates) != 1 {
+		return configKey
+	}
+	for key := range candidates {
+		return key
+	}
+	return configKey
+}
+
+func playbackSpaceKeyType(token, configKey, configType string) string {
+	base := playbackSpaceKey(token, configKey)
+	if playbackConfigType(configType) == "vod" {
+		return base
+	}
+	return base + ":" + playbackConfigType(configType)
 }

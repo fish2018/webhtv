@@ -78,6 +78,8 @@ public class Result implements Parcelable {
     private String flag;
     @SerializedName("desc")
     private String desc;
+    @SerializedName("lrc")
+    private String lrc;
     @SerializedName("format")
     private String format;
     @SerializedName("click")
@@ -136,6 +138,58 @@ public class Result implements Parcelable {
 
     public static Result empty() {
         return new Result();
+    }
+
+    public static Result playbackSnapshot(Result source, String url, Map<String, String> header, String format, Drm drm, List<Sub> subs) {
+        Result result = copy(source);
+        boolean resolved = !TextUtils.isEmpty(url);
+        if (resolved) {
+            result.url = Url.create().add(url);
+            result.playUrl = "";
+            result.parse = 0;
+            result.jx = 0;
+        }
+        if (resolved || header != null) result.header = header == null ? new HashMap<>() : new HashMap<>(header);
+        if (resolved || format != null) result.format = format;
+        if (resolved || drm != null) result.drm = drm;
+        if (resolved || subs != null) result.subs = subs == null ? new ArrayList<>() : new ArrayList<>(subs);
+        return result;
+    }
+
+    private static Result copy(Result source) {
+        if (source == null) return empty();
+        Result result = new Result();
+        result.types = source.types == null ? null : new ArrayList<>(source.types);
+        result.list = source.list == null ? null : new ArrayList<>(source.list);
+        result.filters = source.filters == null ? null : new LinkedHashMap<>(source.filters);
+        result.url = copy(source.url);
+        result.header = source.header == null ? null : new HashMap<>(source.header);
+        result.msg = source.msg;
+        result.danmaku = source.danmaku == null ? null : new ArrayList<>(source.danmaku);
+        result.subs = source.subs == null ? null : new ArrayList<>(source.subs);
+        result.playUrl = source.playUrl;
+        result.artwork = source.artwork;
+        result.jxFrom = source.jxFrom;
+        result.flag = source.flag;
+        result.desc = source.desc;
+        result.lrc = source.lrc;
+        result.format = source.format;
+        result.click = source.click;
+        result.key = source.key;
+        result.position = source.position;
+        result.pagecount = source.pagecount;
+        result.parse = source.parse;
+        result.code = source.code;
+        result.jx = source.jx;
+        result.drm = source.drm;
+        return result;
+    }
+
+    private static Url copy(Url source) {
+        if (source == null) return null;
+        Url result = Url.create();
+        source.getValues().forEach(value -> result.getValues().add(value.copy()));
+        return result.getValues().isEmpty() ? result : result.set(source.getPosition());
     }
 
     public static Result error(String msg) {
@@ -249,6 +303,14 @@ public class Result implements Parcelable {
 
     public String getDesc() {
         return TextUtils.isEmpty(desc) ? "" : Util.clean(desc);
+    }
+
+    public String getLrc() {
+        return TextUtils.isEmpty(lrc) ? "" : lrc;
+    }
+
+    public void setLrc(String lrc) {
+        this.lrc = lrc;
     }
 
     public List<Danmaku> getDanmaku() {

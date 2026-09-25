@@ -99,8 +99,11 @@ fingerprint_path() {
 }
 
 read_state() {
-  [[ -f "$state_dir/$1" ]] || fail_usage "no active task guard state ($1 missing)"
-  sed -n '1p' "$state_dir/$1"
+  if [[ -f "$state_dir/$1" ]]; then
+    sed -n '1p' "$state_dir/$1"
+  else
+    return 1
+  fi
 }
 
 write_state() {
@@ -202,12 +205,23 @@ start_task() {
     *) fail_usage "unknown mode: $mode" ;;
   esac
 
+  mkdir -p "$state_dir"
   if [[ -d "$state_dir" && -f "$state_dir/status" ]]; then
     local previous_status
     previous_status="$(sed -n '1p' "$state_dir/status")"
     if [[ "$previous_status" == "active" || "$previous_status" == "commit_needs_tag" ]]; then
       fail_usage "another task guard is unfinished: $(sed -n '1p' "$state_dir/id") ($previous_status)"
     fi
+  fi
+  if [[ -d "$state_dir" && -f "$state_dir/status" ]] && [[ "$(sed -n '1p' "$state_dir/status")" == "active" ]]; then
+    # 支持 active 会话一次性扩容；不覆盖 initial-dirty/protected，避免误改保护面。
+    :
+  else
+    : > "$state_dir/initial-dirty"
+    : > "$state_dir/initial-staged"
+    : > "$state_dir/protected"
+    : > "$state_dir/protected-fingerprints"
+    printf 'active\n' > "$state_dir/status"
   fi
   mkdir -p "$state_dir"
   : > "$state_dir/scope"
@@ -302,6 +316,8 @@ create_recovery_tag() {
   write_state tag_elapsed_seconds "$tag_elapsed"
   write_state recovery_tag "$tag"
   write_state status finished
+  mkdir -p "$state_root"
+  mv "$state_dir" "$state_root/finished-$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)-$(read_state id)"
   if ((tag_elapsed > 5)); then
     printf 'WARN: recovery tag phase took %ss (target <=5s); tag already created, continue without repeated validation\n' "$tag_elapsed" >&2
   fi
@@ -320,7 +336,10 @@ finish_task() {
   done
   [[ -n "$verified" && -n "$commit_message" ]] || fail_usage "verification evidence and commit message are required"
 
-  if [[ "$(read_state status)" == "commit_needs_tag" ]]; then
+  local committed_head
+  committed_head="$(read_state committed_head 2>/dev/null || true)"
+  if [[ "$(read_state status)" == "commit_needs_tag" ]] ||
+     { [[ -n "$committed_head" ]] && [[ "$(git rev-parse HEAD)" == "$committed_head" ]]; }; then
     create_recovery_tag "$(read_state committed_head)" "$(read_state verification)"
     return
   fi
@@ -332,7 +351,11 @@ finish_task() {
     [[ -n "$path" ]] || continue
     path_matches_file "$path" "$state_dir/protected" && continue
     path_matches_file "$path" "$state_dir/scope" || continue
-    git add -A -- "$path"
+    if [[ -e "$path" || -L "$path" ]]; then
+      git add -A -- "$path"
+    else
+      git update-index --remove -- "$path"
+    fi
     task_change_count=$((task_change_count + 1))
   done < <(list_dirty)
   ((task_change_count > 0)) || safety_gate "no task-owned changes to commit"

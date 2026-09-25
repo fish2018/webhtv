@@ -1754,6 +1754,8 @@ public final class RemoteTrustDialog {
 
     private static JsonObject configPayload(JsonObject object) {
         JsonObject payload = configPayload(payloadType(object), safe(object, "url"), safe(object, "name"));
+        if (object != null && object.has("interfaceKey")) payload.addProperty("interfaceKey", safe(object, "interfaceKey"));
+        if (object != null && object.has("urls")) payload.add("urls", object.get("urls"));
         if (object != null && object.has("homeKey")) payload.addProperty("homeKey", safe(object, "homeKey"));
         if (object != null && object.has("homeName")) payload.addProperty("homeName", safe(object, "homeName"));
         return payload;

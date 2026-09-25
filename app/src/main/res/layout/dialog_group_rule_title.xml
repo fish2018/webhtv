@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="24dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="8dp">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/setting_group_rule"
+        android:textColor="#202124"
+        android:textSize="22sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/aiAction"
+        style="@style/Widget.WebHTV.LightDialog.Button.Text"
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:focusable="true"
+        android:minWidth="0dp"
+        android:text="@string/group_rule_ai_identify"
+        android:textAllCaps="false"
+        android:visibility="gone" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

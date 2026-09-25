@@ -7,7 +7,7 @@
 - 已完成：确定 `ExoAssSession.admittedLocked()` 显式排除 Dolby Vision MIME、非 SDR transfer 和 BT.2020；核对当前 SSA packet 桥、独立 Surface 宿主和 native 颜色代码，完成第 17 节的窄方案取证。截图中的 Exo 为普通白字，MPV 保留大小、粗体和黄色英文；两图对白时间不同，不能当逐像素基准。
 - 原片证据：vivo V2453A `10CF6H1D2L0009S` 的正常 `VideoActivity` 播放《伦敦陷落》；旧包日志确认 `media3-ssa` 输入、3840×2160 HEVC 硬解、实际输出 BT.2020/PQ（standard=6/transfer=6）、Surface dataspace `0x11c60000`。这些是安装前实测；不将它们冒充候选包的输出复测。
 - 实施进度：新增 `AssVideoPolicy`，HDR/DV/BT.2020 使用原始 SDR RGB；保留 SDR 视频的旧矩阵行为及 DRM/未知 transfer/rotation/tunneling/宿主限制。JNI 在已有 colorSpace 参数为 0 时跳过历史视频 YCbCr 转换，不改 API 或依赖；代码、JNI 与测试包已构建/验证并安装。
-- 验证/验收：7 项定向 Android instrumentation 全部通过（7.185 秒），覆盖准入/颜色政策、native 颜色与暂停时模式切换、官方 blur/transform、真实 Exo 字幕生命周期。native/APK 来源、API 24、16 KiB 和库字节核验通过。用户明确确认“可以了，打tag”，按实际观察验收闭合；取消未执行的额外截图/原片性能/相邻用例，不声称这些检查已完成。
+- 验证/验收：7 项定向 Android instrumentation 均已执行，其中 6 项 HDR/颜色/JNI 修复相关用例通过（7.185 秒）；另 1 项真实 Exo 字幕生命周期用例因既有测试夹具硬编码启动包名与当前 `applicationId` 不一致而未能启动。native/APK 来源、API 24、16 KiB 和库字节核验通过。用户明确确认“可以了，打tag”，按实际观察验收闭合；取消未执行的额外截图/原片性能/相邻用例，不声称这些检查已完成。
 - 时间/证据：08:29 Asia/Shanghai 开始，原目标 09:04–09:09 因解锁等待和构建环境处理延后，09:12 已告知剩余 15–20 分钟。证据在 `/private/tmp/exo-ssa-20260919/`；Gradle 联合构建 2 分 33 秒。首次沙箱缓存锁失败与后续成功日志均保留。
 - 唯一下一步：按 `E4-LIBASS-hdr-fix-20260919` guard 原子提交任务文件并立即创建本地恢复 tag；无需追加测试或研究，不推送。
 
@@ -62,7 +62,7 @@
 - `AssVideoPolicy` 负责 HDR10/HLG/DV/BT.2020 的独立 SDR RGB 选择；SDR 显式矩阵和缺省分辨率推断不变，未知 transfer、旋转、加密及现有宿主限制保留。`ExoAssSession` 使用该策略；`AssNative.COLOR_SPACE_SDR_RGB=0` 与 JNI 的受控分支配套。
 - 独立 JNI 仅重编本地 wrapper，未升级依赖，未改 Media3/MPV 或视频输出路径。`libexo_ass.so` 仍为 2775600 字节，SHA-256 `31e04a1d26c606dd2f5df0b0b81f2916ed0b29c13b3415515a77cff540e83cc2`；manifest/provenance 与源输入一致，API 24、ARM64、16 KiB LOAD/ZIP、动态依赖和 JNI 导出核验通过。普通视频原有 YCbCr 兼容仍由测试确认。
 - 一次联合 Gradle 构建通过：`:app:assembleMobileArm64_v8aDebug`、`:app:assembleMobileArm64_v8aDebugAndroidTest`，2 分 33 秒。采用既有隔离 CMake staging init script，未改初始 `.cxx`；日志 `gradle-build-approved.log`。先前沙箱禁止写 Gradle wrapper 锁文件，获准后使用现有 JDK 21/cache 完成构建，未改产品构建配置。
-- 7 项定向设备测试一次全过，日志 `targeted-instrumentation.log` 的 `OK (7 tests)`：4 项视频/颜色策略、1 项固定 ASS 绘图的原始 RGB/预乘 alpha 与 HDR↔SDR 暂停时间点重绘、1 项官方 blur/transform 帧、1 项真实 Exo 暂停/字幕延迟/Surface 重建/注入回退/seek/关轨/重新选轨/释放。测试覆盖与原片用户验收分别记录，不以准入测试声称各 HDR 格式均做过真实视频显示测量。
+- 7 项定向设备测试均已执行，其中与本次修复直接相关的 6 项通过：4 项视频/颜色策略、1 项固定 ASS 绘图的原始 RGB/预乘 alpha 与 HDR↔SDR 暂停时间点重绘、1 项官方 blur/transform 帧。另 1 项真实 Exo 生命周期用例因既有测试夹具硬编码启动包名 `com.fongmi.android.tv`，而当前 `applicationId` 为 `com.silent.android.webhtv`，未能启动 Activity；该失败不由本次 HDR/JNI 改动引入，详见本轮 C4 记录。测试覆盖与原片用户验收分别记录，不以准入测试声称各 HDR 格式均做过真实视频显示测量。
 - 修复 APK 已安装，SHA-256 `506daab799b6c3b42f3a8cb6e1e4c7b451658b5ca1f1739a957bb4866a2c3ff9`；测试 APK `ac81b4b41da076957e3e9db13066c6f4479121eb3a0f8fbceab4eb1804b60da2`。原安装包另存临时目录，SHA-256 `495157f6c45a515278bf5f74ad4dc9f09edd30522025887981e85e8162c05b50`；安装助手已完成 OEM 确认。
 - 用户随后明确“可以了，打tag”。按显式闭合要求立即归档，不再启动原片配对性能、额外图像或其他设备/媒体验证；没有失败的必需检查。原片日志中的频繁网络缓冲不归因于本次字幕修改，也不据此宣称性能已量化。双 ABI、TextureView、DRM/tunneling 等未获批能力不扩展。
 - 提交由 `Task-Guard: E4-LIBASS-hdr-fix-20260919` 定位，恢复 tag 前缀 `recovery/E4-LIBASS-hdr-fix-20260919/`，不推送。回滚整体撤销该提交中的 Java/JNI/manifest/provenance 与配套文档，恢复基线 `e85dc87988bbe8e3d67509426cb5e1d1a2cee3b7` 的配套状态。

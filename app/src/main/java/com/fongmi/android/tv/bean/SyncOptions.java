@@ -18,6 +18,8 @@ public class SyncOptions {
     private boolean history = true;
     @SerializedName("keep")
     private boolean keep = true;
+    @SerializedName("follow")
+    private boolean follow;
     @SerializedName("webHome")
     private boolean webHome = true;
     @SerializedName("settings")
@@ -86,6 +88,15 @@ public class SyncOptions {
 
     public SyncOptions keep(boolean keep) {
         this.keep = keep;
+        return this;
+    }
+
+    public boolean isFollow() {
+        return follow;
+    }
+
+    public SyncOptions follow(boolean follow) {
+        this.follow = follow;
         return this;
     }
 

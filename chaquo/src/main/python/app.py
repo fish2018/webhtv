@@ -1,22 +1,16 @@
-import os
 import requests
+import os
+import textwrap
 from importlib.machinery import SourceFileLoader
 import json
 
 
-def spider(cache, api, file_name=None):
-    name = file_name or os.path.basename(api)
+def spider(cache, source, file_name=None):
+    name = file_name or os.path.basename(source)
     path = cache + '/' + name
-    download(path, api)
+    writeFile(path, textwrap.dedent(source).encode())
     name = name.split('.')[0]
     return SourceFileLoader(name, path).load_module().Spider()
-
-
-def download(path, api):
-    if api.startswith('http'):
-        writeFile(path, redirect(api).content)
-    else:
-        writeFile(path, str.encode(api))
 
 
 def writeFile(path, content):
@@ -101,6 +95,21 @@ def action(ru, action):
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
 
+
+
+def subtitle_init(ru, config):
+    result = ru.init(str2json(config) if isinstance(config, str) and config.strip().startswith(('{', '[')) else config)
+    return json.dumps(result if result is not None else {"code": 0, "data": {}}, ensure_ascii=False)
+
+
+def subtitle_search(ru, request):
+    result = ru.search(str2json(request))
+    return json.dumps(result, ensure_ascii=False)
+
+
+def subtitle_resolve(ru, request):
+    result = ru.resolve(str2json(request))
+    return json.dumps(result, ensure_ascii=False)
 
 def destroy(ru):
     ru.destroy()

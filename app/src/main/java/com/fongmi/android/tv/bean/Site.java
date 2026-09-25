@@ -16,6 +16,7 @@ import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.gson.ExtAdapter;
 import com.fongmi.android.tv.gson.HeaderAdapter;
+import com.fongmi.android.tv.setting.SiteNameStore;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.net.OkHttp;
@@ -33,13 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Entity
 public class Site implements Parcelable {
-
-    private static final Pattern GROUP_PATTERN = Pattern.compile("\\[([^\\]]+)]");
 
     @NonNull
     @PrimaryKey
@@ -194,6 +191,10 @@ public class Site implements Parcelable {
         this.name = name;
     }
 
+    public String getDisplayName() {
+        return SiteNameStore.getDisplayName(this);
+    }
+
     public String getApi() {
         return TextUtils.isEmpty(api) ? "" : api;
     }
@@ -324,10 +325,7 @@ public class Site implements Parcelable {
     }
 
     public List<String> getGroups() {
-        List<String> groups = new ArrayList<>();
-        Matcher matcher = GROUP_PATTERN.matcher(getName());
-        while (matcher.find()) groups.add("[" + matcher.group(1) + "]");
-        return groups;
+        return SiteNameStore.getGroups(this);
     }
 
     public boolean inGroup(String group) {

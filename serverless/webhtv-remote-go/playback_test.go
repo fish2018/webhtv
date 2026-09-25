@@ -83,12 +83,12 @@ func testProgress(eventID string, timestamp int64, position int) map[string]any 
 
 func TestPlaybackProgressDeletionAndRestore(t *testing.T) {
 	service := newPlaybackService(":memory:")
-	status, body := playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-1", 1781170000000, 120000), testPlaybackToken, testPlaybackConfig, nil)
+	status, body := playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-1", nowMs() + 1000, 120000), testPlaybackToken, testPlaybackConfig, nil)
 	if status != http.StatusOK || playbackResultAt(t, body, 0)["action"] != "created" {
 		t.Fatalf("create failed: status=%d body=%#v", status, body)
 	}
 
-	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-1", 1781170000000, 120000), testPlaybackToken, testPlaybackConfig, nil)
+	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-1", nowMs() + 1000, 120000), testPlaybackToken, testPlaybackConfig, nil)
 	if playbackResultAt(t, body, 0)["action"] != "duplicate" {
 		t.Fatalf("expected duplicate: %#v", body)
 	}
@@ -100,7 +100,7 @@ func TestPlaybackProgressDeletionAndRestore(t *testing.T) {
 
 	deletion := map[string]any{
 		"event": "playback.deleted", "eventId": "delete-1", "scope": "item",
-		"historyKey": "site-a@@@vod-1@@@1", "siteKey": "site-a", "vodId": "vod-1", "deletedAt": int64(1781170005000),
+		"historyKey": "site-a@@@vod-1@@@1", "siteKey": "site-a", "vodId": "vod-1", "deletedAt": int64(nowMs() + 6000),
 	}
 	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", deletion, testPlaybackToken, testPlaybackConfig, nil)
 	result := playbackResultAt(t, body, 0)
@@ -108,12 +108,12 @@ func TestPlaybackProgressDeletionAndRestore(t *testing.T) {
 		t.Fatalf("delete failed: %#v", body)
 	}
 
-	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-stale", 1781170004000, 180000), testPlaybackToken, testPlaybackConfig, nil)
+	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-stale", nowMs() + 5000, 180000), testPlaybackToken, testPlaybackConfig, nil)
 	if playbackResultAt(t, body, 0)["action"] != "skipped" {
 		t.Fatalf("stale progress revived a deletion: %#v", body)
 	}
 
-	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-fresh", 1781170006000, 240000), testPlaybackToken, testPlaybackConfig, nil)
+	_, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", testProgress("progress-fresh", nowMs() + 7000, 240000), testPlaybackToken, testPlaybackConfig, nil)
 	if playbackResultAt(t, body, 0)["action"] != "created" {
 		t.Fatalf("fresh progress did not restore: %#v", body)
 	}
@@ -133,14 +133,14 @@ func TestPlaybackProgressDeletionAndRestore(t *testing.T) {
 func TestPlaybackExplicitAllAndIsolation(t *testing.T) {
 	service := newPlaybackService(":memory:")
 	status, body := playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", map[string]any{
-		"event": "playback.deleted", "eventId": "unsafe", "deletedAt": int64(1781170000000),
+		"event": "playback.deleted", "eventId": "unsafe", "deletedAt": int64(nowMs() + 1000),
 	}, testPlaybackToken, testPlaybackConfig, nil)
 	if status != http.StatusBadRequest {
 		t.Fatalf("implicit all deletion must fail: status=%d body=%#v", status, body)
 	}
 
 	status, body = playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", map[string]any{
-		"event": "playback.deleted", "eventId": "all-1", "scope": "all", "deletedAt": int64(1781170000000),
+		"event": "playback.deleted", "eventId": "all-1", "scope": "all", "deletedAt": int64(nowMs() + 1000),
 	}, testPlaybackToken, testPlaybackConfig, nil)
 	if status != http.StatusOK || playbackResultAt(t, body, 0)["action"] != "deleted" {
 		t.Fatalf("explicit all deletion failed: status=%d body=%#v", status, body)
@@ -160,8 +160,8 @@ func TestPlaybackBatchValidationIsAtomic(t *testing.T) {
 	service := newPlaybackService(":memory:")
 	status, body := playbackTestRequest(t, service, http.MethodPost, "/api/playback/sync", map[string]any{
 		"changes": []any{
-			testProgress("valid-first", 1781170000000, 1000),
-			map[string]any{"event": "playback.deleted", "eventId": "invalid-second", "deletedAt": int64(1781170001000)},
+			testProgress("valid-first", nowMs() + 1000, 1000),
+			map[string]any{"event": "playback.deleted", "eventId": "invalid-second", "deletedAt": int64(nowMs() + 2000)},
 		},
 	}, testPlaybackToken, testPlaybackConfig, nil)
 	if status != http.StatusBadRequest {
@@ -176,7 +176,7 @@ func TestPlaybackBatchValidationIsAtomic(t *testing.T) {
 func TestPlaybackPersistsAcrossServiceInstances(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "playback.json")
 	first := newPlaybackService(path)
-	status, body := playbackTestRequest(t, first, http.MethodPost, "/api/playback/sync", testProgress("persisted", 1781170000000, 120000), testPlaybackToken, testPlaybackConfig, nil)
+	status, body := playbackTestRequest(t, first, http.MethodPost, "/api/playback/sync", testProgress("persisted", nowMs() + 1000, 120000), testPlaybackToken, testPlaybackConfig, nil)
 	if status != http.StatusOK {
 		t.Fatalf("persist write failed: status=%d body=%#v", status, body)
 	}

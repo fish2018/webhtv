@@ -22,4 +22,13 @@
         android:scaleType="center"
         android:src="@drawable/ic_control_rotate" />
 
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/pip"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/live_control_pip"
+        android:scaleType="center"
+        android:src="@drawable/ic_control_pip" />
+
 </androidx.appcompat.widget.LinearLayoutCompat>

@@ -28,6 +28,9 @@ import com.fongmi.android.tv.databinding.ViewWallBinding;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.theme.ThemeController;
+import com.fongmi.android.tv.theme.ThemeResolver;
+import com.fongmi.android.tv.theme.ThemeProfileStore;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.github.catvod.crawler.SpiderDebug;
 
@@ -45,9 +48,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     private static final int DEFAULT_WALL_COLOR = Setting.getBuiltInWallColor(Setting.WALL_DREAM_PURPLE);
     private static final int GREEN_WALL_COLOR = 0xFF40C090;
     private static final int MAX_WALL_BITMAP_SIDE = 1920;
-    private static final int TYPE_RES = 0;
-    private static final int TYPE_GIF = 1;
-    private static final int TYPE_VIDEO = 2;
+    private static final int TYPE_RES = WallMotionPolicy.TYPE_RES;
     private ViewWallBinding binding;
     private GifDrawable drawable;
     private PlayerView video;
@@ -55,6 +56,8 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     private final Runnable refreshRunnable = this::refresh;
     private boolean observerAdded;
     private boolean motionEnabled = true;
+    private boolean videoRestorePending;
+    private boolean started;
 
     public CustomWallView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -80,8 +83,10 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
             observerAdded = true;
         }
         removeCallbacks(refreshRunnable);
-        if (loadedPlaceholder && isStaticBuiltInWall()) theme();
-        else post(refreshRunnable);
+        if (loadedPlaceholder && isStaticBuiltInWall()) {
+            theme();
+            applyThemeScrim();
+        } else post(refreshRunnable);
     }
 
     @Override
@@ -101,6 +106,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         stop();
         load();
         theme();
+        applyThemeScrim();
         SpiderDebug.log("startup", "wall refresh cost=%sms", System.currentTimeMillis() - start);
     }
 
@@ -109,7 +115,9 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void stop() {
-        if (player != null && player.isPlaying()) {
+        // 不能用 isPlaying() 做前置条件：壁纸视频在 buffering 时 isPlaying() 为 false，
+        // 此时切换壁纸配置会把旧的 MediaItem 留在播放器里。
+        if (player != null) {
             player.stop();
             player.clearMediaItems();
         }
@@ -130,9 +138,18 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         if (isBuiltInColor(wall, type)) loadColor(Setting.getBuiltInWallColor(wall));
         else if (isBuiltInDesign(wall, type)) loadDesign(wall);
         else if (isGreen(wall, type)) loadRes(R.drawable.wallpaper_1);
-        else if (motionEnabled && type == TYPE_VIDEO) loadVideo(FileUtil.getWall(wall));
-        else if (motionEnabled && type == TYPE_GIF) loadGif(FileUtil.getWall(wall));
+        else if (WallMotionPolicy.isVideoMotion(motionEnabled, type)) loadVideo(FileUtil.getWall(wall));
+        else if (WallMotionPolicy.isGifMotion(motionEnabled, type)) loadGif(FileUtil.getWall(wall));
         else loadImage();
+    }
+
+    private void applyThemeScrim() {
+        if (!Setting.isThemeColorEnabled()) return;
+        if (binding == null || binding.themeScrim == null) return;
+        boolean dark = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        binding.themeScrim.setBackgroundColor(ThemeController.wallpaperScrim(
+                ThemeResolver.resolve(ThemeProfileStore.load(), dark, Setting.getWallColor())));
     }
 
     private void theme() {
@@ -179,7 +196,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         else binding.image.setImageDrawable(new ColorDrawable(DEFAULT_WALL_COLOR));
     }
 
-    private int getDesignResId(int wall) {
+    public static int getDesignResId(int wall) {
         return switch (wall) {
             case Setting.WALL_AURORA_GLASS -> R.drawable.wallpaper_design_10_aurora_glass;
             case Setting.WALL_SUNSET_PRISM -> R.drawable.wallpaper_design_11_sunset_prism;
@@ -214,11 +231,28 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
 
     private void loadVideo(File file) {
         if (!isReady()) return;
+        // 静态底图兜住起播前的空窗和解码失败；缓存缺失时退到默认色，别把 ImageView 清空。
+        Drawable cache = cache();
+        binding.image.setImageDrawable(cache != null ? cache : new ColorDrawable(DEFAULT_WALL_COLOR));
+        // 页面已 onStop（例如后台收到换壁纸事件）时不要建解码器，留给 onResume 补上。
+        if (WallMotionPolicy.shouldDeferVideo(motionEnabled, Setting.getWallType(), started)) {
+            videoRestorePending = true;
+            return;
+        }
+        startVideo(file);
+    }
+
+    /**
+     * 起播壁纸视频，但不重新解码首帧静态底图——从后台返回时底图还在，
+     * 省掉一次主线程上的全屏 Bitmap 解码。
+     */
+    private void startVideo(File file) {
+        if (!isReady()) return;
+        videoRestorePending = false;
         ensurePlayer();
         ensureVideoView();
         video.setPlayer(player);
         video.setVisibility(VISIBLE);
-        binding.image.setImageDrawable(cache());
         player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)));
         player.prepare();
     }
@@ -244,8 +278,8 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = getWallSampleSize(bounds);
-            options.inPreferredConfig = Bitmap.Config.RGB_565;
-            options.inDither = true;
+            // Blurred wallpapers are gradient-heavy; RGB_565 quantization creates visible bands and halos.
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             return BitmapFactory.decodeFile(file.getAbsolutePath(), options);
         } catch (OutOfMemoryError | RuntimeException e) {
             SpiderDebug.log("startup", "wall bitmap decode fallback file=%s error=%s", file.getName(), e.getClass().getSimpleName());
@@ -335,14 +369,28 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         return isBuiltInColor(wall, type) || isBuiltInDesign(wall, type) || isGreen(wall, type);
     }
 
+    /** 与 {@link #load()} 里走 loadVideo 的条件保持一致；内置色/设计壁纸的 type 恒为 TYPE_RES，故无需再排除。 */
+    private boolean isVideoWall() {
+        return WallMotionPolicy.isVideoMotion(motionEnabled, Setting.getWallType());
+    }
+
     @Override
     public void onCreate(@NonNull LifecycleOwner owner) {
         EventBus.getDefault().register(this);
     }
 
     @Override
+    public void onStart(@NonNull LifecycleOwner owner) {
+        started = true;
+    }
+
+    @Override
     public void onResume(@NonNull LifecycleOwner owner) {
         if (drawable != null) drawable.start();
+        if (videoRestorePending) {
+            restoreVideo();
+            return;
+        }
         if (!hasVideo()) return;
         video.setPlayer(player);
         player.play();
@@ -357,6 +405,33 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     @Override
+    public void onStop(@NonNull LifecycleOwner owner) {
+        // 释放而非仅暂停：壁纸播放器占着一路 MediaCodec 硬解实例，返回栈里的页面
+        // 一直留着它会挤占前台播放器的解码器配额。下次 onResume 重新 prepare。
+        started = false;
+        releasePlayer();
+    }
+
+    private void releasePlayer() {
+        if (player == null) return;
+        videoRestorePending = isVideoWall();
+        if (video != null) {
+            video.setPlayer(null);
+            video.setVisibility(GONE);
+        }
+        player.release();
+        player = null;
+    }
+
+    private void restoreVideo() {
+        // 尚未 ready 时保留标志，等下一次 onResume 再试；否则这次恢复机会就丢了。
+        if (!isReady()) return;
+        videoRestorePending = false;
+        if (!isVideoWall()) return;
+        startVideo(FileUtil.getWall(Setting.getWall()));
+    }
+
+    @Override
     public void onDestroy(@NonNull LifecycleOwner owner) {
         removeCallbacks(refreshRunnable);
         EventBus.getDefault().unregister(this);
@@ -364,6 +439,8 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         if (video != null) removeView(video);
         if (player != null) player.release();
         observerAdded = false;
+        videoRestorePending = false;
+        started = false;
         drawable = null;
         binding = null;
         player = null;

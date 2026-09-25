@@ -33,6 +33,17 @@
         android:textColor="@color/white" />
 
     <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/silentRestart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/selector_button"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:text="@string/crash_silent_restart"
+        android:textColor="@color/white" />
+
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/details"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

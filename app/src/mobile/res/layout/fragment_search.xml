@@ -10,6 +10,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:theme="@style/ToolbarWhiteText"
         app:menu="@menu/menu_search"
         app:navigationIconTint="@android:color/white">
 

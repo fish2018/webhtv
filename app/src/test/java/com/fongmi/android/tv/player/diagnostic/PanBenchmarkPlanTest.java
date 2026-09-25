@@ -32,4 +32,32 @@ public class PanBenchmarkPlanTest {
         long budget = PanBenchmarkPlan.roundBudgetBytes(100_000_000L, 8, PanBenchmarkPlan.Mode.STANDARD);
         assertEquals(125_000_000L, budget);
     }
+
+    @Test
+    public void plannedTrafficIncludesProbeWarmupRetriesDirectComparisonsAndAppPhase() {
+        List<Integer> threads = List.of(1, 2, 4, 8, 16, 32, 64, 128, 256);
+        int appThreads = 256;
+        long expected = PanBenchmarkPlan.PROBE_BYTES + PanBenchmarkPlan.PROXY_WARMUP_BYTES * 2;
+        for (int repeat = 0; repeat < PanBenchmarkPlan.repeats(PanBenchmarkPlan.Mode.DEEP); repeat++) {
+            expected += PanBenchmarkPlan.roundBudgetBytes(0, 1, PanBenchmarkPlan.Mode.DEEP);
+            for (int thread : threads) {
+                expected += PanBenchmarkPlan.roundBudgetBytes(0, thread, PanBenchmarkPlan.Mode.DEEP) * 2;
+                if (thread > 1) expected += PanBenchmarkPlan.roundBudgetBytes(0, PanBenchmarkPlan.directConcurrency(thread), PanBenchmarkPlan.Mode.DEEP);
+            }
+            expected += PanBenchmarkPlan.roundBudgetBytes(0, appThreads, PanBenchmarkPlan.Mode.DEEP) * 4;
+        }
+
+        assertEquals(expected, PanBenchmarkPlan.estimatePlannedBytes(0, threads, PanBenchmarkPlan.Mode.DEEP, true, appThreads));
+    }
+
+    @Test
+    public void directPlaybackPlanUsesConfiguredThreadsForAppPhaseOnly() {
+        int configuredThreads = 64;
+        long perRepeat = PanBenchmarkPlan.roundBudgetBytes(0, 1, PanBenchmarkPlan.Mode.STANDARD)
+                + PanBenchmarkPlan.roundBudgetBytes(0, configuredThreads, PanBenchmarkPlan.Mode.STANDARD) * 2;
+        long expected = PanBenchmarkPlan.PROBE_BYTES + perRepeat * PanBenchmarkPlan.repeats(PanBenchmarkPlan.Mode.STANDARD);
+
+        assertEquals(expected, PanBenchmarkPlan.estimatePlannedBytes(0, List.of(1, 8, 64), PanBenchmarkPlan.Mode.STANDARD, false, configuredThreads));
+    }
+
 }

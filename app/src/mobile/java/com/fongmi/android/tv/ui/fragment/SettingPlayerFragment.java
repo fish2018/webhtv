@@ -19,6 +19,7 @@ import com.fongmi.android.tv.player.lut.LutSetting;
 import com.fongmi.android.tv.player.mpv.MpvConfigStore;
 import com.fongmi.android.tv.setting.PlaybackPerformanceSetting;
 import com.fongmi.android.tv.setting.PlayerButtonSetting;
+import com.fongmi.android.tv.setting.LiveSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
@@ -33,10 +34,13 @@ import com.fongmi.android.tv.ui.dialog.PlayerKernelDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerOsdDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
+import com.fongmi.android.tv.ui.dialog.VideoAspectModeDialog;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.text.DecimalFormat;
+
+import is.xyz.mpv.MPVLib;
 
 public class SettingPlayerFragment extends BaseFragment implements UaListener, BufferListener, SpeedListener {
 
@@ -46,7 +50,9 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     private String[] backBuffer;
     private String[] bufferBytes;
     private String[] caption;
+    private String[] failureFallback;
     private String[] kernel;
+    private String[] mpvRender;
     private String[] padLiveMode;
     private String[] playCache;
     private String[] render;
@@ -76,7 +82,6 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         setPerformanceText();
         setPadLiveModeText();
         setPlayerButtonsText();
-        mBinding.adblockText.setText(getSwitch(Setting.isAdblock()));
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.bufferText.setText(String.valueOf(PlayerSetting.getBuffer()));
         mBinding.bufferBytesText.setText((bufferBytes = ResUtil.getStringArray(R.array.select_buffer_bytes))[PlayerSetting.getBufferBytesOption()]);
@@ -85,12 +90,18 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         setPreloadText();
         mBinding.autoPlayText.setText(getSwitch(PlayerSetting.isAutoPlay()));
         mBinding.autoChangeText.setText(getSwitch(PlayerSetting.isAutoChange()));
+        mBinding.liveSourceFallbackText.setText(getSwitch(LiveSetting.isSourceFallback()));
+        mBinding.rememberBrightnessText.setText(getSwitch(PlayerSetting.isRememberBrightness()));
+        mBinding.failureFallbackText.setText((failureFallback = ResUtil.getStringArray(R.array.select_player_failure_fallback))[PlayerSetting.getFailureFallback()]);
+        mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
+        mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
         mBinding.audioDecodeText.setText(getSwitch(PlayerSetting.isAudioPrefer()));
         mBinding.audioPassThroughText.setText(getSwitch(PlayerSetting.isAudioPassThrough()));
         mBinding.videoDecodeText.setText(getSwitch(PlayerSetting.isVideoPrefer()));
         mBinding.caption.setVisibility(PlayerSetting.hasCaption() ? View.VISIBLE : View.GONE);
         mBinding.osdText.setText(getOsdText(osd = ResUtil.getStringArray(R.array.select_player_osd)));
         mBinding.kernelText.setText((kernel = ResUtil.getStringArray(R.array.select_player_kernel))[PlayerSetting.getPlayer()]);
+        mpvRender = ResUtil.getStringArray(R.array.select_mpv_render);
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.lutText.setText(LutSetting.getSummary());
         setMpvRows();
@@ -108,6 +119,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.scale.setOnClickListener(this::onScale);
         mBinding.lut.setOnClickListener(this::onLut);
         mBinding.mpvConfig.setOnClickListener(view -> MpvConfigDialog.show(this, () -> mBinding.mpvConfigText.setText(MpvConfigStore.summary())));
+        mBinding.mpvRender.setOnClickListener(this::onMpvRender);
         mBinding.blurayMenu.setOnClickListener(view -> {
             PlayerSetting.putBlurayMenu(!PlayerSetting.isBlurayMenu());
             mBinding.blurayMenuText.setText(getSwitch(PlayerSetting.isBlurayMenu()));
@@ -128,13 +140,20 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.preloadPause.setOnClickListener(this::onPreloadPause);
         mBinding.autoPlay.setOnClickListener(this::setAutoPlay);
         mBinding.autoChange.setOnClickListener(this::setAutoChange);
+        mBinding.liveSourceFallback.setOnClickListener(view -> {
+            LiveSetting.putSourceFallback(!LiveSetting.isSourceFallback());
+            mBinding.liveSourceFallbackText.setText(getSwitch(LiveSetting.isSourceFallback()));
+        });
+        mBinding.rememberBrightness.setOnClickListener(this::setRememberBrightness);
+        mBinding.failureFallback.setOnClickListener(this::setFailureFallback);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.tunnel.setOnClickListener(this::setTunnel);
         mBinding.exo4kCompat.setOnClickListener(this::onPerformance);
         mBinding.caption.setOnClickListener(this::setCaption);
-        mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.background.setOnClickListener(this::onBackground);
+        mBinding.musicNotification.setOnClickListener(this::setMusicNotification);
+        mBinding.audioBookNotification.setOnClickListener(this::setAudioBookNotification);
         mBinding.audioDecode.setOnClickListener(this::setAudioDecode);
         mBinding.audioPassThrough.setOnClickListener(this::setAudioPassThrough);
         mBinding.videoDecode.setOnClickListener(this::setVideoDecode);
@@ -167,9 +186,9 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onScale(View view) {
-        ChoiceDialog.showSingle(this, R.string.player_scale, scale, PlayerSetting.getScale(), which -> {
-            mBinding.scaleText.setText(scale[which]);
-            PlayerSetting.putScale(which);
+        VideoAspectModeDialog.show(this, PlayerSetting.getScale(), mode -> {
+            mBinding.scaleText.setText(scale[mode]);
+            PlayerSetting.putScale(mode);
         });
     }
 
@@ -177,11 +196,29 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         LutDialog.show(this, () -> mBinding.lutText.setText(LutSetting.getSummary()));
     }
 
+    private void onMpvRender(View view) {
+        ChoiceDialog.showSingle(this, R.string.player_mpv_render, mpvRender, PlayerSetting.getMpvRender(), which -> {
+            PlayerSetting.putMpvRender(which);
+            mBinding.mpvRenderText.setText(getMpvRenderText());
+        });
+    }
+
+    private String getMpvRenderText() {
+        int render = PlayerSetting.getMpvRender();
+        String text = mpvRender[render];
+        if (render == PlayerSetting.MPV_RENDER_VULKAN && !MPVLib.isVulkanRendererAvailable(requireContext())) {
+            text += " (" + getString(R.string.mpv_render_native_unavailable) + ")";
+        }
+        return text;
+    }
+
     private void setMpvRows() {
         boolean visible = PlayerSetting.getPlayer() == PlayerSetting.MPV;
         mBinding.mpvConfig.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.mpvRender.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.blurayMenu.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.mpvConfigText.setText(MpvConfigStore.summary());
+        mBinding.mpvRenderText.setText(getMpvRenderText());
         mBinding.blurayMenuText.setText(getSwitch(PlayerSetting.isBlurayMenu()));
     }
 
@@ -208,17 +245,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private boolean[] getOsdChecked() {
-        return new boolean[]{PlayerSetting.isOsdTitle(), PlayerSetting.isOsdResolution(), PlayerSetting.isOsdTime(), PlayerSetting.isOsdProgress(), PlayerSetting.isOsdTraffic(), PlayerSetting.isOsdMini(), PlayerSetting.isOsdDiagnostics()};
+        return PlayerSetting.getDisplayChecked();
     }
 
     private void setOsdChecked(boolean[] checked) {
-        PlayerSetting.putOsdTitle(checked[0]);
-        PlayerSetting.putOsdResolution(checked[1]);
-        PlayerSetting.putOsdTime(checked[2]);
-        PlayerSetting.putOsdProgress(checked[3]);
-        PlayerSetting.putOsdTraffic(checked[4]);
-        PlayerSetting.putOsdMini(checked[5]);
-        PlayerSetting.putOsdDiagnostics(checked[6]);
+        PlayerSetting.putDisplayChecked(checked);
     }
 
     private String getOsdText(String[] items) {
@@ -407,6 +438,18 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.autoChangeText.setText(getSwitch(PlayerSetting.isAutoChange()));
     }
 
+    private void setRememberBrightness(View view) {
+        PlayerSetting.putRememberBrightness(!PlayerSetting.isRememberBrightness());
+        mBinding.rememberBrightnessText.setText(getSwitch(PlayerSetting.isRememberBrightness()));
+    }
+
+    private void setFailureFallback(View view) {
+        ChoiceDialog.showSingle(this, R.string.player_failure_fallback, failureFallback, PlayerSetting.getFailureFallback(), which -> {
+            PlayerSetting.putFailureFallback(which);
+            mBinding.failureFallbackText.setText(failureFallback[which]);
+        });
+    }
+
     private void setRender(View view) {
         if (PlayerSetting.isTunnel() && PlayerSetting.getRender() == 0) setTunnel(view);
         int index = (PlayerSetting.getRender() + 1) % render.length;
@@ -477,16 +520,21 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         return PlayerSetting.isCaption();
     }
 
-    private void setAdblock(View view) {
-        Setting.putAdblock(!Setting.isAdblock());
-        mBinding.adblockText.setText(getSwitch(Setting.isAdblock()));
-    }
-
     private void onBackground(View view) {
         ChoiceDialog.showSingle(this, R.string.player_background, background, PlayerSetting.getBackground(), which -> {
             mBinding.backgroundText.setText(background[which]);
             PlayerSetting.putBackground(which);
         });
+    }
+
+    private void setMusicNotification(View view) {
+        PlayerSetting.putMusicNotification(!PlayerSetting.isMusicNotification());
+        mBinding.musicNotificationText.setText(getSwitch(PlayerSetting.isMusicNotification()));
+    }
+
+    private void setAudioBookNotification(View view) {
+        PlayerSetting.putAudioBookNotification(!PlayerSetting.isAudioBookNotification());
+        mBinding.audioBookNotificationText.setText(getSwitch(PlayerSetting.isAudioBookNotification()));
     }
 
     private void setAudioDecode(View view) {

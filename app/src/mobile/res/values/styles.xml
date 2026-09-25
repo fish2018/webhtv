@@ -1,6 +1,7 @@
 <resources>
 
     <style name="Theme.Base" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.WebHTV.LightDialog</item>
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
@@ -114,6 +115,11 @@
     <style name="ToolbarPopupTextAppearance" parent="TextAppearance.AppCompat.Widget.PopupMenu.Large">
         <item name="android:textColor">#18333A</item>
         <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="ToolbarWhiteText" parent="">
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:textColorPrimary">@color/white</item>
     </style>
 
 </resources>

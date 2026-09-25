@@ -65,7 +65,7 @@ final class MpvOptionPriorityPolicy {
         candidates.put("hwdec", config.hwdec());
         candidates.put("hwdec-codecs", HARDWARE_CODECS);
         candidates.put("ao", config.ao());
-        candidates.put("ad", MpvAudioDecoderPolicy.hardwareFirstDecoderList());
+        candidates.put("ad", MpvAudioDecoderPolicy.decoderList(config.audioSpdif()));
         candidates.put("audio-spdif", config.audioSpdif());
         candidates.put("cache", config.cache() ? "yes" : "no");
         candidates.put("cache-secs", String.valueOf(config.cacheSeconds()));

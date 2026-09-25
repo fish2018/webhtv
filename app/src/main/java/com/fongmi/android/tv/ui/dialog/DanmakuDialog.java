@@ -28,6 +28,12 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
     private final DanmakuAdapter adapter;
     private DialogDanmakuBinding binding;
     private PlayerManager player;
+    private String siteKey;
+    private String vodId;
+    private String rawTitle;
+    private String episodeName;
+    private int tmdbId;
+    private int tmdbSeasonNumber;
 
     public interface Host {
 
@@ -44,6 +50,20 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
 
     public DanmakuDialog player(PlayerManager player) {
         this.player = player;
+        return this;
+    }
+
+    public DanmakuDialog identity(String siteKey, String vodId, String rawTitle, String episodeName) {
+        this.siteKey = clean(siteKey);
+        this.vodId = clean(vodId);
+        this.rawTitle = clean(rawTitle);
+        this.episodeName = clean(episodeName);
+        return this;
+    }
+
+    public DanmakuDialog tmdb(int tmdbId, int tmdbSeasonNumber) {
+        this.tmdbId = tmdbId;
+        this.tmdbSeasonNumber = tmdbSeasonNumber;
         return this;
     }
 
@@ -93,12 +113,22 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
         FragmentActivity activity = getActivity();
         if (activity == null) return;
         dismissAllowingStateLoss();
-        if (shouldUseInputDialog(activity)) DanmakuSearchInputDialog.create().player(player).restoreParent(true).show(activity);
-        else DanmakuSearchDialog.create().player(player).restoreParent(true).show(activity);
+        if (shouldUseInputDialog(activity))
+            DanmakuSearchInputDialog.create().player(player).identity(siteKey, vodId, rawTitle, episodeName).tmdb(tmdbId, tmdbSeasonNumber).restoreParent(true).show(activity);
+        else
+            DanmakuSearchDialog.create().player(player).identity(siteKey, vodId, rawTitle, episodeName).tmdb(tmdbId, tmdbSeasonNumber).restoreParent(true).show(activity);
     }
 
     private boolean shouldUseInputDialog(FragmentActivity activity) {
         return Util.isMobile() && (!(activity instanceof Host) || !((Host) activity).isDanmakuFullscreen());
+    }
+
+    public void refresh() {
+        if (binding == null || player == null) return;
+        adapter.clear();
+        adapter.addAll(player.getDanmakus());
+        binding.recycler.setVisibility(adapter.getItemCount() == 0 ? View.GONE : View.VISIBLE);
+        if (adapter.getItemCount() > 0) binding.recycler.post(() -> binding.recycler.scrollToPosition(adapter.getSelected()));
     }
 
     private void onChoose(View view) {
@@ -127,6 +157,10 @@ public final class DanmakuDialog extends BaseBottomSheetDialog implements Danmak
     @Override
     protected boolean stableOverlay() {
         return true;
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {

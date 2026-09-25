@@ -36,6 +36,14 @@ public class PreCachePolicyTest {
     }
 
     @Test
+    public void preloadWaitsForAStablePlayingWindow() {
+        assertFalse(PreCachePolicy.isPlaybackStableForPreload(4_999, 5_000, true, false));
+        assertFalse(PreCachePolicy.isPlaybackStableForPreload(5_000, 5_000, false, false));
+        assertFalse(PreCachePolicy.isPlaybackStableForPreload(5_000, 5_000, true, true));
+        assertTrue(PreCachePolicy.isPlaybackStableForPreload(5_001, 5_000, true, false));
+    }
+
+    @Test
     public void seekSuppressionRequiresReadyIdleAndSafeBuffer() {
         assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_BUFFERING, true, false, true));
         assertFalse(PreCache.shouldReleaseSeekPreloadSuppression(Player.STATE_READY, false, false, true));
@@ -89,6 +97,12 @@ public class PreCachePolicyTest {
         assertEquals(240_000, PreCachePolicy.preloadResumeWatermarkMs(300_000, 20_000));
         assertEquals(40_000, PreCachePolicy.preloadResumeWatermarkMs(60_000, 20_000));
         assertEquals(0, PreCachePolicy.preloadResumeWatermarkMs(10_000, 20_000));
+    }
+
+    @Test
+    public void completedRangesWaitBeforeStartingAnotherTask() {
+        assertEquals(5_000, PreCachePolicy.nextRangeDelayMs(true));
+        assertEquals(0, PreCachePolicy.nextRangeDelayMs(false));
     }
 
     private static long target(boolean recovery, long remainingMs, double bitrateMbps, double capacityMib) {

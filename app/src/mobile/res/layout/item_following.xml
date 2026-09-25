@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="14dp"
+    android:clickable="false"
+    android:descendantFocusability="afterDescendants"
+    android:focusable="false"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/following_card_bg"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/following_card_stroke"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/image"
+                android:layout_width="86dp"
+                android:layout_height="120dp"
+                android:background="@color/following_card_stroke"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/following_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:text="示例剧" />
+
+                    <TextView
+                        android:id="@+id/badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/shape_sync_direction"
+                        android:paddingStart="8dp"
+                        android:paddingTop="3dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="3dp"
+                        android:textColor="#174EA6"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        tools:text="新 3 集" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/official"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/following_text_primary"
+                    android:textSize="13sp"
+                    tools:text="官方已更新至第 12 集" />
+
+                <TextView
+                    android:id="@+id/source"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/following_text_secondary"
+                    android:textSize="12sp"
+                    tools:text="当前源可播至 E10" />
+
+                <TextView
+                    android:id="@+id/progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/following_text_secondary"
+                    android:textSize="12sp"
+                    tools:text="看到 E8，还有 4 集未看" />
+
+                <TextView
+                    android:id="@+id/error"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="#B3261E"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    tools:text="检查失败" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:descendantFocusability="afterDescendants"
+            android:focusable="false"
+            app:alignContent="flex_start"
+            app:alignItems="stretch"
+            app:flexWrap="wrap"
+            app:justifyContent="flex_start">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/nextSeason"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_next_season"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:backgroundTint="@color/following_button_secondary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/continuePlay"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_continue"
+                android:textColor="@color/following_button_primary_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_primary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/check"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_check"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_secondary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/read"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_read"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_secondary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/notify"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_notify_on"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_secondary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sourceChange"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_change_source"
+                android:textColor="@color/following_button_secondary_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_secondary_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/delete"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:ellipsize="end"
+                android:focusable="true"
+                android:focusableInTouchMode="false"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="@string/following_cancel"
+                android:textColor="@color/following_button_danger_text"
+                android:textSize="12sp"
+                app:backgroundTint="@color/following_button_danger_bg"
+                app:layout_flexBasisPercent="@fraction/following_action_basis"
+                app:layout_flexGrow="0" />
+        </com.google.android.flexbox.FlexboxLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

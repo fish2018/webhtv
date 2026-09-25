@@ -55,6 +55,22 @@ public final class PlaybackRemoteSyncStore {
         return null;
     }
 
+    public static synchronized void markIdentity(String id, PlaybackIdentityResolver.Result result) {
+        if (result == null) return;
+        List<RemoteSyncConfig> configs = list();
+        for (RemoteSyncConfig config : configs) {
+            if (!config.id.equals(id)) continue;
+            config.identityState = result.action;
+            config.identityEpoch = result.identityEpoch;
+            config.identitySupported = result.capabilities;
+            config.identityCanonicalKey = result.canonicalInterfaceKey;
+            config.identityMatchedBy = result.matchedBy;
+            config.identityMessage = result.message;
+            break;
+        }
+        save(configs);
+    }
+
     public static synchronized void markResult(String id, PlaybackRemoteSyncResult result) {
         List<RemoteSyncConfig> configs = list();
         long now = System.currentTimeMillis();
@@ -67,10 +83,22 @@ public final class PlaybackRemoteSyncStore {
             config.lastSkipped = result == null ? 0 : result.skipped;
             config.lastFailed = result == null ? 0 : result.failed;
             config.lastError = result == null ? "" : result.message;
+            if (result != null) {
+                config.identityState = result.identityState == null ? config.identityState : result.identityState;
+                config.identityEpoch = result.identityEpoch == null ? config.identityEpoch : result.identityEpoch;
+                config.identitySupported = result.identitySupported;
+                config.identityCanonicalKey = result.identityCanonicalKey == null ? "" : result.identityCanonicalKey;
+                config.identityMatchedBy = result.identityMatchedBy == null ? "" : result.identityMatchedBy;
+                config.identityMessage = result.identityMessage == null ? "" : result.identityMessage;
+            }
             if (result != null && result.success) {
                 config.lastSuccessAt = now;
                 config.lastError = "";
-                config.cursor(result.configKey, result.nextSince);
+                if (result.cursors != null) {
+                    for (java.util.Map.Entry<String, String> entry : result.cursors.entrySet()) config.cursor(entry.getKey(), entry.getValue());
+                } else {
+                    config.cursor(result.configKey, result.nextSince);
+                }
             }
             break;
         }
@@ -106,6 +134,11 @@ public final class PlaybackRemoteSyncStore {
         if (config.maxItems <= 0) config.maxItems = 100;
         if (config.maxItems > 1000) config.maxItems = 1000;
         if (config.lastError == null) config.lastError = "";
+        if (config.identityState == null) config.identityState = "unknown";
+        if (config.identityEpoch == null) config.identityEpoch = "";
+        if (config.identityCanonicalKey == null) config.identityCanonicalKey = "";
+        if (config.identityMatchedBy == null) config.identityMatchedBy = "";
+        if (config.identityMessage == null) config.identityMessage = "";
         return config;
     }
 }

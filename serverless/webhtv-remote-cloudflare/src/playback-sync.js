@@ -1,4 +1,6 @@
+import { parseIdentityRequest, resolveIdentity, resolveConfigKey, normalizeConfigType, identityCapabilities } from '../../playback-identity-fixtures/identity.js';
 const PLAYBACK_SYNC_PATHS = new Set(['/api/playback/sync', '/playback/sync']);
+const IDENTITY_RESOLVE_PATHS = new Set(['/api/playback/identity/resolve', '/playback/identity/resolve']);
 const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MAX_BODY_BYTES = 128 * 1024;
@@ -11,7 +13,7 @@ export function isPlaybackSyncPath(pathname) {
   const path = normalizePath(pathname);
   if (PLAYBACK_SYNC_PATHS.has(path)) return true;
   for (const base of PLAYBACK_SYNC_PATHS) if (path === `${base}/status`) return true;
-  return false;
+  return IDENTITY_RESOLVE_PATHS.has(path);
 }
 
 export async function handlePlaybackSyncGateway(request, env) {
@@ -41,13 +43,19 @@ export class WebHTVPlaybackSyncDO {
       this.cleanup();
       const url = new URL(request.url);
       const path = normalizePath(url.pathname);
+      if (IDENTITY_RESOLVE_PATHS.has(path)) {
+        if (request.method !== 'POST') return playbackError(405, 'Method not allowed');
+        const input = parseIdentityRequest(await readPlaybackJson(request), request.headers);
+        const result = await resolveIdentity(this.identityStore(request), playbackToken(request), input);
+        return playbackCors(playbackJson(result.body, result.status));
+      }
       const status = [...PLAYBACK_SYNC_PATHS].some((base) => path === `${base}/status`);
       if (status) {
-        if (request.method === 'GET') return playbackCors(this.status(request, url));
+        if (request.method === 'GET') return playbackCors(await this.status(request, url));
         return playbackError(405, 'Method not allowed');
       }
       if (!PLAYBACK_SYNC_PATHS.has(path)) return playbackError(404, 'Not found');
-      if (request.method === 'GET') return playbackCors(this.pull(request, url));
+      if (request.method === 'GET') return playbackCors(await this.pull(request, url));
       if (request.method === 'POST') return playbackCors(await this.ingest(request));
       return playbackError(405, 'Method not allowed');
     } catch (error) {
@@ -106,12 +114,19 @@ export class WebHTVPlaybackSyncDO {
       );
       CREATE INDEX IF NOT EXISTS idx_playback_events_received_at
         ON playback_events (received_at);
+      CREATE TABLE IF NOT EXISTS playback_identity_registry (
+        registry_key TEXT PRIMARY KEY,
+        version INTEGER NOT NULL DEFAULT 0,
+        state TEXT NOT NULL
+      );
     `);
   }
 
   async ingest(request) {
     const body = await readPlaybackJson(request);
-    const configKey = requireConfigKey(request, body);
+    const submittedConfigKey = requireConfigKey(request, body);
+    const configType = normalizeConfigType(request.headers.get('x-webhtv-config-type') || body.configType || 'vod');
+    const configKey = await this.resolvePlaybackConfigKey(request, submittedConfigKey, configType, requestAliases(request, body));
     const rawEvents = extractPlaybackEvents(body);
     if (!rawEvents.length) throw playbackHttpError(400, 'Playback event is empty');
     if (rawEvents.length > MAX_BATCH_ITEMS) throw playbackHttpError(413, `Too many playback events; maximum is ${MAX_BATCH_ITEMS}`);
@@ -122,7 +137,9 @@ export class WebHTVPlaybackSyncDO {
     const now = Date.now();
     // Validate the entire batch before applying any item so a malformed item cannot
     // leave earlier records committed while the request itself returns an error.
+    const storageConfigKey = scopedConfigKey(configType, configKey);
     const events = rawEvents.map((raw) => normalizePlaybackEvent(raw, configKey, now, sharedEventId));
+    for (const event of events) event.storageConfigKey = storageConfigKey;
     const results = events.map((event) => event.kind === 'delete' ? this.applyDelete(event, now) : this.applyUpsert(event, now));
     return playbackJson({
       ok: true,
@@ -133,8 +150,11 @@ export class WebHTVPlaybackSyncDO {
     });
   }
 
-  pull(request, url) {
-    const configKey = requireConfigKey(request);
+  async pull(request, url) {
+    const submittedConfigKey = requireConfigKey(request);
+    const configType = normalizeConfigType(request.headers.get('x-webhtv-config-type') || url.searchParams.get('configType'));
+    const configKey = await this.resolvePlaybackConfigKey(request, submittedConfigKey, configType, requestAliases(request));
+    const storageConfigKey = scopedConfigKey(configType, configKey);
     const since = parseCursor(request.headers.get('x-webhtv-since') || url.searchParams.get('since'));
     const limit = parseLimit(request.headers.get('x-webhtv-limit') || url.searchParams.get('limit'));
     const cutoff = Date.now() - TOMBSTONE_RETENTION_MS;
@@ -150,7 +170,7 @@ export class WebHTVPlaybackSyncDO {
       )
       ORDER BY seq ASC
       LIMIT ?
-    `, configKey, since, configKey, cutoff, since, limit + 1).toArray();
+    `, storageConfigKey, since, storageConfigKey, cutoff, since, limit + 1).toArray();
 
     const hasMore = rows.length > limit;
     const selected = hasMore ? rows.slice(0, limit) : rows;
@@ -166,21 +186,27 @@ export class WebHTVPlaybackSyncDO {
     return playbackJson({ changes, nextSince, hasMore });
   }
 
-  status(request, url) {
-    const configKey = requireConfigKey(request);
+  async status(request, url) {
+    const submittedConfigKey = requireConfigKey(request);
+    const configType = normalizeConfigType(request.headers.get('x-webhtv-config-type') || url.searchParams.get('configType'));
+    const configKey = await this.resolvePlaybackConfigKey(request, submittedConfigKey, configType, requestAliases(request));
+    const storageConfigKey = scopedConfigKey(configType, configKey);
     const cutoff = Date.now() - TOMBSTONE_RETENTION_MS;
-    const items = this.sql.exec('SELECT COUNT(*) AS count FROM playback_items WHERE config_key = ?', configKey).one();
-    const tombstones = this.sql.exec('SELECT COUNT(*) AS count FROM playback_tombstones WHERE config_key = ? AND deleted_at >= ?', configKey, cutoff).one();
+    const items = this.sql.exec('SELECT COUNT(*) AS count FROM playback_items WHERE config_key = ?', storageConfigKey).one();
+    const tombstones = this.sql.exec('SELECT COUNT(*) AS count FROM playback_tombstones WHERE config_key = ? AND deleted_at >= ?', storageConfigKey, cutoff).one();
     const latest = this.sql.exec(`
       SELECT COALESCE(MAX(seq), 0) AS seq FROM (
         SELECT seq FROM playback_items WHERE config_key = ?
         UNION ALL
         SELECT seq FROM playback_tombstones WHERE config_key = ? AND deleted_at >= ?
       )
-    `, configKey, configKey, cutoff).one();
+    `, storageConfigKey, storageConfigKey, cutoff).one();
     return playbackJson({
       ok: true,
       configKey,
+      identityProtocol: 'webhtv.playback.identity.v1',
+      addressMatchVersion: 1,
+      capabilities: identityCapabilities(),
       items: Number(items.count || 0),
       tombstones: Number(tombstones.count || 0),
       nextSince: String(latest.seq || 0),
@@ -189,15 +215,85 @@ export class WebHTVPlaybackSyncDO {
     });
   }
 
+  identityStore(request) {
+    const token = playbackToken(request);
+    const sql = this.sql;
+    return {
+      persistent: true,
+      isConfigured: () => true,
+      async load(key) {
+        const row = firstRow(sql.exec('SELECT version, state FROM playback_identity_registry WHERE registry_key = ?', key));
+        if (!row) return { version: null, state: null };
+        let state = null;
+        try { state = JSON.parse(row.state); } catch { throw new Error('Invalid identity registry state'); }
+        return { version: Number(row.version || 0), state };
+      },
+      async compareAndSet(key, version, state) {
+        const current = firstRow(sql.exec('SELECT version FROM playback_identity_registry WHERE registry_key = ?', key));
+        const currentVersion = current ? Number(current.version || 0) : null;
+        if (currentVersion !== version && !(version == null && currentVersion == null)) return false;
+        const nextVersion = currentVersion == null ? 1 : currentVersion + 1;
+        sql.exec('INSERT INTO playback_identity_registry (registry_key, version, state) VALUES (?, ?, ?) ON CONFLICT(registry_key) DO UPDATE SET version = excluded.version, state = excluded.state', key, nextVersion, JSON.stringify(state));
+        return true;
+      },
+      migrateIdentitySpaces: async (identityToken, configType, canonicalInterfaceKey, sourceKeys) => this.migrateIdentitySpaces(identityToken, configType, canonicalInterfaceKey, sourceKeys)
+    };
+  }
+
+  async resolvePlaybackConfigKey(request, submittedConfigKey, configType, aliases = []) {
+    return resolveConfigKey(this.identityStore(request), playbackToken(request), configType, submittedConfigKey, aliases);
+  }
+
+  migrateIdentitySpaces(token, configType, canonicalInterfaceKey, sourceKeys) {
+    const sources = [...new Set((sourceKeys || [])
+      .filter((item) => item && item !== canonicalInterfaceKey)
+      .map((item) => scopedConfigKey(configType, item)))];
+    const canonicalStorageKey = scopedConfigKey(configType, canonicalInterfaceKey);
+    if (!sources.length) return { migrated: false, pending: false, resetSince: false };
+    let migrated = false;
+    this.state.storage.transactionSync(() => {
+      for (const source of sources) {
+        const items = this.sql.exec('SELECT item_key, history_key, site_key, vod_id, updated_at, payload FROM playback_items WHERE config_key = ?', source).toArray();
+        for (const item of items) {
+          const current = firstRow(this.sql.exec('SELECT updated_at FROM playback_items WHERE config_key = ? AND item_key = ?', canonicalStorageKey, item.item_key));
+          if (current && Number(current.updated_at || 0) >= Number(item.updated_at || 0)) continue;
+          const seq = this.nextSequence();
+          this.sql.exec('INSERT INTO playback_items (config_key, item_key, history_key, site_key, vod_id, updated_at, seq, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(config_key, item_key) DO UPDATE SET history_key = excluded.history_key, site_key = excluded.site_key, vod_id = excluded.vod_id, updated_at = excluded.updated_at, seq = excluded.seq, payload = excluded.payload', canonicalStorageKey, item.item_key, item.history_key, item.site_key, item.vod_id, item.updated_at, seq, item.payload);
+          migrated = true;
+        }
+        const tombstones = this.sql.exec('SELECT marker_key, scope, history_key, site_key, vod_id, deleted_at, payload FROM playback_tombstones WHERE config_key = ?', source).toArray();
+        for (const item of tombstones) {
+          const current = firstRow(this.sql.exec('SELECT deleted_at FROM playback_tombstones WHERE config_key = ? AND marker_key = ?', canonicalStorageKey, item.marker_key));
+          if (current && Number(current.deleted_at || 0) >= Number(item.deleted_at || 0)) continue;
+          const seq = this.nextSequence();
+          this.sql.exec('INSERT INTO playback_tombstones (config_key, marker_key, scope, history_key, site_key, vod_id, deleted_at, seq, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(config_key, marker_key) DO UPDATE SET scope = excluded.scope, history_key = excluded.history_key, site_key = excluded.site_key, vod_id = excluded.vod_id, deleted_at = excluded.deleted_at, seq = excluded.seq, payload = excluded.payload', canonicalStorageKey, item.marker_key, item.scope, item.history_key, item.site_key, item.vod_id, item.deleted_at, seq, item.payload);
+          this.sql.exec('DELETE FROM playback_items WHERE config_key = ? AND updated_at <= ?', canonicalStorageKey, item.deleted_at);
+          migrated = true;
+        }
+        const events = this.sql.exec('SELECT event_id, received_at FROM playback_events WHERE config_key = ?', source).toArray();
+        for (const event of events) this.sql.exec('INSERT OR IGNORE INTO playback_events (config_key, event_id, received_at) VALUES (?, ?, ?)', canonicalStorageKey, event.event_id, event.received_at);
+      }
+    });
+    return { migrated, pending: false, resetSince: migrated };
+  }
+
+  nextSequence() {
+    const row = firstRow(this.sql.exec("SELECT value FROM playback_meta WHERE key = 'sequence'"));
+    const next = Number(row?.value || 0) + 1;
+    this.sql.exec("UPDATE playback_meta SET value = ? WHERE key = 'sequence'", next);
+    return next;
+  }
+
   applyUpsert(event, receivedAt) {
+    const storageConfigKey = event.storageConfigKey || event.configKey;
     return this.state.storage.transactionSync(() => {
-      if (event.eventId && this.hasEvent(event.configKey, event.eventId)) {
+      if (event.eventId && this.hasEvent(storageConfigKey, event.eventId)) {
         return resultFor(event, 'duplicate', 0, 'Event already processed');
       }
 
       const current = firstRow(this.sql.exec(
         'SELECT updated_at, seq FROM playback_items WHERE config_key = ? AND item_key = ?',
-        event.configKey,
+        storageConfigKey,
         event.itemKey
       ));
       const tombstone = firstRow(this.sql.exec(`
@@ -208,14 +304,14 @@ export class WebHTVPlaybackSyncDO {
            OR (scope = 'site' AND site_key = ?)
            OR (scope = 'item' AND ((site_key = ? AND vod_id = ?) OR (history_key <> '' AND history_key = ?)))
          )
-      `, event.configKey, event.siteKey, event.siteKey, event.vodId, event.historyKey));
+      `, storageConfigKey, event.siteKey, event.siteKey, event.vodId, event.historyKey));
       const deletedAt = Number(tombstone?.deleted_at || 0);
       if (deletedAt > 0 && event.updatedAt <= deletedAt) {
-        this.recordEvent(event.configKey, event.eventId, receivedAt);
+        this.recordEvent(storageConfigKey, event.eventId, receivedAt);
         return resultFor(event, 'skipped', Number(tombstone?.seq || 0), 'A newer deletion exists');
       }
       if (current && event.updatedAt <= Number(current.updated_at || 0)) {
-        this.recordEvent(event.configKey, event.eventId, receivedAt);
+        this.recordEvent(storageConfigKey, event.eventId, receivedAt);
         return resultFor(event, 'skipped', Number(current.seq || 0), 'A newer progress record exists');
       }
 
@@ -232,25 +328,26 @@ export class WebHTVPlaybackSyncDO {
           updated_at = excluded.updated_at,
           seq = excluded.seq,
           payload = excluded.payload
-      `, event.configKey, event.itemKey, event.historyKey, event.siteKey, event.vodId, event.updatedAt, seq, payload);
-      this.recordEvent(event.configKey, event.eventId, receivedAt);
+      `, storageConfigKey, event.itemKey, event.historyKey, event.siteKey, event.vodId, event.updatedAt, seq, payload);
+      this.recordEvent(storageConfigKey, event.eventId, receivedAt);
       return resultFor(event, current ? 'updated' : 'created', seq, '');
     });
   }
 
   applyDelete(event, receivedAt) {
+    const storageConfigKey = event.storageConfigKey || event.configKey;
     return this.state.storage.transactionSync(() => {
-      if (event.eventId && this.hasEvent(event.configKey, event.eventId)) {
+      if (event.eventId && this.hasEvent(storageConfigKey, event.eventId)) {
         return resultFor(event, 'duplicate', 0, 'Event already processed');
       }
 
       const current = firstRow(this.sql.exec(
         'SELECT deleted_at, seq FROM playback_tombstones WHERE config_key = ? AND marker_key = ?',
-        event.configKey,
+        storageConfigKey,
         event.markerKey
       ));
       if (current && event.deletedAt <= Number(current.deleted_at || 0)) {
-        this.recordEvent(event.configKey, event.eventId, receivedAt);
+        this.recordEvent(storageConfigKey, event.eventId, receivedAt);
         return resultFor(event, 'skipped', Number(current.seq || 0), 'A newer deletion exists');
       }
 
@@ -268,19 +365,19 @@ export class WebHTVPlaybackSyncDO {
           deleted_at = excluded.deleted_at,
           seq = excluded.seq,
           payload = excluded.payload
-      `, event.configKey, event.markerKey, event.scope, event.historyKey, event.siteKey, event.vodId, event.deletedAt, seq, payload);
+      `, storageConfigKey, event.markerKey, event.scope, event.historyKey, event.siteKey, event.vodId, event.deletedAt, seq, payload);
 
       let deletedRows = 0;
       if (event.scope === 'all') {
         deletedRows = this.sql.exec(
           'DELETE FROM playback_items WHERE config_key = ? AND updated_at <= ?',
-          event.configKey,
+          storageConfigKey,
           event.deletedAt
         ).rowsWritten;
       } else if (event.scope === 'site') {
         deletedRows = this.sql.exec(
           'DELETE FROM playback_items WHERE config_key = ? AND site_key = ? AND updated_at <= ?',
-          event.configKey,
+          storageConfigKey,
           event.siteKey,
           event.deletedAt
         ).rowsWritten;
@@ -289,9 +386,9 @@ export class WebHTVPlaybackSyncDO {
           DELETE FROM playback_items
            WHERE config_key = ? AND updated_at <= ?
              AND (item_key = ? OR (history_key <> '' AND history_key = ?))
-        `, event.configKey, event.deletedAt, event.itemKey, event.historyKey).rowsWritten;
+        `, storageConfigKey, event.deletedAt, event.itemKey, event.historyKey).rowsWritten;
       }
-      this.recordEvent(event.configKey, event.eventId, receivedAt);
+      this.recordEvent(storageConfigKey, event.eventId, receivedAt);
       return { ...resultFor(event, 'deleted', seq, ''), affected: Number(deletedRows || 0) };
     });
   }
@@ -502,6 +599,18 @@ async function readPlaybackJson(request) {
   }
 }
 
+function scopedConfigKey(configType, configKey) {
+  const type = normalizeConfigType(configType);
+  return type === 'vod' ? configKey : `${type}:${configKey}`;
+}
+
+function requestAliases(request, body = null) {
+  const header = String(request.headers.get('x-webhtv-config-aliases') || '').split(',').map((item) => item.trim()).filter(Boolean);
+  const bodyAliases = body && !Array.isArray(body) && Array.isArray(body.configAliases) ? body.configAliases.map((item) => String(item || '').trim()).filter(Boolean) : [];
+  if (header.length && bodyAliases.length && JSON.stringify(header) !== JSON.stringify(bodyAliases)) throw playbackHttpError(400, 'configAliases does not match X-WebHTV-Config-Aliases');
+  return [...new Set([...header, ...bodyAliases])].slice(0, 16);
+}
+
 function requireConfigKey(request, body = null) {
   const header = validatedConfigKey(request.headers.get('x-webhtv-config-key'));
   const bodyKey = body && !Array.isArray(body) ? validatedConfigKey(body.configKey || body.config_key) : '';
@@ -645,6 +754,11 @@ function playbackCors(response) {
     'x-webhtv-token',
     'x-webhtv-config-key',
     'x-webhtv-config-name',
+    'x-webhtv-config-aliases',
+    'x-webhtv-config-type',
+    'x-webhtv-identity-version',
+    'x-webhtv-address-match-version',
+    'x-webhtv-request-id',
     'x-webhtv-timestamp',
     'x-webhtv-since',
     'x-webhtv-limit',

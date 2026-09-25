@@ -4,7 +4,13 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
-import androidx.media3.exoplayer.hls.playlist.HlsAdsParser;
+import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.api.config.AdBlockStatsStore;
+import com.fongmi.android.tv.api.config.HlsRuleConfig;
+import com.fongmi.android.tv.utils.HlsAdblockNotice;
+import com.fongmi.android.tv.utils.HlsAdblockPipeline;
+import com.fongmi.android.tv.utils.HlsManifestCleaner;
+import com.fongmi.android.tv.utils.Notify;
 
 import com.fongmi.android.tv.player.PlaybackAutoContext;
 import com.fongmi.android.tv.player.PlaybackRouteRegistry;
@@ -441,8 +447,31 @@ public final class MpvHlsProxy extends NanoHTTPD {
     }
 
     PreloadRuntimeSnapshot preloadRuntimeSnapshot(long nowElapsedMs) {
-        refreshCacheCoordinator();
         SessionStats stats = sessionStats.get(sessionId);
+        if (stats == null || !stats.vod) {
+            return new PreloadRuntimeSnapshot(
+                    PreloadSetting.isPreload(kernel),
+                    false,
+                    0,
+                    false,
+                    false,
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    "none",
+                    preloadGate.foregroundRequests(),
+                    false,
+                    false,
+                    false,
+                    false,
+                    0,
+                    0,
+                    0,
+                    0,
+                    preloading.size());
+        }
+        refreshCacheCoordinator();
         MpvHlsUpstreamEstimator.Snapshot throughput =
                 upstreamEstimator.snapshot(nowElapsedMs);
         MpvHlsCacheCoordinator.PreloadCapacitySnapshot preloadCapacity =
@@ -809,36 +838,61 @@ public final class MpvHlsProxy extends NanoHTTPD {
     private String applyAdblock(String text, int session, String url,
             @Nullable HlsPlaylistRewriter.Variant variant, boolean videoPlaylist) {
         if (!Setting.isAdblock() || !isVodPlaylist(text)) return text;
+        if (HlsAdblockPipeline.isCoreM3u8Proxy(url)) return text;
         if (kernel == PlayerSetting.MPV && !videoPlaylist) return text;
         try {
-            String filtered = HlsAdsParser.process(text);
+            List<HlsManifestCleaner.Rule> rules = HlsRuleConfig.getRules();
+            boolean legacyFallback = HlsRuleConfig.isLegacyFallbackEnabled();
+            HlsAdblockPipeline.Outcome outcome = HlsAdblockPipeline.apply(url, text, rules, legacyFallback);
             if (kernel == PlayerSetting.MPV) {
-                HlsAdTimeline timeline = HlsAdTimeline.from(text, filtered);
+                HlsAdTimeline timeline = HlsAdTimeline.from(text, outcome.manifest());
                 SessionStats stats = sessionStats.get(session);
                 if (stats != null) {
                     if (variant == null) stats.directAdTimeline = timeline;
                     else stats.adTimelines.merge(variant, timeline,
                             (previous, next) -> previous.sameCuts(next) ? previous : HlsAdTimeline.NONE);
                 }
-                if (!TextUtils.equals(filtered, text)) {
+                if (!TextUtils.equals(outcome.manifest(), text)) {
                     SpiderDebug.log(TAG,
                             "adblock planned session=%d ranges=%d cuts=%s mode=source-timeline-seek reason=%s url=%s",
                             session, timeline.ranges().size(), timeline.ranges(), timeline.reason(), shortUrl(url));
                 }
                 // Keep timestamps, implicit AES IVs, byte ranges and rendition
                 // synchronization intact; MpvPlayer skips the detected time ranges.
+                // Notify as soon as a valid removal plan is available so MPV has the
+                // same user-visible adblock confirmation as Exo. Runtime skip
+                // accounting remains separate and is recorded only after playback.
+                if (!TextUtils.equals(outcome.manifest(), text)) {
+                    recordAndNotifyAdblock(url, outcome);
+                }
                 return text;
             }
-            if (!TextUtils.equals(filtered, text)) {
-                SpiderDebug.log(TAG,
-                        "adblock filtered session=%d bytes=%d->%d url=%s",
-                        session, text.length(), filtered.length(), shortUrl(url));
+            if (!TextUtils.equals(outcome.manifest(), text)) {
+                SpiderDebug.log(TAG, "adblock filtered session=%d bytes=%d->%d structured=%s legacy=%s url=%s",
+                        session, text.length(), outcome.manifest().length(), outcome.structured(), outcome.legacy(), shortUrl(url));
             }
-            return filtered;
+            recordAndNotifyAdblock(url, outcome);
+            return outcome.manifest();
         } catch (Throwable e) {
             SpiderDebug.log(TAG, "adblock ignored session=%d errorType=%s", session, e.getClass().getSimpleName());
             return text;
         }
+    }
+
+    private void recordAndNotifyAdblock(String url, HlsAdblockPipeline.Outcome outcome) {
+        if (!outcome.structured() && !outcome.legacy()) return;
+        okhttp3.HttpUrl parsed = okhttp3.HttpUrl.parse(url);
+        if (parsed == null) return;
+        long fallbackCount = outcome.legacy() ? Math.max(1, outcome.removedSegments()) : 0;
+        String pipeline = kernel == PlayerSetting.IJK ? "IJK" : "MPV";
+        AdBlockStatsStore.recordBlocks(parsed.host(), pipeline, outcome.ruleCounts(), fallbackCount,
+                parsed.host(), outcome.removedDurationSec(), outcome.removedSegmentDetails());
+        if (!HlsAdblockNotice.shouldNotify(url, System.currentTimeMillis())) return;
+        int removed = outcome.removedSegments() > 0 ? outcome.removedSegments() : (int) fallbackCount;
+        String message = outcome.structured() && outcome.removedDurationSec() > 0
+                ? String.format(Locale.US, "已跳过 %d 个广告片段（%.1f 秒）", removed, outcome.removedDurationSec())
+                : "已跳过 " + removed + " 个广告片段";
+        App.post(() -> Notify.show(message));
     }
 
     private String rewritePlaylist(String playlistUrl, String text, int session, @Nullable HlsPlaylistRewriter.Variant inheritedVariant) {

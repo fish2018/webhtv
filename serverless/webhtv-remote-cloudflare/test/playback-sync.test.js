@@ -8,7 +8,7 @@ import {
   parseLimit
 } from '../src/playback-sync.js';
 
-const NOW = 1781170000000;
+const NOW = Date.now() + 1000;
 const CONFIG_KEY = 'abcdef0123456789';
 
 test('recognizes playback sync and status paths', () => {

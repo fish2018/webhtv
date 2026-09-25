@@ -70,6 +70,8 @@ public class Vod implements Parcelable, Diffable<Vod> {
     private String vodTag;
     @SerializedName("action")
     private String action;
+    @SerializedName("tmdb")
+    private TmdbSourcePayload tmdb;
     @SerializedName("cate")
     private Cate cate;
     @SerializedName("style")
@@ -103,6 +105,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
         this.vodPlayUrl = in.readString();
         this.vodTag = in.readString();
         this.action = in.readString();
+        this.tmdb = in.readParcelable(TmdbSourcePayload.class.getClassLoader());
         this.land = (Integer) in.readValue(Integer.class.getClassLoader());
         this.circle = (Integer) in.readValue(Integer.class.getClassLoader());
         this.ratio = (Float) in.readValue(Float.class.getClassLoader());
@@ -143,6 +146,10 @@ public class Vod implements Parcelable, Diffable<Vod> {
         return TextUtils.isEmpty(typeName) ? "" : typeName.trim();
     }
 
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
+    }
+
     public String getPic() {
         return TextUtils.isEmpty(vodPic) ? "" : vodPic.trim();
     }
@@ -155,12 +162,24 @@ public class Vod implements Parcelable, Diffable<Vod> {
         return TextUtils.isEmpty(vodRemarks) ? "" : vodRemarks.trim();
     }
 
+    public void setRemarks(String vodRemarks) {
+        this.vodRemarks = vodRemarks;
+    }
+
     public String getYear() {
         return TextUtils.isEmpty(vodYear) ? "" : vodYear.trim();
     }
 
+    public void setYear(String vodYear) {
+        this.vodYear = vodYear;
+    }
+
     public String getArea() {
         return TextUtils.isEmpty(vodArea) ? "" : vodArea.trim();
+    }
+
+    public void setArea(String vodArea) {
+        this.vodArea = vodArea;
     }
 
     public String getDirector() {
@@ -173,6 +192,10 @@ public class Vod implements Parcelable, Diffable<Vod> {
 
     public String getActor() {
         return TextUtils.isEmpty(vodActor) ? "" : vodActor.trim();
+    }
+
+    public void setActor(String vodActor) {
+        this.vodActor = vodActor;
     }
 
     public String getContent() {
@@ -204,7 +227,18 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getAction() {
-        return TextUtils.isEmpty(action) ? "" : action;
+        // 兼容动作卡协议：部分源将动作 JSON 放在 vod_id，并用 vod_tag=action 标记。
+        if (!TextUtils.isEmpty(action)) return action;
+        if ("action".equals(getTag()) && !TextUtils.isEmpty(getId()) && getId().trim().startsWith("{")) return getId();
+        return "";
+    }
+
+    public TmdbSourcePayload getTmdb() {
+        return tmdb;
+    }
+
+    public void setTmdb(TmdbSourcePayload tmdb) {
+        this.tmdb = tmdb;
     }
 
     public Cate getCate() {
@@ -244,7 +278,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
     }
 
     public String getSiteName() {
-        return getSite() == null ? "" : getSite().getName();
+        return getSite() == null ? "" : getSite().getDisplayName();
     }
 
     public String getSiteKey() {
@@ -350,6 +384,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
         dest.writeString(this.vodPlayUrl);
         dest.writeString(this.vodTag);
         dest.writeString(this.action);
+        dest.writeParcelable(this.tmdb, flags);
         dest.writeValue(this.land);
         dest.writeValue(this.circle);
         dest.writeValue(this.ratio);
@@ -366,7 +401,7 @@ public class Vod implements Parcelable, Diffable<Vod> {
 
     @Override
     public boolean isSameContent(Vod other) {
-        return getName().equals(other.getName()) && getPic().equals(other.getPic()) && getRemarks().equals(other.getRemarks()) && Objects.equals(getSite(), other.getSite());
+        return getName().equals(other.getName()) && getPic().equals(other.getPic()) && getRemarks().equals(other.getRemarks()) && Objects.equals(getTmdb(), other.getTmdb()) && Objects.equals(getSite(), other.getSite());
     }
 
     public static final Creator<Vod> CREATOR = new Creator<>() {

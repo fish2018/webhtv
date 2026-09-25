@@ -26,5 +26,30 @@
     <color name="white_70">#B3FFFFFF</color>
     <color name="white_80">#CCFFFFFF</color>
     <color name="white_90">#E6FFFFFF</color>
+    <color name="display_option_selected">#1C2328</color>
+    <color name="display_option_focused">#102A43</color>
+    <color name="display_option_default">#F2FFFFFF</color>
+    <color name="display_option_bg_selected">#FFE16A</color>
+    <color name="display_option_bg_focused">#E6FFFFFF</color>
+    <color name="display_option_bg_default">#2EFFFFFF</color>
+    <color name="display_option_stroke_selected">#FFFFFFFF</color>
+    <color name="display_option_stroke_default">#33FFFFFF</color>
+    <color name="display_dialog_panel_bg">#E61F2A31</color>
+    <color name="site_health_good">#0B8043</color>
+    <color name="site_health_warn">#B7791F</color>
+    <color name="site_health_bad">#C53030</color>
 
+    <color name="following_page_bg">#F3F7FD</color>
+    <color name="following_card_bg">#FFFFFF</color>
+    <color name="following_card_stroke">#D8E3F2</color>
+    <color name="following_text_primary">#172033</color>
+    <color name="following_text_secondary">#65748B</color>
+    <color name="following_accent">#2563B9</color>
+    <color name="following_accent_focus">#174EA6</color>
+    <color name="following_button_focus">#FF8A00</color>
+    <color name="following_button_focus_pressed">#E56F00</color>
+    <color name="following_button_secondary">#EEF4FC</color>
+    <color name="following_button_text">#24599C</color>
+    <color name="following_danger_soft">#FDECEC</color>
+    <color name="following_danger">#B3261E</color>
 </resources>

@@ -117,6 +117,20 @@ public class MpvPreloadCachePolicyTest {
     }
 
     @Test
+    public void knownDurationAtEndDoesNotExtendCache() {
+        MpvPreloadCachePolicy.Decision decision = resolve(
+                false, true, 30, 64 * MIB, 60, 128 * MIB,
+                3_600_000, 3_600_000,
+                PlaybackAutoContext.Protocol.PROGRESSIVE_HTTP,
+                PlaybackAutoContext.StreamKind.VOD,
+                PlaybackAutoContext.PathKind.REMOTE);
+
+        assertFalse(decision.apply());
+        assertEquals(MpvPreloadCachePolicy.Reason.ALREADY_AHEAD,
+                decision.reason());
+    }
+
+    @Test
     public void segmentedAndLiveResourcesKeepTheirNormalCacheTarget() {
         assertFalse(resolve(
                 false, true, 30, 64 * MIB, 300, 128 * MIB,

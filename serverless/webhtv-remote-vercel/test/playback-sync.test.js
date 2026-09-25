@@ -26,7 +26,7 @@ test('syncs progress, deletion tombstones, and a newer restore', async () => {
   const progress = {
     event: 'playback.progress',
     eventId: 'progress-1',
-    timestamp: 1781170000000,
+    timestamp: Date.now() + 1000,
     historyKey: 'site-a@@@vod-1@@@1',
     siteKey: 'site-a',
     vodId: 'vod-1',
@@ -55,7 +55,7 @@ test('syncs progress, deletion tombstones, and a newer restore', async () => {
     historyKey: 'site-a@@@vod-1@@@1',
     siteKey: 'site-a',
     vodId: 'vod-1',
-    deletedAt: 1781170005000
+    deletedAt: Date.now() + 6000
   }), store));
   assert.equal(result.body.results[0].action, 'deleted');
   assert.equal(result.body.results[0].affected, 1);
@@ -63,7 +63,7 @@ test('syncs progress, deletion tombstones, and a newer restore', async () => {
   result = await json(await handlePlaybackSyncRequest(request('POST', {
     ...progress,
     eventId: 'progress-stale',
-    timestamp: 1781170004000,
+    timestamp: Date.now() + 5000,
     positionMs: 180000
   }), store));
   assert.equal(result.body.results[0].action, 'skipped');
@@ -71,7 +71,7 @@ test('syncs progress, deletion tombstones, and a newer restore', async () => {
   result = await json(await handlePlaybackSyncRequest(request('POST', {
     ...progress,
     eventId: 'progress-fresh',
-    timestamp: 1781170006000,
+    timestamp: Date.now() + 7000,
     positionMs: 240000
   }), store));
   assert.equal(result.body.results[0].action, 'created');
@@ -86,7 +86,7 @@ test('requires explicit all deletion and keeps token/config spaces isolated', as
   let result = await json(await handlePlaybackSyncRequest(request('POST', {
     event: 'playback.deleted',
     eventId: 'unsafe',
-    deletedAt: 1781170000000
+    deletedAt: Date.now() + 1000
   }), store));
   assert.equal(result.status, 400);
   assert.match(result.body.error, /scope=all must be explicit/);
@@ -95,7 +95,7 @@ test('requires explicit all deletion and keeps token/config spaces isolated', as
     event: 'playback.deleted',
     eventId: 'all-1',
     scope: 'all',
-    deletedAt: 1781170000000
+    deletedAt: Date.now() + 1000
   }), store));
   assert.equal(result.status, 200);
   assert.equal(result.body.results[0].action, 'deleted');
@@ -113,7 +113,7 @@ test('validates an entire batch before applying any record', async () => {
       {
         event: 'playback.progress',
         eventId: 'valid-first',
-        timestamp: 1781170000000,
+        timestamp: Date.now() + 1000,
         siteKey: 'site-a',
         vodId: 'vod-1',
         vodName: '影片 A',
@@ -121,11 +121,34 @@ test('validates an entire batch before applying any record', async () => {
         positionMs: 1000,
         durationMs: 10000
       },
-      { event: 'playback.deleted', eventId: 'invalid-second', deletedAt: 1781170001000 }
+      { event: 'playback.deleted', eventId: 'invalid-second', deletedAt: Date.now() + 2000 }
     ]
   }), store));
   assert.equal(result.status, 400);
 
   const pull = await json(await handlePlaybackSyncRequest(request('GET'), store));
   assert.deepEqual(pull.body.changes, []);
+});
+
+
+test('resolves stable identity, exact aliases, host candidates, and config-type isolation', async () => {
+  const store = createMemoryPlaybackStore();
+  const resolveUrl = 'https://sync.example/api/playback/identity/resolve';
+  const resolve = async (interfaceKey, values, configType = 'vod') => {
+    const response = await handlePlaybackSyncRequest(new Request(resolveUrl, {
+      method: 'POST',
+      headers: { 'X-WebHTV-Token': TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schema: 'webhtv.playback.identity.v1', operation: 'resolve', interfaceKey, configType, sourceDataState: 'empty', ...values })
+    }), store);
+    return { response, body: await response.json() };
+  };
+  let result = await resolve('identity-a', { strictAddressKeys: ['strict-a'], endpointMatchKeys: ['endpoint-a'], hostMatchKeys: ['host-a'] });
+  assert.equal(result.body.action, 'create');
+  result = await resolve('identity-b', { strictAddressKeys: ['strict-a'], endpointMatchKeys: ['endpoint-a'], hostMatchKeys: ['host-a'] });
+  assert.equal(result.body.action, 'adopt');
+  assert.equal(result.body.canonicalInterfaceKey, 'identity-a');
+  result = await resolve('identity-c', { strictAddressKeys: [], endpointMatchKeys: [], hostMatchKeys: ['host-a'] });
+  assert.equal(result.body.action, 'confirm_required');
+  result = await resolve('identity-live', { strictAddressKeys: ['strict-a'], endpointMatchKeys: ['endpoint-a'], hostMatchKeys: ['host-a'] }, 'live');
+  assert.equal(result.body.action, 'create');
 });

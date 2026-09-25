@@ -221,6 +221,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/enhance"
+                android:nextFocusRight="@id/player"
+                android:nextFocusUp="@id/wall"
+                android:nextFocusDown="@id/ad"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -241,6 +245,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/enhance"
+                android:nextFocusRight="@id/danmaku"
+                android:nextFocusUp="@id/wall"
+                android:nextFocusDown="@id/ad"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -260,6 +268,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/player"
+                android:nextFocusRight="@id/danmaku"
+                android:nextFocusUp="@id/wallRefresh"
+                android:nextFocusDown="@id/ad"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -273,6 +285,97 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/ad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/selector_item"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:nextFocusLeft="@id/ad"
+            android:nextFocusRight="@id/ad"
+            android:nextFocusUp="@id/player"
+            android:nextFocusDown="@id/tmdb"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="@string/setting_ad"
+                android:textColor="@color/white"
+                android:textSize="18sp" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:gravity="end"
+                android:singleLine="true"
+                android:text="@string/setting_ad_summary"
+                android:textColor="@color/white"
+                android:textSize="18sp" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/tmdb"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_weight="1"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/tmdb"
+                android:nextFocusRight="@id/ai"
+                android:nextFocusUp="@id/ad"
+                android:nextFocusDown="@id/subtitle"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_tmdb"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/ai"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="0dp"
+                android:layout_weight="1"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/tmdb"
+                android:nextFocusRight="@id/ai"
+                android:nextFocusUp="@id/ad"
+                android:nextFocusDown="@id/appearance"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_ai"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/language"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -280,7 +383,8 @@
             android:background="@drawable/selector_item"
             android:focusable="true"
             android:focusableInTouchMode="true"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
@@ -311,6 +415,84 @@
             android:orientation="horizontal">
 
             <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/subtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_weight="1"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/subtitle"
+                android:nextFocusRight="@id/appearance"
+                android:nextFocusUp="@id/tmdb"
+                android:nextFocusDown="@id/incognito"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_subtitle"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/appearance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:layout_weight="1"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/subtitle"
+                android:nextFocusRight="@id/personal"
+                android:nextFocusUp="@id/ai"
+                android:nextFocusDown="@id/doh"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_appearance"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:id="@+id/personal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/selector_item"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/appearance"
+                android:nextFocusRight="@id/personal"
+                android:nextFocusUp="@id/ai"
+                android:nextFocusDown="@id/doh"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_personal"
+                    android:textColor="@color/white"
+                    android:textSize="18sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/incognito"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -319,6 +501,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/incognito"
+                android:nextFocusRight="@id/doh"
+                android:nextFocusUp="@id/subtitle"
+                android:nextFocusDown="@id/backup"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -345,11 +531,15 @@
                 android:id="@+id/doh"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
+                android:layout_marginEnd="0dp"
                 android:layout_weight="1"
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/incognito"
+                android:nextFocusRight="@id/doh"
+                android:nextFocusUp="@id/appearance"
+                android:nextFocusDown="@id/restore"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -372,38 +562,7 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
-            <androidx.appcompat.widget.LinearLayoutCompat
-                android:id="@+id/size"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@drawable/selector_item"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:nextFocusDown="@id/backup"
-                android:orientation="horizontal">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"
-                    android:text="@string/setting_size"
-                    android:textColor="@color/white"
-                    android:textSize="18sp" />
-
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/sizeText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:gravity="end"
-                    android:singleLine="true"
-                    android:textColor="@color/white"
-                    android:textSize="18sp"
-                    tools:text="Medium" />
-
-            </androidx.appcompat.widget.LinearLayoutCompat>
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -421,6 +580,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/incognito"
+                android:nextFocusRight="@id/restore"
+                android:nextFocusUp="@id/incognito"
+                android:nextFocusDown="@id/cache"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -436,10 +599,15 @@
                 android:id="@+id/restore"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="0dp"
                 android:layout_weight="1"
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/backup"
+                android:nextFocusRight="@id/restore"
+                android:nextFocusUp="@id/doh"
+                android:nextFocusDown="@id/version"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -450,6 +618,7 @@
                     android:textSize="18sp" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
+
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -467,6 +636,10 @@
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/cache"
+                android:nextFocusRight="@id/version"
+                android:nextFocusUp="@id/backup"
+                android:nextFocusDown="@id/cache"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -492,10 +665,15 @@
                 android:id="@+id/version"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="0dp"
                 android:layout_weight="1"
                 android:background="@drawable/selector_item"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
+                android:nextFocusLeft="@id/cache"
+                android:nextFocusRight="@id/version"
+                android:nextFocusUp="@id/restore"
+                android:nextFocusDown="@id/version"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -516,6 +694,7 @@
                     tools:text="1.2.1" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
+
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.appcompat.widget.LinearLayoutCompat>
 </androidx.core.widget.NestedScrollView>

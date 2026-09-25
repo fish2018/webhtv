@@ -19,6 +19,12 @@
             android:visibility="gone" />
 
         <View
+            android:id="@+id/videoContextScrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/shape_video_context_scrim" />
+
+        <View
             android:id="@+id/statusBar"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -40,6 +46,7 @@
                 style="@style/Player.Vod"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                app:shutter_background_color="@android:color/black"
                 app:surface_type="none" />
 
             <FrameLayout
@@ -701,6 +708,14 @@
                             app:drawableTopCompat="@drawable/ic_action_short_display_shadow" />
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/following"
+                            style="@style/VideoActionButton"
+                            android:layout_marginEnd="8dp"
+                            android:visibility="gone"
+                            android:text="@string/following_add"
+                            app:drawableTopCompat="@drawable/ic_home_following_shadow" />
+
+                        <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/search"
                             style="@style/VideoActionButton"
                             android:layout_marginEnd="8dp"
@@ -723,6 +738,7 @@
                     </androidx.appcompat.widget.LinearLayoutCompat>
 
                     <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/flagTitleBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
@@ -731,6 +747,7 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/flagText"
                             style="@style/Video.ContextText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -786,6 +803,7 @@
                         tools:visibility="visible" />
 
                     <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/episodeTitleBar"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
@@ -794,6 +812,7 @@
                         android:gravity="center_vertical">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/episodeTitle"
                             style="@style/Video.ContextText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -807,7 +826,7 @@
                             android:layout_height="20dp"
                             android:layout_marginStart="8dp"
                             android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_action_reverse"
+                            android:src="@drawable/ic_action_sort_asc"
                             android:visibility="gone"
                             tools:visibility="visible" />
 
@@ -815,6 +834,35 @@
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_weight="1" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/episodeFileName"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:contentDescription="@string/detail_episode_file_name_scraped_action"
+                            android:focusable="true"
+                            android:padding="8dp"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_action_name_full"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/episodeViewMode"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="8dp"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_site_list"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/more"

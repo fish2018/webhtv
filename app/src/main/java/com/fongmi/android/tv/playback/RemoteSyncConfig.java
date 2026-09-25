@@ -29,6 +29,12 @@ public class RemoteSyncConfig {
     public int lastSkipped;
     public int lastFailed;
     public String lastError;
+    public String identityState;
+    public String identityEpoch;
+    public boolean identitySupported;
+    public String identityCanonicalKey;
+    public String identityMatchedBy;
+    public String identityMessage;
     public Map<String, String> cursors;
 
     public RemoteSyncConfig() {
@@ -42,6 +48,12 @@ public class RemoteSyncConfig {
         this.intervalMinutes = 0;
         this.maxItems = 100;
         this.lastError = "";
+        this.identityState = "unknown";
+        this.identityEpoch = "";
+        this.identitySupported = false;
+        this.identityCanonicalKey = "";
+        this.identityMatchedBy = "";
+        this.identityMessage = "";
         this.cursors = new HashMap<>();
     }
 
@@ -80,6 +92,11 @@ public class RemoteSyncConfig {
         if (cursors == null) cursors = new HashMap<>();
         if (value == null || value.isEmpty()) return;
         cursors.put(cursorKey(configKey), value);
+    }
+
+    public void resetCursor(String configKey) {
+        if (cursors == null) return;
+        cursors.remove(cursorKey(configKey));
     }
 
     private String cursorKey(String configKey) {

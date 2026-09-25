@@ -20,7 +20,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import dalvik.system.DexClassLoader;
 import okhttp3.OkHttpClient;
@@ -28,6 +30,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class JarLoader {
+
+    private static final int SPIDER_INIT_ATTEMPTS = 2;
 
     private final ConcurrentHashMap<String, DexClassLoader> loaders;
     private final ConcurrentHashMap<String, Method> methods;
@@ -44,12 +48,15 @@ public class JarLoader {
 
     public void clear() {
         SpiderDebug.log("jar-loader", "clear loaders=%s spiders=%s methods=%s", loaders.size(), spiders.size(), methods.size());
-        spiders.values().forEach(Spider::destroy);
-        loaders.clear();
-        methods.clear();
-        spiders.clear();
-        locks.clear();
-        recent = null;
+        try {
+            SpiderCleanup.destroy("jar-loader", spiders);
+        } finally {
+            loaders.clear();
+            methods.clear();
+            spiders.clear();
+            locks.clear();
+            recent = null;
+        }
     }
 
     public void setRecent(String recent) {
@@ -59,7 +66,7 @@ public class JarLoader {
 
     private void load(String key, File file) {
         long start = System.currentTimeMillis();
-        if (Thread.interrupted()) {
+        if (Thread.currentThread().isInterrupted()) {
             SpiderDebug.log("jar-loader", "load skip interrupted key=%s", key);
             return;
         }
@@ -183,9 +190,13 @@ public class JarLoader {
     public Spider getSpider(String key, String api, String ext, String jar) {
         String jaKey = Util.md5(jar);
         String spKey = jaKey + key;
-        return spiders.computeIfAbsent(spKey, k -> {
+        return getOrCreateSpider(spKey, () -> {
             long start = System.currentTimeMillis();
             try {
+                if (Thread.currentThread().isInterrupted()) {
+                    SpiderDebug.log("jar-loader", "spider init skip interrupted site=%s api=%s jar=%s", key, api, jaKey);
+                    return new SpiderNull();
+                }
                 SpiderDebug.log("jar-loader", "spider init start site=%s api=%s jar=%s ext=%s", key, api, jaKey, ext == null ? 0 : ext.length());
                 parseJar(jaKey, jar);
                 DexClassLoader loader = loaders.get(jaKey);
@@ -199,12 +210,48 @@ public class JarLoader {
                 SpiderDebug.log("jar-loader", "spider init done site=%s api=%s jar=%s class=%s cost=%sms", key, api, jaKey, spider.getClass().getName(), System.currentTimeMillis() - start);
                 return spider;
             } catch (Throwable e) {
+                if (isInterrupted(e)) Thread.currentThread().interrupt();
                 SpiderDebug.log("jar-loader", "spider init error site=%s api=%s jar=%s cost=%sms error=%s", key, api, jaKey, System.currentTimeMillis() - start, error(e));
                 SpiderDebug.log("jar-loader", e);
                 e.printStackTrace();
                 return new SpiderNull();
             }
         });
+    }
+
+    Spider getOrCreateSpider(String key, Supplier<Spider> factory) {
+        // A canceled request must stop immediately; a transient initialization failure
+        // gets one retry and SpiderNull is never cached across requests.
+        if (Thread.currentThread().isInterrupted()) return new SpiderNull();
+        Spider cached = spiders.get(key);
+        if (cached != null) return cached;
+        Object lock = locks.computeIfAbsent("spider:" + key, ignored -> new Object());
+        synchronized (lock) {
+            if (Thread.currentThread().isInterrupted()) return new SpiderNull();
+            cached = spiders.get(key);
+            if (cached != null) return cached;
+            Spider created = null;
+            for (int attempt = 1; attempt <= SPIDER_INIT_ATTEMPTS; attempt++) {
+                if (Thread.currentThread().isInterrupted()) break;
+                created = factory.get();
+                if (created != null && !(created instanceof SpiderNull)) {
+                    spiders.put(key, created);
+                    if (!Thread.currentThread().isInterrupted()) return created;
+                    SpiderDebug.log("jar-loader", "spider init completed after cancel key=%s", key);
+                    return new SpiderNull();
+                }
+                if (Thread.currentThread().isInterrupted() || attempt == SPIDER_INIT_ATTEMPTS) break;
+                SpiderDebug.log("jar-loader", "spider init retry key=%s attempt=%s", key, attempt + 1);
+            }
+            return created == null ? new SpiderNull() : created;
+        }
+    }
+
+    private static boolean isInterrupted(Throwable e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedException || cause instanceof CancellationException) return true;
+        }
+        return false;
     }
 
     private String source(String jar) {

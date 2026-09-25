@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:descendantFocusability="afterDescendants"
     android:orientation="horizontal">
 
     <com.google.android.material.textview.MaterialTextView
@@ -20,6 +21,19 @@
         android:textColor="@color/config_history_text"
         android:textSize="18sp"
         tools:text="https://fongmi.github.io/cat.json" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/edit"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/selector_config_history_item"
+        android:contentDescription="@string/dialog_edit"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="8dp"
+        android:src="@drawable/ic_action_edit"
+        app:tint="@color/config_history_icon" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/delete"

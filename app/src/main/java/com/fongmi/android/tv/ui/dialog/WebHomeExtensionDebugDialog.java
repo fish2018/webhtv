@@ -178,7 +178,7 @@ public class WebHomeExtensionDebugDialog extends BaseAlertDialog implements Home
     }
 
     private void showTab(int tab) {
-        binding.web.setVisibility(View.VISIBLE);
+        if (controller != null) controller.show();
         binding.consoleLayout.setVisibility(tab == R.id.tabConsole ? View.VISIBLE : View.GONE);
         binding.elementsLayout.setVisibility(tab == R.id.tabElements ? View.VISIBLE : View.GONE);
         binding.networkLayout.setVisibility(tab == R.id.tabNetwork ? View.VISIBLE : View.GONE);

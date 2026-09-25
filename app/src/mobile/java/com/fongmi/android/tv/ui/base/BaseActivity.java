@@ -20,6 +20,8 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.Updater;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.theme.ThemeController;
+import com.fongmi.android.tv.ui.audio.AudioMiniPlayer;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.color.DynamicColors;
@@ -31,6 +33,8 @@ import org.greenrobot.eventbus.ThreadMode;
 
 public abstract class BaseActivity extends AppCompatActivity {
 
+    private AudioMiniPlayer audioMiniPlayer;
+
     protected abstract ViewBinding getBinding();
 
     @Override
@@ -40,14 +44,19 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeController.applyNightMode(this);
         enableEdgeToEdge();
         enableDynamicColor();
         super.onCreate(savedInstanceState);
         setContentView(getBinding().getRoot());
+        if (applyGlobalTheme()) ThemeController.apply(this);
+        audioMiniPlayer = new AudioMiniPlayer(this);
         EventBus.getDefault().register(this);
         initView(savedInstanceState);
         setBackCallback();
         initEvent();
+        // Some detail/player controls are inflated during initView; bind them after the Activity tree is complete.
+        if (applyGlobalTheme()) ThemeController.apply(this);
     }
 
     @Override
@@ -125,13 +134,23 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private void enableDynamicColor() {
-        int color = Setting.getDynamicColor();
+        int color = ThemeController.dynamicColor(this);
         if (color != 0) DynamicColors.applyToActivityIfAvailable(this, new DynamicColorsOptions.Builder().setContentBasedSource(color).build());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onSubscribe(Object o) {
-        if (o instanceof RefreshEvent event && event.getType() == RefreshEvent.Type.LANGUAGE) recreate();
+        if (!(o instanceof RefreshEvent event)) return;
+        if (event.getType() == RefreshEvent.Type.THEME && preserveDetailThemeState()) return;
+        if (event.getType() == RefreshEvent.Type.LANGUAGE || event.getType() == RefreshEvent.Type.THEME) recreate();
+    }
+
+    protected boolean applyGlobalTheme() {
+        return true;
+    }
+
+    protected boolean preserveDetailThemeState() {
+        return false;
     }
 
     protected void onBackInvoked() {
@@ -141,11 +160,19 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (audioMiniPlayer != null) audioMiniPlayer.onResume();
         Updater.create().resume(this);
     }
 
     @Override
+    protected void onPause() {
+        if (audioMiniPlayer != null) audioMiniPlayer.onPause();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        if (audioMiniPlayer != null) audioMiniPlayer.onDestroy();
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
