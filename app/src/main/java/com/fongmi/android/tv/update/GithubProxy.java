@@ -12,6 +12,7 @@ public final class GithubProxy {
     private static final Preset[] PRESETS = {
             new Preset(DIRECT, "GitHub", "", MODE_FULL_URL),
             new Preset("github_chenc", "github.chenc.dev", "https://github.chenc.dev", MODE_STRIP_SCHEME),
+            new Preset("gh_proxy", "gh-proxy.com", "https://gh-proxy.com", MODE_FULL_URL),
             new Preset("gh_acmsz", "gh.acmsz.top", "https://gh.acmsz.top", MODE_FULL_URL),
             new Preset("ghfast", "ghfast.top", "https://ghfast.top", MODE_FULL_URL),
             new Preset("gh_monlor", "gh.monlor.com", "https://gh.monlor.com", MODE_FULL_URL),
