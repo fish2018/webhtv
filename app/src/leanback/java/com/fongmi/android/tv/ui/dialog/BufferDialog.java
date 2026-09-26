@@ -5,7 +5,7 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.Fragment;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.databinding.DialogBufferBinding;
@@ -19,10 +19,10 @@ public class BufferDialog extends BaseAlertDialog {
 
     private DialogBufferBinding binding;
 
-    public static void show(FragmentActivity activity) {
+    public static void show(Fragment fragment) {
         String[] items = new String[10];
-        for (int i = 0; i < items.length; i++) items[i] = (i + 1) + activity.getString(R.string.times);
-        ChoiceDialog.showSingle(activity, R.string.player_buffer, items, PlayerSetting.getBuffer() - 1, which -> ((BufferListener) activity).setBuffer(which + 1));
+        for (int i = 0; i < items.length; i++) items[i] = (i + 1) + fragment.getString(R.string.times);
+        ChoiceDialog.showSingle(fragment.requireActivity(), R.string.player_buffer, items, PlayerSetting.getBuffer() - 1, which -> ((BufferListener) fragment).setBuffer(which + 1));
     }
 
     @Override
@@ -51,7 +51,7 @@ public class BufferDialog extends BaseAlertDialog {
 
     @Override
     protected void initEvent() {
-        binding.slider.addOnChangeListener((slider, value, fromUser) -> ((BufferListener) requireActivity()).setBuffer((int) value));
+        binding.slider.addOnChangeListener((slider, value, fromUser) -> ((BufferListener) requireParentFragment()).setBuffer((int) value));
         binding.slider.setOnKeyListener((view, keyCode, event) -> {
             boolean enter = KeyUtil.isEnterKey(event);
             if (enter) dismiss();

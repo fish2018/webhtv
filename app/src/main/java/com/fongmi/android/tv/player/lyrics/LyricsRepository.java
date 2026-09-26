@@ -755,6 +755,7 @@ public class LyricsRepository {
     private File sourceFile(String url) {
         try {
             if (TextUtils.isEmpty(url)) return null;
+            url = url.replace("clan://", "file://tvbox/");
             if (url.startsWith("file://")) return new File(Uri.parse(url).getPath());
             if (url.startsWith("/")) return new File(url);
             return null;

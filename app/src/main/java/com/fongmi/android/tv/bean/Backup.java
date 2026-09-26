@@ -58,7 +58,7 @@ public class Backup {
         backup.setSite(AppDatabase.get().getSiteDao().findAll());
         backup.setLive(AppDatabase.get().getLiveDao().findAll());
         backup.setKeep(AppDatabase.get().getKeepDao().findAll());
-        backup.setConfig(AppDatabase.get().getConfigDao().findAll());
+        backup.setConfig(AppDatabase.get().getConfigDao().findAll().stream().filter(c -> !c.isEmpty()).collect(java.util.stream.Collectors.toList()));
         backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
         backup.setTrack(AppDatabase.get().getTrackDao().findAll());
         backup.setDevice(AppDatabase.get().getDeviceDao().findAll());
@@ -70,7 +70,7 @@ public class Backup {
         if (options.isConfig()) {
             backup.setSite(AppDatabase.get().getSiteDao().findAll());
             backup.setLive(AppDatabase.get().getLiveDao().findAll());
-            backup.setConfig(AppDatabase.get().getConfigDao().findAll());
+            backup.setConfig(AppDatabase.get().getConfigDao().findAll().stream().filter(c -> !c.isEmpty()).collect(java.util.stream.Collectors.toList()));
         }
         if (options.isKeep()) backup.setKeep(AppDatabase.get().getKeepDao().findAll());
         if (options.isHistory()) backup.setHistory(AppDatabase.get().getHistoryDao().findAll());
@@ -147,13 +147,12 @@ public class Backup {
     private Map<Integer, Integer> restoreConfig() {
         Map<Integer, Integer> cids = new HashMap<>();
         for (Config item : getConfig()) {
+            if (item.isEmpty()) continue;
             int source = item.getId();
-            Config current = AppDatabase.get().getConfigDao().find(item.getUrl(), item.getType());
-            item.setId(current == null ? 0 : current.getId());
+            AppDatabase.get().getConfigDao().delete(item.getUrl(), item.getType());
+            item.setId(0);
             long id = AppDatabase.get().getConfigDao().insert(item);
-            if (id == -1) AppDatabase.get().getConfigDao().update(item);
-            else item.setId(Math.toIntExact(id));
-            if (source > 0) cids.put(source, item.getId());
+            if (source > 0) cids.put(source, Math.toIntExact(id));
         }
         return cids;
     }

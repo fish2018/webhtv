@@ -407,6 +407,7 @@ public class LyricsRequest {
 
     private static String cleanTitle(String title, String url) {
         String value = clean(title);
+        value = value.replace("clan://", "file://tvbox/");
         if (TextUtils.isEmpty(value) || value.startsWith("http://") || value.startsWith("https://") || value.startsWith("file://")) value = fileName(url);
         if (TextUtils.isEmpty(value)) value = fileName(title);
         return stripExtension(value);

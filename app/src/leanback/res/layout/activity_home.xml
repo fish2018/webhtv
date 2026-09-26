@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingTop="80dp">
+        android:paddingTop="64dp">
 
         <androidx.leanback.widget.HorizontalGridView
             android:id="@+id/typeRecycler"
@@ -68,37 +68,54 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="24dp"
-        android:paddingTop="24dp"
+        android:paddingTop="16dp"
         android:paddingEnd="24dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="8dp"
+        tools:visibility="visible">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/logo"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="12dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="10dp"
             android:src="@drawable/ic_logo" />
 
         <com.fongmi.android.tv.ui.custom.CustomTitleView
             android:id="@+id/title"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
-            android:layout_weight="1"
             android:ellipsize="marquee"
             android:focusable="false"
+            android:maxWidth="200dp"
             android:nextFocusDown="@id/typeRecycler"
             android:singleLine="true"
             android:text="@string/app_name"
             android:textColor="@color/white"
             android:textSize="24sp" />
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <androidx.leanback.widget.HorizontalGridView
+            android:id="@+id/funcRecycler"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginEnd="16dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:nextFocusDown="@id/typeRecycler"
+            app:focusOutEnd="false"
+            app:focusOutFront="false" />
+
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/clock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/white"
-            android:textSize="24sp"
+            android:textSize="28sp"
             tools:text="09:20:00" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

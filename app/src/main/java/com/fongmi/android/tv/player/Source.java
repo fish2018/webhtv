@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.player;
 
 import android.net.Uri;
+import android.text.TextUtils;
 
 import androidx.media3.common.MimeTypes;
 
@@ -85,7 +86,37 @@ public class Source {
     }
 
     public String fetch(Result result) throws Exception {
-        return fetch(result, PlayerSetting.getPlayer());
+        int targetPlayer = PlayerSetting.getPlayer();
+        Integer srcInt = result.getPlayerType();
+        String srcStr = result.getPlayer();
+
+        if (srcInt != null) {
+            switch (srcInt) {
+                case 0:
+                    targetPlayer = 2;
+                    break;
+                case 1:
+                    targetPlayer = 1;
+                    break;
+                case 2:
+                    targetPlayer = 0;
+                    break;
+                default:
+                    targetPlayer = PlayerSetting.getPlayer();
+                    break;
+            }
+        } else if (!TextUtils.isEmpty(srcStr)) {
+            if ("exo".equalsIgnoreCase(srcStr)) {
+                targetPlayer = 0;
+            } else if ("ijk".equalsIgnoreCase(srcStr)) {
+                targetPlayer = 1;
+            } else if ("mpv".equalsIgnoreCase(srcStr)) {
+                targetPlayer = 2;
+            } else {
+                targetPlayer = PlayerSetting.getPlayer();
+            }
+        }
+        return fetch(result, targetPlayer);
     }
 
     public String fetch(Result result, int playerType) throws Exception {

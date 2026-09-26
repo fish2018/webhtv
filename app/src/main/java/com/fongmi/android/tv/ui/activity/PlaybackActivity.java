@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -70,6 +71,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean lock;
     private int render = -1;
     private int requestedResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT;
+    private int videoRotation = 0;
+    private boolean rotationEngaged = false;
+    private boolean applyingRotation = false;
+    private View.OnLayoutChangeListener rotationLayoutListener;
     private ExoOutputModeManager exoOutputModeManager;
     private ExoAssSession attachedAssSession;
     private ExoSubtitleSession attachedSubtitleSession;
@@ -298,7 +303,12 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected void applyResizeMode(int resizeMode) {
         requestedResizeMode = resizeMode;
-        int effectiveResizeMode = effectiveResizeMode(resizeMode);
+        int effectiveResizeMode;
+        if (videoRotation != 0 && rotationEngaged && mService != null && player().isExo()) {
+            effectiveResizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL;
+        } else {
+            effectiveResizeMode = effectiveResizeMode(resizeMode);
+        }
         logSurfaceState("applyResizeMode before mode=" + resizeMode + " effective=" + effectiveResizeMode);
         PlayerView view = getExoView();
         view.setResizeMode(effectiveResizeMode);
@@ -315,6 +325,108 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         return resizeMode;
     }
 
+    protected void setVideoRotation(int rotation) {
+        videoRotation = ((rotation % 360) + 360) % 360;
+        if (mService != null && player().isExo() && videoRotation != 0) {
+            rotationEngaged = true;
+        }
+        if (mService != null && player().isExo() && render != getRender()) {
+            setRender();
+            if (android.os.Build.VERSION.SDK_INT <= 27) getExoView().post(this::onReset);
+        } else {
+            applyVideoRotation();
+        }
+    }
+
+    protected void onReset(){}
+ 
+    protected int getVideoRotation() {
+        return videoRotation;
+    }
+ 
+    protected void applyVideoRotation() {
+        if (applyingRotation) return;
+        applyingRotation = true;
+        try {
+            applyVideoRotationInternal();
+        } finally {
+            applyingRotation = false;
+        }
+    }
+ 
+    private void applyVideoRotationInternal() {
+        PlayerView view = getExoView();
+        if (view == null) return;
+        View surface = view.getVideoSurfaceView();
+        if (surface == null) return;
+
+        View contentFrame = view.findViewById(androidx.media3.ui.R.id.exo_content_frame);
+        AspectRatioFrameLayout arFrame = contentFrame instanceof AspectRatioFrameLayout ? (AspectRatioFrameLayout) contentFrame : null;
+ 
+        if (videoRotation == 0) {
+            surface.setRotation(0);
+            if (surface instanceof TextureView textureView) {
+                textureView.setTransform(new Matrix());
+            }
+            if (arFrame != null) {
+                arFrame.setResizeMode(effectiveResizeMode(requestedResizeMode));
+                if (mService != null && player() != null) {
+                    int vw = player().getVideoWidth();
+                    int vh = player().getVideoHeight();
+                    if (vw > 0 && vh > 0) arFrame.setAspectRatio((float) vw / vh);
+                }
+            }
+            removeRotationLayoutListener(surface);
+            return;
+        }
+ 
+        if (!(surface instanceof TextureView textureView)) return;
+        if (mService == null || player() == null) return;
+        int vw = player().getVideoWidth();
+        int vh = player().getVideoHeight();
+        if (vw <= 0 || vh <= 0) return;
+ 
+        if (arFrame != null) arFrame.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
+        surface.setRotation(0);
+ 
+        int viewW = textureView.getWidth();
+        int viewH = textureView.getHeight();
+        if (viewW <= 0 || viewH <= 0) {
+            ensureRotationLayoutListener(textureView);
+            return;
+        }
+ 
+        float rotatedW = (videoRotation == 90 || videoRotation == 270) ? vh : vw;
+        float rotatedH = (videoRotation == 90 || videoRotation == 270) ? vw : vh;
+        float fitScale = Math.min((float) viewW / rotatedW, (float) viewH / rotatedH);
+        float scaleX = (vw / (float) viewW) * fitScale;
+        float scaleY = (vh / (float) viewH) * fitScale;
+ 
+        Matrix matrix = new Matrix();
+        matrix.setScale(scaleX, scaleY);
+        matrix.postRotate(videoRotation, viewW * scaleX / 2f, viewH * scaleY / 2f);
+        matrix.postTranslate((viewW - viewW * scaleX) / 2f, (viewH - viewH * scaleY) / 2f);
+        textureView.setTransform(matrix);
+ 
+        ensureRotationLayoutListener(textureView);
+    }
+ 
+    private void ensureRotationLayoutListener(View surface) {
+        if (rotationLayoutListener == null) {
+            rotationLayoutListener = (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                if (videoRotation != 0) applyVideoRotation();
+            };
+        }
+        surface.removeOnLayoutChangeListener(rotationLayoutListener);
+        surface.addOnLayoutChangeListener(rotationLayoutListener);
+    }
+ 
+    private void removeRotationLayoutListener(View surface) {
+        if (rotationLayoutListener != null) {
+            surface.removeOnLayoutChangeListener(rotationLayoutListener);
+        }
+    }
+ 
     protected void onReclaim() {
     }
 
@@ -346,7 +458,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             player().parse(key, result, useParse, metadata, PlayerSetting.isAutoPlay(), startPositionMs);
         } else {
             attachSurface();
-            player().start(PlaySpec.from(result, key, metadata), timeout, PlayerSetting.isAutoPlay(), startPositionMs);
+            player().start(PlaySpec.from(result, key, metadata, PlayerSetting.getPlayer()), timeout, PlayerSetting.isAutoPlay(), startPositionMs);
         }
     }
 
@@ -586,6 +698,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private int getRender() {
         if (mService != null && player().isNativePlayer()) return 0;
         if (mService != null && player().requiresTextureRenderForLut()) return PlayerSetting.RENDER_TEXTURE;
+        if (rotationEngaged && mService != null && player().isExo()) return PlayerSetting.RENDER_TEXTURE;
         return PlayerSetting.getRender();
     }
 

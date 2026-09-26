@@ -158,6 +158,7 @@ public class Site implements Parcelable {
         try {
             Site site = App.gson().fromJson(element, Site.class);
             if (site.getJar().isEmpty()) site.setJar(spider);
+            site.setJar(UrlUtil.convert(site.getJar()));
             site.setApi(UrlUtil.convert(site.getApi()));
             site.setExt(UrlUtil.convert(site.getExt()));
             site.setHomePage(UrlUtil.convert(site.getHomePage()));
@@ -373,6 +374,24 @@ public class Site implements Parcelable {
 
     public void setSelected(Site item) {
         this.selected = item.equals(this);
+    }
+
+    public boolean isFile() {
+        return getKey().endsWith("_file");
+    }
+
+    public String getFileName() {
+        if (!isFile()) return "";
+        String raw = getKey().substring(0, getKey().length() - 5);
+        int idx = raw.indexOf('_');
+        return idx >= 0 ? raw.substring(idx + 1) : raw;
+    }
+
+    public String getFileType() {
+        if (!isFile()) return "";
+        String raw = getKey().substring(0, getKey().length() - 5);
+        int idx = raw.indexOf('_');
+        return idx >= 0 ? raw.substring(0, idx) : raw;
     }
 
     public boolean isHide() {

@@ -1,12 +1,16 @@
 package com.fongmi.android.tv.ui.custom;
 
 import android.annotation.SuppressLint;
+import android.view.KeyEvent;
+import android.view.View;
 
 import androidx.leanback.widget.FocusHighlight;
 import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.ListRowPresenter;
 import androidx.leanback.widget.RowPresenter;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.fongmi.android.tv.utils.KeyUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 public class CustomRowPresenter extends ListRowPresenter {
@@ -37,7 +41,8 @@ public class CustomRowPresenter extends ListRowPresenter {
     protected void initializeRowViewHolder(RowPresenter.ViewHolder holder) {
         super.initializeRowViewHolder(holder);
         ViewHolder vh = (ViewHolder) holder;
-        vh.getGridView().setFocusScrollStrategy(strategy);
-        vh.getGridView().setHorizontalSpacing(ResUtil.dp2px(spacing));
+        HorizontalGridView grid = vh.getGridView();
+        grid.setFocusScrollStrategy(strategy);
+        grid.setHorizontalSpacing(ResUtil.dp2px(spacing));
     }
 }

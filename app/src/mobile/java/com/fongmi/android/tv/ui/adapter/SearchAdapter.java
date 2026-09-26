@@ -10,20 +10,32 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
+import com.fongmi.android.tv.databinding.AdapterSearchTextBinding;
 import com.fongmi.android.tv.databinding.AdapterVodRectBinding;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.ImgUtil;
 
 public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder> {
 
     private static final int VIEW_TYPE_LIST = 0;
     private static final int VIEW_TYPE_GRID = 1;
+    private static final int VIEW_TYPE_TEXT = 2;
+
+    public static final int MODE_GRID = 1;
+    public static final int MODE_LIST = 2;
+    public static final int MODE_TEXT = 3;
 
     private final OnClickListener listener;
-    private boolean grid;
+    private int mode = MODE_GRID;
     private int[] size = new int[]{0, 0};
+    private boolean allMode = true;
 
     public SearchAdapter(OnClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setAllMode(boolean allMode) {
+        this.allMode = allMode;
     }
 
     public interface OnClickListener {
@@ -31,21 +43,25 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         void onItemClick(Vod item);
     }
 
-    public void setGrid(boolean grid, int[] size) {
-        this.grid = grid;
+    public void setMode(int mode, int[] size) {
+        this.mode = mode;
         this.size = size;
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemViewType(int position) {
-        return grid ? VIEW_TYPE_GRID : VIEW_TYPE_LIST;
+        if (mode == MODE_GRID) return VIEW_TYPE_GRID;
+        if (mode == MODE_TEXT) return VIEW_TYPE_TEXT;
+        return VIEW_TYPE_LIST;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return viewType == VIEW_TYPE_GRID ? new GridHolder(AdapterVodRectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false)) : new ListHolder(AdapterSearchBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        if (viewType == VIEW_TYPE_GRID) return new GridHolder(AdapterVodRectBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        if (viewType == VIEW_TYPE_TEXT) return new TextHolder(AdapterSearchTextBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new ListHolder(AdapterSearchBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
 
     @Override
@@ -53,6 +69,10 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         Vod item = getItem(position);
         if (holder instanceof GridHolder gridHolder) {
             gridHolder.initView(item);
+            return;
+        }
+        if (holder instanceof TextHolder textHolder) {
+            textHolder.initView(item);
             return;
         }
         if (!(holder instanceof ListHolder listHolder)) return;
@@ -69,6 +89,9 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
             Glide.with(listHolder.binding.image).clear(listHolder.binding.image);
             listHolder.setMarquee(false);
         }
+        if (holder instanceof TextHolder textHolder) {
+            textHolder.setMarquee(false);
+        }
     }
 
     public class ListHolder extends RecyclerView.ViewHolder {
@@ -79,11 +102,12 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
             super(binding.getRoot());
             this.binding = binding;
             binding.getRoot().setFocusable(true);
-            binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
         }
 
         private void initView(Vod item) {
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
             binding.name.setText(item.getName());
             setMarquee(binding.getRoot().hasFocus());
             binding.site.setText(item.getSiteName());
@@ -95,11 +119,10 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         }
 
         private void setMarquee(boolean focused) {
-            binding.name.setSingleLine(focused);
-            if (!focused) binding.name.setMaxLines(3);
-            binding.name.setHorizontallyScrolling(focused);
-            binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
-            binding.name.setSelected(focused);
+            if (Setting.resolveTitleMaxLines() <= 1) {
+                binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
+                binding.name.setSelected(focused);
+            }
         }
     }
 
@@ -111,15 +134,14 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
             super(binding.getRoot());
             this.binding = binding;
             binding.getRoot().setFocusable(true);
-            binding.name.setSingleLine(true);
-            binding.name.setHorizontallyScrolling(true);
-            binding.name.setMarqueeRepeatLimit(-1);
             binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
             applySize();
         }
 
         private void initView(Vod item) {
             applySize();
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
             binding.name.setText(item.getName());
             setMarquee(binding.getRoot().hasFocus());
             binding.site.setText(item.getSiteName());
@@ -146,8 +168,46 @@ public class SearchAdapter extends BaseDiffAdapter<Vod, RecyclerView.ViewHolder>
         }
 
         private void setMarquee(boolean focused) {
-            binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
-            binding.name.setSelected(focused);
+            if (Setting.resolveTitleMaxLines() <= 1) {
+                binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
+                binding.name.setSelected(focused);
+            }
+        }
+    }
+
+    public class TextHolder extends RecyclerView.ViewHolder {
+
+        private final AdapterSearchTextBinding binding;
+
+        TextHolder(@NonNull AdapterSearchTextBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+            binding.getRoot().setFocusable(true);
+            binding.getRoot().setOnFocusChangeListener((view, hasFocus) -> setMarquee(hasFocus));
+        }
+
+        private void initView(Vod item) {
+            Setting.applyTitleMaxLines(binding.name);
+            binding.name.setHorizontallyScrolling(Setting.resolveTitleMaxLines() <= 1);
+            String suffix;
+            if (allMode) {
+                String siteName = item.getSiteName();
+                suffix = siteName.isEmpty() ? "" : "【" + siteName + "】";
+            } else {
+                String remark = item.getRemarks();
+                suffix = (remark == null || remark.isEmpty()) ? "" : "【" + remark + "】";
+            }
+            String text = suffix.isEmpty() ? item.getName() : item.getName() + suffix;
+            binding.name.setText(text);
+            setMarquee(binding.getRoot().hasFocus());
+            binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
+        }
+
+        private void setMarquee(boolean focused) {
+            if (Setting.resolveTitleMaxLines() <= 1) {
+                binding.name.setEllipsize(focused ? TextUtils.TruncateAt.MARQUEE : TextUtils.TruncateAt.END);
+                binding.name.setSelected(focused);
+            }
         }
     }
 }

@@ -186,8 +186,9 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onOsd(View view) {
-        PlayerOsdDialog.show(this, osd, getOsdChecked(), checked -> {
-            setOsdChecked(checked);
+        PlayerOsdDialog.show(this, osd, getOsdVodChecked(), getOsdLiveChecked(), (vodChecked, liveChecked) -> {
+            setOsdVodChecked(vodChecked);
+            setOsdLiveChecked(liveChecked);
             mBinding.osdText.setText(getOsdText(osd));
         });
     }
@@ -207,22 +208,36 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.padLiveText.setText(padLiveMode[index]);
     }
 
-    private boolean[] getOsdChecked() {
-        return new boolean[]{PlayerSetting.isOsdTitle(), PlayerSetting.isOsdResolution(), PlayerSetting.isOsdTime(), PlayerSetting.isOsdProgress(), PlayerSetting.isOsdTraffic(), PlayerSetting.isOsdMini(), PlayerSetting.isOsdDiagnostics()};
+    private boolean[] getOsdVodChecked() {
+        return new boolean[]{PlayerSetting.isOsdVodTitle(), PlayerSetting.isOsdVodResolution(), PlayerSetting.isOsdVodTime(), PlayerSetting.isOsdVodProgress(), PlayerSetting.isOsdVodTraffic(), PlayerSetting.isOsdVodMini(), PlayerSetting.isOsdVodDiagnostics()};
     }
 
-    private void setOsdChecked(boolean[] checked) {
-        PlayerSetting.putOsdTitle(checked[0]);
-        PlayerSetting.putOsdResolution(checked[1]);
-        PlayerSetting.putOsdTime(checked[2]);
-        PlayerSetting.putOsdProgress(checked[3]);
-        PlayerSetting.putOsdTraffic(checked[4]);
-        PlayerSetting.putOsdMini(checked[5]);
-        PlayerSetting.putOsdDiagnostics(checked[6]);
+    private boolean[] getOsdLiveChecked() {
+        return new boolean[]{PlayerSetting.isOsdLiveTitle(), PlayerSetting.isOsdLiveResolution(), PlayerSetting.isOsdLiveTime(), PlayerSetting.isOsdLiveProgress(), PlayerSetting.isOsdLiveTraffic(), PlayerSetting.isOsdLiveMini(), PlayerSetting.isOsdLiveDiagnostics()};
+    }
+
+    private void setOsdVodChecked(boolean[] checked) {
+        PlayerSetting.putOsdVodTitle(checked[0]);
+        PlayerSetting.putOsdVodResolution(checked[1]);
+        PlayerSetting.putOsdVodTime(checked[2]);
+        PlayerSetting.putOsdVodProgress(checked[3]);
+        PlayerSetting.putOsdVodTraffic(checked[4]);
+        PlayerSetting.putOsdVodMini(checked[5]);
+        PlayerSetting.putOsdVodDiagnostics(checked[6]);
+    }
+
+    private void setOsdLiveChecked(boolean[] checked) {
+        PlayerSetting.putOsdLiveTitle(checked[0]);
+        PlayerSetting.putOsdLiveResolution(checked[1]);
+        PlayerSetting.putOsdLiveTime(checked[2]);
+        PlayerSetting.putOsdLiveProgress(checked[3]);
+        PlayerSetting.putOsdLiveTraffic(checked[4]);
+        PlayerSetting.putOsdLiveMini(checked[5]);
+        PlayerSetting.putOsdLiveDiagnostics(checked[6]);
     }
 
     private String getOsdText(String[] items) {
-        boolean[] checked = getOsdChecked();
+        boolean[] checked = getOsdVodChecked();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < checked.length; i++) {
             if (!checked[i]) continue;

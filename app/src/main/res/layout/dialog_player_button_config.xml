@@ -23,16 +23,20 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/reset"
-            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
+            android:background="@drawable/selector_dialog_step_button"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:gravity="center"
             android:minWidth="56dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:text="@string/dialog_reset"
-            android:textColor="@color/dialog_tonal_button_text" />
+            android:textColor="@color/dialog_outlined_button_text"
+            android:textSize="14sp" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

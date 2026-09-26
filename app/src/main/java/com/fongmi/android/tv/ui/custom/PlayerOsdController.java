@@ -82,6 +82,7 @@ public class PlayerOsdController {
     private long lastTotalRxBytes;
     private long lastTimeStamp;
     private long lastSpeedKBps;
+    private long endingMs;
     private String lastSpeedText;
     private boolean controlsVisible;
     private boolean diagnosticsVisible;
@@ -112,7 +113,7 @@ public class PlayerOsdController {
 
     public void start() {
         started = true;
-        if (!PlayerSetting.isOsdEnabled()) {
+        if (!osdEnabled()) {
             root.setVisibility(View.GONE);
             return;
         }
@@ -136,12 +137,26 @@ public class PlayerOsdController {
         if (started) render();
     }
 
+    /**
+     * 设置片尾时长（毫秒），屏显左下角进度中的总时长显示为 视频总长 - 片尾，即时刷新。
+     */
+    public void setEnding(long endingMs) {
+        long value = Math.max(0, endingMs);
+        if (this.endingMs == value) return;
+        this.endingMs = value;
+        if (started) render();
+    }
+
+    private long effectiveDuration(long duration) {
+        return Math.max(0, duration - endingMs);
+    }
+
     public boolean isDiagnosticsVisible() {
         return diagnosticsVisible;
     }
 
     public void setDiagnosticsVisible(boolean visible) {
-        boolean next = visible && PlayerSetting.isOsdDiagnostics();
+        boolean next = visible && osdDiagnostics();
         if (diagnosticsVisible == next) return;
         diagnosticsVisible = next;
         if (!next) stopDiagnosticsSampling();
@@ -149,7 +164,7 @@ public class PlayerOsdController {
     }
 
     public void toggleDiagnostics() {
-        if (!PlayerSetting.isOsdDiagnostics()) return;
+        if (!osdDiagnostics()) return;
         diagnosticsVisible = !diagnosticsVisible;
         if (!diagnosticsVisible) stopDiagnosticsSampling();
         if (started) render();
@@ -160,7 +175,7 @@ public class PlayerOsdController {
     }
 
     private boolean render() {
-        boolean enabled = PlayerSetting.isOsdEnabled();
+        boolean enabled = osdEnabled();
         if (!enabled) {
             stopDiagnosticsSampling();
             root.setVisibility(View.GONE);
@@ -184,23 +199,23 @@ public class PlayerOsdController {
     }
 
     private void setTopLeft(PlayerManager player) {
-        if ((!PlayerSetting.isOsdTitle() && !PlayerSetting.isOsdResolution()) || diagnosticsVisible) {
+        if ((!osdTitle() && !osdResolution()) || diagnosticsVisible) {
             topLeft.setVisibility(View.GONE);
             return;
         }
-        String title = PlayerSetting.isOsdTitle() ? source.getTitle() : "";
-        String size = PlayerSetting.isOsdResolution() && player != null ? player.getSizeText() : "";
+        String title = osdTitle() ? source.getTitle() : "";
+        String size = osdResolution() && player != null ? player.getSizeText() : "";
         topLeft.setText(join("\n", title, size));
         topLeft.setVisibility(TextUtils.isEmpty(topLeft.getText()) ? View.GONE : View.VISIBLE);
     }
 
     private void setTopRight() {
-        topRight.setVisibility(PlayerSetting.isOsdTime() ? View.VISIBLE : View.GONE);
-        if (PlayerSetting.isOsdTime()) topRight.setText(timeFormat.format(new Date()));
+        topRight.setVisibility(osdTime() ? View.VISIBLE : View.GONE);
+        if (osdTime()) topRight.setText(timeFormat.format(new Date()));
     }
 
     private void setBottomLeft(PlayerManager player) {
-        if (controlsVisible || !PlayerSetting.isOsdProgress() || player == null || player.isLive()) {
+        if (controlsVisible || !osdProgress() || player == null || player.isLive()) {
             bottomLeft.setVisibility(View.GONE);
             return;
         }
@@ -210,19 +225,19 @@ public class PlayerOsdController {
             bottomLeft.setVisibility(View.GONE);
             return;
         }
-        bottomLeft.setText(Util.timeMs(position) + " / " + Util.timeMs(duration));
+        bottomLeft.setText(Util.timeMs(position) + " / " + Util.timeMs(effectiveDuration(duration)));
         bottomLeft.setVisibility(View.VISIBLE);
     }
 
     private void setBottomRight() {
-        bottomRight.setVisibility(PlayerSetting.isOsdTraffic() ? View.VISIBLE : View.GONE);
-        if (!PlayerSetting.isOsdTraffic()) return;
+        bottomRight.setVisibility(osdTraffic() ? View.VISIBLE : View.GONE);
+        if (!osdTraffic()) return;
         bottomRight.setText(lastSpeedText);
         bottomRight.setVisibility(TextUtils.isEmpty(lastSpeedText) ? View.GONE : View.VISIBLE);
     }
 
     private void setDiagnosticsPanel(PlayerManager player) {
-        if (controlsVisible || !PlayerSetting.isOsdDiagnostics() || !diagnosticsVisible || player == null) {
+        if (controlsVisible || !osdDiagnostics() || !diagnosticsVisible || player == null) {
             stopDiagnosticsSampling();
             diagnosticsPanel.setVisibility(View.GONE);
             return;
@@ -275,8 +290,46 @@ public class PlayerOsdController {
         return rootWidth >= rootHeight;
     }
 
+    private boolean isLive() {
+        PlayerManager player = source.getPlayer();
+        return player != null && player.isLive();
+    }
+
+    private boolean osdEnabled() {
+        return isLive() ? (PlayerSetting.isOsdLiveTitle() || PlayerSetting.isOsdLiveResolution() || PlayerSetting.isOsdLiveTime() || PlayerSetting.isOsdLiveProgress() || PlayerSetting.isOsdLiveTraffic() || PlayerSetting.isOsdLiveMini() || PlayerSetting.isOsdLiveDiagnostics())
+                : (PlayerSetting.isOsdVodTitle() || PlayerSetting.isOsdVodResolution() || PlayerSetting.isOsdVodTime() || PlayerSetting.isOsdVodProgress() || PlayerSetting.isOsdVodTraffic() || PlayerSetting.isOsdVodMini() || PlayerSetting.isOsdVodDiagnostics());
+    }
+
+    private boolean osdTitle() {
+        return isLive() ? PlayerSetting.isOsdLiveTitle() : PlayerSetting.isOsdVodTitle();
+    }
+
+    private boolean osdResolution() {
+        return isLive() ? PlayerSetting.isOsdLiveResolution() : PlayerSetting.isOsdVodResolution();
+    }
+
+    private boolean osdTime() {
+        return isLive() ? PlayerSetting.isOsdLiveTime() : PlayerSetting.isOsdVodTime();
+    }
+
+    private boolean osdProgress() {
+        return isLive() ? PlayerSetting.isOsdLiveProgress() : PlayerSetting.isOsdVodProgress();
+    }
+
+    private boolean osdTraffic() {
+        return isLive() ? PlayerSetting.isOsdLiveTraffic() : PlayerSetting.isOsdVodTraffic();
+    }
+
+    private boolean osdMini() {
+        return isLive() ? PlayerSetting.isOsdLiveMini() : PlayerSetting.isOsdVodMini();
+    }
+
+    private boolean osdDiagnostics() {
+        return isLive() ? PlayerSetting.isOsdLiveDiagnostics() : PlayerSetting.isOsdVodDiagnostics();
+    }
+
     private void setMiniProgress(PlayerManager player) {
-        if (controlsVisible || !PlayerSetting.isOsdMini() || player == null || player.isLive()) {
+        if (controlsVisible || !osdMini() || player == null || player.isLive()) {
             miniProgress.setVisibility(View.GONE);
             return;
         }

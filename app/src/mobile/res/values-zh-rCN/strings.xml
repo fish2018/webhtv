@@ -17,6 +17,10 @@
     <string name="menu_reset">重置</string>
     <string name="menu_push_apk">推送apk</string>
     <string name="menu_push_play">推送播放</string>
+    <string name="menu_download_config">接口下载</string>
+    <string name="config_download_start">开始下载接口…</string>
+    <string name="config_download_success">接口已下载到 tvbox/api/%1$s/</string>
+    <string name="config_download_failed">接口下载失败：%1$s</string>
     <string name="apk_push_preparing">正在准备APK…</string>
     <string name="apk_push_select_device">推送apk · 选择接收设备</string>
     <string name="apk_push_ready">推送apk · %1$s · %2$s</string>
@@ -101,6 +105,7 @@
     <string name="dialog_delete_record">删除全部纪录？</string>
     <string name="dialog_delete_keep">收藏纪录将会全部删除。</string>
     <string name="dialog_delete_history">观看纪录将会全部删除。</string>
+    <string name="title_block_source">选择要屏蔽的站源来源</string>
 
     <!-- Timer -->
     <string name="timer_5">5 分钟</string>

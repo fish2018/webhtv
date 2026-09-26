@@ -15,15 +15,26 @@ import com.fongmi.android.tv.utils.KeyUtil;
 public class FuncPresenter extends Presenter {
 
     private final OnClickListener listener;
+    private OnBoundaryListener boundary;
 
     public FuncPresenter(OnClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnBoundaryListener(OnBoundaryListener boundary) {
+        this.boundary = boundary;
     }
 
     public interface OnClickListener {
         void onItemClick(Func item);
 
         boolean onLongClick(Func item);
+    }
+
+    public interface OnBoundaryListener {
+        boolean onLeftBoundary();
+
+        boolean onRightBoundary();
     }
 
     @NonNull
@@ -54,8 +65,14 @@ public class FuncPresenter extends Presenter {
         if (count <= 1) return false;
         int position = recyclerView.getChildAdapterPosition(view);
         if (position == RecyclerView.NO_POSITION) return false;
-        if (KeyUtil.isRightKey(event) && position == count - 1) return requestFocus(recyclerView, 0);
-        if (KeyUtil.isLeftKey(event) && position == 0) return requestFocus(recyclerView, count - 1);
+        if (KeyUtil.isRightKey(event) && position == count - 1) {
+            if (boundary != null && boundary.onRightBoundary()) return true;
+            return requestFocus(recyclerView, 0);
+        }
+        if (KeyUtil.isLeftKey(event) && position == 0) {
+            if (boundary != null && boundary.onLeftBoundary()) return true;
+            return requestFocus(recyclerView, count - 1);
+        }
         return false;
     }
 

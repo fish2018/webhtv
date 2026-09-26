@@ -1,24 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#1F0B57D0">
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <ripple android:color="#1F0B57D0">
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <solid android:color="#301A73E8" />
+                <stroke android:width="2dp" android:color="#1A73E8"/>
+                <padding
+                    android:bottom="8dp"
+                    android:left="12dp"
+                    android:right="12dp"
+                    android:top="8dp" />
+            </shape>
+        </ripple>
+    </item>
     <item>
-        <shape android:shape="rectangle">
-            <corners android:radius="8dp" />
-            <solid android:color="@color/dialog_outlined_button_bg" />
-            <stroke
-                android:width="1dp"
-                android:color="@color/dialog_outlined_button_stroke" />
-            <padding
-                android:bottom="8dp"
-                android:left="12dp"
-                android:right="12dp"
-                android:top="8dp" />
-        </shape>
+        <ripple android:color="#1F0B57D0">
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <solid android:color="@android:color/transparent" />
+                <stroke android:width="1dp" android:color="#CCCCCC"/>
+                <padding
+                    android:bottom="8dp"
+                    android:left="12dp"
+                    android:right="12dp"
+                    android:top="8dp" />
+            </shape>
+            <item android:id="@android:id/mask">
+                <shape android:shape="rectangle">
+                    <corners android:radius="8dp" />
+                    <solid android:color="@color/white" />
+                </shape>
+            </item>
+        </ripple>
     </item>
-    <item android:id="@android:id/mask">
-        <shape android:shape="rectangle">
-            <corners android:radius="8dp" />
-            <solid android:color="@color/white" />
-        </shape>
-    </item>
-</ripple>
+</selector>

@@ -6,7 +6,7 @@ public class PreloadSetting {
     public static final int MAX_THREADS = 4;
     public static final int DEFAULT_THREADS = 1;
     public static final int MIN_SIZE_MB = 128;
-    public static final int MAX_SIZE_MB = 32768;
+    public static final int MAX_SIZE_MB = 4096;
     public static final int MIN_TIME_SECONDS = 20;
     public static final int MAX_TIME_SECONDS = 120;
     public static final int DEFAULT_TIME_SECONDS = 20;
@@ -18,7 +18,7 @@ public class PreloadSetting {
     public static final int PAUSE_PRELOAD_WIFI = 1;
     public static final int PAUSE_PRELOAD_ALWAYS = 2;
     public static final int DEFAULT_PAUSE_PRELOAD = PAUSE_PRELOAD_ALWAYS;
-    private static final int[] SIZE_OPTIONS_MB = {128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
+    private static final int[] SIZE_OPTIONS_MB = {128, 256, 512, 1024, 2048, 4096};
     private static final int[] AHEAD_OPTIONS_SECONDS = {60, 180, 300, 600, 1800, 3600, WHOLE_MEDIA_AHEAD_SECONDS};
     private static final int[] PAUSE_PRELOAD_OPTIONS = {PAUSE_PRELOAD_ALWAYS, PAUSE_PRELOAD_WIFI};
 

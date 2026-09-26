@@ -8,10 +8,4 @@
         android:title="@string/repo_github"
         app:showAsAction="always" />
 
-    <item
-        android:id="@+id/cnbRepo"
-        android:icon="@drawable/ic_repo_cnb"
-        android:title="@string/repo_cnb"
-        app:showAsAction="always" />
-
 </menu>

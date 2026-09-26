@@ -24,7 +24,7 @@ public final class RemoteConfigSiteParser {
 
     public static JsonObject parse(Config config, String selectedKey, String selectedName) throws Exception {
         if (config == null || config.isEmpty()) throw new IllegalArgumentException("Missing vod config url");
-        JsonObject object = Json.parse(Decoder.getJson(UrlUtil.convert(config.getUrl()), TAG)).getAsJsonObject();
+        JsonObject object = Json.parse(Decoder.getJson(config.getUrl(), TAG)).getAsJsonObject();
         if (object.has("msg")) throw new IllegalStateException(object.get("msg").getAsString());
         if (object.has("urls")) return parseDepot(config, object, selectedKey, selectedName);
         return sitesData(config, object, selectedKey, selectedName);

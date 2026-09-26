@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/device_select"
-            android:textColor="#202124"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="16sp" />
 
         <androidx.appcompat.widget.AppCompatImageView
