@@ -34,7 +34,7 @@
         <menu>
             <item
                 android:id="@+id/multi_repo"
-                android:icon="@drawable/ic_setting_home"
+                android:icon="@drawable/ic_popup_home"
                 android:title="@string/multi_repo" />
  
             <item

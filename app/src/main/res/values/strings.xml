@@ -1620,6 +1620,7 @@
     <string name="multi_repo_url_hint">Enter repo URL…</string>
     <string name="multi_repo_name_empty">Please enter repo name</string>
     <string name="multi_repo_url_empty">Please enter repo URL</string>
+    <string name="multi_repo_push_info">⇦ Scan QR code to input</string>
     <string name="multi_repo_fetch_fail">Failed to load repo</string>
     <string name="multi_repo_config_list">Config list</string>
     <string name="multi_repo_site_list">Site list</string>

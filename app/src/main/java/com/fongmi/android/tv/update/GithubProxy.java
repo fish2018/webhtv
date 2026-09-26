@@ -16,6 +16,7 @@ public final class GithubProxy {
             new Preset("gh_acmsz", "gh.acmsz.top", "https://gh.acmsz.top", MODE_FULL_URL),
             new Preset("ghfast", "ghfast.top", "https://ghfast.top", MODE_FULL_URL),
             new Preset("gh_monlor", "gh.monlor.com", "https://gh.monlor.com", MODE_FULL_URL),
+            new Preset("gh_proxy_org", "gh-proxy.org", "https://gh-proxy.org", MODE_FULL_URL),
             new Preset(CUSTOM, "Custom", "", MODE_FULL_URL),
     };
 

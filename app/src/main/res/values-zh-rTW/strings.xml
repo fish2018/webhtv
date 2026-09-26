@@ -1596,6 +1596,7 @@
     <string name="multi_repo_url_hint">輸入倉庫連結…</string>
     <string name="multi_repo_name_empty">請輸入倉庫名稱</string>
     <string name="multi_repo_url_empty">請輸入倉庫連結</string>
+    <string name="multi_repo_push_info">⇦掃碼輸入</string>
     <string name="multi_repo_fetch_fail">倉庫載入失敗</string>
     <string name="multi_repo_config_list">接口列表</string>
     <string name="multi_repo_site_list">站點列表</string>

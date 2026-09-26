@@ -1612,6 +1612,7 @@
     <string name="multi_repo_url_hint">输入仓库链接…</string>
     <string name="multi_repo_name_empty">请输入仓库名称</string>
     <string name="multi_repo_url_empty">请输入仓库链接</string>
+    <string name="multi_repo_push_info">⇦扫码输入</string>
     <string name="multi_repo_fetch_fail">仓库加载失败</string>
     <string name="multi_repo_config_list">接口列表</string>
     <string name="multi_repo_site_list">站点列表</string>

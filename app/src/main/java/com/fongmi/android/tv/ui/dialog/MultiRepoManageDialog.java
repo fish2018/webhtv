@@ -1,5 +1,5 @@
 package com.fongmi.android.tv.ui.dialog;
- 
+
 import android.app.Dialog;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -13,37 +13,37 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
- 
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
- 
+
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.MultiRepo;
 import com.fongmi.android.tv.setting.MultiRepoStore;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textview.MaterialTextView;
- 
+
 import java.util.List;
- 
+
 public class MultiRepoManageDialog extends DialogFragment {
- 
+
     public interface Callback {
         void onChanged();
     }
- 
+
     private Callback callback;
- 
+
     public static MultiRepoManageDialog show(@NonNull FragmentActivity activity, @Nullable Callback callback) {
         MultiRepoManageDialog dialog = new MultiRepoManageDialog();
         dialog.callback = callback;
         dialog.show(activity.getSupportFragmentManager(), MultiRepoManageDialog.class.getSimpleName());
         return dialog;
     }
- 
+
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
@@ -52,7 +52,7 @@ public class MultiRepoManageDialog extends DialogFragment {
         dialog.setCanceledOnTouchOutside(true);
         return dialog;
     }
- 
+
     @Override
     public void onStart() {
         super.onStart();
@@ -76,7 +76,7 @@ public class MultiRepoManageDialog extends DialogFragment {
         window.setAttributes(params);
         window.setLayout(params.width, params.height);
     }
- 
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -86,7 +86,7 @@ public class MultiRepoManageDialog extends DialogFragment {
         int horizontal = ResUtil.dp2px(24);
         int vertical = ResUtil.dp2px(20);
         root.setPadding(horizontal, ResUtil.dp2px(24), horizontal, vertical);
- 
+
         // 标题
         MaterialTextView title = new MaterialTextView(requireContext());
         title.setText(R.string.multi_repo_manage_title);
@@ -95,12 +95,12 @@ public class MultiRepoManageDialog extends DialogFragment {
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         root.addView(title, titleParams);
- 
+
         // 新增按钮（ChoiceDialog 风格的按钮，但有 NEW 标识）
         LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ResUtil.dp2px(54));
         rowParams.topMargin = ResUtil.dp2px(12);
         rowParams.bottomMargin = ResUtil.dp2px(8);
- 
+
         MaterialButton addBtn = new MaterialButton(requireContext());
         addBtn.setAllCaps(false);
         addBtn.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
@@ -126,12 +126,12 @@ public class MultiRepoManageDialog extends DialogFragment {
         });
         addBtn.setOnClickListener(v -> MultiRepoAddDialog.show(requireActivity(), repo -> refreshList(root)));
         root.addView(addBtn, rowParams);
- 
+
         // 仓库列表
         LinearLayout listContainer = new LinearLayout(requireContext());
         listContainer.setOrientation(LinearLayout.VERTICAL);
         listContainer.setTag("repo_list");
- 
+
         ScrollView scrollView = new ScrollView(requireContext());
         scrollView.setFillViewport(false);
         scrollView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -142,11 +142,11 @@ public class MultiRepoManageDialog extends DialogFragment {
         List<MultiRepo> repos = MultiRepoStore.get();
         scrollParams.height = Math.min(maxHeight, Math.max(ResUtil.dp2px(56), repos.size() * ResUtil.dp2px(54)));
         root.addView(scrollView, scrollParams);
- 
+
         refreshList(root);
         return root;
     }
- 
+
     private void refreshList(LinearLayout root) {
         LinearLayout list = root.findViewWithTag("repo_list");
         if (list == null) return;
@@ -171,15 +171,16 @@ public class MultiRepoManageDialog extends DialogFragment {
         // 回调
         if (callback != null) callback.onChanged();
     }
- 
+
     private LinearLayout createRepoRow(MultiRepo repo, int index) {
         LinearLayout row = new LinearLayout(requireContext());
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        // 不使用 CENTER_VERTICAL：按钮 44dp + bottomMargin 8dp = 52dp > row minHeight 44dp，
+        // 居中会导致按钮顶部边线被裁剪。改为默认 TOP 对齐，顶部边线完整显示。
         row.setMinimumHeight(ResUtil.dp2px(44));
         row.setPadding(ResUtil.dp2px(6), 0, ResUtil.dp2px(6), 0);
         row.setBackgroundColor(Color.TRANSPARENT);
- 
+
         // 使用 ChoiceDialog 风格的 MaterialButton 作为背景（让焦点样式和播放器内核一致）
         MaterialButton nameBtn = new MaterialButton(requireContext());
         nameBtn.setAllCaps(false);
@@ -208,13 +209,13 @@ public class MultiRepoManageDialog extends DialogFragment {
         nameBtn.setOnClickListener(v -> {
             // 点击仓库行也没什么动作（只做维护）
         });
- 
+
         LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         nameParams.rightMargin = ResUtil.dp2px(8);
         nameParams.bottomMargin = ResUtil.dp2px(8);
         nameBtn.setLayoutParams(nameParams);
         row.addView(nameBtn);
- 
+
         // 删除按钮
         MaterialButton deleteBtn = new MaterialButton(requireContext());
         deleteBtn.setAllCaps(false);
@@ -257,10 +258,9 @@ public class MultiRepoManageDialog extends DialogFragment {
         LinearLayout.LayoutParams delParams = new LinearLayout.LayoutParams(ResUtil.dp2px(44), ResUtil.dp2px(44));
         delParams.leftMargin = ResUtil.dp2px(8);
         delParams.bottomMargin = ResUtil.dp2px(8);
-        delParams.gravity = Gravity.CENTER_VERTICAL;
         deleteBtn.setLayoutParams(delParams);
         row.addView(deleteBtn);
- 
+
         return row;
     }
 }
